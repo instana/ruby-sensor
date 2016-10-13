@@ -7,4 +7,13 @@ Rake::TestTask.new(:test) do |t|
   t.test_files = FileList['test/**/*_test.rb']
 end
 
+task :environment do
+  Bundler.require(:default, :development)
+end
+
+task :console => :environment do
+  ARGV.clear
+  Pry.start
+end
+
 task :default => :spec
