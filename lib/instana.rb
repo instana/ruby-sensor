@@ -1,5 +1,13 @@
 require "instana/version"
+require "instana/agent"
+require 'logger'
 
 module Instana
-  # Your code goes here...
+  class << self
+    attr_accessor :agent
+    attr_accessor :logger
+  end
 end
+
+Instana.agent = Instana::Agent.new
+Instana.logger = Logger.new(STDOUT)
