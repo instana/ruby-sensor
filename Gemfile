@@ -3,7 +3,7 @@ source 'https://rubygems.org'
 group :development, :test do
   gem 'rake'
   gem 'minitest'
-  gem 'minitest-reporters', '< 1.0.18'
+  gem 'minitest-reporters'
   gem 'minitest-debugger', :require => false
   gem 'rack-test'
 end
@@ -19,6 +19,9 @@ group :development do
     gem 'pry', '0.9.12.4'
   end
 end
+
+gem 'sys-proctable'
+gem 'timers'
 
 # instana.gemspec
 gemspec
