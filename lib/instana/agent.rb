@@ -1,33 +1,83 @@
 require 'net/http'
 require 'uri'
 require 'json'
+require 'sys/proctable'
+include Sys
 
 module Instana
   class Agent
-    def initiialize
+    attr_accessor :payload
+
+    def initialize
       @request_timeout = 5000
       @host = '127.0.0.1'
       @port = 42699
       @server_header = 'Instana Agent'
       @agentuuid = nil
+      @payload = {}
     end
 
+    ##
+    # announce_sensor
+    #
+    # Collect process ID, name and arguments to notify
+    # the host agent.
+    #
     def announce_sensor
-      uri = URI.parse("http://#{@host}:#{@port}/com.instana.plugin.ruby.discovery")
-      payload = {}
-      payload[:pid] = Process.pid
-      payload[:name] = $0
+      s = ProcTable.ps(Process.pid)
+      announce_payload = {}
+      announce_payload[:pid] = Process.pid
+      announce_payload[:name] = File.basename(s.exe)
 
+      arguments = s.cmdline.split(' ')
+      arguments.shift
+      announce_payload[:args] = arguments
+
+      path = 'com.instana.plugin.ruby.discovery'
+      uri = URI.parse("http://#{@host}:#{@port}/#{path}")
       req = Net::HTTP::Put.new(uri)
+
       req['Accept'] = 'application/json'
       req['Content-Type'] = 'application/json'
-      req.body = payload.to_json
+      req.body = announce_payload.to_json
+
+      ::Instana.logger.debug "Announcing sensor..."
 
       response = nil
       Net::HTTP.start(uri.hostname, uri.port) do |http|
         response = http.request(req)
       end
-      puts response
+      Instana.logger.debug response
+    rescue => e
+      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug e.backtrace.join("\r\n")
+    end
+
+    ##
+    # report_entity_data
+    #
+    # The engine to report data to the host agent
+    #
+    # TODO: Validate responses
+    # TODO: Better host agent check/timeout handling
+    #
+    def report_entity_data
+      path = "com.instana.plugin.ruby.#{Process.pid}"
+      uri = URI.parse("http://#{@host}:#{@port}/#{path}")
+      req = Net::HTTP::Post.new(uri)
+
+      req['Accept'] = 'application/json'
+      req['Content-Type'] = 'application/json'
+      req.body = @payload.to_json
+
+      response = nil
+      Net::HTTP.start(uri.hostname, uri.port) do |http|
+        response = http.request(req)
+      end
+      Instana.logger.debug response
+    rescue => e
+      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug e.backtrace.join("\r\n")
     end
   end
 end
