@@ -94,5 +94,35 @@ module Instana
       Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
     end
+
+    ##
+    # host_agent_ready?
+    #
+    # Check that the host agent is available and can be contacted.
+    #
+    def host_agent_ready?
+      path = 'com.instana.plugin.ruby.discovery'
+      uri = URI.parse("http://#{@host}:#{@port}/#{path}")
+      req = Net::HTTP::Head.new(uri)
+
+      req['Accept'] = 'application/json'
+      req['Content-Type'] = 'application/json'
+
+      ::Instana.logger.debug "Checking agent availability...."
+
+      response = nil
+      Net::HTTP.start(uri.hostname, uri.port) do |http|
+        response = http.request(req)
+      end
+      Instana.logger.debug response
+      true
+    rescue Errno::ECONNREFUSED => e
+      Instana.logger.debug "Agent not responding: #{e.inspect}"
+      return false
+    rescue => e
+      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug e.backtrace.join("\r\n")
+      return false
+    end
   end
 end

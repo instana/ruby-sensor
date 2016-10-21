@@ -16,6 +16,10 @@ Instana.agent = Instana::Agent.new
 Instana.collectors = []
 Instana.logger = Logger.new(STDOUT)
 Instana.logger.info "Stan is on the scene.  Starting Instana instrumentation."
-Instana.agent.announce_sensor
 
-require "instana/collectors"
+if Instana.agent.host_agent_ready?
+  Instana.agent.announce_sensor
+  require "instana/collectors"
+else
+  Instana.logger.debug "Instana host agent not available.  Going to sit in a corner quietly."
+end
