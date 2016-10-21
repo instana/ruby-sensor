@@ -7,6 +7,7 @@ include Sys
 module Instana
   class Agent
     attr_accessor :payload
+    attr_accessor :last_snapshot
 
     def initialize
       @request_timeout = 5000
@@ -15,6 +16,9 @@ module Instana
       @server_header = 'Instana Agent'
       @agentuuid = nil
       @payload = {}
+      # Set last snapshot to 10 minutes ago
+      # so we send a snapshot on first report
+      @last_snapshot = Time.now - 601
     end
 
     ##
@@ -27,7 +31,6 @@ module Instana
       s = ProcTable.ps(Process.pid)
       announce_payload = {}
       announce_payload[:pid] = Process.pid
-      announce_payload[:name] = File.basename(s.exe)
 
       arguments = s.cmdline.split(' ')
       arguments.shift
@@ -41,7 +44,7 @@ module Instana
       req['Content-Type'] = 'application/json'
       req.body = announce_payload.to_json
 
-      ::Instana.logger.debug "Announcing sensor..."
+      ::Instana.logger.debug "Announcing sensor to #{path} for pid #{Process.pid}: #{announce_payload.to_json}"
 
       response = nil
       Net::HTTP.start(uri.hostname, uri.port) do |http|
@@ -66,9 +69,21 @@ module Instana
       uri = URI.parse("http://#{@host}:#{@port}/#{path}")
       req = Net::HTTP::Post.new(uri)
 
+      # Every 5 minutes, send snapshot data as well
+      if (Time.now - @last_snapshot) > 600
+        @payload[:rubyVersion] = RUBY_VERSION
+        @payload[:execArgs] = ['blah']
+        @payload[:sensorVersion] = ::Instana::VERSION
+        @payload[:pid] = Process.pid
+        @payload[:versions] = { :ruby => RUBY_VERSION }
+        @last_snapshot = Time.now
+      end
+
       req['Accept'] = 'application/json'
       req['Content-Type'] = 'application/json'
       req.body = @payload.to_json
+
+      Instana.logger.debug "Posting metrics to #{path}: #{@payload.to_json}"
 
       response = nil
       Net::HTTP.start(uri.hostname, uri.port) do |http|
