@@ -28,11 +28,11 @@ module Instana
     # the host agent.
     #
     def announce_sensor
-      s = ProcTable.ps(Process.pid)
+      process = ProcTable.ps(Process.pid)
       announce_payload = {}
       announce_payload[:pid] = Process.pid
 
-      arguments = s.cmdline.split(' ')
+      arguments = process.cmdline.split(' ')
       arguments.shift
       announce_payload[:args] = arguments
 
@@ -88,6 +88,17 @@ module Instana
       response = nil
       Net::HTTP.start(uri.hostname, uri.port) do |http|
         response = http.request(req)
+      end
+
+      # If we sent snapshot data and the response was Ok,
+      # then delete the snapshot data.  Otherwise let it
+      # ride for another run.
+      if @payload.key?(:rubyVersion) && response.code.to_i == 200
+        @payload.delete(:rubyVersion)
+        @payload.delete(:execArgs)
+        @payload.delete(:sensorVersion)
+        @payload.delete(:pid)
+        @payload.delete(:version)
       end
       Instana.logger.debug response.code
     rescue => e
