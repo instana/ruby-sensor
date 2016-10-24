@@ -20,6 +20,7 @@ group :development do
   end
 end
 
+gem 'get_process_mem'
 gem 'sys-proctable'
 gem 'timers'
 

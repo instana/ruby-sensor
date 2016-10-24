@@ -1,6 +1,8 @@
 require 'timers'
-require 'instana/collectors/heap'
 require 'instana/collectors/gc'
+require 'instana/collectors/heap'
+require 'instana/collectors/memory'
+require 'instana/collectors/thread'
 
 module Instana
   module Collector
@@ -10,15 +12,22 @@ module Instana
   end
 end
 
-Instana::Collector.interval = 5
-Instana.collectors << Instana::Collector::GC.new
-Instana.collectors << Instana::Collector::Heap.new
+Instana.pry!
+if ENV.key?('INSTANA_GEM_DEV')
+  ::Instana::Collector.interval = 5
+else
+  ::Instana::Collector.interval = 1
+end
+
+Instana.collectors << ::Instana::Collector::GC.new
+Instana.collectors << ::Instana::Collector::Heap.new
+Instana.collectors << ::Instana::Collector::Memory.new
+Instana.collectors << ::Instana::Collector::Thread.new
 
 Thread.new do
   timers = Timers::Group.new
   timers.every(::Instana::Collector.interval) {
-    Instana.logger.debug "Collecting..."
-    Instana.collectors.each do |c|
+    ::Instana.collectors.each do |c|
       c.collect
     end
 
