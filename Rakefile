@@ -12,6 +12,7 @@ Rake::TestTask.new(:test) do |t|
 end
 
 task :environment do
+  ENV['INSTANA_GEM_DEV'] = 'true'
   Bundler.require(:default, :development)
 end
 
