@@ -50,7 +50,7 @@ module Instana
       Net::HTTP.start(uri.hostname, uri.port) do |http|
         response = http.request(req)
       end
-      Instana.logger.debug response
+      Instana.logger.debug response.code
     rescue => e
       Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
@@ -89,7 +89,7 @@ module Instana
       Net::HTTP.start(uri.hostname, uri.port) do |http|
         response = http.request(req)
       end
-      Instana.logger.debug response
+      Instana.logger.debug response.code
     rescue => e
       Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
@@ -101,9 +101,8 @@ module Instana
     # Check that the host agent is available and can be contacted.
     #
     def host_agent_ready?
-      path = 'com.instana.plugin.ruby.discovery'
-      uri = URI.parse("http://#{@host}:#{@port}/#{path}")
-      req = Net::HTTP::Head.new(uri)
+      uri = URI.parse("http://#{@host}:#{@port}/")
+      req = Net::HTTP::Get.new(uri)
 
       req['Accept'] = 'application/json'
       req['Content-Type'] = 'application/json'
@@ -114,8 +113,13 @@ module Instana
       Net::HTTP.start(uri.hostname, uri.port) do |http|
         response = http.request(req)
       end
-      Instana.logger.debug response
-      true
+
+      if response.code.to_i != 200
+        Instana.logger.debug "Host agent returned #{response.code}"
+        false
+      else
+        true
+      end
     rescue Errno::ECONNREFUSED => e
       Instana.logger.debug "Agent not responding: #{e.inspect}"
       return false
