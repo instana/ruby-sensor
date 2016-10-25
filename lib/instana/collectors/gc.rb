@@ -26,7 +26,7 @@ module Instana
         stats = ::GC.stat
         cur_minor_count = stats[:minor_gc_count]
         cur_major_count = stats[:major_gc_count]
-        cur_total_time = GC::Profiler.total_time
+        cur_total_time = ::GC::Profiler.total_time
 
         # If this is the first run, just set these values
         # so zero will be reported for the first run
