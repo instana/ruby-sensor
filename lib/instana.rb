@@ -1,17 +1,19 @@
 
 require 'logger'
 require "instana/version"
-require "instana/config"
-require "instana/agent"
 require "instana/util"
 
 module Instana
   class << self
     attr_accessor :agent
     attr_accessor :collectors
+    attr_accessor :config
     attr_accessor :logger
   end
 end
+
+require "instana/config"
+require "instana/agent"
 
 Instana.agent = Instana::Agent.new
 Instana.collectors = []

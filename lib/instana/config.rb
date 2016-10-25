@@ -1,8 +1,8 @@
 module Instana
   class Config
-    @config = {}
 
     def initialize
+      @config = {}
       @config[:agent_host] = '127.0.0.1'
       @config[:agent_port] = 42699
       @config[:metrics] = {}
@@ -12,12 +12,14 @@ module Instana
       @config[:metrics][:thread] = { :enabled => true }
     end
 
-    def self.[](key)
+    def [](key)
       @config[key.to_sym]
     end
 
-    def self.[]=(key, value)
+    def []=(key, value)
       @config[key.to_sym] = value
     end
   end
 end
+
+::Instana.config = ::Instana::Config.new
