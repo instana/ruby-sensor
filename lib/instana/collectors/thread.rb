@@ -27,3 +27,8 @@ module Instana
     end
   end
 end
+
+# Register the metrics collector if enabled
+if ::Instana.config[:metrics][:thread][:enabled]
+  ::Instana.collectors << ::Instana::Collector::Thread.new
+end

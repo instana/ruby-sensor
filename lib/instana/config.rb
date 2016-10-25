@@ -6,8 +6,8 @@ module Instana
       @config[:agent_host] = '127.0.0.1'
       @config[:agent_port] = 42699
       @config[:metrics] = {}
-      @config[:metrics][:heap]   = { :enabled => true }
       @config[:metrics][:gc]     = { :enabled => true }
+      @config[:metrics][:heap]   = { :enabled => false }
       @config[:metrics][:memory] = { :enabled => true }
       @config[:metrics][:thread] = { :enabled => true }
     end

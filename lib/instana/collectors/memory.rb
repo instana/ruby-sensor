@@ -31,3 +31,8 @@ module Instana
     end
   end
 end
+
+# Register the metrics collector if enabled
+if ::Instana.config[:metrics][:memory][:enabled]
+  ::Instana.collectors << ::Instana::Collector::Memory.new
+end

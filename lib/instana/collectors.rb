@@ -18,10 +18,6 @@ else
   ::Instana::Collector.interval = 1
 end
 
-::Instana.collectors << ::Instana::Collector::GC.new
-::Instana.collectors << ::Instana::Collector::Memory.new
-::Instana.collectors << ::Instana::Collector::Thread.new
-
 ::Thread.new do
   timers = ::Timers::Group.new
   timers.every(::Instana::Collector.interval) {

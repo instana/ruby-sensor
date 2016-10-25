@@ -77,3 +77,8 @@ module Instana
     end
   end
 end
+
+# Register the metrics collector if enabled
+if ::Instana.config[:metrics][:gc][:enabled]
+  ::Instana.collectors << ::Instana::Collector::GC.new
+end
