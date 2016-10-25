@@ -1,4 +1,5 @@
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+ENV['INSTANA_GEM_TEST'] = 'true'
 require 'instana'
 
 require 'rubygems'
