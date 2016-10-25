@@ -19,7 +19,6 @@ else
 end
 
 ::Instana.collectors << ::Instana::Collector::GC.new
-::Instana.collectors << ::Instana::Collector::Heap.new
 ::Instana.collectors << ::Instana::Collector::Memory.new
 ::Instana.collectors << ::Instana::Collector::Thread.new
 
