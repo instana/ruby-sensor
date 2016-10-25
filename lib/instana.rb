@@ -1,6 +1,7 @@
 
 require 'logger'
 require "instana/version"
+require "instana/config"
 require "instana/agent"
 require "instana/util"
 
