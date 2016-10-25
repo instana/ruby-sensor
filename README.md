@@ -1,12 +1,10 @@
 # Instana
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/instana`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+The Instana gem provides Ruby metrics for [Instana](https://www.instana.com/).
 
 ## Installation
 
-Add this line to your application's Gemfile:
+The gem is available on [Rubygems](https://rubygems.org/gems/instana).  To install, add this line to your application's Gemfile:
 
 ```ruby
 gem 'instana'
@@ -22,7 +20,7 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+The instana gem is a zero configuration tool that will automatically collect key metrics from your Ruby processes.  Just install and go.
 
 ## Development
 
@@ -32,5 +30,5 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/instana.
+Bug reports and pull requests are welcome on GitHub at https://github.com/instana/ruby-sensor.
 
