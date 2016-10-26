@@ -22,6 +22,17 @@ Or install it yourself as:
 
 The instana gem is a zero configuration tool that will automatically collect key metrics from your Ruby processes.  Just install and go.
 
+## Configuration
+
+Although the gem has no configuration required for metrics, individual components can be disabled with a local config.
+
+To disable a single component in the gem, you can disable a single component with the following code:
+
+```Ruby
+::Instana.config[:metrics][:gc][:enabled] = false
+```
+Current components are `:gc`, `:memory` and `:thread`.
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
