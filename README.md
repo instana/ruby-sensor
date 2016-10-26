@@ -4,7 +4,7 @@ The Instana gem provides Ruby metrics for [Instana](https://www.instana.com/).
 
 ## Installation
 
-The gem is available on [Rubygems](https://rubygems.org/gems/instana).  To install, add this line to your application's Gemfile:
+The gem is available on [Rubygems](https://rubygems.org/gems/instana).  To install, add this line to _the end_ of your application's Gemfile:
 
 ```ruby
 gem 'instana'
