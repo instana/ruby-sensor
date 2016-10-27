@@ -7,6 +7,7 @@ include Sys
 module Instana
   class Agent
     attr_accessor :payload
+    attr_accessor :last_entity_response
 
     def initialize
       # Host agent defaults.  Can be configured via Instana.config
@@ -145,6 +146,7 @@ module Instana
         end
       end
       Instana.logger.debug response.code
+      @last_entity_response = response.code.to_i
     rescue => e
       Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
