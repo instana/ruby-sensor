@@ -16,7 +16,10 @@ module Instana
       def collect
         this_count = ::Thread.list.count
 
-        unless this_count == @last_count
+        if (this_count == @last_count) && (::Instana.agent.last_entity_response == 200)
+          # If the value hasn't changed and the last report was successful, send nothing.
+          ::Instana.agent.payload.delete(:thread)
+        else
           ::Instana.agent.payload[:thread] = { :count => this_count }
         end
         @last_count = this_count

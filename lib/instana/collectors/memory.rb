@@ -1,3 +1,5 @@
+require 'get_process_mem'
+
 module Instana
   module Collector
     class Memory
@@ -15,15 +17,17 @@ module Instana
       # To collect process memory usage.
       #
       def collect
-        this_mem = {}
-        mem = GetProcessMem.new(Process.pid)
+        mem = ::GetProcessMem.new(Process.pid)
 
-        unless mem.kb == @last_mem_size
+        if (mem.kb == @last_mem_size) && (::Instana.agent.last_entity_response == 200)
+          # If the value hasn't changed and the last report was successful, send nothing.
+          ::Instana.agent.payload.delete(:memory)
+        else
+          this_mem = {}
           this_mem[:size_kb] = mem.kb
           @last_mem_size = mem.kb
+          ::Instana.agent.payload[:memory] = this_mem
         end
-
-        ::Instana.agent.payload[:memory] = this_mem
       rescue => e
         ::Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
         ::Instana.logger.debug e.backtrace.join("\r\n")

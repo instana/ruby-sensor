@@ -65,7 +65,11 @@ module Instana
           this_gc[:totalTime] = total_time_diff
         end
 
-        ::Instana.agent.payload[:gc] = this_gc
+        if this_gc.empty?
+          ::Instana.agent.payload.delete(:gc)
+        else
+          ::Instana.agent.payload[:gc] = this_gc
+        end
 
         @last_minor_count = cur_minor_count
         @last_major_count = cur_major_count
