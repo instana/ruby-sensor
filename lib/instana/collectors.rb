@@ -1,7 +1,6 @@
 require 'timers'
 require 'instana/collectors/gc'
 require 'instana/collectors/heap'
-require 'instana/collectors/memory'
 require 'instana/collectors/thread'
 
 module Instana

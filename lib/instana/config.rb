@@ -8,7 +8,6 @@ module Instana
       @config[:metrics] = {}
       @config[:metrics][:gc]     = { :enabled => true }
       @config[:metrics][:heap]   = { :enabled => false }
-      @config[:metrics][:memory] = { :enabled => true }
       @config[:metrics][:thread] = { :enabled => true }
     end
 
