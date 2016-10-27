@@ -7,18 +7,70 @@ include Sys
 module Instana
   class Agent
     attr_accessor :payload
-    attr_accessor :last_snapshot
 
     def initialize
+      # Host agent defaults.  Can be configured via Instana.config
       @request_timeout = 5000
       @host = '127.0.0.1'
       @port = 42699
       @server_header = 'Instana Agent'
-      @agentuuid = nil
+
+      # Snapshot data is collected once per process but resent
+      # every 10 minutes along side process metrics.
+      @snapshot = take_snapshot
+
+      # The payload is the final resting place before being
+      # sent off to the host agent
       @payload = {}
+
       # Set last snapshot to 10 minutes ago
       # so we send a snapshot on first report
       @last_snapshot = Time.now - 601
+    end
+
+    ##
+    # take_snapshot
+    #
+    # Method to collect up process info for snapshots.  This
+    # is generally used once per process.
+    #
+    def take_snapshot
+      data = {}
+
+      data[:sensorVersion] = ::Instana::VERSION
+      data[:pid] = Process.pid
+      data[:ruby_version] = RUBY_VERSION
+      data[:versions] = {}
+
+      process = ProcTable.ps(Process.pid)
+      arguments = process.cmdline.split(' ')
+      arguments.shift
+      data[:exec_args] = arguments
+
+      # Framework Detection
+      if defined?(::RailsLts::VERSION)
+        data[:framework] = "Rails on Rails LTS-#{::RailsLts::VERSION}"
+        data[:appname] = Rails.application.class.parent_name
+
+      elsif defined?(::Rails.version)
+        data[:framework] = "Ruby on Rails #{::Rails.version}"
+        data[:appname] = ::Rails.application.class.parent_name
+
+      elsif defined?(::Grape::VERSION)
+        data[:framework] = "Grape #{::Grape::VERSION}"
+
+      elsif defined?(::Padrino::VERSION)
+        data[:framework] = "Padrino #{::Padrino::VERSION}"
+
+      elsif defined?(::Sinatra::VERSION)
+        data[:framework] = "Sinatra #{::Sinatra::VERSION}"
+      end
+
+      data
+    rescue => e
+      ::Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      ::Instana.logger.debug e.backtrace.join("\r\n")
+      return data
     end
 
     ##
@@ -59,10 +111,8 @@ module Instana
     ##
     # report_entity_data
     #
-    # The engine to report data to the host agent
-    #
-    # TODO: Validate responses
-    # TODO: Better host agent check/timeout handling
+    # Method to report metrics data to the host agent.  Every 10 minutes, this
+    # method will also send a process snapshot data.
     #
     def report_entity_data
       path = "com.instana.plugin.ruby.#{Process.pid}"
@@ -71,11 +121,7 @@ module Instana
 
       # Every 5 minutes, send snapshot data as well
       if (Time.now - @last_snapshot) > 600
-        @payload[:rubyVersion] = RUBY_VERSION
-        @payload[:execArgs] = ['blah']
-        @payload[:sensorVersion] = ::Instana::VERSION
-        @payload[:pid] = Process.pid
-        @payload[:versions] = { :ruby => RUBY_VERSION }
+        @payload.merge!(@snapshot)
         @last_snapshot = Time.now
       end
 
@@ -90,15 +136,13 @@ module Instana
         response = http.request(req)
       end
 
-      # If we sent snapshot data and the response was Ok,
-      # then delete the snapshot data.  Otherwise let it
+      # If snapshot data is in the payload and last response
+      # was ok then delete the snapshot data.  Otherwise let it
       # ride for another run.
-      if @payload.key?(:rubyVersion) && response.code.to_i == 200
-        @payload.delete(:rubyVersion)
-        @payload.delete(:execArgs)
-        @payload.delete(:sensorVersion)
-        @payload.delete(:pid)
-        @payload.delete(:version)
+      if response.code.to_i == 200
+        @snapshot.each do |k, v|
+          @payload.delete(k)
+        end
       end
       Instana.logger.debug response.code
     rescue => e
