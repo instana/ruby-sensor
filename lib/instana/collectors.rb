@@ -13,14 +13,24 @@ module Instana
 end
 
 if ENV.key?('INSTANA_GEM_DEV')
-  ::Instana::Collector.interval = 5
+  ::Instana::Collector.interval = 3
 else
   ::Instana::Collector.interval = 1
 end
 
 ::Thread.new do
   timers = ::Timers::Group.new
+
   timers.every(::Instana::Collector.interval) {
+
+    # Check if we forked (unicorn, puma) and
+    # if so, re-announce the process sensor
+    if ::Instana.pid_change?
+      ::Instana.logger.debug "Detected a fork (old: #{::Instana.pid} new: #{::Process.pid}).  Re-announcing sensor."
+      ::Instana.pid = Process.pid
+      Instana.agent.announce_sensor
+    end
+
     ::Instana.collectors.each do |c|
       c.collect
     end
