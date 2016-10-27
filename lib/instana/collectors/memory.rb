@@ -24,7 +24,7 @@ module Instana
           ::Instana.agent.payload.delete(:memory)
         else
           this_mem = {}
-          this_mem[:size_kb] = mem.kb
+          this_mem[:rss_size] = mem.kb
           @last_mem_size = mem.kb
           ::Instana.agent.payload[:memory] = this_mem
         end

@@ -41,21 +41,22 @@ module Instana
       data[:sensorVersion] = ::Instana::VERSION
       data[:pid] = Process.pid
       data[:ruby_version] = RUBY_VERSION
-      data[:versions] = {}
 
       process = ProcTable.ps(Process.pid)
       arguments = process.cmdline.split(' ')
-      arguments.shift
+      data[:name] = arguments.shift
       data[:exec_args] = arguments
+
+      # Since a snapshot is only taken on process boot,
+      # this is ok here.
+      data[:start_time] = Time.now.to_s
 
       # Framework Detection
       if defined?(::RailsLts::VERSION)
         data[:framework] = "Rails on Rails LTS-#{::RailsLts::VERSION}"
-        data[:appname] = Rails.application.class.parent_name
 
       elsif defined?(::Rails.version)
         data[:framework] = "Ruby on Rails #{::Rails.version}"
-        data[:appname] = ::Rails.application.class.parent_name
 
       elsif defined?(::Grape::VERSION)
         data[:framework] = "Grape #{::Grape::VERSION}"
