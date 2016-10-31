@@ -7,7 +7,6 @@ module Instana
       @config[:agent_port] = 42699
       @config[:metrics] = {}
       @config[:metrics][:gc]     = { :enabled => true }
-      @config[:metrics][:heap]   = { :enabled => false }
       @config[:metrics][:memory] = { :enabled => true }
       @config[:metrics][:thread] = { :enabled => true }
     end
