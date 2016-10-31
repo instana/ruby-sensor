@@ -1,4 +1,24 @@
 module Instana
+  module Util
+    ##
+    # enforce_deltas
+    #
+    # Take two hashes, and make sure candidate does not have
+    # any of the same values as `last`.  We only report
+    # when values change.
+    #
+    # Note this is not recursive, so only pass in the single
+    # hashes that you want delta reporting with.
+    #
+    def self.enforce_deltas(candidate, last)
+      candidate.each do |k,v|
+        if candidate[k] == last[k]
+          candidate.delete(k)
+        end
+      end
+      candidate
+    end
+  end
   ##
   # Debugging helper method
   #

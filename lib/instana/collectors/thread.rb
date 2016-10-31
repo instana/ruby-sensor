@@ -4,8 +4,8 @@ module Instana
       attr_accessor :last_count
 
       def initialize
+        ::Instana.agent.payload[:thread] = @last_report = { :count => 0  }
         @last_count = 0
-        ::Instana.agent.payload[:thread] = { :count => 0 }
       end
 
       ##
@@ -14,15 +14,13 @@ module Instana
       # To collect thread count
       #
       def collect
-        this_count = ::Thread.list.count
+        this_count = {}
+        this_count[:count] = ::Thread.list.count
 
-        if (this_count == @last_count) && (::Instana.agent.last_entity_response == 200)
-          # If the value hasn't changed and the last report was successful, send nothing.
-          ::Instana.agent.payload.delete(:thread)
-        else
-          ::Instana.agent.payload[:thread] = { :count => this_count }
-        end
-        @last_count = this_count
+        ::Instana.agent.payload.delete(:thread)
+        this_count = ::Instana::Util.enforce_deltas(this_count, @last_report)
+        ::Instana.agent.payload[:thread] = this_count unless this_count.empty?
+        @last_report.merge!(this_count)
       rescue => e
         ::Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
         ::Instana.logger.debug e.backtrace.join("\r\n")
