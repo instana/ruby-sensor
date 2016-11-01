@@ -1,11 +1,10 @@
 module Instana
   module Collector
     class Thread
-      attr_accessor :last_count
 
       def initialize
-        ::Instana.agent.payload[:thread] = @last_report = { :count => 0  }
-        @last_count = 0
+        @last_report = {}
+        @this_count = {}
       end
 
       ##
@@ -14,13 +13,15 @@ module Instana
       # To collect thread count
       #
       def collect
-        this_count = {}
-        this_count[:count] = ::Thread.list.count
+        @this_count[:count] = ::Thread.list.count
 
         ::Instana.agent.payload.delete(:thread)
-        this_count = ::Instana::Util.enforce_deltas(this_count, @last_report)
-        ::Instana.agent.payload[:thread] = this_count unless this_count.empty?
-        @last_report.merge!(this_count)
+        @this_count = ::Instana::Util.enforce_deltas(@this_count, @last_report)
+
+        unless @this_count.empty?
+          ::Instana.agent.payload[:thread] = @this_count
+          @last_report.merge!(@this_count)
+        end
       rescue => e
         ::Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
         ::Instana.logger.debug e.backtrace.join("\r\n")

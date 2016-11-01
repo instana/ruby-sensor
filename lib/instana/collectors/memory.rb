@@ -7,8 +7,8 @@ module Instana
       attr_accessor :last_mem_reported
 
       def initialize
-        ::Instana.agent.payload[:memory] = @last_report = { :rss_size => 0  }
         @last_report = {}
+        @this_mem = {}
       end
 
       ##
@@ -17,14 +17,15 @@ module Instana
       # To collect process memory usage.
       #
       def collect
-        this_mem = {}
-        mem = ::GetProcessMem.new(Process.pid)
-        this_mem[:rss_size] = mem.kb
+        @this_mem.clear
+        @this_mem[:rss_size] = ::GetProcessMem.new(Process.pid).kb
 
         ::Instana.agent.payload.delete(:memory)
-        this_mem = ::Instana::Util.enforce_deltas(this_mem, @last_report)
-        ::Instana.agent.payload[:memory] = this_mem unless this_mem.empty?
-        @last_report.merge!(this_mem)
+        @this_mem = ::Instana::Util.enforce_deltas(@this_mem, @last_report)
+        unless @this_mem.empty?
+          ::Instana.agent.payload[:memory] = @this_mem
+          @last_report.merge!(@this_mem)
+        end
       rescue => e
         ::Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
         ::Instana.logger.debug e.backtrace.join("\r\n")

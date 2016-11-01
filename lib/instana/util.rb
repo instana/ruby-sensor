@@ -11,6 +11,8 @@ module Instana
     # hashes that you want delta reporting with.
     #
     def self.enforce_deltas(candidate, last)
+      return unless last.is_a?(Hash)
+
       candidate.each do |k,v|
         if candidate[k] == last[k]
           candidate.delete(k)
@@ -19,6 +21,7 @@ module Instana
       candidate
     end
   end
+
   ##
   # Debugging helper method
   #
