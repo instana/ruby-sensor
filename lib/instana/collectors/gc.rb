@@ -25,14 +25,17 @@ module Instana
         @this_gc[:totalTime] = ::GC::Profiler.total_time * 1000
         ::GC::Profiler.clear
 
-        # GC runs.  Calculate how many have occurred since the last call
-        @this_gc[:minorGcs]  = stats[:minor_gc_count] - @last_minor_count
-        @this_gc[:majorGcs]  = stats[:major_gc_count] - @last_major_count
+        # GC metrics only available on newer Ruby versions
+        if RUBY_VERSION >= '2.1'
+          # GC runs.  Calculate how many have occurred since the last call
+          @this_gc[:minorGcs]  = stats[:minor_gc_count] - @last_minor_count
+          @this_gc[:majorGcs]  = stats[:major_gc_count] - @last_major_count
 
-        # Store these counts so that we have something to compare to next
-        # time around.
-        @last_major_count = stats[:major_gc_count]
-        @last_minor_count = stats[:minor_gc_count]
+          # Store these counts so that we have something to compare to next
+          # time around.
+          @last_major_count = stats[:major_gc_count]
+          @last_minor_count = stats[:minor_gc_count]
+        end
 
         # GC Heap
         @this_gc[:heap_live] = stats[:heap_live_slot] || stats[:heap_live_slots] || stats[:heap_live_num]
