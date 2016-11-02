@@ -5,7 +5,15 @@ class InstanaTest < Minitest::Test
     refute_nil ::Instana::VERSION
   end
 
-  def test_it_does_something_useful
-    assert false
+  def test_that_it_has_a_logger
+    refute_nil ::Instana.logger
+  end
+
+  def test_that_it_has_an_agent
+    refute_nil ::Instana.agent
+  end
+
+  def test_that_it_has_collectors
+    refute_nil ::Instana.collectors
   end
 end
