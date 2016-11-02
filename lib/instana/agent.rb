@@ -6,7 +6,6 @@ include Sys
 
 module Instana
   class Agent
-    attr_accessor :payload
     attr_accessor :last_entity_response
 
     def initialize
@@ -19,10 +18,6 @@ module Instana
       # Snapshot data is collected once per process but resent
       # every 10 minutes along side process metrics.
       @snapshot = take_snapshot
-
-      # The payload is the final resting place before being
-      # sent off to the host agent
-      @payload = {}
 
       # Set last snapshot to 10 minutes ago
       # so we send a snapshot on first report
@@ -116,22 +111,22 @@ module Instana
     # Method to report metrics data to the host agent.  Every 10 minutes, this
     # method will also send a process snapshot data.
     #
-    def report_entity_data
+    def report_entity_data(payload)
       path = "com.instana.plugin.ruby.#{Process.pid}"
       uri = URI.parse("http://#{@host}:#{@port}/#{path}")
       req = Net::HTTP::Post.new(uri)
 
       # Every 5 minutes, send snapshot data as well
       if (Time.now - @last_snapshot) > 600
-        @payload.merge!(@snapshot)
+        payload.merge!(@snapshot)
         @last_snapshot = Time.now
       end
 
       req['Accept'] = 'application/json'
       req['Content-Type'] = 'application/json'
-      req.body = @payload.to_json
+      req.body = payload.to_json
 
-      Instana.logger.debug "Posting metrics to #{path}: #{@payload.to_json}"
+      #Instana.logger.debug "Posting metrics to #{path}: #{payload.to_json}"
 
       response = nil
       Net::HTTP.start(uri.hostname, uri.port) do |http|
@@ -143,10 +138,10 @@ module Instana
       # ride for another run.
       if response.code.to_i == 200
         @snapshot.each do |k, v|
-          @payload.delete(k)
+          payload.delete(k)
         end
       end
-      Instana.logger.debug response.code
+      Instana.logger.debug response.code unless response.code.to_i == 200
       @last_entity_response = response.code.to_i
     rescue => e
       Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"

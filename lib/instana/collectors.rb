@@ -19,6 +19,7 @@ end
 
 ::Thread.new do
   timers = ::Timers::Group.new
+  payload = {}
 
   timers.every(::Instana::Collector.interval) {
 
@@ -31,11 +32,16 @@ end
     end
 
     ::Instana.collectors.each do |c|
-      c.collect
+      metrics = c.collect
+      if metrics
+        payload[c.payload_key] = metrics
+      else
+        payload.delete(c.payload_key)
+      end
     end
 
     # Report all the collected goodies
-    ::Instana.agent.report_entity_data
+    ::Instana.agent.report_entity_data(payload)
   }
   loop { timers.wait }
 end

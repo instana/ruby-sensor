@@ -1,8 +1,10 @@
 module Instana
   module Collector
     class GC
+      attr_accessor :payload_key
 
       def initialize
+        @payload_key = :gc
         @last_report = {}
         @this_gc = {}
         @last_major_count = 0
@@ -36,12 +38,13 @@ module Instana
         @this_gc[:heap_live] = stats[:heap_live_slot] || stats[:heap_live_slots] || stats[:heap_live_num]
         @this_gc[:heap_free] = stats[:heap_free_slot] || stats[:heap_free_slots] || stats[:heap_free_num]
 
-        ::Instana.agent.payload.delete(:gc)
         @this_gc = ::Instana::Util.enforce_deltas(@this_gc, @last_report)
 
         unless @this_gc.empty?
-          ::Instana.agent.payload[:gc] = @this_gc
           @last_report.merge!(@this_gc)
+          @this_gc
+        else
+          nil
         end
       rescue => e
         ::Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"

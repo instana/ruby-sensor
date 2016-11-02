@@ -3,10 +3,10 @@ require 'get_process_mem'
 module Instana
   module Collector
     class Memory
-      attr_accessor :last_mem_size
-      attr_accessor :last_mem_reported
+      attr_accessor :payload_key
 
       def initialize
+        @payload_key = :memory
         @last_report = {}
         @this_mem = {}
       end
@@ -20,11 +20,12 @@ module Instana
         @this_mem.clear
         @this_mem[:rss_size] = ::GetProcessMem.new(Process.pid).kb
 
-        ::Instana.agent.payload.delete(:memory)
         @this_mem = ::Instana::Util.enforce_deltas(@this_mem, @last_report)
         unless @this_mem.empty?
-          ::Instana.agent.payload[:memory] = @this_mem
           @last_report.merge!(@this_mem)
+          @this_mem
+        else
+          nil
         end
       rescue => e
         ::Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
