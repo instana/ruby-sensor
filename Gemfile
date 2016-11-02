@@ -5,7 +5,6 @@ group :development, :test do
   gem 'minitest'
   gem 'minitest-reporters'
   gem 'minitest-debugger', :require => false
-  gem 'rack-test'
 end
 
 group :development do
