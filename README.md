@@ -1,6 +1,16 @@
+<div align="center">
+<img src="https://www.instana.com/wp-content/uploads/2016/04/stan@2x.png">
+</div>
+
 # Instana
 
 The Instana gem provides Ruby metrics for [Instana](https://www.instana.com/).
+
+## Note
+
+This gem is currently in beta and supports Ruby versions 2.0 or greater.
+
+Any and all feedback is welcome.  Happy Ruby visibility.
 
 ## Installation
 
