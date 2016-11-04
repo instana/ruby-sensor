@@ -88,17 +88,9 @@ module Instana
       path = 'com.instana.plugin.ruby.discovery'
       uri = URI.parse("http://#{@host}:#{@port}/#{path}")
       req = Net::HTTP::Put.new(uri)
-
-      req['Accept'] = 'application/json'
-      req['Content-Type'] = 'application/json'
       req.body = announce_payload.to_json
 
-      ::Instana.logger.debug "Announcing sensor to #{path} for pid #{Process.pid}: #{announce_payload.to_json}"
-
-      response = nil
-      Net::HTTP.start(uri.hostname, uri.port) do |http|
-        response = http.request(req)
-      end
+      response = make_host_agent_request(req)
       Instana.logger.debug response.code
     rescue => e
       Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
@@ -122,16 +114,8 @@ module Instana
         @last_snapshot = Time.now
       end
 
-      req['Accept'] = 'application/json'
-      req['Content-Type'] = 'application/json'
       req.body = payload.to_json
-
-      #Instana.logger.debug "Posting metrics to #{path}: #{payload.to_json}"
-
-      response = nil
-      Net::HTTP.start(uri.hostname, uri.port) do |http|
-        response = http.request(req)
-      end
+      response = make_host_agent_request(req)
 
       # If snapshot data is in the payload and last response
       # was ok then delete the snapshot data.  Otherwise let it
@@ -157,29 +141,39 @@ module Instana
       uri = URI.parse("http://#{@host}:#{@port}/")
       req = Net::HTTP::Get.new(uri)
 
-      req['Accept'] = 'application/json'
-      req['Content-Type'] = 'application/json'
+      response = make_host_agent_request(req)
 
-      ::Instana.logger.debug "Checking agent availability...."
-
-      response = nil
-      Net::HTTP.start(uri.hostname, uri.port) do |http|
-        response = http.request(req)
-      end
-
-      if response.code.to_i != 200
-        Instana.logger.debug "Host agent returned #{response.code}"
-        false
-      else
-        true
-      end
-    rescue Errno::ECONNREFUSED => e
-      Instana.logger.debug "Agent not responding: #{e.inspect}"
-      return false
+      (response && response.code.to_i == 200) ? true : false
     rescue => e
       Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
       return false
+    end
+
+    private
+
+    ##
+    # make host_agent_request
+    #
+    # Centralization of the net/http communications
+    # with the host agent. Pass in a prepared <req>
+    # of type Net::HTTP::Get|Put|Head
+    #
+    def make_host_agent_request(req)
+      req['Accept'] = 'application/json'
+      req['Content-Type'] = 'application/json'
+
+      response = nil
+      Net::HTTP.start(req.uri.hostname, req.uri.port) do |http|
+        response = http.request(req)
+      end
+      response
+    rescue Errno::ECONNREFUSED => e
+      Instana.logger.debug "Agent not responding: #{e.inspect}"
+      return nil
+    rescue
+      Instana.logger.debug "Host agent request error: #{e.inspect}"
+      return nil
     end
   end
 end
