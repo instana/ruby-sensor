@@ -1,3 +1,3 @@
 module Instana
-  VERSION = "0.8.beta1"
+  VERSION = "0.8.1"
 end
