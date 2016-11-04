@@ -6,6 +6,8 @@
 
 The Instana gem provides Ruby metrics for [Instana](https://www.instana.com/).
 
+[![Build Status](https://travis-ci.org/instana/ruby-sensor.svg?branch=master)](https://travis-ci.org/instana/ruby-sensor)
+
 ## Note
 
 This gem is currently in beta and supports Ruby versions 2.0 or greater.
