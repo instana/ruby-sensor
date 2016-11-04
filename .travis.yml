@@ -7,7 +7,6 @@ cache:
 
 rvm:
   - 2.3.1
-  - jruby-9.0.5.0
 
 
 before_install:
