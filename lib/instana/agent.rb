@@ -91,7 +91,7 @@ module Instana
       req.body = announce_payload.to_json
 
       response = make_host_agent_request(req)
-      Instana.logger.debug response.code
+      response && (response.code.to_i == 200) ? true : false
     rescue => e
       Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
@@ -117,16 +117,20 @@ module Instana
       req.body = payload.to_json
       response = make_host_agent_request(req)
 
-      # If snapshot data is in the payload and last response
-      # was ok then delete the snapshot data.  Otherwise let it
-      # ride for another run.
-      if response.code.to_i == 200
-        @snapshot.each do |k, v|
-          payload.delete(k)
+      if response && (response.code.to_i == 200)
+        # If snapshot data is in the payload and last response
+        # was ok then delete the snapshot data.  Otherwise let it
+        # ride for another run.
+        if payload.key?('sensorVersion')
+          @snapshot.each do |k, v|
+            payload.delete(k)
+          end
         end
+
+        true
+      else
+        false
       end
-      Instana.logger.debug response.code unless response.code.to_i == 200
-      @last_entity_response = response.code.to_i
     rescue => e
       Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
