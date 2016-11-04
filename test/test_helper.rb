@@ -8,6 +8,7 @@ require "minitest/spec"
 require "minitest/autorun"
 require "minitest/reporters"
 require "minitest/debugger" if ENV['DEBUG']
+require 'webmock/minitest'
 
 Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
 
