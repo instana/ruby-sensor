@@ -61,7 +61,7 @@ module Instana
             # If report has been failing for more than 1 minute,
             # fall back to unannounced state
             if (Time.now - @entity_last_seen) > 60
-              ::Instana.logger.debug "Metrics reporting failed for >1 min.  Falling back to announced."
+              ::Instana.logger.debug "Metrics reporting failed for >1 min.  Falling back to unannounced state."
               transition_to(:unannounced)
             end
           end
@@ -211,7 +211,7 @@ module Instana
       end
       response
     rescue Errno::ECONNREFUSED => e
-      Instana.logger.debug "Agent not responding: #{e.inspect}"
+      Instana.logger.debug "Agent not responding. Connection refused."
       return nil
     rescue
       Instana.logger.debug "Host agent request error: #{e.inspect}"
