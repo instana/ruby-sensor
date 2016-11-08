@@ -43,4 +43,9 @@ class AgentTest < Minitest::Test
     assert_equal false, ::Instana.agent.report_entity_data(payload)
   end
 
+  def test_agent_timeout
+    url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/"
+    stub_request(:get, url).to_timeout
+    assert_equal false, ::Instana.agent.host_agent_ready?
+  end
 end

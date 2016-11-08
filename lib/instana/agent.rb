@@ -206,14 +206,14 @@ module Instana
       req['Content-Type'] = 'application/json'
 
       response = nil
-      Net::HTTP.start(req.uri.hostname, req.uri.port) do |http|
+      Net::HTTP.start(req.uri.hostname, req.uri.port, :open_timeout => 1, :read_timeout => 1) do |http|
         response = http.request(req)
       end
       response
     rescue Errno::ECONNREFUSED => e
       Instana.logger.debug "Agent not responding. Connection refused."
       return nil
-    rescue
+    rescue => e
       Instana.logger.debug "Host agent request error: #{e.inspect}"
       return nil
     end
