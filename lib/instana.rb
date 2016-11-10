@@ -8,6 +8,7 @@ module Instana
     attr_accessor :agent
     attr_accessor :collectors
     attr_accessor :tracer
+    attr_accessor :processor
     attr_accessor :config
     attr_accessor :logger
     attr_accessor :pid
@@ -20,6 +21,7 @@ module Instana
     def start
       @agent  = ::Instana::Agent.new
       @tracer = ::Instana::Tracer.new
+      @processor = ::Instana::Processor.new
       @collectors = []
       @logger = ::Logger.new(STDOUT)
       @logger.info "Stan is on the scene.  Starting Instana instrumentation."
@@ -39,6 +41,7 @@ end
 require "instana/config"
 require "instana/agent"
 require "instana/tracing/tracer"
+require "instana/tracing/processor"
 
 ::Instana.start
 
