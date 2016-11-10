@@ -25,5 +25,9 @@ module Instana
     def key?(k)
       @data.key?(k.to_sym)
     end
+
+    def raw
+      @data
+    end
   end
 end
