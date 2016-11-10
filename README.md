@@ -46,6 +46,10 @@ To disable a single component in the gem, you can disable a single component wit
 ```
 Current components are `:gc`, `:memory` and `:thread`.
 
+## Documentation
+
+You can find more documentation covering supported components and minimum versions in the Instana [documentation portal](https://instana.atlassian.net/wiki/display/DOCS/Ruby).
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
