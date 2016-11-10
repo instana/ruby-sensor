@@ -1,11 +1,17 @@
 module Instana
   class Span
+    attr_accessor :parent
+
     def initialize(data)
       @data = data
     end
 
     def parent_id
       @data[:p]
+    end
+
+    def root?
+      @data[:s] == @data[:t]
     end
 
     def [](key)

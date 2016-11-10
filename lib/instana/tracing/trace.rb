@@ -60,15 +60,7 @@ module Instana
     def end_span(kvs = {})
       @current_span[:d] = ts_now - @current_span[:ts]
       add_info(kvs) unless kvs.empty?
-
-      # Look up the parent span and set as current
-      candidate = nil
-      @spans.each do |i|
-        if @current_span[:p] == i[:s]
-          candidate = i
-        end
-      end
-      @current_span = candidate
+      @current_span = @current_span.parent
     end
 
     ##
