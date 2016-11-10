@@ -23,6 +23,7 @@ module Instana
       block.call
     rescue Exception => e
       log_error(e)
+      raise
     ensure
       log_end(name)
     end
@@ -35,8 +36,12 @@ module Instana
     def trace(name, kvs = {}, &block)
       log_entry(name, kvs)
       result = block.call
-      log_exit(name)
       result
+    rescue Exception => e
+      log_error(e)
+      raise
+    ensure
+      log_exit(name)
     end
 
     #######################################

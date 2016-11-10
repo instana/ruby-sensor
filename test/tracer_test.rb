@@ -15,6 +15,23 @@ class TracerTest < Minitest::Test
     assert t.valid?
   end
 
+  def test_errors_are_properly_propogated
+    exception_raised = false
+    begin
+      ::Instana.tracer.start_or_continue_trace(:test_trace, {:one => 1}) do
+        raise Exception.new('Error in block - this should continue to propogate outside of tracing')
+      end
+    rescue Exception
+      exception_raised = true
+    end
+
+    assert exception_raised
+
+    t = ::Instana.tracer.instance_variable_get(:@trace)
+    assert t.valid?
+    assert t.has_error?
+  end
+
   def test_complex_trace_block
     ::Instana.tracer.start_or_continue_trace(:test_trace, {:one => 1}) do
       sleep 0.2
@@ -51,9 +68,17 @@ class TracerTest < Minitest::Test
   end
 
   def test_block_tracing_error_capture
-    ::Instana.tracer.start_or_continue_trace(:test_trace, {:one => 1}) do
-      raise Exception.new("Block exception test error")
+    exception_raised = false
+    begin
+      ::Instana.tracer.start_or_continue_trace(:test_trace, {:one => 1}) do
+        raise Exception.new("Block exception test error")
+      end
+    rescue Exception
+      exception_raised = true
     end
+
+    assert exception_raised
+
     t = ::Instana.tracer.instance_variable_get(:@trace)
     assert_equal 1, t.spans.size
     assert t.valid?
