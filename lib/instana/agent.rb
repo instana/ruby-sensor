@@ -237,6 +237,39 @@ module Instana
     end
 
     ##
+    # report_traces
+    #
+    # Accept and report traces to the host agent.
+    #
+    def report_traces(traces)
+      return unless @state == :announced
+
+      path = "com.instana.plugin.ruby.traces.#{Process.pid}"
+      uri = URI.parse("http://#{@host}:#{@port}/#{path}")
+      req = Net::HTTP::Post.new(uri)
+
+      req.body = traces.to_json
+      response = make_host_agent_request(req)
+
+      if response
+        last_trace_response = response.code.to_i
+
+        if last_trace_response == 200
+          @trace_last_seen = Time.now
+          @last_snapshot = Time.now if with_snapshot
+
+          #::Instana.logger.debug "traces response #{last_trace_response}: #{traces.to_json}"
+          return true
+        end
+        #::Instana.logger.debug "traces response #{last_trace_response}: #{traces.to_json}"
+      end
+      false
+    rescue => e
+      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug e.backtrace.join("\r\n")
+    end
+
+    ##
     # host_agent_ready?
     #
     # Check that the host agent is available and can be contacted.  This will
