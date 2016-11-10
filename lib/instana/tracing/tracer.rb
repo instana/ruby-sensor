@@ -55,6 +55,7 @@ module Instana
     # from incoming remote requests with context headers).
     #
     def log_start_or_continue(name, kvs = {}, parent_id = nil)
+      return unless ::Instana.agent.ready?
       @trace = ::Instana::Trace.new(name, kvs, parent_id)
     end
 
@@ -65,6 +66,7 @@ module Instana
     # in an existing trace
     #
     def log_entry(name, kvs = {})
+      return unless tracing?
       @trace.new_span(name, kvs)
     end
 
@@ -74,6 +76,7 @@ module Instana
     # Add info to the current span
     #
     def log_info(kvs)
+      return unless tracing?
       @trace.add_info(kvs)
     end
 
@@ -83,6 +86,7 @@ module Instana
     # Add error to the current span
     #
     def log_error(e)
+      return unless tracing?
       @trace.add_error(e)
     end
 
@@ -95,6 +99,7 @@ module Instana
     # we're closing out the span that we really want to close out.
     #
     def log_exit(name, kvs = {})
+      return unless tracing?
       @trace.end_span(kvs)
     end
 
@@ -108,8 +113,25 @@ module Instana
     # we're closing out the span that we really want to close out.
     #
     def log_end(name, kvs = {})
+      return unless tracing?
+
       @trace.finish(kvs)
-      Instana.processor.add(@trace)
+      Instana.processor.add(@trace.spans)
+      @trace = nil
+    end
+
+    ##
+    # tracing?
+    #
+    # Indicates if we're are currently in the process of
+    # collecting a trace.  This is false when the host agent isn
+    # available.
+    #
+    def tracing?
+      # The non-nil value of this instance variable
+      # indicates if we are currently tracing
+      # in this thread or not.
+      @trace ? true : false
     end
   end
 end
