@@ -10,10 +10,11 @@ module Instana
     attr_accessor :state
 
     LOCALHOST = '127.0.0.1'.freeze
+    MIME_JSON = 'application/json'.freeze
+    DISCOVERY_PATH = 'com.instana.plugin.ruby.discovery'.freeze
 
     def initialize
       # Host agent defaults.  Can be configured via Instana.config
-      @request_timeout = 5000
       @host = LOCALHOST
       @port = 42699
 
@@ -107,8 +108,7 @@ module Instana
       arguments.shift
       announce_payload[:args] = arguments
 
-      path = 'com.instana.plugin.ruby.discovery'
-      uri = URI.parse("http://#{@host}:#{@port}/#{path}")
+      uri = URI.parse("http://#{@host}:#{@port}/#{DISCOVERY_PATH}")
       req = Net::HTTP::Put.new(uri)
       req.body = announce_payload.to_json
 
@@ -231,8 +231,8 @@ module Instana
     # of type Net::HTTP::Get|Put|Head
     #
     def make_host_agent_request(req)
-      req['Accept'] = 'application/json'
-      req['Content-Type'] = 'application/json'
+      req[:Accept] = MIME_JSON
+      req[:'Content-Type'] = MIME_JSON
 
       response = nil
       Net::HTTP.start(req.uri.hostname, req.uri.port, :open_timeout => 1, :read_timeout => 1) do |http|
@@ -247,7 +247,6 @@ module Instana
       return nil
     end
 
-    private
     ##
     # take_snapshot
     #
