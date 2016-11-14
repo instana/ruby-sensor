@@ -162,7 +162,8 @@ module Instana
     #
     # Check that the host agent is available and can be contacted.  This will
     # first check localhost and if not, then attempt on the default gateway
-    # for docker in bridged mode.
+    # for docker in bridged mode.  It will save where it found the host agent
+    # in @host that is used in subsequent HTTP calls.
     #
     def host_agent_ready?
       # Localhost
