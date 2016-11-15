@@ -8,8 +8,10 @@ class AgentTest < Minitest::Test
   end
 
   def test_no_host_agent
-    url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/"
-    stub_request(:get, url).to_raise(Errno::ECONNREFUSED)
+    localhost_url = "http://#{::Instana::Agent::LOCALHOST}:#{::Instana.config[:agent_port]}/"
+    stub_request(:get, localhost_url).to_raise(Errno::ECONNREFUSED)
+    docker_url = "http://#{::Instana.agent.instance_variable_get(:@default_gateway)}:#{::Instana.config[:agent_port]}/"
+    stub_request(:get, docker_url).to_timeout
     assert_equal false, ::Instana.agent.host_agent_ready?
   end
 
@@ -44,8 +46,10 @@ class AgentTest < Minitest::Test
   end
 
   def test_agent_timeout
-    url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/"
-    stub_request(:get, url).to_timeout
+    localhost_url = "http://#{::Instana::Agent::LOCALHOST}:#{::Instana.config[:agent_port]}/"
+    stub_request(:get, localhost_url).to_timeout
+    docker_url = "http://#{::Instana.agent.instance_variable_get(:@default_gateway)}:#{::Instana.config[:agent_port]}/"
+    stub_request(:get, docker_url).to_timeout
     assert_equal false, ::Instana.agent.host_agent_ready?
   end
 end
