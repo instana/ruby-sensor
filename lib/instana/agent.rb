@@ -9,12 +9,14 @@ module Instana
   class Agent
     attr_accessor :state
 
+    LOCALHOST = '127.0.0.1'.freeze
+    MIME_JSON = 'application/json'.freeze
+    DISCOVERY_PATH = 'com.instana.plugin.ruby.discovery'.freeze
+
     def initialize
       # Host agent defaults.  Can be configured via Instana.config
-      @request_timeout = 5000
-      @host = '127.0.0.1'
+      @host = LOCALHOST
       @port = 42699
-      @server_header = 'Instana Agent'
 
       # Supported two states (unannounced & announced)
       @state = :unannounced
@@ -35,6 +37,13 @@ module Instana
       @timers = ::Timers::Group.new
       @announce_timer = nil
       @collect_timer = nil
+
+      # Detect if we're on linux or not (used in host_agent_ready?)
+      @is_linux = (RUBY_PLATFORM =~ /linux/i) ? true : false
+
+      # In case we're running in Docker, have the default gateway available
+      # to check in case we're running in bridged network mode
+      @default_gateway = `/sbin/ip route | awk '/default/ { print $3 }'`.chomp
     end
 
     ##
@@ -99,8 +108,7 @@ module Instana
       arguments.shift
       announce_payload[:args] = arguments
 
-      path = 'com.instana.plugin.ruby.discovery'
-      uri = URI.parse("http://#{@host}:#{@port}/#{path}")
+      uri = URI.parse("http://#{@host}:#{@port}/#{DISCOVERY_PATH}")
       req = Net::HTTP::Put.new(uri)
       req.body = announce_payload.to_json
 
@@ -185,15 +193,37 @@ module Instana
     ##
     # host_agent_ready?
     #
-    # Check that the host agent is available and can be contacted.
+    # Check that the host agent is available and can be contacted.  This will
+    # first check localhost and if not, then attempt on the default gateway
+    # for docker in bridged mode.  It will save where it found the host agent
+    # in @host that is used in subsequent HTTP calls.
     #
     def host_agent_ready?
-      uri = URI.parse("http://#{@host}:#{@port}/")
+      # Localhost
+      uri = URI.parse("http://#{LOCALHOST}:#{@port}/")
       req = Net::HTTP::Get.new(uri)
 
       response = make_host_agent_request(req)
 
-      (response && response.code.to_i == 200) ? true : false
+      if response && (response.code.to_i == 200)
+        @host = LOCALHOST
+        return true
+      end
+
+      return false unless @is_linux
+
+      # We are potentially running on Docker in bridged networking mode.
+      # Attempt to contact default gateway
+      uri = URI.parse("http://#{@default_gateway}:#{@port}/")
+      req = Net::HTTP::Get.new(uri)
+
+      response = make_host_agent_request(req)
+
+      if response && (response.code.to_i == 200)
+        @host = @default_gateway
+        return true
+      end
+      false
     rescue => e
       Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
@@ -235,8 +265,8 @@ module Instana
     # of type Net::HTTP::Get|Put|Head
     #
     def make_host_agent_request(req)
-      req['Accept'] = 'application/json'
-      req['Content-Type'] = 'application/json'
+      req[:Accept] = MIME_JSON
+      req[:'Content-Type'] = MIME_JSON
 
       response = nil
       Net::HTTP.start(req.uri.hostname, req.uri.port, :open_timeout => 1, :read_timeout => 1) do |http|
@@ -251,7 +281,6 @@ module Instana
       return nil
     end
 
-    private
     ##
     # take_snapshot
     #
