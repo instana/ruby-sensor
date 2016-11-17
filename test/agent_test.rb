@@ -17,7 +17,8 @@ class AgentTest < Minitest::Test
 
   def test_announce_sensor
     url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/com.instana.plugin.ruby.discovery"
-    stub_request(:put, url)
+    json = { 'pid' => Process.pid, 'agentUuid' => 'abc' }.to_json
+    stub_request(:put, url).to_return(:body => json, :status => 200)
 
     assert_equal true, ::Instana.agent.announce_sensor
   end
