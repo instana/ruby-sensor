@@ -25,9 +25,9 @@ module Instana
       # every 10 minutes along side process metrics.
       @snapshot = take_snapshot
 
-      # Set last snapshot to 10 minutes ago
-      # so we send a snapshot on first report
-      @last_snapshot = Time.now - 601
+      # Set last snapshot to just under 10 minutes ago
+      # so we send a snapshot sooner than later
+      @last_snapshot = Time.now - 570
 
       # Timestamp of the last successful response from
       # entity data reporting.
@@ -43,7 +43,23 @@ module Instana
 
       # In case we're running in Docker, have the default gateway available
       # to check in case we're running in bridged network mode
-      @default_gateway = `/sbin/ip route | awk '/default/ { print $3 }'`.chomp
+      if @is_linux
+        @default_gateway = `/sbin/ip route | awk '/default/ { print $3 }'`.chomp
+      else
+        @default_gateway = nil
+      end
+
+      # The agent UUID returned from the host agent
+      @agent_uuid = nil
+
+      @process = {}
+      cmdline = ProcTable.ps(Process.pid).cmdline.split("\0")
+      @process[:name] = cmdline.shift
+      @process[:arguments] = cmdline
+      @process[:original_pid] = Process.pid
+      # This is usually Process.pid but in the case of docker, the host agent
+      # will return to us the true host pid in which we use to report data.
+      @process[:report_pid] = nil
     end
 
     ##
@@ -100,23 +116,30 @@ module Instana
     # the host agent.
     #
     def announce_sensor
-      process = ProcTable.ps(Process.pid)
       announce_payload = {}
-      announce_payload[:pid] = Process.pid
-
-      arguments = process.cmdline.split(' ')
-      arguments.shift
-      announce_payload[:args] = arguments
+      announce_payload[:pid] = pid_namespace? ? get_real_pid : Process.pid
+      announce_payload[:args] = @process[:arguments]
 
       uri = URI.parse("http://#{@host}:#{@port}/#{DISCOVERY_PATH}")
       req = Net::HTTP::Put.new(uri)
       req.body = announce_payload.to_json
 
+      # ::Instana.logger.debug "Announce: http://#{@host}:#{@port}/#{DISCOVERY_PATH} - payload: #{req.body}"
+
       response = make_host_agent_request(req)
-      response && (response.code.to_i == 200) ? true : false
+
+      if response && (response.code.to_i == 200)
+        data = JSON.parse(response.body)
+        @process[:report_pid] = data['pid']
+        @agent_uuid = data['agentUuid']
+        true
+      else
+        false
+      end
     rescue => e
       Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
+      return false
     end
 
     ##
@@ -126,7 +149,7 @@ module Instana
     #
     def report_entity_data(payload)
       with_snapshot = false
-      path = "com.instana.plugin.ruby.#{Process.pid}"
+      path = "com.instana.plugin.ruby.#{@process[:report_pid]}"
       uri = URI.parse("http://#{@host}:#{@port}/#{path}")
       req = Net::HTTP::Post.new(uri)
 
@@ -134,6 +157,13 @@ module Instana
       if (Time.now - @last_snapshot) > 600
         with_snapshot = true
         payload.merge!(@snapshot)
+
+        # Add in process related that could have changed since
+        # snapshot was taken.
+        p = { :pid => @process[:report_pid] }
+        p[:name] = @process[:name]
+        p[:exec_args] = @process[:arguments]
+        payload.merge!(p)
       end
 
       req.body = payload.to_json
@@ -142,14 +172,14 @@ module Instana
       if response
         last_entity_response = response.code.to_i
 
+        #::Instana.logger.debug "entity http://#{@host}:#{@port}/#{path}: response=#{last_entity_response}: #{payload.to_json}"
+
         if last_entity_response == 200
           @entity_last_seen = Time.now
           @last_snapshot = Time.now if with_snapshot
 
-          #::Instana.logger.debug "entity response #{last_entity_response}: #{payload.to_json}"
           return true
         end
-        #::Instana.logger.debug "entity response #{last_entity_response}: #{payload.to_json}"
       end
       false
     rescue => e
@@ -241,11 +271,33 @@ module Instana
       end
       response
     rescue Errno::ECONNREFUSED => e
-      Instana.logger.debug "Agent not responding. Connection refused."
       return nil
     rescue => e
       Instana.logger.debug "Host agent request error: #{e.inspect}"
       return nil
+    end
+
+    ##
+    # pid_namespace?
+    #
+    # Indicates whether we are running in a pid namespace (such as
+    # Docker).
+    #
+    def pid_namespace?
+      return false unless @is_linux
+      Process.pid != get_real_pid
+    end
+
+    ##
+    # get_real_pid
+    #
+    # Attempts to determine the true process ID by querying the
+    # /proc/<pid>/sched file.  This works on linux currently.
+    #
+    def get_real_pid
+      raise RuntimeError.new("Unsupported platform: get_real_pid") unless @is_linux
+      v = File.open("/proc/#{Process.pid}/sched", &:readline)
+      v.match(/\d+/).to_s.to_i
     end
 
     ##
@@ -258,13 +310,7 @@ module Instana
       data = {}
 
       data[:sensorVersion] = ::Instana::VERSION
-      data[:pid] = ::Process.pid
       data[:ruby_version] = RUBY_VERSION
-
-      process = ::ProcTable.ps(Process.pid)
-      arguments = process.cmdline.split(' ')
-      data[:name] = arguments.shift
-      data[:exec_args] = arguments
 
       # Since a snapshot is only taken on process boot,
       # this is ok here.
