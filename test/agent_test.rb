@@ -39,6 +39,12 @@ class AgentTest < Minitest::Test
   end
 
   def test_failed_entity_data_report
+    url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/com.instana.plugin.ruby.discovery"
+    json = { 'pid' => Process.pid, 'agentUuid' => 'abc' }.to_json
+    stub_request(:put, url).to_return(:body => json, :status => 200)
+
+    ::Instana.agent.announce_sensor
+
     url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/com.instana.plugin.ruby.#{Process.pid}"
     stub_request(:post, url).to_raise(Errno::ECONNREFUSED)
 
