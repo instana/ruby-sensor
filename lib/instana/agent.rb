@@ -262,8 +262,8 @@ module Instana
     # of type Net::HTTP::Get|Put|Head
     #
     def make_host_agent_request(req)
-      req[:Accept] = MIME_JSON
-      req[:'Content-Type'] = MIME_JSON
+      req['Accept'] = MIME_JSON
+      req['Content-Type'] = MIME_JSON
 
       response = nil
       Net::HTTP.start(req.uri.hostname, req.uri.port, :open_timeout => 1, :read_timeout => 1) do |http|
