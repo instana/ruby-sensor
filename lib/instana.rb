@@ -19,8 +19,14 @@ module Instana
     def start
       @agent = Instana::Agent.new
       @collectors = []
+
       @logger = Logger.new(STDOUT)
-      @logger.info "Stan is on the scene.  Starting Instana instrumentation."
+      if ENV.key?('INSTANA_GEM_TEST') || ENV.key?('INSTANA_GEM_DEV')
+        @logger.level = Logger::DEBUG
+      else
+        @logger.level = Logger::WARN
+      end
+      @logger.unknown "Stan is on the scene.  Starting Instana instrumentation."
 
       # Store the current pid so we can detect a potential fork
       # later on
