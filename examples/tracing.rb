@@ -57,7 +57,7 @@ Instana::Tracer.log_end(:rack, {})
 
 # Initiating a new trace (webserver entry point, ruby script entry etc.)
 #
-Instana::Tracer.log_start_or_continue(:mywebserver, {:user_id => @user_id}, nil)
+Instana::Tracer.log_start_or_continue(:mywebserver, {:user_id => @user_id})
 
 begin
   Instana::Tracer.log_entry(:redis_lookup, {:redisdb => @redisdb.url})
