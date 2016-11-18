@@ -137,7 +137,7 @@ module Instana
         false
       end
     rescue => e
-      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
       return false
     end
@@ -183,7 +183,7 @@ module Instana
       end
       false
     rescue => e
-      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
     end
 
@@ -222,7 +222,7 @@ module Instana
       end
       false
     rescue => e
-      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
       return false
     end
@@ -273,7 +273,7 @@ module Instana
     rescue Errno::ECONNREFUSED => e
       return nil
     rescue => e
-      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
       return nil
     end
@@ -336,7 +336,7 @@ module Instana
 
       data
     rescue => e
-      ::Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      ::Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       ::Instana.logger.debug e.backtrace.join("\r\n")
       return data
     end
