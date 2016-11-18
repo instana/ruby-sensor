@@ -23,7 +23,7 @@ module Instana
         :ts => ts_now,  # Timestamp
         :ta => :ruby,   # Agent
         :data => kvs,   # Data
-        :f => { :e => Process.pid, :h => :agent_id } # Entity Source
+        :f => { :e => ::Instana.agent.report_pid, :h => ::Instana.agent.agent_uuid } # Entity Source
       })
       @spans.add(@current_span)
     end
@@ -52,18 +52,6 @@ module Instana
     end
 
     ##
-    # end_span
-    #
-    # Close out the current span and set the parent as
-    # the @current_span
-    #
-    def end_span(kvs = {})
-      @current_span[:d] = ts_now - @current_span[:ts]
-      add_info(kvs) unless kvs.empty?
-      @current_span = @current_span.parent
-    end
-
-    ##
     # add_info
     #
     # Add KVs to the @current_span
@@ -79,6 +67,18 @@ module Instana
     #
     def add_error(e)
       @current_span[:error] = true
+    end
+
+    ##
+    # end_span
+    #
+    # Close out the current span and set the parent as
+    # the @current_span
+    #
+    def end_span(kvs = {})
+      @current_span[:d] = ts_now - @current_span[:ts]
+      add_info(kvs) unless kvs.empty?
+      @current_span = @current_span.parent
     end
 
     ##
