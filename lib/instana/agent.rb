@@ -118,6 +118,9 @@ module Instana
     # or data.
     #
     def ready?
+      # In test, we're always ready :-)
+      return true if ENV['INSTANA_GEM_TEST']
+
       @state == :announced
     end
 
