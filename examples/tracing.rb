@@ -25,8 +25,9 @@ end
 #######################################
 
 # <log_start_or_continue_trace> will initiate a new trace.  Often used at entry
-# points in webservers, it will initialize tracing and instrument the passed
-# block.  <incoming_id> is for continuing remote traces (remote in terms
+# points in webservers, it will establish a new trace (for web request, 
+# background jobs etc.).
+# <incoming_id> is for continuing remote traces (remote in terms
 # of service calls, or message queues).
 Instana::Tracer.log_start_or_continue(:rack, {}, incoming_id)
 
@@ -46,7 +47,7 @@ Instana::Tracer.log_info({:some_key => 'some_value'})
 # trace.
 Instana::Tracer.log_error(Exception)
 
-# <log_end> closed out the current span, finishes
+# <log_end> closes out the current span, finishes
 # the trace and adds it to ::Instana.processor
 # for reporting.
 Instana::Tracer.log_end(:rack, {})
@@ -55,7 +56,7 @@ Instana::Tracer.log_end(:rack, {})
 # Lower level API Example
 ######################################
 
-# Initiating a new trace (webserver entry point, ruby script entry etc.)
+# Full Tracing Lifecycle example
 #
 Instana::Tracer.log_start_or_continue(:mywebserver, {:user_id => @user_id})
 
