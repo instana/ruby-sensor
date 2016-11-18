@@ -322,7 +322,8 @@ module Instana
     rescue Errno::ECONNREFUSED => e
       return nil
     rescue => e
-      Instana.logger.debug "Host agent request error: #{e.inspect}"
+      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug e.backtrace.join("\r\n")
       return nil
     end
 
