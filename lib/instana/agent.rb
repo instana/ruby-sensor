@@ -8,6 +8,7 @@ include Sys
 module Instana
   class Agent
     attr_accessor :state
+    attr_accessor :agent_uuid
 
     LOCALHOST = '127.0.0.1'.freeze
     MIME_JSON = 'application/json'.freeze
@@ -90,6 +91,7 @@ module Instana
               transition_to(:unannounced)
             end
           end
+          ::Instana.processor.send
         end
       end
 
@@ -107,6 +109,20 @@ module Instana
           @timers.wait
         }
       end
+    end
+
+    ##
+    # ready?
+    #
+    # Indicates if the agent is ready to send metrics
+    # or data.
+    #
+    def ready?
+      @state == :announced
+    end
+
+    def report_pid
+      @process[:report_pid]
     end
 
     ##
@@ -195,7 +211,7 @@ module Instana
     def report_traces(traces)
       return unless @state == :announced
 
-      path = "com.instana.plugin.ruby.traces.#{Process.pid}"
+      path = "com.instana.plugin.ruby/traces.#{@process[:report_pid]}"
       uri = URI.parse("http://#{@host}:#{@port}/#{path}")
       req = Net::HTTP::Post.new(uri)
 
@@ -205,14 +221,11 @@ module Instana
       if response
         last_trace_response = response.code.to_i
 
-        if last_trace_response == 200
-          @trace_last_seen = Time.now
-          @last_snapshot = Time.now if with_snapshot
+        ::Instana.logger.debug "traces response #{last_trace_response}: #{traces.to_json}"
 
-          #::Instana.logger.debug "traces response #{last_trace_response}: #{traces.to_json}"
+        if [200, 204].include?(last_trace_response)
           return true
         end
-        #::Instana.logger.debug "traces response #{last_trace_response}: #{traces.to_json}"
       end
       false
     rescue => e
