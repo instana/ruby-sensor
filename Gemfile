@@ -7,6 +7,11 @@ group :development, :test do
   gem 'minitest-debugger', :require => false
   gem 'rack-test'
   gem 'webmock'
+
+  # Rack v2 dropped support for Ruby 2.2 and higher.
+  if RUBY_VERSION < '2.2'
+    gem 'rack', '< 2.0'
+  end
 end
 
 group :development do
