@@ -204,11 +204,11 @@ module Instana
     end
 
     ##
-    # report_traces
+    # report_spans
     #
-    # Accept and report traces to the host agent.
+    # Accept and report spans to the host agent.
     #
-    def report_traces(traces)
+    def report_spans(spans)
       return unless @state == :announced
 
       path = "com.instana.plugin.ruby/traces.#{@process[:report_pid]}"

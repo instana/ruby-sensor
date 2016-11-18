@@ -36,14 +36,48 @@ module Instana
         Instana.logger.debug "Trace queue is #{size}"
       end
 
+      ::Instana.agent.report_spans(queued_spans)
+    end
+
+    ##
+    # queued_spans
+    #
+    # Retrieves all of the traces in @queue and returns
+    # the sum of their raw spans.
+    # This is used by Processor::send and in the test suite.
+    # Note that traces retrieved with this method are removed
+    # entirely from the queue.
+    #
+    def queued_spans
+      return [] if @queue.empty?
+
       spans = []
       until @queue.empty? do
-        set = @queue.pop(true)
-        set.each do |s|
+        # Non-blocking pop; ignore exception
+        trace = @queue.pop(true) rescue nil
+        trace.spans.each do |s|
           spans << s.raw
         end
       end
-      ::Instana.agent.report_traces(spans)
+      spans
+    end
+
+    ##
+    # queued_traces
+    #
+    # Retrieves all of the traces that are in @queue.
+    # Note that traces retrieved with this method are removed
+    # entirely from the queue.
+    #
+    def queued_traces
+      return [] if @queue.empty?
+
+      traces = []
+      until @queue.empty? do
+        # Non-blocking pop; ignore exception
+        traces << @queue.pop(true) rescue nil
+      end
+      traces
     end
   end
 end

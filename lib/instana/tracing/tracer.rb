@@ -116,7 +116,7 @@ module Instana
       return unless tracing?
 
       @trace.finish(kvs)
-      Instana.processor.add(@trace.spans)
+      Instana.processor.add(@trace)
       @trace = nil
     end
 
