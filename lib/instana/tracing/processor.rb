@@ -79,5 +79,17 @@ module Instana
       end
       traces
     end
+
+    # Removes all traces from the @queue.  Used in the
+    # test suite.
+    #
+    def clear!
+      return [] if @queue.empty?
+
+      until @queue.empty? do
+        # Non-blocking pop; ignore exception
+        @queue.pop(true) rescue nil
+      end
+    end
   end
 end
