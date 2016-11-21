@@ -6,11 +6,15 @@ module Instana
       @data = data
     end
 
+    def id
+      @data[:s]
+    end
+
     def parent_id
       @data[:p]
     end
 
-    def root?
+    def is_root?
       @data[:s] == @data[:t]
     end
 

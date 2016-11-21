@@ -99,7 +99,7 @@ module Instana
     def end_span(kvs = {})
       @current_span[:d] = ts_now - @current_span[:ts]
       add_info(kvs) unless kvs.empty?
-      @current_span = @current_span.parent
+      @current_span = @current_span.parent unless @current_span.is_root?
     end
 
     # Closes out the final span in this trace and runs any finalizer
@@ -136,6 +136,15 @@ module Instana
         end
       end
       false
+    end
+
+    # Get the ID of the current span for this trace.
+    # Used often to place in HTTP response headers.
+    #
+    # @return [Integer] a random 64bit integer
+    #
+    def current_span_id
+      @current_span.id
     end
 
     private

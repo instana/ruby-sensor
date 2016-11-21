@@ -7,12 +7,10 @@ module Instana
       @queue = Queue.new
     end
 
-    ##
-    # add
-    #
     # Adds a trace to the queue to be processed and
     # sent to the host agent
     #
+    # @param [Trace] the trace to be added to the queue
     def add(trace)
       @queue.push(trace)
     end
@@ -39,9 +37,12 @@ module Instana
       ::Instana.agent.report_spans(queued_spans)
     end
 
-    ##
-    # queued_spans
+    # Get the number traces currently in the queue
     #
+    def queue_count
+      @queue.size
+    end
+
     # Retrieves all of the traces in @queue and returns
     # the sum of their raw spans.
     # This is used by Processor::send and in the test suite.
@@ -62,9 +63,6 @@ module Instana
       spans
     end
 
-    ##
-    # queued_traces
-    #
     # Retrieves all of the traces that are in @queue.
     # Note that traces retrieved with this method are removed
     # entirely from the queue.
