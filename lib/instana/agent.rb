@@ -63,9 +63,7 @@ module Instana
       @process[:report_pid] = nil
     end
 
-    ##
-    # start
-    #
+    # Sets up periodic timers and starts the agent in a background thread.
     #
     def start
       # The announce timer
@@ -111,9 +109,6 @@ module Instana
       end
     end
 
-    ##
-    # ready?
-    #
     # Indicates if the agent is ready to send metrics
     # or data.
     #
@@ -124,13 +119,12 @@ module Instana
       @state == :announced
     end
 
+    # Returns the PID that we are reporting to
+    #
     def report_pid
       @process[:report_pid]
     end
 
-    ##
-    # announce_sensor
-    #
     # Collect process ID, name and arguments to notify
     # the host agent.
     #
@@ -161,10 +155,9 @@ module Instana
       return false
     end
 
-    ##
-    # report_entity_data
-    #
     # Method to report metrics data to the host agent.
+    #
+    # @param paylod [Hash] The collection of metrics to report.
     #
     def report_entity_data(payload)
       with_snapshot = false
@@ -206,9 +199,6 @@ module Instana
       Instana.logger.debug e.backtrace.join("\r\n")
     end
 
-    ##
-    # report_spans
-    #
     # Accept and report spans to the host agent.
     #
     def report_spans(spans)
@@ -236,10 +226,9 @@ module Instana
       Instana.logger.debug e.backtrace.join("\r\n")
     end
 
-    ##
-    # report_traces
-    #
     # Accept and report traces to the host agent.
+    #
+    # @param traces [Array] An array of [Trace]
     #
     def report_traces(traces)
       return unless @state == :announced
@@ -269,9 +258,6 @@ module Instana
       Instana.logger.debug e.backtrace.join("\r\n")
     end
 
-    ##
-    # host_agent_ready?
-    #
     # Check that the host agent is available and can be contacted.  This will
     # first check localhost and if not, then attempt on the default gateway
     # for docker in bridged mode.  It will save where it found the host agent
@@ -311,11 +297,11 @@ module Instana
 
     private
 
-    ##
-    # transition_to
-    #
     # Handles any/all steps required in the transtion
     # between states.
+    #
+    # @param state [Symbol] Can be 1 of 2 possible states:
+    #   `:announced`, `:unannounced`
     #
     def transition_to(state)
       case state
@@ -336,12 +322,12 @@ module Instana
       end
     end
 
-    ##
-    # make host_agent_request
-    #
     # Centralization of the net/http communications
     # with the host agent. Pass in a prepared <req>
     # of type Net::HTTP::Get|Put|Head
+    #
+    # @param req [Net::HTTP::Req] A prepared Net::HTTP request object of the type
+    #  you wish to make (Get, Put, Post etc.)
     #
     def make_host_agent_request(req)
       req['Accept'] = MIME_JSON
@@ -360,9 +346,6 @@ module Instana
       return nil
     end
 
-    ##
-    # pid_namespace?
-    #
     # Indicates whether we are running in a pid namespace (such as
     # Docker).
     #
@@ -371,9 +354,6 @@ module Instana
       Process.pid != get_real_pid
     end
 
-    ##
-    # get_real_pid
-    #
     # Attempts to determine the true process ID by querying the
     # /proc/<pid>/sched file.  This works on linux currently.
     #
@@ -383,9 +363,6 @@ module Instana
       v.match(/\d+/).to_s.to_i
     end
 
-    ##
-    # take_snapshot
-    #
     # Method to collect up process info for snapshots.  This
     # is generally used once per process.
     #
