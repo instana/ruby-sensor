@@ -52,5 +52,6 @@ require "instana/tracing/processor"
 ::Instana.start
 
 require "instana/collectors"
+require "instana/instrumentation"
 
 ::Instana.agent.start
