@@ -46,7 +46,7 @@ end
 
 require "instana/config"
 require "instana/agent"
-require "instana/tracing/tracer"
+require "instana/tracer"
 require "instana/tracing/processor"
 
 ::Instana.start
