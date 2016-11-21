@@ -16,10 +16,10 @@ module Instana
     # from incoming remote requests with context headers).
     #
     # @param name [String] the name of the span to start
-    # @param kvs [Hash, {}] list of key values to be reported in the span
-    # @param incoming_context [Hash, {}] specifies the incoming context.  At a
+    # @param kvs [Hash] list of key values to be reported in the span
+    # @param incoming_context [Hash] specifies the incoming context.  At a
     #   minimum, it should specify :trace_id and :parent_id from the following:
-    #     :trace_id the trace ID (must be an unsigned hex-string)
+    #     @:trace_id the trace ID (must be an unsigned hex-string)
     #     :parent_id the ID of the parent span (must be an unsigned hex-string)
     #     :level specifies data collection level (optional)
     #
@@ -36,7 +36,7 @@ module Instana
     # Trace a block of code within the context of the exiting trace
     #
     # @param name [String] the name of the span to start
-    # @param kvs [Hash, {}] list of key values to be reported in this new span
+    # @param kvs [Hash] list of key values to be reported in this new span
     #
     def trace(name, kvs = {}, &block)
       log_entry(name, kvs)
@@ -57,8 +57,8 @@ module Instana
     # from incoming remote requests with context headers).
     #
     # @param name [String] the name of the span to start
-    # @param kvs [Hash, {}] list of key values to be reported in the span
-    # @param incoming_context [Hash, {}] specifies the incoming context.  At a
+    # @param kvs [Hash] list of key values to be reported in the span
+    # @param incoming_context [Hash] specifies the incoming context.  At a
     #   minimum, it should specify :trace_id and :parent_id from the following:
     #     :trace_id the trace ID (must be an unsigned hex-string)
     #     :parent_id the ID of the parent span (must be an unsigned hex-string)
@@ -72,52 +72,53 @@ module Instana
     # Will establish a new span as a child of the current span
     # in an existing trace
     #
+    # @param name [String] the name of the span to create
+    # @param kvs [Hash] list of key values to be reported in the span
+    #
     def log_entry(name, kvs = {})
       return unless tracing?
       @trace.new_span(name, kvs)
     end
 
-    ##
-    # log_info
-    #
     # Add info to the current span
+    #
+    # @param kvs [Hash] list of key values to be reported in the span
     #
     def log_info(kvs)
       return unless tracing?
       @trace.add_info(kvs)
     end
 
-    ##
-    # log_error
+    # Add an error to the current span
     #
-    # Add error to the current span
+    # @param e [Exception] Add exception to the current span
     #
     def log_error(e)
       return unless tracing?
       @trace.add_error(e)
     end
 
-    ##
-    # log_exit
-    #
     # Will close out the current span
     #
-    # Note: name isn't really required but helps keep sanity that
+    # @note `name` isn't really required but helps keep sanity that
     # we're closing out the span that we really want to close out.
+    #
+    # @param name [String] the name of the span to exit (close out)
+    # @param kvs [Hash] list of key values to be reported in the span
     #
     def log_exit(name, kvs = {})
       return unless tracing?
       @trace.end_span(kvs)
     end
 
-    ##
-    # log_end
-    #
     # Closes out the current span in the current trace
     # and queues the trace for reporting
     #
-    # Note: name isn't really required but helps keep sanity that
-    # we're closing out the span that we really want to close out.
+    # @note `name` isn't really required but helps keep sanity that
+    # we're ending the span that we really want to close out.
+    #
+    # @param name [String] the name of the span to end
+    # @param kvs [Hash] list of key values to be reported in the span
     #
     def log_end(name, kvs = {})
       return unless tracing?
@@ -127,12 +128,11 @@ module Instana
       @trace = nil
     end
 
-    ##
-    # tracing?
-    #
     # Indicates if we're are currently in the process of
     # collecting a trace.  This is false when the host agent isn
     # available.
+    #
+    # @return [Boolean] true or false on whether we are currently tracing or not
     #
     def tracing?
       # The non-nil value of this instance variable

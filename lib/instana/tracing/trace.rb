@@ -1,19 +1,23 @@
 module Instana
   class Trace
-    attr_accessor :id
+    # @return [Integer] the ID for this trace
+    attr_reader :id
+
+    # The collection of `Span` for this trace
+    # @return [Set] the collection of spans for this trace
     attr_reader :spans
 
     # Initializes a new instance of Trace
     #
     # @param name [String] the name of the span to start
-    # @param kvs [Hash, {}] list of key values to be reported in the span
-    # @param incoming_context [Hash, {}] specifies the incoming context.  At a
+    # @param kvs [Hash] list of key values to be reported in the span
+    # @param incoming_context [Hash] specifies the incoming context.  At a
     #   minimum, it should specify :trace_id and :parent_id from the following:
     #     :trace_id the trace ID (must be an unsigned hex-string)
     #     :parent_id the ID of the parent span (must be an unsigned hex-string)
     #     :level specifies data collection level (optional)
     #
-    def initialize(name, kvs, incoming_context = {})
+    def initialize(name, kvs = {}, incoming_context = {})
       # The collection of spans that make
       # up this trace.
       @spans = Set.new
@@ -48,10 +52,10 @@ module Instana
       @spans.add(@current_span)
     end
 
-    ##
-    # new_span
-    #
     # Start a new span as a child of @current_span
+    #
+    # @param name [String] the name of the span to start
+    # @param kvs [Hash] list of key values to be reported in the span
     #
     def new_span(name, kvs)
       return unless @current_span
@@ -71,29 +75,26 @@ module Instana
       @current_span = new_span
     end
 
-    ##
-    # add_info
+    # Add KVs to the current span
     #
-    # Add KVs to the @current_span
+    # @param kvs [Hash] list of key values to be reported in the span
     #
     def add_info(kvs)
       @current_span[:data].merge!(kvs)
     end
 
-    ##
-    # add_error
-    #
     # Log an error into the current span
+    #
+    # @param e [Exception] Add exception to the current span
     #
     def add_error(e)
       @current_span[:error] = true
     end
 
-    ##
-    # end_span
-    #
     # Close out the current span and set the parent as
-    # the @current_span
+    # the current span
+    #
+    # @param kvs [Hash] list of key values to be reported in the span
     #
     def end_span(kvs = {})
       @current_span[:d] = ts_now - @current_span[:ts]
@@ -101,30 +102,32 @@ module Instana
       @current_span = @current_span.parent
     end
 
-    ##
-    # finish
-    #
+    # Closes out the final span in this trace and runs any finalizer
+    # steps required.
     # This should be called only on the root span to end the trace.
-    # Once closed out, the trace is then queued for reporting.
+    #
+    # @param kvs [Hash] list of key values to be reported in the span
     #
     def finish(kvs = {})
       end_span(kvs)
     end
 
-    ##
-    # valid?
-    #
     # Indicates whether all seems ok with this
     # trace in it's current state.  Should be only
     # called on finished traces.
+    #
+    # @return [Boolean] true or false on whether this trace is valid
     #
     def valid?
       # TODO
       true
     end
 
-    ##
-    # has_error?
+    # Searches the set of spans and indicates if there
+    # is an error logged in one of them.
+    #
+    # @return [Boolean] true or false indicating the presence
+    #   of an error
     #
     def has_error?
       @spans.each do |s|
@@ -137,19 +140,17 @@ module Instana
 
     private
 
-    ##
-    # ts_now
-    #
     # Get the current time in milliseconds
+    #
+    # @return [Integer] the current time in milliseconds
     #
     def ts_now
       (Time.now.to_f * 1000).floor
     end
 
-    ##
-    # generate_id
-    #
     # Generate a random 64bit ID
+    #
+    # @return [Integer] a random 64bit integer
     #
     def generate_id
       rand(2**32..2**64-1)
