@@ -140,5 +140,19 @@ module Instana
       # in this thread or not.
       @trace ? true : false
     end
+
+    # Returns the trace ID for the active trace (if there is one),
+    # otherwise nil.
+    #
+    def trace_id
+      @trace ? @trace.id : nil
+    end
+
+    # Returns the current [Span] ID for the active trace (if there is one),
+    # otherwise nil.
+    #
+    def span_id
+      @trace  ? @trace.current_span_id : nil
+    end
   end
 end
