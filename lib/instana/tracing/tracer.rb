@@ -12,14 +12,19 @@ module Instana
     # Tracing blocks helper methods
     #######################################
 
-    ##
-    # start_or_continue_trace
-    #
     # Will start a new trace or continue an on-going one (such as
     # from incoming remote requests with context headers).
     #
-    def start_or_continue_trace(name, kvs = {}, parent_id = nil, &block)
-      log_start_or_continue(name, kvs, parent_id)
+    # @param name [String] the name of the span to start
+    # @param kvs [Hash, {}] list of key values to be reported in the span
+    # @param incoming_context [Hash, {}] specifies the incoming context.  At a
+    #   minimum, it should specify :trace_id and :parent_id from the following:
+    #     :trace_id the trace ID (must be an unsigned hex-string)
+    #     :parent_id the ID of the parent span (must be an unsigned hex-string)
+    #     :level specifies data collection level (optional)
+    #
+    def start_or_continue_trace(name, kvs = {}, incoming_context = {}, &block)
+      log_start_or_continue(name, kvs, incoming_context)
       block.call
     rescue Exception => e
       log_error(e)
@@ -28,10 +33,10 @@ module Instana
       log_end(name)
     end
 
-    ##
-    # trace
+    # Trace a block of code within the context of the exiting trace
     #
-    # Trace a block of code withing the context of the exiting trace
+    # @param name [String] the name of the span to start
+    # @param kvs [Hash, {}] list of key values to be reported in this new span
     #
     def trace(name, kvs = {}, &block)
       log_entry(name, kvs)
@@ -48,20 +53,22 @@ module Instana
     # Lower level tracing methods
     #######################################
 
-    ##
-    # log_start_or_continue
-    #
     # Will start a new trace or continue an on-going one (such as
     # from incoming remote requests with context headers).
     #
-    def log_start_or_continue(name, kvs = {}, parent_id = nil)
+    # @param name [String] the name of the span to start
+    # @param kvs [Hash, {}] list of key values to be reported in the span
+    # @param incoming_context [Hash, {}] specifies the incoming context.  At a
+    #   minimum, it should specify :trace_id and :parent_id from the following:
+    #     :trace_id the trace ID (must be an unsigned hex-string)
+    #     :parent_id the ID of the parent span (must be an unsigned hex-string)
+    #     :level specifies data collection level (optional)
+    #
+    def log_start_or_continue(name, kvs = {}, incoming_context = {})
       return unless ::Instana.agent.ready?
-      @trace = ::Instana::Trace.new(name, kvs, parent_id)
+      @trace = ::Instana::Trace.new(name, kvs, incoming_context)
     end
 
-    ##
-    # log_entry
-    #
     # Will establish a new span as a child of the current span
     # in an existing trace
     #

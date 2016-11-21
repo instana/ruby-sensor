@@ -3,7 +3,17 @@ module Instana
     attr_accessor :id
     attr_reader :spans
 
-    def initialize(name, kvs, parent_id = nil)
+    # Initializes a new instance of Trace
+    #
+    # @param name [String] the name of the span to start
+    # @param kvs [Hash, {}] list of key values to be reported in the span
+    # @param incoming_context [Hash, {}] specifies the incoming context.  At a
+    #   minimum, it should specify :trace_id and :parent_id from the following:
+    #     :trace_id the trace ID (must be an unsigned hex-string)
+    #     :parent_id the ID of the parent span (must be an unsigned hex-string)
+    #     :level specifies data collection level (optional)
+    #
+    def initialize(name, kvs, incoming_context = {})
       # The collection of spans that make
       # up this trace.
       @spans = Set.new
@@ -18,13 +28,23 @@ module Instana
       # root span IDs.
       @current_span = Span.new({
         :s => @id,      # Span ID
-        :t => @id,      # Trace ID (same as :s for root span)
         :n => name,     # Span name
         :ts => ts_now,  # Timestamp
         :ta => :ruby,   # Agent
         :data => kvs,   # Data
         :f => { :e => ::Instana.agent.report_pid, :h => ::Instana.agent.agent_uuid } # Entity Source
       })
+
+      # Handle potential incoming context
+      if incoming_context.empty?
+        # No incoming context. Set trace ID the same
+        # as this first span.
+        @current_span[:t] = @id
+      else
+        @current_span[:t] = incoming_context[:trace_id]
+        @current_span[:p] = incoming_context[:parent_id]
+      end
+
       @spans.add(@current_span)
     end
 
