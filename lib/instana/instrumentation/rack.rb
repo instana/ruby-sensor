@@ -23,11 +23,18 @@ module Instana
 
       kvs[:http][:status] = status
 
+      # Save the IDs before the trace ends so we can place
+      # them in the response headers in the ensure block
+      trace_id = ::Instana.tracer.trace_id
+      span_id = ::Instana.tracer.span_id
+
       [status, headers, response]
     rescue Exception => e
       ::Instana.tracer.log_error(e)
       raise
     ensure
+      headers['X-Instana-T'] = trace_id.to_s
+      headers['X-Instana-S'] = span_id.to_s
       ::Instana.tracer.log_end(:rack, kvs)
     end
   end
