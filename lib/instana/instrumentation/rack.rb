@@ -33,8 +33,10 @@ module Instana
       ::Instana.tracer.log_error(e)
       raise
     ensure
-      headers['X-Instana-T'] = trace_id.to_s
-      headers['X-Instana-S'] = span_id.to_s
+      if headers
+        headers['X-Instana-T'] = trace_id.to_s
+        headers['X-Instana-S'] = span_id.to_s
+      end
       ::Instana.tracer.log_end(:rack, kvs)
     end
   end
