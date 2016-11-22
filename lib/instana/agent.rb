@@ -201,6 +201,9 @@ module Instana
 
     # Accept and report spans to the host agent.
     #
+    # @param traces [Array] An array of [Span]
+    # @return [Boolean]
+    #
     def report_spans(spans)
       return unless @state == :announced
 
@@ -208,49 +211,17 @@ module Instana
       uri = URI.parse("http://#{@host}:#{@port}/#{path}")
       req = Net::HTTP::Post.new(uri)
 
-      req.body = traces.to_json
+      req.body = spans.to_json
       response = make_host_agent_request(req)
 
       if response
         last_trace_response = response.code.to_i
 
-        ::Instana.logger.debug "traces response #{last_trace_response}: #{traces.to_json}"
+        #::Instana.logger.debug "traces response #{last_trace_response}: #{spans.to_json}"
 
         if [200, 204].include?(last_trace_response)
           return true
         end
-      end
-      false
-    rescue => e
-      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-      Instana.logger.debug e.backtrace.join("\r\n")
-    end
-
-    # Accept and report traces to the host agent.
-    #
-    # @param traces [Array] An array of [Trace]
-    #
-    def report_traces(traces)
-      return unless @state == :announced
-
-      path = "com.instana.plugin.ruby.traces.#{Process.pid}"
-      uri = URI.parse("http://#{@host}:#{@port}/#{path}")
-      req = Net::HTTP::Post.new(uri)
-
-      req.body = traces.to_json
-      response = make_host_agent_request(req)
-
-      if response
-        last_trace_response = response.code.to_i
-
-        if last_trace_response == 200
-          @trace_last_seen = Time.now
-          @last_snapshot = Time.now if with_snapshot
-
-          #::Instana.logger.debug "traces response #{last_trace_response}: #{traces.to_json}"
-          return true
-        end
-        #::Instana.logger.debug "traces response #{last_trace_response}: #{traces.to_json}"
       end
       false
     rescue => e
