@@ -10,6 +10,9 @@ require "minitest/reporters"
 require "minitest/debugger" if ENV['DEBUG']
 require 'webmock/minitest'
 
+# Boot a background thread Rack app that we can throw requests at
+require "./test/servers/rackapp_6511"
+
 Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
 
 Bundler.require(:default, :test)
