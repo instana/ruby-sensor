@@ -6,7 +6,7 @@ module Instana
   class Tracer
     extend ::Instana::ThreadLocal
 
-    thread_local :trace
+    thread_local :current_trace
 
     #######################################
     # Tracing blocks helper methods
@@ -66,7 +66,7 @@ module Instana
     #
     def log_start_or_continue(name, kvs = {}, incoming_context = {})
       return unless ::Instana.agent.ready?
-      @trace = ::Instana::Trace.new(name, kvs, incoming_context)
+      self.current_trace = ::Instana::Trace.new(name, kvs, incoming_context)
     end
 
     # Will establish a new span as a child of the current span
@@ -77,7 +77,7 @@ module Instana
     #
     def log_entry(name, kvs = {})
       return unless tracing?
-      @trace.new_span(name, kvs)
+      self.current_trace.new_span(name, kvs)
     end
 
     # Add info to the current span
@@ -86,7 +86,7 @@ module Instana
     #
     def log_info(kvs)
       return unless tracing?
-      @trace.add_info(kvs)
+      self.current_trace.add_info(kvs)
     end
 
     # Add an error to the current span
@@ -95,7 +95,7 @@ module Instana
     #
     def log_error(e)
       return unless tracing?
-      @trace.add_error(e)
+      self.current_trace.add_error(e)
     end
 
     # Will close out the current span
@@ -108,7 +108,7 @@ module Instana
     #
     def log_exit(name, kvs = {})
       return unless tracing?
-      @trace.end_span(kvs)
+      self.current_trace.end_span(kvs)
     end
 
     # Closes out the current span in the current trace
@@ -123,9 +123,9 @@ module Instana
     def log_end(name, kvs = {})
       return unless tracing?
 
-      @trace.finish(kvs)
-      Instana.processor.add(@trace)
-      @trace = nil
+      self.current_trace.finish(kvs)
+      Instana.processor.add(self.current_trace)
+      self.current_trace = nil
     end
 
     # Indicates if we're are currently in the process of
@@ -138,21 +138,21 @@ module Instana
       # The non-nil value of this instance variable
       # indicates if we are currently tracing
       # in this thread or not.
-      @trace ? true : false
+      self.current_trace ? true : false
     end
 
     # Returns the trace ID for the active trace (if there is one),
     # otherwise nil.
     #
     def trace_id
-      @trace ? @trace.id : nil
+      self.current_trace ? self.current_trace.id : nil
     end
 
     # Returns the current [Span] ID for the active trace (if there is one),
     # otherwise nil.
     #
     def span_id
-      @trace  ? @trace.current_span_id : nil
+      self.current_trace  ? current_trace.current_span_id : nil
     end
   end
 end
