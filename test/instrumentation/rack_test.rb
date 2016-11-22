@@ -17,6 +17,7 @@ class RackTest < Minitest::Test
   end
 
   def test_basic_get
+    ::Instana.processor.clear!
     get '/mrlobster'
     assert last_response.ok?
 
@@ -36,10 +37,10 @@ class RackTest < Minitest::Test
     assert first_span[:f].key?(:e)
     assert first_span[:f].key?(:h)
     assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
-    ::Instana.processor.clear!
   end
 
   def test_basic_post
+    ::Instana.processor.clear!
     post '/mrlobster'
     assert last_response.ok?
 
@@ -59,10 +60,10 @@ class RackTest < Minitest::Test
     assert first_span[:f].key?(:e)
     assert first_span[:f].key?(:h)
     assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
-    ::Instana.processor.clear!
   end
 
   def test_basic_put
+    ::Instana.processor.clear!
     put '/mrlobster'
     assert last_response.ok?
 
@@ -82,10 +83,10 @@ class RackTest < Minitest::Test
     assert first_span[:f].key?(:e)
     assert first_span[:f].key?(:h)
     assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
-    ::Instana.processor.clear!
   end
 
-  def test_get_with_context
+  def test_context_continuation
+    ::Instana.processor.clear!
     header 'X-INSTANA-T', "1234"
     header 'X-INSTANA-S', "4321"
 
@@ -110,9 +111,18 @@ class RackTest < Minitest::Test
     assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
 
     # Context validation
+    # The first span should have the passed in trace ID
+    # and specify the passed in span ID as it's parent.
     assert_equal "1234", first_span[:t]
     assert_equal "4321", first_span[:p]
-    ::Instana.processor.clear!
   end
 
+  def test_instana_response_headers
+    ::Instana.processor.clear!
+    get '/mrlobster'
+    assert last_response.ok?
+
+    refute_nil last_response.headers.key?("X-Instana-T")
+    refute_nil last_response.headers.key?("X-Instana-S")
+  end
 end
