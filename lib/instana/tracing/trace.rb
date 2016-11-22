@@ -45,6 +45,7 @@ module Instana
         # as this first span.
         @current_span[:t] = @id
       else
+        @id = incoming_context[:trace_id]
         @current_span[:t] = incoming_context[:trace_id]
         @current_span[:p] = incoming_context[:parent_id]
       end
