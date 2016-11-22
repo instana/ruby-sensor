@@ -148,4 +148,28 @@ class TracerTest < Minitest::Test
     assert t.valid?
     assert t.has_error?
   end
+
+  def test_instana_headers_in_response
+    ::Instana.tracer.start_or_continue_trace(:test_trace, {:one => 1}) do
+      sleep 0.5
+    end
+
+    traces = ::Instana.processor.queued_traces
+    assert_equal 1, traces.count
+    t = traces.first
+    assert_equal 1, t.spans.size
+    assert t.valid?
+
+    first_span = t.spans.first
+    assert_equal :test_trace, first_span[:n]
+    assert_equal :ruby, first_span[:ta]
+    assert first_span.key?(:data)
+    assert_equal 1, first_span[:data][:one]
+    assert first_span.key?(:f)
+    assert first_span[:f].key?(:e)
+    assert first_span[:f].key?(:h)
+    assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
+  end
+
+
 end
