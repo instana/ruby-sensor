@@ -8,6 +8,7 @@ include Sys
 module Instana
   class Agent
     attr_accessor :state
+    attr_accessor :agent_uuid
 
     LOCALHOST = '127.0.0.1'.freeze
     MIME_JSON = 'application/json'.freeze
@@ -62,9 +63,7 @@ module Instana
       @process[:report_pid] = nil
     end
 
-    ##
-    # start
-    #
+    # Sets up periodic timers and starts the agent in a background thread.
     #
     def start
       # The announce timer
@@ -90,6 +89,7 @@ module Instana
               transition_to(:unannounced)
             end
           end
+          ::Instana.processor.send
         end
       end
 
@@ -109,9 +109,22 @@ module Instana
       end
     end
 
-    ##
-    # announce_sensor
+    # Indicates if the agent is ready to send metrics
+    # or data.
     #
+    def ready?
+      # In test, we're always ready :-)
+      return true if ENV['INSTANA_GEM_TEST']
+
+      @state == :announced
+    end
+
+    # Returns the PID that we are reporting to
+    #
+    def report_pid
+      @process[:report_pid]
+    end
+
     # Collect process ID, name and arguments to notify
     # the host agent.
     #
@@ -142,10 +155,9 @@ module Instana
       return false
     end
 
-    ##
-    # report_entity_data
-    #
     # Method to report metrics data to the host agent.
+    #
+    # @param paylod [Hash] The collection of metrics to report.
     #
     def report_entity_data(payload)
       with_snapshot = false
@@ -187,9 +199,36 @@ module Instana
       Instana.logger.debug e.backtrace.join("\r\n")
     end
 
-    ##
-    # host_agent_ready?
+    # Accept and report spans to the host agent.
     #
+    # @param traces [Array] An array of [Span]
+    # @return [Boolean]
+    #
+    def report_spans(spans)
+      return unless @state == :announced
+
+      path = "com.instana.plugin.ruby/traces.#{@process[:report_pid]}"
+      uri = URI.parse("http://#{@host}:#{@port}/#{path}")
+      req = Net::HTTP::Post.new(uri)
+
+      req.body = spans.to_json
+      response = make_host_agent_request(req)
+
+      if response
+        last_trace_response = response.code.to_i
+
+        #::Instana.logger.debug "traces response #{last_trace_response}: #{spans.to_json}"
+
+        if [200, 204].include?(last_trace_response)
+          return true
+        end
+      end
+      false
+    rescue => e
+      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug e.backtrace.join("\r\n")
+    end
+
     # Check that the host agent is available and can be contacted.  This will
     # first check localhost and if not, then attempt on the default gateway
     # for docker in bridged mode.  It will save where it found the host agent
@@ -229,11 +268,11 @@ module Instana
 
     private
 
-    ##
-    # transition_to
-    #
     # Handles any/all steps required in the transtion
     # between states.
+    #
+    # @param state [Symbol] Can be 1 of 2 possible states:
+    #   `:announced`, `:unannounced`
     #
     def transition_to(state)
       case state
@@ -254,12 +293,12 @@ module Instana
       end
     end
 
-    ##
-    # make host_agent_request
-    #
     # Centralization of the net/http communications
     # with the host agent. Pass in a prepared <req>
     # of type Net::HTTP::Get|Put|Head
+    #
+    # @param req [Net::HTTP::Req] A prepared Net::HTTP request object of the type
+    #  you wish to make (Get, Put, Post etc.)
     #
     def make_host_agent_request(req)
       req['Accept'] = MIME_JSON
@@ -278,9 +317,6 @@ module Instana
       return nil
     end
 
-    ##
-    # pid_namespace?
-    #
     # Indicates whether we are running in a pid namespace (such as
     # Docker).
     #
@@ -289,9 +325,6 @@ module Instana
       Process.pid != get_real_pid
     end
 
-    ##
-    # get_real_pid
-    #
     # Attempts to determine the true process ID by querying the
     # /proc/<pid>/sched file.  This works on linux currently.
     #
@@ -301,9 +334,6 @@ module Instana
       v.match(/\d+/).to_s.to_i
     end
 
-    ##
-    # take_snapshot
-    #
     # Method to collect up process info for snapshots.  This
     # is generally used once per process.
     #
