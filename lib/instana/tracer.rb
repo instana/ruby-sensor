@@ -141,6 +141,26 @@ module Instana
       self.current_trace ? true : false
     end
 
+    # Convert an ID to a value appropriate to pass in a header.
+    #
+    # @param id [Integer] the id to be converted
+    #
+    # @return [String]
+    #
+    def id_to_header(id)
+      id.to_s(16)
+    end
+
+    # Convert a received header value into a valid ID
+    #
+    # @param header_id [String] the header value to be converted
+    #
+    # @return [Integer]
+    #
+    def header_to_id(header_id)
+      header_id.to_i(16)
+    end
+
     # Returns the trace ID for the active trace (if there is one),
     # otherwise nil.
     #

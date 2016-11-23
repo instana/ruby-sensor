@@ -199,4 +199,17 @@ class TracerTest < Minitest::Test
     assert first_span[:f].key?(:h)
     assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
   end
+
+  def test_id_to_header_conversion
+    original_id = rand(2**32..2**64-1)
+    converted_id = Instana.tracer.id_to_header(original_id)
+    assert converted_id.is_a?(String)
+    # Assert that there are no non-hex characters
+    assert !converted_id[/\H/]
+
+    convert_back_id = Instana.tracer.header_to_id(converted_id)
+    assert convert_back_id.is_a?(Integer)
+
+    assert_equal original_id, convert_back_id
+  end
 end
