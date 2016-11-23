@@ -89,8 +89,8 @@ class RackTest < Minitest::Test
 
   def test_context_continuation
     ::Instana.processor.clear!
-    header 'X-INSTANA-T', "1234"
-    header 'X-INSTANA-S', "4321"
+    header 'X-INSTANA-T', Instana.tracer.id_to_header(1234)
+    header 'X-INSTANA-S', Instana.tracer.id_to_header(4321)
 
     get '/mrlobster'
     assert last_response.ok?
@@ -115,8 +115,8 @@ class RackTest < Minitest::Test
     # Context validation
     # The first span should have the passed in trace ID
     # and specify the passed in span ID as it's parent.
-    assert_equal "1234", first_span[:t]
-    assert_equal "4321", first_span[:p]
+    assert_equal 1234, first_span[:t]
+    assert_equal 4321, first_span[:p]
   end
 
   def test_instana_response_headers
