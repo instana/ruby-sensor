@@ -1,15 +1,19 @@
+# This file outlines some of the concepts with Instana tracing.
+# Please also see rdoc for latest info:
+# http://www.rubydoc.info/gems/instana/0.9.0.pre.slywolf3/Instana/Tracer
+
 #######################################
 ## Block tracing
 #######################################
 
-#Instana::Tracer.start_or_continue_trace(name, kvs, incoming_id) - Initiates tracing
+#Instana::Tracer.start_or_continue_trace(name, kvs, incoming_context) - Initiates tracing
 #Instana::Tracer.trace(name, kvs) - starts a new span in an existing Trace
 
 # <start_or_continue_trace> will initiate a new trace.  Often used at entry
-# points in webservers, it will initialize tracing and instrument the passed
-# block.  <incoming_id> is for continuing remote traces (remote in terms
+# points in webservers (e.g. rack), it will initialize tracing and instrument the passed
+# block.  <incoming_id> is a hash for continuing remote traces (remote in terms
 # of service calls, or message queues).
-Instana::Tracer.start_or_continue_trace(:my_block_name, {}, incoming_id) do
+Instana::Tracer.start_or_continue_trace(:my_block_name, {}, incoming_context) do
   # Code block
 end
 
@@ -25,11 +29,11 @@ end
 #######################################
 
 # <log_start_or_continue_trace> will initiate a new trace.  Often used at entry
-# points in webservers, it will establish a new trace (for web request, 
+# points in webservers, it will establish a new trace (for web request,
 # background jobs etc.).
-# <incoming_id> is for continuing remote traces (remote in terms
+# <incoming_context> is a hash for continuing remote traces (remote in terms
 # of service calls, or message queues).
-Instana::Tracer.log_start_or_continue(:rack, {}, incoming_id)
+Instana::Tracer.log_start_or_continue(:rack, {}, incoming_context)
 
 # <log_entry> will start a new span from the current span within
 # a trace.
