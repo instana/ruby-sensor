@@ -1,3 +1,4 @@
+require 'test_helper'
 require 'rack/test'
 require 'rack/lobster'
 require "instana/rack"
@@ -124,5 +125,21 @@ class RackTest < Minitest::Test
 
     refute_nil last_response.headers.key?("X-Instana-T")
     refute_nil last_response.headers.key?("X-Instana-S")
+  end
+
+  def test_that_url_params_not_logged
+    ::Instana.processor.clear!
+    get '/mrlobster?blah=2&wilma=1&betty=2;fred=3'
+
+    traces = ::Instana.processor.queued_traces
+    assert_equal 1, traces.count
+
+    trace = traces[0]
+    refute_nil trace.spans.first.key?(:data)
+    refute_nil trace.spans.first[:data].key?(:http)
+    refute_nil trace.spans.first[:data][:http].key?(:url)
+    assert_equal '/mrlobster', trace.spans.first[:data][:http][:url]
+
+    assert last_response.ok?
   end
 end
