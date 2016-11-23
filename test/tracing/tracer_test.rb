@@ -8,7 +8,11 @@ class TracerTest < Minitest::Test
 
   def test_basic_trace_block
     ::Instana.processor.clear!
+
+    assert_equal false, ::Instana.tracer.tracing?
+
     ::Instana.tracer.start_or_continue_trace(:test_trace, {:one => 1}) do
+      assert_equal true, ::Instana.tracer.tracing?
       sleep 0.5
     end
 
@@ -78,9 +82,15 @@ class TracerTest < Minitest::Test
 
   def test_basic_low_level_tracing
     ::Instana.processor.clear!
+
+    assert_equal false, ::Instana.tracer.tracing?
+    # Start tracing
     ::Instana.tracer.log_start_or_continue(:test_trace, {:one => 1})
+    assert_equal true, ::Instana.tracer.tracing?
     ::Instana.tracer.log_info({:info_logged => 1})
+    # End tracing
     ::Instana.tracer.log_end(:test_trace, {:close_one => 1})
+    assert_equal false, ::Instana.tracer.tracing?
 
     traces = ::Instana.processor.queued_traces
     assert_equal 1, traces.count
@@ -91,14 +101,25 @@ class TracerTest < Minitest::Test
 
   def test_complex_low_level_tracing
     ::Instana.processor.clear!
+
+    assert_equal false, ::Instana.tracer.tracing?
+
+    # Start tracing
     ::Instana.tracer.log_start_or_continue(:test_trace, {:one => 1})
+    assert_equal true, ::Instana.tracer.tracing?
     ::Instana.tracer.log_info({:info_logged => 1})
 
+    # Start tracing a sub span
     ::Instana.tracer.log_entry(:sub_task)
+    assert_equal true, ::Instana.tracer.tracing?
     ::Instana.tracer.log_info({:sub_task_info => 1})
+    # Exit from the sub span
     ::Instana.tracer.log_exit(:sub_task, {:sub_task_exit_info => 1})
+    assert_equal true, ::Instana.tracer.tracing?
 
+    # End tracing
     ::Instana.tracer.log_end(:test_trace, {:close_one => 1})
+    assert_equal false, ::Instana.tracer.tracing?
 
     traces = ::Instana.processor.queued_traces
     assert_equal 1, traces.count
