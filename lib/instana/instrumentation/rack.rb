@@ -9,6 +9,12 @@ module Instana
       kvs[:http][:method] = env['REQUEST_METHOD']
       kvs[:http][:url] = ::CGI.unescape(env['PATH_INFO'])
 
+      if env.key?('HTTP_HOST')
+        kvs[:http][:host] = env['HTTP_HOST'].split(':').first
+      elsif env.key?('SERVER_NAME')
+        kvs[:http][:host] = env['SERVER_NAME']
+      end
+
       # Check incoming context
       incoming_context = {}
       if env.key?('HTTP_X_INSTANA_T')

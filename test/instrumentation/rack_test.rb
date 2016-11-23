@@ -34,6 +34,7 @@ class RackTest < Minitest::Test
     assert_equal "GET", first_span[:data][:http][:method]
     assert_equal "/mrlobster", first_span[:data][:http][:url]
     assert_equal 200, first_span[:data][:http][:status]
+    assert_equal 'example.org', first_span[:data][:http][:host]
     assert first_span.key?(:f)
     assert first_span[:f].key?(:e)
     assert first_span[:f].key?(:h)
