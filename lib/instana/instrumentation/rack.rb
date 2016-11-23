@@ -10,7 +10,7 @@ module Instana
       kvs[:http][:url] = ::CGI.unescape(env['PATH_INFO'])
 
       if env.key?('HTTP_HOST')
-        kvs[:http][:host] = env['HTTP_HOST'].split(':').first
+        kvs[:http][:host] = env['HTTP_HOST']
       elsif env.key?('SERVER_NAME')
         kvs[:http][:host] = env['SERVER_NAME']
       end
