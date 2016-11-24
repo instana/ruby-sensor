@@ -63,6 +63,21 @@ module Instana
       @process[:report_pid] = nil
     end
 
+    def after_fork
+      ::Instana.logger.debug "after_fork hook called. Falling back to unannounced state."
+      @state = :unannounced
+
+      # Recollect process information
+      @process = {}
+      cmdline = ProcTable.ps(Process.pid).cmdline.split("\0")
+      @process[:name] = cmdline.shift
+      @process[:arguments] = cmdline
+      @process[:original_pid] = Process.pid
+      # This is usually Process.pid but in the case of docker, the host agent
+      # will return to us the true host pid in which we use to report data.
+      @process[:report_pid] = nil
+    end
+
     # Sets up periodic timers and starts the agent in a background thread.
     #
     def start
