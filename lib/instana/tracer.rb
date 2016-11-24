@@ -148,7 +148,11 @@ module Instana
     # @return [String]
     #
     def id_to_header(id)
-      id.to_s(16)
+      unless id.is_a?(Integer) || id.is_a?(String)
+        Instana.logger.debug "id_to_header received a #{id.class}: returning empty string"
+        return String.new
+      end
+      id.to_i.to_s(16)
     end
 
     # Convert a received header value into a valid ID
@@ -158,6 +162,10 @@ module Instana
     # @return [Integer]
     #
     def header_to_id(header_id)
+      if !header_id.is_a?(String)
+        Instana.logger.debug "header_to_id received a #{header_id.class}: returning 0"
+        return 0
+      end
       header_id.to_i(16)
     end
 
