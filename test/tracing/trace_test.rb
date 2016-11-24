@@ -18,4 +18,13 @@ class TraceTest < Minitest::Test
     assert t.spans.size == 1
   end
 
+  def test_max_value_of_generated_id
+    t = ::Instana::Trace.new(:test_id)
+
+    # Max is the maximum value for a Java signed long
+    max_value = 9223372036854775807
+    100.times do
+      assert t.send(:generate_id) < max_value
+    end
+  end
 end
