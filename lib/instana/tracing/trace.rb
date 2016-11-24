@@ -163,7 +163,8 @@ module Instana
     # @return [Integer] a random 64bit integer
     #
     def generate_id
-      rand(2**32..2**64-1)
+      # Max value is 9223372036854775807 (signed long in Java)
+      rand(2**32..2**63-1)
     end
   end
 end
