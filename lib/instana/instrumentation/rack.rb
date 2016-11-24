@@ -27,19 +27,21 @@ module Instana
 
       status, headers, response = @app.call(env)
 
-      kvs[:http][:status] = status
+      if ::Instana.tracer.tracing?
+        kvs[:http][:status] = status
 
-      # Save the IDs before the trace ends so we can place
-      # them in the response headers in the ensure block
-      trace_id = ::Instana.tracer.trace_id
-      span_id = ::Instana.tracer.span_id
+        # Save the IDs before the trace ends so we can place
+        # them in the response headers in the ensure block
+        trace_id = ::Instana.tracer.trace_id
+        span_id = ::Instana.tracer.span_id
+      end
 
       [status, headers, response]
     rescue Exception => e
       ::Instana.tracer.log_error(e)
       raise
     ensure
-      if headers
+      if headers && ::Instana.tracer.tracing?
         # Set reponse headers; encode as hex string
         headers['X-Instana-T'] = ::Instana.tracer.id_to_header(trace_id)
         headers['X-Instana-S'] = ::Instana.tracer.id_to_header(span_id)
