@@ -64,8 +64,16 @@ module Instana
     end
 
     def after_fork
+      @logger = Logger.new(STDOUT)
+      if ENV.key?('INSTANA_GEM_TEST') || ENV.key?('INSTANA_GEM_DEV')
+        @logger.level = Logger::DEBUG
+      else
+        @logger.level = Logger::WARN
+      end
       ::Instana.logger.debug "after_fork hook called. Falling back to unannounced state."
-      @state = :unannounced
+      ::Instana.logger.debug @announce_timer.inspect
+      ::Instana.logger.debug @collect_timer.inspect
+      transition_to(:unannounced)
 
       # Recollect process information
       @process = {}
