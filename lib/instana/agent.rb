@@ -22,6 +22,9 @@ module Instana
       # Supported two states (unannounced & announced)
       @state = :unannounced
 
+      # Store the pid from process boot so we can detect forks
+      @pid = Process.pid
+
       # Snapshot data is collected once per process but resent
       # every 10 minutes along side process metrics.
       @snapshot = take_snapshot
@@ -63,27 +66,21 @@ module Instana
       @process[:report_pid] = nil
     end
 
-    def after_fork
-      @logger = Logger.new(STDOUT)
-      if ENV.key?('INSTANA_GEM_TEST') || ENV.key?('INSTANA_GEM_DEV')
-        @logger.level = Logger::DEBUG
-      else
-        @logger.level = Logger::WARN
-      end
-      ::Instana.logger.debug "after_fork hook called. Falling back to unannounced state."
-      ::Instana.logger.debug @announce_timer.inspect
-      ::Instana.logger.debug @collect_timer.inspect
-      transition_to(:unannounced)
+    # Determine whether the pid has changed since Agent start.
+    #
+    # @ return [Boolean] true or false to indicate if forked
+    #
+    def forked?
+      @pid != Process.pid
+    end
 
-      # Recollect process information
-      @process = {}
-      cmdline = ProcTable.ps(Process.pid).cmdline.split("\0")
-      @process[:name] = cmdline.shift
-      @process[:arguments] = cmdline
-      @process[:original_pid] = Process.pid
-      # This is usually Process.pid but in the case of docker, the host agent
-      # will return to us the true host pid in which we use to report data.
-      @process[:report_pid] = nil
+    # Used post fork to re-initialize state and restart communications with
+    # the host agent.
+    #
+    def after_fork
+      ::Instana.logger.debug "after_fork hook called. Falling back to unannounced state."
+      transition_to(:unannounced)
+      start
     end
 
     # Sets up periodic timers and starts the agent in a background thread.
@@ -93,6 +90,10 @@ module Instana
       # We attempt to announce this ruby sensor to the host agent.
       # In case of failure, we try again in 30 seconds.
       @announce_timer = @timers.now_and_every(30) do
+        if forked?
+          after_fork
+          break
+        end
         if host_agent_ready? && announce_sensor
           ::Instana.logger.debug "Announce successful. Switching to metrics collection."
           transition_to(:announced)
@@ -104,6 +105,10 @@ module Instana
       # every ::Instana::Collector.interval seconds.
       @collect_timer = @timers.every(::Instana::Collector.interval) do
         if @state == :announced
+          if forked?
+            after_fork
+            break
+          end
           unless ::Instana::Collector.collect_and_report
             # If report has been failing for more than 1 minute,
             # fall back to unannounced state
