@@ -24,7 +24,7 @@ class TraceTest < Minitest::Test
     # Max is the maximum value for a Java signed long
     max_value = 9223372036854775807
     100.times do
-      assert t.send(:generate_id) < max_value
+      assert t.send(:generate_id) <= max_value
     end
   end
 end
