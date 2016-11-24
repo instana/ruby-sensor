@@ -42,8 +42,9 @@ module Instana
       @announce_timer = nil
       @collect_timer = nil
 
-      # Detect if we're on linux or not (used in host_agent_ready?)
+      # Detect platform flags
       @is_linux = (RUBY_PLATFORM =~ /linux/i) ? true : false
+      @is_osx = (RUBY_PLATFORM =~ /darwin/i) ? true : false
 
       # In case we're running in Docker, have the default gateway available
       # to check in case we're running in bridged network mode
@@ -56,11 +57,26 @@ module Instana
       # The agent UUID returned from the host agent
       @agent_uuid = nil
 
+      collect_process_info
+    end
+
+    # Used in class initialization and after a fork, this method
+    # collects up process information and stores it in @process
+    #
+    def collect_process_info
       @process = {}
       cmdline = ProcTable.ps(Process.pid).cmdline.split("\0")
       @process[:name] = cmdline.shift
       @process[:arguments] = cmdline
-      @process[:original_pid] = Process.pid
+
+      if @is_osx
+        # Handle OSX bug where env vars show up at the end of process name
+        # such as MANPATH etc..
+        @process[:name].gsub!(/[_A-Z]+=\S+/, '')
+        @process[:name].rstrip!
+      end
+
+      @process[:original_pid] = @pid
       # This is usually Process.pid but in the case of docker, the host agent
       # will return to us the true host pid in which we use to report data.
       @process[:report_pid] = nil
@@ -79,6 +95,15 @@ module Instana
     #
     def after_fork
       ::Instana.logger.debug "after_fork hook called. Falling back to unannounced state."
+
+      # Re-collect process information post fork
+      @pid = Process.pid
+      collect_process_info
+
+      # Set last snapshot to 10 minutes ago
+      # so we send a snapshot sooner than later
+      @last_snapshot = Time.now - 600
+
       transition_to(:unannounced)
       start
     end
