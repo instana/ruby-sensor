@@ -164,7 +164,7 @@ module Instana
     #
     def generate_id
       # Max value is 9223372036854775807 (signed long in Java)
-      rand(2**32..2**63-1)
+      rand(-2**63..2**63-1)
     end
   end
 end
