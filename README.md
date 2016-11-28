@@ -66,6 +66,15 @@ To disable a single component in the gem, you can disable a single component wit
 ```
 Current components are `:gc`, `:memory` and `:thread`.
 
+### Rack Middleware
+
+This gem will detect and automagically insert the Instana Rack middleware into the middleware stack when Ruby on Rails is present.  We are currently adding support for more frameworks.  If you are using a framework other than Ruby on Rails, you can insert the Instana Rack middleware with the following:
+
+    require "instana/rack"
+    config.middleware.use ::Instana::Rack
+
+...or whatever specific middleware call is appropriate for your framework.
+
 ## Documentation
 
 You can find more documentation covering supported components and minimum versions in the Instana [documentation portal](https://instana.atlassian.net/wiki/display/DOCS/Ruby).
