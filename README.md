@@ -1,5 +1,5 @@
-<div align="center">
-<img src="https://www.instana.com/wp-content/uploads/2016/04/stan@2x.png">
+<div align="right">
+<img src="https://www.instana.com/wp-content/uploads/2016/04/stan@2x.png" height="300px"/>
 </div>
 
 # Instana
@@ -43,17 +43,23 @@ Although the gem has no configuration required for out of the box metrics and tr
 
 This agent spawns a lightweight background thread to periodically collect and report metrics and traces.  Be default, this uses a standard Ruby thread.  If you wish to have greater control and potentially boot the agent reporting manually in an alternative thread system (such as actor based threads), you can do so with the following:
 
-    gem "instana", :require => "instana/setup"
+```Ruby
+gem "instana", :require => "instana/setup"
+```
 
 ...then in the background thread of your choice simply call:
 
-    ::Instana.agent.start
-    
+```Ruby
+::Instana.agent.start
+```
+
 Note that this call is blocking.  It kicks off a loop of timers that periodically collects and reports metrics and trace data.  This should only be called from inside an already initialized background thread:
 
-    Thread.new do
-      ::Instana.agent.start
-    end
+```Ruby
+Thread.new do
+  ::Instana.agent.start
+end
+```
 
 ### Components
 
@@ -70,8 +76,10 @@ Current components are `:gc`, `:memory` and `:thread`.
 
 This gem will detect and automagically insert the Instana Rack middleware into the middleware stack when Ruby on Rails is present.  We are currently adding support for more frameworks.  If you are using a framework other than Ruby on Rails, you can insert the Instana Rack middleware with the following:
 
-    require "instana/rack"
-    config.middleware.use ::Instana::Rack
+```Ruby
+require "instana/rack"
+config.middleware.use ::Instana::Rack
+```
 
 ...or whatever specific middleware call is appropriate for your framework.
 
