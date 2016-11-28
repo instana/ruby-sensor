@@ -110,7 +110,7 @@ module Instana
 
     # Sets up periodic timers and starts the agent in a background thread.
     #
-    def start
+    def setup
       # The announce timer
       # We attempt to announce this ruby sensor to the host agent.
       # In case of failure, we try again in 30 seconds.
@@ -146,20 +146,23 @@ module Instana
         end
       end
 
-      # Start the background ruby sensor thread.  It works off of timers and
-      # is sleeping otherwise
-      Thread.new do
-        loop {
-          if @state == :unannounced
-            @collect_timer.pause
-            @announce_timer.resume
-          else
-            @announce_timer.pause
-            @collect_timer.resume
-          end
-          @timers.wait
-        }
-      end
+    end
+
+    # Starts the timer loop for the timers that were initialized
+    # in the setup method.  This is blocking and should only be
+    # called from an already initialized background thread.
+    #
+    def start
+      loop {
+        if @state == :unannounced
+          @collect_timer.pause
+          @announce_timer.resume
+        else
+          @announce_timer.pause
+          @collect_timer.resume
+        end
+        @timers.wait
+      }
     end
 
     # Indicates if the agent is ready to send metrics
