@@ -1,4 +1,4 @@
-<div align="right">
+<div align="center">
 <img src="https://www.instana.com/wp-content/uploads/2016/04/stan@2x.png" height="300px"/>
 </div>
 
