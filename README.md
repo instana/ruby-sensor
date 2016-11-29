@@ -61,6 +61,25 @@ Thread.new do
 end
 ```
 
+#### Caveat
+
+In the case of forking webservers such as Unicorn or Puma in clustered mode, the agent detects the pid change and re-spawns the background thread.  If you are managing the background thread yourself with the steps above _and_ you are using a forking webserver (or anything else that may fork the original process), you should also do the following.
+
+When a fork is detected, the agent handles the re-initialization and then calls `::Agent.instana.spawn_background_thread`.  This by default uses the standard `Thread.new`.  If you wish to control this, you should override this method by re-defining that method.  For example:
+
+```ruby
+# This method can be overridden with the following:
+#
+module Instana
+  class Agent
+    def spawn_background_thread
+      # start/identify custom thread
+      ::Instana.agent.start
+    end
+  end
+end
+```
+
 ### Components
 
 Individual components can be disabled with a local config.
