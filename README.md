@@ -116,3 +116,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/instana/ruby-sensor.
 
+## More
+
+Want Chef change visibility for your deploys?  Checkout [instana-chef](https://github.com/instana/instana-chef).
+
