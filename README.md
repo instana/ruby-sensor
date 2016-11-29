@@ -1,5 +1,5 @@
 <div align="center">
-<img src="http://www.instana.com/wp-content/uploads/2016/11/Instana-Infrastructure-Map-1-1024x551.png" height="300px"/>
+<img src="http://www.instana.com/wp-content/uploads/2016/11/Instana-Infrastructure-Map-1-1024x551.png"/>
 </div>
 
 # Instana
