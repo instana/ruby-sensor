@@ -152,7 +152,10 @@ module Instana
         Instana.logger.debug "id_to_header received a #{id.class}: returning empty string"
         return String.new
       end
-      id.to_i.to_s(16)
+      [id.to_i].pack('q>').unpack('H*')[0]
+    rescue => e
+      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug e.backtrace.join("\r\n")
     end
 
     # Convert a received header value into a valid ID
@@ -166,7 +169,10 @@ module Instana
         Instana.logger.debug "header_to_id received a #{header_id.class}: returning 0"
         return 0
       end
-      header_id.to_i(16)
+      [header_id].pack("H*").unpack("q>")[0]
+    rescue => e
+      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug e.backtrace.join("\r\n")
     end
 
     # Returns the trace ID for the active trace (if there is one),

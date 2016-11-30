@@ -201,8 +201,10 @@ class TracerTest < Minitest::Test
   end
 
   def test_id_to_header_conversion
+    trace = ::Instana::Trace.new(:blah)
+
     # Test passing a standard Integer ID
-    original_id = rand(2**32..2**64-1)
+    original_id = trace.send(:generate_id)
     converted_id = Instana.tracer.id_to_header(original_id)
 
     # Assert that it is a string and there are no non-hex characters
@@ -210,7 +212,7 @@ class TracerTest < Minitest::Test
     assert !converted_id[/\H/]
 
     # Test passing a standard Integer ID as a String
-    original_id = rand(2**32..2**64-1).to_s
+    original_id = trace.send(:generate_id)
     converted_id = Instana.tracer.id_to_header(original_id)
 
     # Assert that it is a string and there are no non-hex characters
@@ -224,7 +226,7 @@ class TracerTest < Minitest::Test
 
     # Assert that it is a string and there are no non-hex characters
     assert converted_id.is_a?(String)
-    assert converted_id == "0"
+    assert converted_id == "0000000000000000"
 
     # Test passing a nil
     converted_id = Instana.tracer.id_to_header(nil)
@@ -242,13 +244,14 @@ class TracerTest < Minitest::Test
   end
 
   def test_header_to_id_conversion
+    trace = ::Instana::Trace.new(:blah)
+
     # Get a hex string to test against & convert
-    header_id = Instana.tracer.id_to_header(rand(2**32..2**64-1))
+    header_id = Instana.tracer.id_to_header(trace.send(:generate_id))
     converted_id = Instana.tracer.header_to_id(header_id)
 
     # Assert that it is an Integer
     assert converted_id.is_a?(Integer)
-    assert converted_id > 0
   end
 
   def test_header_to_id_conversion_with_bogus_header
@@ -266,8 +269,10 @@ class TracerTest < Minitest::Test
   end
 
   def test_id_conversion_back_and_forth
+    trace = ::Instana::Trace.new(:blah)
+
     # id --> header --> id
-    original_id = rand(2**32..2**64-1)
+    original_id = trace.send(:generate_id)
     header_id = Instana.tracer.id_to_header(original_id)
     converted_back_id = Instana.tracer.header_to_id(header_id)
     assert original_id == converted_back_id
@@ -278,4 +283,18 @@ class TracerTest < Minitest::Test
     converted_back_header_id = Instana.tracer.id_to_header(id)
     assert_equal original_header_id, converted_back_header_id
   end
+
+  def test_id_max_value_and_conversion
+    max_id = 9223372036854775807
+    min_id = -9223372036854775808
+    max_hex = "7fffffffffffffff"
+    min_hex = "8000000000000000"
+
+    assert_equal max_hex, Instana.tracer.id_to_header(max_id)
+    assert_equal min_hex, Instana.tracer.id_to_header(min_id)
+
+    assert_equal max_id, Instana.tracer.header_to_id(max_hex)
+    assert_equal min_id, Instana.tracer.header_to_id(min_hex)
+  end
+
 end

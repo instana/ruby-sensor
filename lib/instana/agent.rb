@@ -94,33 +94,50 @@ module Instana
     # the host agent.
     #
     def after_fork
-      ::Instana.logger.debug "after_fork hook called. Falling back to unannounced state."
+      ::Instana.logger.debug "after_fork hook called. Falling back to unannounced state and spawning a new background agent thread."
 
       # Re-collect process information post fork
       @pid = Process.pid
       collect_process_info
 
-      # Set last snapshot to 10 minutes ago
-      # so we send a snapshot sooner than later
-      @last_snapshot = Time.now - 600
-
       transition_to(:unannounced)
-      start
+      setup
+      spawn_background_thread
+    end
+
+    # Spawns the background thread and calls start.  This method is separated
+    # out for those who wish to control which thread the background agent will
+    # run in.
+    #
+    # This method can be overridden with the following:
+    #
+    # module Instana
+    #   class Agent
+    #     def spawn_background_thread
+    #       # start thread
+    #       start
+    #     end
+    #   end
+    # end
+    #
+    def spawn_background_thread
+      # The thread calling fork is the only thread in the created child process.
+      # fork doesn’t copy other threads.
+      # Restart our background thread
+      Thread.new do
+        start
+      end
     end
 
     # Sets up periodic timers and starts the agent in a background thread.
     #
-    def start
+    def setup
       # The announce timer
       # We attempt to announce this ruby sensor to the host agent.
       # In case of failure, we try again in 30 seconds.
       @announce_timer = @timers.now_and_every(30) do
-        if forked?
-          after_fork
-          break
-        end
         if host_agent_ready? && announce_sensor
-          ::Instana.logger.debug "Announce successful. Switching to metrics collection."
+          ::Instana.logger.debug "Announce successful. Switching to metrics collection. pid: #{Process.pid}"
           transition_to(:announced)
         end
       end
@@ -130,10 +147,6 @@ module Instana
       # every ::Instana::Collector.interval seconds.
       @collect_timer = @timers.every(::Instana::Collector.interval) do
         if @state == :announced
-          if forked?
-            after_fork
-            break
-          end
           unless ::Instana::Collector.collect_and_report
             # If report has been failing for more than 1 minute,
             # fall back to unannounced state
@@ -145,20 +158,22 @@ module Instana
           ::Instana.processor.send
         end
       end
+    end
 
-      # Start the background ruby sensor thread.  It works off of timers and
-      # is sleeping otherwise
-      Thread.new do
-        loop {
-          if @state == :unannounced
-            @collect_timer.pause
-            @announce_timer.resume
-          else
-            @announce_timer.pause
-            @collect_timer.resume
-          end
-          @timers.wait
-        }
+    # Starts the timer loop for the timers that were initialized
+    # in the setup method.  This is blocking and should only be
+    # called from an already initialized background thread.
+    #
+    def start
+      loop do
+        if @state == :unannounced
+          @collect_timer.pause
+          @announce_timer.resume
+        else
+          @announce_timer.pause
+          @collect_timer.resume
+        end
+        @timers.wait
       end
     ensure
       if @state == :announced
@@ -173,13 +188,22 @@ module Instana
     end
 
     # Indicates if the agent is ready to send metrics
-    # or data.
+    # and/or data.
     #
     def ready?
       # In test, we're always ready :-)
       return true if ENV['INSTANA_GEM_TEST']
 
+      if forked?
+        ::Instana.logger.debug "Instana: detected fork.  Calling after_fork"
+        after_fork
+      end
+
       @state == :announced
+    rescue => e
+      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug e.backtrace.join("\r\n")
+      return false
     end
 
     # Returns the PID that we are reporting to
@@ -351,6 +375,10 @@ module Instana
         @last_snapshot = Time.now - 601
       when :unannounced
         @state = :unannounced
+
+        # Set last snapshot to 10 minutes ago
+        # so we send a snapshot on first report
+        @last_snapshot = Time.now - 601
       else
         ::Instana.logger.warn "Uknown agent state: #{state}"
       end
