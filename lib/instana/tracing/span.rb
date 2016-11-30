@@ -33,5 +33,9 @@ module Instana
     def raw
       @data
     end
+
+    def custom?
+      @data[:n] == :sdk
+    end
   end
 end
