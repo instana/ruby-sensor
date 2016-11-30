@@ -176,7 +176,15 @@ module Instana
         @timers.wait
       end
     ensure
-      Instana.logger.debug "Agent start method exiting.  state: #{@state} pid: #{Process.pid}"
+      if @state == :announced
+        # Pause the timers so they don't fire while we are
+        # reporting traces
+        @collect_timer.pause
+        @announce_timer.pause
+
+        ::Instana.logger.debug "Instana: Agent exiting. Reporting final #{::Instana.processor.queue_count} trace(s)."
+        ::Instana.processor.send
+      end
     end
 
     # Indicates if the agent is ready to send metrics

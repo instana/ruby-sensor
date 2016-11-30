@@ -30,7 +30,7 @@ module Instana
       return if @queue.empty?
 
       size = @queue.size
-      if size > 10
+      if size > 100
         Instana.logger.debug "Trace queue is #{size}"
       end
 
