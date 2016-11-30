@@ -29,7 +29,7 @@ class NetHTTPTest < Minitest::Test
     second_span = spans[1]
 
     # Span name validation
-    assert_equal 'net-http-test', first_span[:n]
+    assert_equal :sdk, first_span[:n]
     assert_equal :'net-http', second_span[:n]
 
     # first_span is the parent of second_span
