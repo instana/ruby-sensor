@@ -1,0 +1,9 @@
+require "instana/rack"
+
+# This instrumentation will insert Rack into Sinatra _and_ Padrino since
+# the latter is based on Sinatra
+
+if defined?(::Sinatra)
+  ::Instana.logger.warn "Instana: Instrumenting Sinatra"
+  ::Sinatra::Base.use ::Instana::Rack
+end
