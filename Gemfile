@@ -8,6 +8,10 @@ group :development, :test do
   gem 'rack-test'
   gem 'webmock'
 
+  # Frameworks
+  gem "sinatra", '1.4.7'
+
+  # Webservers
   gem "puma"
 
   # Rack v2 dropped support for Ruby 2.2 and higher.
