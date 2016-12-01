@@ -10,6 +10,7 @@ group :development, :test do
 
   # Frameworks
   gem "sinatra", '1.4.7'
+  gem "cuba"
 
   # Webservers
   gem "puma"
