@@ -15,6 +15,13 @@ This gem supports Ruby versions 2.0 or greater.
 
 Any and all feedback is welcome.  Happy Ruby visibility.
 
+![rails](https://s3.amazonaws.com/instana/rails-logo.jpg)
+![roda](https://s3.amazonaws.com/instana/roda-logo.png)
+![cuba](https://s3.amazonaws.com/instana/cuba-logo.png)
+![sinatra](https://s3.amazonaws.com/instana/sinatra-logo.png)
+![padrino](https://s3.amazonaws.com/instana/padrino-logo.png)
+![rack](https://s3.amazonaws.com/instana/rack-logo.png)
+
 ## Installation
 
 The gem is available on [Rubygems](https://rubygems.org/gems/instana).  To install, add this line to _the end_ of your application's Gemfile:
