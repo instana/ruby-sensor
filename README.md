@@ -93,7 +93,7 @@ Current components are `:gc`, `:memory` and `:thread`.
 
 ### Rack Middleware
 
-This gem will detect and automagically insert the Instana Rack middleware into the middleware stack when Ruby on Rails is present.  We are currently adding support for more frameworks.  If you are using a framework other than Ruby on Rails, you can insert the Instana Rack middleware with the following:
+This gem will detect and automagically insert the Instana Rack middleware into the middleware stack when a [supported framework](https://instana.atlassian.net/wiki/display/DOCS/Ruby) is present.  We are currently adding support for more frameworks.  If you are using a yet to be instrumented framework, you can insert the Instana Rack middleware with the following:
 
 ```Ruby
 require "instana/rack"
