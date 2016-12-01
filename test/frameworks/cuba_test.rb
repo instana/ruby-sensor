@@ -13,8 +13,8 @@ class CubaTest < Minitest::Test
     r = get '/hello'
     assert last_response.ok?
 
-    refute_nil r.headers.key?("X-Instana-T")
-    refute_nil r.headers.key?("X-Instana-S")
+    assert r.headers.key?("X-Instana-T")
+    assert r.headers.key?("X-Instana-S")
 
     spans = ::Instana.processor.queued_spans
     assert_equal 1, spans.count
