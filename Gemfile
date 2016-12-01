@@ -2,7 +2,7 @@ source 'https://rubygems.org'
 
 group :development, :test do
   gem 'rake'
-  gem 'minitest'
+  gem 'minitest', '5.9.1'
   gem 'minitest-reporters'
   gem 'minitest-debugger', :require => false
   gem 'rack-test'

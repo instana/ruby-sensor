@@ -94,7 +94,7 @@ module Instana
     # the host agent.
     #
     def after_fork
-      ::Instana.logger.debug "after_fork hook called. Falling back to unannounced state and spawning a new background agent thread."
+      ::Instana.logger.agent "after_fork hook called. Falling back to unannounced state and spawning a new background agent thread."
 
       # Re-collect process information post fork
       @pid = Process.pid
@@ -137,7 +137,7 @@ module Instana
       # In case of failure, we try again in 30 seconds.
       @announce_timer = @timers.now_and_every(30) do
         if host_agent_ready? && announce_sensor
-          ::Instana.logger.debug "Announce successful. Switching to metrics collection. pid: #{Process.pid}"
+          ::Instana.logger.debug "Announce successful. Switching to metrics collection."
           transition_to(:announced)
         end
       end
@@ -165,6 +165,7 @@ module Instana
     # called from an already initialized background thread.
     #
     def start
+      ::Instana.logger.warn "Host agent not available.  Will retry periodically." unless host_agent_ready?
       loop do
         if @state == :unannounced
           @collect_timer.pause
@@ -182,7 +183,7 @@ module Instana
         @collect_timer.pause
         @announce_timer.pause
 
-        ::Instana.logger.debug "Instana: Agent exiting. Reporting final #{::Instana.processor.queue_count} trace(s)."
+        ::Instana.logger.debug "Agent exiting. Reporting final #{::Instana.processor.queue_count} trace(s)."
         ::Instana.processor.send
       end
     end
@@ -195,7 +196,7 @@ module Instana
       return true if ENV['INSTANA_GEM_TEST']
 
       if forked?
-        ::Instana.logger.debug "Instana: detected fork.  Calling after_fork"
+        ::Instana.logger.agent "Instana: detected fork.  Calling after_fork"
         after_fork
       end
 
@@ -224,7 +225,7 @@ module Instana
       req = Net::HTTP::Put.new(uri)
       req.body = announce_payload.to_json
 
-      # ::Instana.logger.debug "Announce: http://#{@host}:#{@port}/#{DISCOVERY_PATH} - payload: #{req.body}"
+      ::Instana.logger.agent "Announce: http://#{@host}:#{@port}/#{DISCOVERY_PATH} - payload: #{req.body}"
 
       response = make_host_agent_request(req)
 
@@ -271,8 +272,6 @@ module Instana
       if response
         last_entity_response = response.code.to_i
 
-        #::Instana.logger.debug "entity http://#{@host}:#{@port}/#{path}: response=#{last_entity_response}: #{payload.to_json}"
-
         if last_entity_response == 200
           @entity_last_seen = Time.now
           @last_snapshot = Time.now if with_snapshot
@@ -303,8 +302,6 @@ module Instana
 
       if response
         last_trace_response = response.code.to_i
-
-        #::Instana.logger.debug "traces response #{last_trace_response}: #{spans.to_json}"
 
         if [200, 204].include?(last_trace_response)
           return true
@@ -362,6 +359,7 @@ module Instana
     #   `:announced`, `:unannounced`
     #
     def transition_to(state)
+      ::Instana.logger.agent("Transitioning to #{state}")
       case state
       when :announced
         # announce successful; set state
@@ -399,6 +397,7 @@ module Instana
       Net::HTTP.start(req.uri.hostname, req.uri.port, :open_timeout => 1, :read_timeout => 1) do |http|
         response = http.request(req)
       end
+      ::Instana.logger.agent_comm "#{req.method} Req -> -body-: #{req.uri} -> -#{req.body}- Resp -> body:#{response} -> -#{response.body}-"
       response
     rescue Errno::ECONNREFUSED => e
       return nil

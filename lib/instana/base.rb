@@ -1,5 +1,5 @@
-require 'logger'
 require "instana/version"
+require 'instana/logger'
 require "instana/util"
 
 module Instana
@@ -19,7 +19,7 @@ module Instana
     # to run" state.
     #
     def setup
-      @logger = Logger.new(STDOUT)
+      @logger = ::Instana::XLogger.new(STDOUT)
       if ENV.key?('INSTANA_GEM_TEST') || ENV.key?('INSTANA_GEM_DEV')
         @logger.level = Logger::DEBUG
       else
