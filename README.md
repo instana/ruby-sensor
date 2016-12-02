@@ -17,12 +17,12 @@ This gem supports Ruby versions 2.0 or greater.
 
 Any and all feedback is welcome.  Happy Ruby visibility.
 
-![rails](https://s3.amazonaws.com/instana/rails-logo.jpg?1)
-![roda](https://s3.amazonaws.com/instana/roda-logo.png?1)
-![cuba](https://s3.amazonaws.com/instana/cuba-logo.png?1)
-![sinatra](https://s3.amazonaws.com/instana/sinatra-logo.png?1)
-![padrino](https://s3.amazonaws.com/instana/padrino-logo.png?1)
-![rack](https://s3.amazonaws.com/instana/rack-logo.png?1)
+[![rails](https://s3.amazonaws.com/instana/rails-logo.jpg?1)](http://rubyonrails.org/)
+[![roda](https://s3.amazonaws.com/instana/roda-logo.png?1)](http://roda.jeremyevans.net/)
+[![cuba](https://s3.amazonaws.com/instana/cuba-logo.png?1)](http://cuba.is/)
+[![sinatra](https://s3.amazonaws.com/instana/sinatra-logo.png?1)](http://www.sinatrarb.com/)
+[![padrino](https://s3.amazonaws.com/instana/padrino-logo.png?1)](http://padrinorb.com/)
+[![rack](https://s3.amazonaws.com/instana/rack-logo.png?1)](https://rack.github.io/)
 
 ## Installation
 
