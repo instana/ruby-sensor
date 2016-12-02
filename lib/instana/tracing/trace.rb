@@ -1,5 +1,7 @@
 module Instana
   class Trace
+    REGISTERED_SPANS = [ :rack, :'net-http' ]
+
     # @return [Integer] the ID for this trace
     attr_reader :id
 
@@ -31,13 +33,19 @@ module Instana
       # This is a new trace so open the first span with the proper
       # root span IDs.
       @current_span = Span.new({
-        :s => @id,      # Span ID
-        :n => name,     # Span name
-        :ts => ts_now,  # Timestamp
-        :ta => :ruby,   # Agent
-        :data => kvs,   # Data
+        :s => @id,         # Span ID
+        :ts => ts_now,     # Timestamp
+        :ta => :ruby,      # Agent
         :f => { :e => ::Instana.agent.report_pid, :h => ::Instana.agent.agent_uuid } # Entity Source
       })
+
+      # Check for custom tracing
+      if !REGISTERED_SPANS.include?(name.to_sym)
+        configure_custom_span(name, kvs)
+      else
+        @current_span[:n]    = name.to_sym
+        @current_span[:data] = kvs
+      end
 
       # Handle potential incoming context
       if incoming_context.empty?
@@ -65,15 +73,22 @@ module Instana
         :s => generate_id,          # Span ID
         :t => @id,                  # Trace ID (same as :s for root span)
         :p => @current_span[:s],    # Parent ID
-        :n => name,                 # Span name
         :ts => ts_now,              # Timestamp
         :ta => :ruby,               # Agent
-        :data => kvs,               # Data
         :f => { :e => Process.pid, :h => :agent_id } # Entity Source
       })
+
       new_span.parent = @current_span
       @spans.add(new_span)
       @current_span = new_span
+
+      # Check for custom tracing
+      if !REGISTERED_SPANS.include?(name.to_sym)
+        configure_custom_span(name, kvs)
+      else
+        @current_span[:n]    = name.to_sym
+        @current_span[:data] = kvs
+      end
     end
 
     # Add KVs to the current span
@@ -81,7 +96,15 @@ module Instana
     # @param kvs [Hash] list of key values to be reported in the span
     #
     def add_info(kvs)
-      @current_span[:data].merge!(kvs)
+      if @current_span.custom?
+        if @current_span[:data][:sdk].key?(:custom)
+          @current_span[:data][:sdk][:custom].merge!(kvs)
+        else
+          @current_span[:data][:sdk][:custom] = kvs
+        end
+      else
+        @current_span[:data].merge!(kvs)
+      end
     end
 
     # Log an error into the current span
@@ -90,6 +113,24 @@ module Instana
     #
     def add_error(e)
       @current_span[:error] = true
+
+      if @current_span.key?(:ec)
+        @current_span[:ec] = @current_span[:ec] + 1
+      else
+        @current_span[:ec] = 1
+      end
+
+      #if e.backtrace && e.backtrace.is_a?(Array)
+      #  @current_span[:stack] = []
+      #  e.backtrace.each do |x|
+      #    file, line, method = x.split(':')
+      #    @current_span[:stack] << {
+      #      :f => file,
+      #      :n => line
+      #      #:m => method
+      #    }
+      #  end
+      #end
     end
 
     # Close out the current span and set the parent as
@@ -133,7 +174,9 @@ module Instana
     def has_error?
       @spans.each do |s|
         if s.key?(:error)
-          return s[:error]
+          if s[:error] == true
+            return true
+          end
         end
       end
       false
@@ -149,6 +192,26 @@ module Instana
     end
 
     private
+
+    # Configure @current_span to be a custom span per the
+    # SDK generic span type.
+    #
+    def configure_custom_span(name, kvs = {})
+      @current_span[:n] = :sdk
+      @current_span[:data] = { :sdk => { :name => name.to_sym } }
+      @current_span[:data][:sdk][:type] = kvs.key?(:type) ? kvs[:type] : :local
+
+      if kvs.key?(:arguments)
+        @current_span[:data][:sdk][:arguments] = kvs[:arguments]
+      end
+
+      if kvs.key?(:return)
+        @current_span[:data][:sdk][:return] = kvs[:return]
+      end
+      @current_span[:data][:sdk][:custom] = kvs unless kvs.empty?
+      #@current_span[:data][:sdk][:custom][:tags] = {}
+      #@current_span[:data][:sdk][:custom][:logs] = {}
+    end
 
     # Get the current time in milliseconds
     #

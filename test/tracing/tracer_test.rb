@@ -11,7 +11,7 @@ class TracerTest < Minitest::Test
 
     assert_equal false, ::Instana.tracer.tracing?
 
-    ::Instana.tracer.start_or_continue_trace(:test_trace, {:one => 1}) do
+    ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do
       assert_equal true, ::Instana.tracer.tracing?
       sleep 0.5
     end
@@ -23,7 +23,7 @@ class TracerTest < Minitest::Test
     assert t.valid?
 
     first_span = t.spans.first
-    assert_equal :test_trace, first_span[:n]
+    assert_equal :rack, first_span[:n]
     assert_equal :ruby, first_span[:ta]
     assert first_span.key?(:data)
     assert_equal 1, first_span[:data][:one]
@@ -37,7 +37,7 @@ class TracerTest < Minitest::Test
     ::Instana.processor.clear!
     exception_raised = false
     begin
-      ::Instana.tracer.start_or_continue_trace(:test_trace, {:one => 1}) do
+      ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do
         raise Exception.new('Error in block - this should continue to propogate outside of tracing')
       end
     rescue Exception
@@ -53,7 +53,7 @@ class TracerTest < Minitest::Test
     assert t.valid?
 
     first_span = t.spans.first
-    assert_equal :test_trace, first_span[:n]
+    assert_equal :rack, first_span[:n]
     assert_equal :ruby, first_span[:ta]
     assert first_span.key?(:data)
     assert_equal 1, first_span[:data][:one]
@@ -66,7 +66,7 @@ class TracerTest < Minitest::Test
 
   def test_complex_trace_block
     ::Instana.processor.clear!
-    ::Instana.tracer.start_or_continue_trace(:test_trace, {:one => 1}) do
+    ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do
       sleep 0.2
       ::Instana.tracer.trace(:sub_block, {:sub_two => 2}) do
         sleep 0.2
@@ -85,11 +85,11 @@ class TracerTest < Minitest::Test
 
     assert_equal false, ::Instana.tracer.tracing?
     # Start tracing
-    ::Instana.tracer.log_start_or_continue(:test_trace, {:one => 1})
+    ::Instana.tracer.log_start_or_continue(:rack, {:one => 1})
     assert_equal true, ::Instana.tracer.tracing?
     ::Instana.tracer.log_info({:info_logged => 1})
     # End tracing
-    ::Instana.tracer.log_end(:test_trace, {:close_one => 1})
+    ::Instana.tracer.log_end(:rack, {:close_one => 1})
     assert_equal false, ::Instana.tracer.tracing?
 
     traces = ::Instana.processor.queued_traces
@@ -105,7 +105,7 @@ class TracerTest < Minitest::Test
     assert_equal false, ::Instana.tracer.tracing?
 
     # Start tracing
-    ::Instana.tracer.log_start_or_continue(:test_trace, {:one => 1})
+    ::Instana.tracer.log_start_or_continue(:rack, {:one => 1})
     assert_equal true, ::Instana.tracer.tracing?
     ::Instana.tracer.log_info({:info_logged => 1})
 
@@ -118,7 +118,7 @@ class TracerTest < Minitest::Test
     assert_equal true, ::Instana.tracer.tracing?
 
     # End tracing
-    ::Instana.tracer.log_end(:test_trace, {:close_one => 1})
+    ::Instana.tracer.log_end(:rack, {:close_one => 1})
     assert_equal false, ::Instana.tracer.tracing?
 
     traces = ::Instana.processor.queued_traces
@@ -129,7 +129,7 @@ class TracerTest < Minitest::Test
     assert t.valid?
 
     first_span = t.spans.first
-    assert_equal :test_trace, first_span[:n]
+    assert_equal :rack, first_span[:n]
     assert_equal :ruby, first_span[:ta]
     assert first_span.key?(:data)
     assert_equal 1, first_span[:data][:one]
@@ -179,7 +179,7 @@ class TracerTest < Minitest::Test
 
   def test_instana_headers_in_response
     ::Instana.processor.clear!
-    ::Instana.tracer.start_or_continue_trace(:test_trace, {:one => 1}) do
+    ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do
       sleep 0.5
     end
 
@@ -190,7 +190,7 @@ class TracerTest < Minitest::Test
     assert t.valid?
 
     first_span = t.spans.first
-    assert_equal :test_trace, first_span[:n]
+    assert_equal :rack, first_span[:n]
     assert_equal :ruby, first_span[:ta]
     assert first_span.key?(:data)
     assert_equal 1, first_span[:data][:one]
@@ -296,5 +296,4 @@ class TracerTest < Minitest::Test
     assert_equal max_id, Instana.tracer.header_to_id(max_hex)
     assert_equal min_id, Instana.tracer.header_to_id(min_hex)
   end
-
 end

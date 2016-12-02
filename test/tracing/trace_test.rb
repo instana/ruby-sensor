@@ -23,8 +23,18 @@ class TraceTest < Minitest::Test
 
     # Max is the maximum value for a Java signed long
     max_value = 9223372036854775807
-    100.times do
+    1000.times do
       assert t.send(:generate_id) <= max_value
+    end
+  end
+
+  def test_min_value_of_generated_id
+    t = ::Instana::Trace.new(:test_id)
+
+    # Max is the maximum value for a Java signed long
+    max_value = -9223372036854775808
+    1000.times do
+      assert t.send(:generate_id) >= max_value
     end
   end
 end

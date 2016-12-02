@@ -397,7 +397,7 @@ module Instana
       Net::HTTP.start(req.uri.hostname, req.uri.port, :open_timeout => 1, :read_timeout => 1) do |http|
         response = http.request(req)
       end
-      ::Instana.logger.agent_comm "#{req.method} Req -> -body-: #{req.uri} -> -#{req.body}- Resp -> body:#{response} -> -#{response.body}-"
+      ::Instana.logger.agent_comm "#{req.method}->#{req.uri} body:(#{req.body}) Response:#{response} body:(#{response.body})"
       response
     rescue Errno::ECONNREFUSED
       return nil
