@@ -4,6 +4,6 @@ require "instana/rack"
 # the latter is based on Sinatra
 
 if defined?(::Sinatra)
-  ::Instana.logger.warn "Instana: Instrumenting Sinatra"
+  ::Instana.logger.warn "Instrumenting Sinatra"
   ::Sinatra::Base.use ::Instana::Rack
 end
