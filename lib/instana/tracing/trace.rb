@@ -97,7 +97,11 @@ module Instana
     #
     def add_info(kvs)
       if @current_span.custom?
-        @current_span[:data][:sdk][:custom].merge!(kvs)
+        if @current_span[:data][:sdk].key?(:custom)
+          @current_span[:data][:sdk][:custom].merge!(kvs)
+        else
+          @current_span[:data][:sdk][:custom] = kvs
+        end
       else
         @current_span[:data].merge!(kvs)
       end
@@ -109,20 +113,24 @@ module Instana
     #
     def add_error(e)
       @current_span[:error] = true
-      @current_span[:ec] = 1
-      @current_span[:stack] = []
 
-      if e.backtrace && e.backtrace.is_a?(Array)
-        e.backtrace.each do |x|
-          file, line, method = x.split(':')
-          @current_span[:stack] << {
-            :f => file,
-            :n => line,
-            :m => method
-          }
-          break
-        end
+      if @current_span.key?(:ec)
+        @current_span[:ec] = @current_span[:ec] + 1
+      else
+        @current_span[:ec] = 1
       end
+
+      #if e.backtrace && e.backtrace.is_a?(Array)
+      #  @current_span[:stack] = []
+      #  e.backtrace.each do |x|
+      #    file, line, method = x.split(':')
+      #    @current_span[:stack] << {
+      #      :f => file,
+      #      :n => line
+      #      #:m => method
+      #    }
+      #  end
+      #end
     end
 
     # Close out the current span and set the parent as
@@ -188,10 +196,10 @@ module Instana
     # Configure @current_span to be a custom span per the
     # SDK generic span type.
     #
-    def configure_custom_span(name, kvs)
+    def configure_custom_span(name, kvs = {})
       @current_span[:n] = :sdk
       @current_span[:data] = { :sdk => { :name => name.to_sym } }
-      @current_span[:data][:sdk][:type] = kvs.key?(:type) ? kvs[:type] : :unknown
+      @current_span[:data][:sdk][:type] = kvs.key?(:type) ? kvs[:type] : :local
 
       if kvs.key?(:arguments)
         @current_span[:data][:sdk][:arguments] = kvs[:arguments]
@@ -201,6 +209,8 @@ module Instana
         @current_span[:data][:sdk][:return] = kvs[:return]
       end
       @current_span[:data][:sdk][:custom] = kvs unless kvs.empty?
+      #@current_span[:data][:sdk][:custom][:tags] = {}
+      #@current_span[:data][:sdk][:custom][:logs] = {}
     end
 
     # Get the current time in milliseconds

@@ -140,12 +140,7 @@ class CustomTracingTest < Minitest::Test
 
     # Check the error
     assert_equal true, second_span[:error]
-    assert second_span.key?(:stack)
-    assert_equal 23, second_span[:stack].count
-    first_line = second_span[:stack].first
-    assert_equal '/Users/pglombardo/Projects/instana/ruby-sensor/test/tracing/custom_test.rb', first_line[:f]
-    assert_equal '104', first_line[:n]
-    assert_equal "in `test_custom_tracing_with_error'", first_line[:m]
+    assert_equal 1, second_span[:ec]
   end
 
 end
