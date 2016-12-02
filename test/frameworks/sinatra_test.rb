@@ -10,6 +10,8 @@ class SinatraTest < Minitest::Test
   end
 
   def test_basic_get
+    ::Instana.processor.clear!
+
     r = get '/'
     assert last_response.ok?
 
