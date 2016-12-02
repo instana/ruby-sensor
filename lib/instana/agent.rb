@@ -399,7 +399,7 @@ module Instana
       end
       ::Instana.logger.agent_comm "#{req.method} Req -> -body-: #{req.uri} -> -#{req.body}- Resp -> body:#{response} -> -#{response.body}-"
       response
-    rescue Errno::ECONNREFUSED => e
+    rescue Errno::ECONNREFUSED
       return nil
     rescue => e
       Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
