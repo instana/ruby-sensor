@@ -13,6 +13,9 @@ group :development, :test do
   gem "cuba"
   gem "roda"
 
+  # HTTP Clients
+  gem 'rest-client'
+
   # Webservers
   gem "puma"
 
