@@ -14,6 +14,14 @@ module Instana
       @data[:p]
     end
 
+    def name
+      if custom?
+        @data[:data][:sdk][:name]
+      else
+        @data[:n]
+      end
+    end
+
     def is_root?
       @data[:s] == @data[:t]
     end
