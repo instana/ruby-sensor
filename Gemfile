@@ -19,6 +19,9 @@ group :development, :test do
   # Webservers
   gem "puma"
 
+  # HTTP Clients
+  gem 'excon'
+
   # Rack v2 dropped support for Ruby 2.2 and higher.
   if RUBY_VERSION < '2.2'
     gem 'rack', '< 2.0'

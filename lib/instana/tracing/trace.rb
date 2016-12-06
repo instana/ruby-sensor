@@ -1,6 +1,6 @@
 module Instana
   class Trace
-    REGISTERED_SPANS = [ :rack, :'net-http', :'rest-client' ]
+    REGISTERED_SPANS = [ :rack, :'net-http', :'rest-client', :excon ]
 
     # @return [Integer] the ID for this trace
     attr_reader :id
@@ -103,7 +103,15 @@ module Instana
           @current_span[:data][:sdk][:custom] = kvs
         end
       else
-        @current_span[:data].merge!(kvs)
+        kvs.each_pair do |k,v|
+          if !@current_span[:data].key?(k)
+            @current_span[:data][k] = v
+          elsif v.is_a?(Hash) && @current_span[:data][k].is_a?(Hash)
+            @current_span[:data][k].merge!(v)
+          else
+            @current_span[:data][k] = v
+          end
+        end
       end
     end
 
@@ -189,6 +197,23 @@ module Instana
     #
     def current_span_id
       @current_span.id
+    end
+
+    # Get the name of the current span.  Supports both registered spans
+    # and custom sdk spans.
+    #
+    def current_span_name
+      @current_span.name
+    end
+
+    # Check if the current span has the name value of <name>
+    #
+    # @param name [Symbol] The name to be checked against.
+    #
+    # @return [Boolean]
+    #
+    def current_span_name?(name)
+      @current_span.name == name
     end
 
     private

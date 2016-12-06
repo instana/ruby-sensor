@@ -9,6 +9,9 @@ module Instana
       @config[:metrics][:gc]     = { :enabled => true }
       @config[:metrics][:memory] = { :enabled => true }
       @config[:metrics][:thread] = { :enabled => true }
+
+      # HTTP Clients
+      @config[:excon] = { :enabled => true }
     end
 
     def [](key)
