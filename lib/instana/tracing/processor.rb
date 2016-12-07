@@ -83,7 +83,7 @@ module Instana
       spans = queued_spans
 
       # Check staged traces if any have completed
-      if @staging_queue.size
+      if @staging_queue.size > 0
         @staging_queue.delete_if do |t|
           if t.complete?
             t.spans.each do |s|
