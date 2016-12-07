@@ -9,7 +9,7 @@ module Instana
     thread_local :current_trace
 
     #######################################
-    # Tracing blocks helper methods
+    # Tracing blocks API methods
     #######################################
 
     # Will start a new trace or continue an on-going one (such as
@@ -50,7 +50,7 @@ module Instana
     end
 
     #######################################
-    # Lower level tracing methods
+    # Lower level tracing API methods
     #######################################
 
     # Will start a new trace or continue an on-going one (such as
@@ -92,6 +92,10 @@ module Instana
     # Add an error to the current span
     #
     # @param e [Exception] Add exception to the current span
+    # @param ids [Hash] the Trace ID and Span ID in the form of
+    #   :trace_id => 12345
+    #   :span_id => 12345
+    #   otherwise, @current_span will be used.
     #
     def log_error(e)
       return unless tracing?
@@ -111,33 +115,6 @@ module Instana
       self.current_trace.end_span(kvs)
     end
 
-    # Starts a new asynchronous span
-    #
-    # @param name [String] the name of the span to create
-    # @param kvs [Hash] list of key values to be reported in the span
-    #
-    # @return [Hash] the Trace ID and Span ID in the form of
-    #   :trace_id => 12345
-    #   :span_id => 12345
-    #
-    def log_async_entry(name, kvs)
-      return unless tracing?
-      self.current_trace.new_async_span(name, kvs)
-    end
-
-    # Closes out an asynchronous span
-    #
-    # @param name [String] the name of the async span to exit (close out)
-    # @param kvs [Hash] list of key values to be reported in the span
-    # @param ids [Hash] the Trace ID and Span ID in the form of
-    #   :trace_id => 12345
-    #   :span_id => 12345
-    #
-    def log_async_exit(name, kvs, ids)
-      return unless tracing?
-      self.current_trace.end_async_span(kvs, ids)
-    end
-
     # Closes out the current span in the current trace
     # and queues the trace for reporting
     #
@@ -151,9 +128,85 @@ module Instana
       return unless tracing?
 
       self.current_trace.finish(kvs)
-      Instana.processor.add(self.current_trace)
+
+      if !self.current_trace.has_async? ||
+          (self.current_trace.has_async? && self.current_trace.async_complete?)
+        Instana.processor.add(self.current_trace)
+      else
+        # This trace still has outstanding/uncompleted asynchronous spans.
+        # Put it in the staging queue until the async span closes out or
+        # 5 minutes has passed.  Whichever comes first.
+        Instana.processor.stage(self.current_trace)
+      end
       self.current_trace = nil
     end
+
+    ###########################################################################
+    # Asynchronous API methods
+    ###########################################################################
+
+    # Starts a new asynchronous span on the current trace.
+    #
+    # @param name [String] the name of the span to create
+    # @param kvs [Hash] list of key values to be reported in the span
+    #
+    # @return [Hash] the Trace ID and Span ID in the form of
+    #   :trace_id => 12345
+    #   :span_id => 12345
+    #
+    def log_async_entry(name, kvs)
+      return unless tracing?
+      self.current_trace.new_async_span(name, kvs)
+    end
+
+    # Add an error to an asynchronous span
+    #
+    # @param e [Exception] Add exception to the current span
+    # @param ids [Hash] the Trace ID and Span ID in the form of
+    #   :trace_id => 12345
+    #   :span_id => 12345
+    #
+    def log_async_error(e, ids)
+      return unless tracing?
+
+      # Asynchronous spans can persist longer than the parent
+      # trace.  With the trace ID, we check the current trace
+      # but otherwise, we search staged traces.
+
+      if self.current_trace.id == ids[:trace_id]
+        self.current_trace.add_async_error(e, ids)
+      else
+        trace = ::Instana.processor.staged_trace(ids)
+        trace.add_async_error(e, ids)
+      end
+    end
+
+    # Closes out an asynchronous span
+    #
+    # @param name [String] the name of the async span to exit (close out)
+    # @param kvs [Hash] list of key values to be reported in the span
+    # @param ids [Hash] the Trace ID and Span ID in the form of
+    #   :trace_id => 12345
+    #   :span_id => 12345
+    #
+    def log_async_exit(name, kvs, ids)
+      return unless tracing?
+
+      # An asynchronous span can end after the current trace has
+      # already completed so we make sure that we end the span
+      # on the right trace.
+
+      if self.current_trace.id == ids[:trace_id]
+        self.current_trace.end_async_span(kvs, ids)
+      else
+        trace = ::Instana.processor.staged_trace(ids)
+        trace.end_async_span(e, ids)
+      end
+    end
+
+    ###########################################################################
+    # Helper methods
+    ###########################################################################
 
     # Indicates if we're are currently in the process of
     # collecting a trace.  This is false when the host agent isn
@@ -168,10 +221,20 @@ module Instana
       self.current_trace ? true : false
     end
 
+    # Take the current trace_id and convert it to a header compatible
+    # format.
+    #
+    # @return [String] a hexadecimal representation of the current trace ID
+    #
     def trace_id_header
       id_to_header(trace_id)
     end
 
+    # Take the current span_id and convert it to a header compatible
+    # formate.
+    #
+    # @return [String] a hexadecimal representation of the current span ID
+    #
     def span_id_header
       id_to_header(span_id)
     end
