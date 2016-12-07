@@ -134,7 +134,6 @@ module Instana
 
       span[:error] = true
 
-      ::Instana::Util.pry!
       if span.key?(:ec)
         span[:ec] = span[:ec] + 1
       else
@@ -323,7 +322,7 @@ module Instana
     # Configure @current_span to be a custom span per the
     # SDK generic span type.
     #
-    # @param span [Span] the span to configure
+    # @param span [Span] the span to configure or nil
     # @param name [String] name of the span
     # @param kvs [Hash] list of key values to be reported in the span
     #
