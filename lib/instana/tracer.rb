@@ -92,10 +92,6 @@ module Instana
     # Add an error to the current span
     #
     # @param e [Exception] Add exception to the current span
-    # @param ids [Hash] the Trace ID and Span ID in the form of
-    #   :trace_id => 12345
-    #   :span_id => 12345
-    #   otherwise, @current_span will be used.
     #
     def log_error(e)
       return unless tracing?
