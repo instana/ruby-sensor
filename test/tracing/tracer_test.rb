@@ -177,6 +177,55 @@ class TracerTest < Minitest::Test
     assert t.has_error?
   end
 
+  def test_async_tracing
+    ::Instana.processor.clear!
+
+    # Start tracing
+    ::Instana.tracer.log_start_or_continue(:rack, {:rack_start_kv => 1})
+
+    # Start an asynchronous span
+    ids = ::Instana.tracer.log_async_entry(:my_async_op, { :entry_kv => 1})
+
+    refute_nil ids[:trace_id]
+    refute_nil ids[:span_id]
+
+    # Current span should still be rack
+    assert_equal :rack, ::Instana.tracer.current_trace.current_span_name
+
+    # End an asynchronous span
+    ::Instana.tracer.log_async_exit(:my_async_op, { :exit_kv => 1 }, ids)
+
+    # Current span should still be rack
+    assert_equal :rack, ::Instana.tracer.current_trace.current_span_name
+
+    # End tracing
+    ::Instana.tracer.log_end(:rack, {:rack_end_kv => 1})
+
+    traces = ::Instana.processor.queued_traces
+    assert_equal 1, traces.count
+    t = traces.first
+    assert_equal 2, t.spans.size
+    spans = t.spans.to_a
+    first_span = spans[0]
+    second_span = spans[1]
+
+    # Both spans have a duration
+    assert first_span[:d]
+    assert second_span[:d]
+
+    # first_span is the parent of first_span
+    assert_equal first_span[:s], second_span[:p]
+    # same trace id
+    assert_equal first_span[:t], second_span[:t]
+
+    # KV checks
+    assert_equal 1, first_span[:data][:rack_start_kv]
+    assert_equal 1, first_span[:data][:rack_end_kv]
+    assert_equal 1, second_span[:data][:sdk][:custom][:entry_kv]
+    assert_equal 1, second_span[:data][:sdk][:custom][:exit_kv]
+  end
+
+
   def test_instana_headers_in_response
     ::Instana.processor.clear!
     ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do

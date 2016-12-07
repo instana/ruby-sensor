@@ -41,7 +41,7 @@ module Instana
 
       # Check for custom tracing
       if !REGISTERED_SPANS.include?(name.to_sym)
-        configure_custom_span(name, kvs)
+        configure_custom_span(nil, name, kvs)
       else
         @current_span[:n]    = name.to_sym
         @current_span[:data] = kvs
@@ -84,32 +84,70 @@ module Instana
 
       # Check for custom tracing
       if !REGISTERED_SPANS.include?(name.to_sym)
-        configure_custom_span(name, kvs)
+        configure_custom_span(nil, name, kvs)
       else
         @current_span[:n]    = name.to_sym
         @current_span[:data] = kvs
       end
     end
 
-    # Add KVs to the current span
+    # Start a new asynchronous span
     #
+    # The major differentiator between this method and simple new_span is that
+    # this method doesn't affect @current_trace and instead returns an
+    # ID pair that can be used later to close out the created async span.
+    #
+    # @param name [String] the name of the span to start
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def add_info(kvs)
-      if @current_span.custom?
-        if @current_span[:data][:sdk].key?(:custom)
-          @current_span[:data][:sdk][:custom].merge!(kvs)
+    def new_async_span(name, kvs)
+      return unless @current_span
+
+      new_span = Span.new({
+        :s => generate_id,          # Span ID
+        :t => @id,                  # Trace ID (same as :s for root span)
+        :p => @current_span[:s],    # Parent ID
+        :ts => ts_now,              # Timestamp
+        :ta => :ruby,               # Agent
+        :async => true,             # Asynchonous
+        :f => { :e => Process.pid, :h => :agent_id } # Entity Source
+      })
+
+      new_span.parent = @current_span
+      @spans.add(new_span)
+
+      # Check for custom tracing
+      if !REGISTERED_SPANS.include?(name.to_sym)
+        configure_custom_span(new_span, name, kvs)
+      else
+        new_span[:n]    = name.to_sym
+        new_span[:data] = kvs
+      end
+      { :trace_id => new_span[:t], :span_id => new_span[:s] }
+    end
+
+    # Add KVs to the current span
+    #
+    # @param span [Span] the span to add kvs to
+    # @param kvs [Hash] list of key values to be reported in the span
+    #
+    def add_info(span, kvs)
+      span ||= @current_span
+
+      if span.custom?
+        if span[:data][:sdk].key?(:custom)
+          span[:data][:sdk][:custom].merge!(kvs)
         else
-          @current_span[:data][:sdk][:custom] = kvs
+          span[:data][:sdk][:custom] = kvs
         end
       else
         kvs.each_pair do |k,v|
-          if !@current_span[:data].key?(k)
-            @current_span[:data][k] = v
-          elsif v.is_a?(Hash) && @current_span[:data][k].is_a?(Hash)
-            @current_span[:data][k].merge!(v)
+          if !span[:data].key?(k)
+            span[:data][k] = v
+          elsif v.is_a?(Hash) && span[:data][k].is_a?(Hash)
+            span[:data][k].merge!(v)
           else
-            @current_span[:data][k] = v
+            span[:data][k] = v
           end
         end
       end
@@ -148,8 +186,26 @@ module Instana
     #
     def end_span(kvs = {})
       @current_span[:d] = ts_now - @current_span[:ts]
-      add_info(kvs) unless kvs.empty?
+      add_info(@current_span, kvs) unless kvs.empty?
       @current_span = @current_span.parent unless @current_span.is_root?
+    end
+
+    # End an asynchronous span
+    #
+    # @param kvs [Hash] list of key values to be reported in the span
+    # @param ids [Hash] the Trace ID and Span ID in the form of
+    #   :trace_id => 12345
+    #   :span_id => 12345
+    #
+    def end_async_span(kvs = {}, ids)
+      # find the span based on ids
+      # async_span = blah
+      @spans.each do |span|
+        if span[:s] == ids[:span_id]
+          span[:d] = ts_now - span[:ts]
+          add_info(span, kvs) unless kvs.empty?
+        end
+      end
     end
 
     # Closes out the final span in this trace and runs any finalizer
@@ -221,21 +277,23 @@ module Instana
     # Configure @current_span to be a custom span per the
     # SDK generic span type.
     #
-    def configure_custom_span(name, kvs = {})
-      @current_span[:n] = :sdk
-      @current_span[:data] = { :sdk => { :name => name.to_sym } }
-      @current_span[:data][:sdk][:type] = kvs.key?(:type) ? kvs[:type] : :local
+    def configure_custom_span(span, name, kvs = {})
+      span ||= @current_span
+
+      span[:n] = :sdk
+      span[:data] = { :sdk => { :name => name.to_sym } }
+      span[:data][:sdk][:type] = kvs.key?(:type) ? kvs[:type] : :local
 
       if kvs.key?(:arguments)
-        @current_span[:data][:sdk][:arguments] = kvs[:arguments]
+        span[:data][:sdk][:arguments] = kvs[:arguments]
       end
 
       if kvs.key?(:return)
-        @current_span[:data][:sdk][:return] = kvs[:return]
+        span[:data][:sdk][:return] = kvs[:return]
       end
-      @current_span[:data][:sdk][:custom] = kvs unless kvs.empty?
-      #@current_span[:data][:sdk][:custom][:tags] = {}
-      #@current_span[:data][:sdk][:custom][:logs] = {}
+      span[:data][:sdk][:custom] = kvs unless kvs.empty?
+      #span[:data][:sdk][:custom][:tags] = {}
+      #span[:data][:sdk][:custom][:logs] = {}
     end
 
     # Get the current time in milliseconds

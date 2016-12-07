@@ -86,7 +86,7 @@ module Instana
     #
     def log_info(kvs)
       return unless tracing?
-      self.current_trace.add_info(kvs)
+      self.current_trace.add_info(nil, kvs)
     end
 
     # Add an error to the current span
@@ -98,7 +98,7 @@ module Instana
       self.current_trace.add_error(e)
     end
 
-    # Will close out the current span
+    # Closes out the current span
     #
     # @note `name` isn't really required but helps keep sanity that
     # we're closing out the span that we really want to close out.
@@ -109,6 +109,33 @@ module Instana
     def log_exit(name, kvs = {})
       return unless tracing?
       self.current_trace.end_span(kvs)
+    end
+
+    # Starts a new asynchronous span
+    #
+    # @param name [String] the name of the span to create
+    # @param kvs [Hash] list of key values to be reported in the span
+    #
+    # @return [Hash] the Trace ID and Span ID in the form of
+    #   :trace_id => 12345
+    #   :span_id => 12345
+    #
+    def log_async_entry(name, kvs)
+      return unless tracing?
+      self.current_trace.new_async_span(name, kvs)
+    end
+
+    # Closes out an asynchronous span
+    #
+    # @param name [String] the name of the async span to exit (close out)
+    # @param kvs [Hash] list of key values to be reported in the span
+    # @param ids [Hash] the Trace ID and Span ID in the form of
+    #   :trace_id => 12345
+    #   :span_id => 12345
+    #
+    def log_async_exit(name, kvs, ids)
+      return unless tracing?
+      self.current_trace.end_async_span(kvs, ids)
     end
 
     # Closes out the current span in the current trace
@@ -139,6 +166,14 @@ module Instana
       # indicates if we are currently tracing
       # in this thread or not.
       self.current_trace ? true : false
+    end
+
+    def trace_id_header
+      id_to_header(trace_id)
+    end
+
+    def span_id_header
+      id_to_header(span_id)
     end
 
     # Convert an ID to a value appropriate to pass in a header.
