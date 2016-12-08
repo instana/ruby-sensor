@@ -1,7 +1,6 @@
 module Instana
   module Instrumentation
     class Excon < ::Excon::Middleware::Base
-
       def request_call(datum)
         return @stack.request_call(datum) unless ::Instana.tracer.tracing?
 
@@ -10,9 +9,10 @@ module Instana
         payload[:http][:url] = "#{datum[:connection].instance_variable_get(:@socket_key)}#{path}"
         payload[:http][:method] = datum[:method] if datum.key?(:method)
 
-
         if datum[:pipeline] == true
-          datum[:instana_id] = ::Instana.tracer.log_async_entry(:excon, payload)
+          # Pass the context along in the datum so we get back on response
+          # and can close out the async span
+          datum[:instana_context] = ::Instana.tracer.log_async_entry(:excon, payload)
         else
           ::Instana.tracer.log_entry(:excon, payload)
         end
@@ -25,8 +25,10 @@ module Instana
       end
 
       def error_call(datum)
+        return @stack.error_call(datum) unless ::Instana.tracer.tracing?
+
         if datum[:pipeline] == true
-          ::Instana.tracer.log_async_error(datum[:error], datum[:instana_id])
+          ::Instana.tracer.log_async_error(datum[:error], datum[:instana_context])
         else
           ::Instana.tracer.log_error(datum[:error])
         end
@@ -34,6 +36,8 @@ module Instana
       end
 
       def response_call(datum)
+        return @stack.response_call(datum) unless ::Instana.tracer.tracing?
+
         result =  @stack.response_call(datum)
 
         status = datum[:status]
@@ -42,7 +46,8 @@ module Instana
         end
 
         if datum[:pipeline] == true
-          ::Instana.tracer.log_async_exit(:excon, { :http => {:status => status } }, datum[:instana_id])
+          # Pickup context of this async span from datum[:instana_id]
+          ::Instana.tracer.log_async_exit(:excon, { :http => {:status => status } }, datum[:instana_context])
         else
           ::Instana.tracer.log_exit(:excon, { :http => {:status => status } })
         end

@@ -22,6 +22,10 @@ module Instana
       end
     end
 
+    def duration
+      @data[:d]
+    end
+
     def is_root?
       @data[:s] == @data[:t]
     end

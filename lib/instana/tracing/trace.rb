@@ -14,9 +14,9 @@ module Instana
     # @param name [String] the name of the span to start
     # @param kvs [Hash] list of key values to be reported in the span
     # @param incoming_context [Hash] specifies the incoming context.  At a
-    #   minimum, it should specify :trace_id and :parent_id from the following:
+    #   minimum, it should specify :trace_id and :span_id from the following:
     #     :trace_id the trace ID (must be an unsigned hex-string)
-    #     :parent_id the ID of the parent span (must be an unsigned hex-string)
+    #     :span_id the ID of the parent span (must be an unsigned hex-string)
     #     :level specifies data collection level (optional)
     #
     def initialize(name, kvs = {}, incoming_context = {})
@@ -62,7 +62,7 @@ module Instana
       else
         @id = incoming_context[:trace_id]
         @current_span[:t] = incoming_context[:trace_id]
-        @current_span[:p] = incoming_context[:parent_id]
+        @current_span[:p] = incoming_context[:span_id]
       end
 
       @spans.add(@current_span)
@@ -174,9 +174,19 @@ module Instana
     #
     # @param name [String] the name of the span to start
     # @param kvs [Hash] list of key values to be reported in the span
+    # @param t_context [Hash] the Trace ID and Span ID in the form of
+    #   :trace_id => 12345
+    #   :span_id => 12345
+    #   This can be retrieved by using ::Instana.tracer.context
     #
-    def new_async_span(name, kvs)
-      return unless @current_span
+    def new_async_span(name, kvs, t_context = nil)
+      if t_context
+        if @current_span
+          ::Instana.logger.trace "new_async_span: overwriting existing context!"
+        else
+          #pickup context
+        end
+      end
 
       new_span = Span.new({
         :s => generate_id,          # Span ID
@@ -205,26 +215,33 @@ module Instana
       { :trace_id => new_span[:t], :span_id => new_span[:s] }
     end
 
+    # Log info into an asynchronous span
+    #
+    # @param kvs [Hash] list of key values to be reported in the span
+    # @param span [Span] the span to configure
+    #
+    def add_async_info(kvs, ids)
+      @spans.each do |span|
+        if span[:s] == ids[:span_id]
+          add_info(kvs, span)
+        end
+      end
+    end
+
     # Log an error into an asynchronous span
     #
     # @param span [Span] the span to configure
     # @param e [Exception] Add exception to the current span
     #
-    def add_async_error(ids, e)
+    def add_async_error(e, ids)
       @spans.each do |span|
-        if span[:s] == ids[:span_id]
-          span[:error] = true
-          if span.key?(:ec)
-            span[:ec] = span[:ec] + 1
-          else
-            span[:ec] = 1
-          end
-        end
+        add_error(e, span)
       end
     end
 
     # End an asynchronous span
     #
+    # @param name [Symbol] the name of the span
     # @param kvs [Hash] list of key values to be reported in the span
     # @param ids [Hash] the Trace ID and Span ID in the form of
     #   :trace_id => 12345
@@ -259,9 +276,9 @@ module Instana
     # Indicates if every span of this trace has completed.  Useful when
     # asynchronous spans potentially could run longer than the parent trace.
     #
-    def async_complete?
+    def complete?
       @spans.each do |span|
-        if span.key?(:async) && !span.key?(:d)
+        if !span.duration
           return false
         end
       end
@@ -317,6 +334,21 @@ module Instana
       @current_span.name == name
     end
 
+    # For traces that have asynchronous spans, this method indicates
+    # whether we have hit the timeout on waiting for those async
+    # spans to close out.
+    #
+    # @return [Boolean]
+    #
+    def discard?
+      # If this trace has async spans that have not closed
+      # out in 5 minutes, then it's discarded.
+      if has_async? && (Time.now.to_i - @started_at.to_i) > 601
+        return true
+      end
+      false
+    end
+
     private
 
     # Configure @current_span to be a custom span per the
@@ -363,21 +395,6 @@ module Instana
       else
         #::Instana.processor.staged_trace(
       end
-    end
-
-    # For traces that have asynchronous spans, this method indicates
-    # whether we have hit the timeout on waiting for those async
-    # spans to close out.
-    #
-    # @return [Boolean]
-    #
-    def discard?
-      # If this trace has async spans that have not closed
-      # out in 5 minutes, then it's discarded.
-      if has_async? && @started_at > 600
-        return true
-      end
-      false
     end
 
     # Get the current time in milliseconds

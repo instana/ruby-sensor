@@ -19,7 +19,7 @@ module Instana
       incoming_context = {}
       if env.key?('HTTP_X_INSTANA_T')
         incoming_context[:trace_id]  = ::Instana.tracer.header_to_id(env['HTTP_X_INSTANA_T'])
-        incoming_context[:parent_id] = ::Instana.tracer.header_to_id(env['HTTP_X_INSTANA_S']) if env.key?('HTTP_X_INSTANA_S')
+        incoming_context[:span_id]   = ::Instana.tracer.header_to_id(env['HTTP_X_INSTANA_S']) if env.key?('HTTP_X_INSTANA_S')
         incoming_context[:level]     = env['HTTP_X_INSTANA_L'] if env.key?('HTTP_X_INSTANA_L')
       end
 

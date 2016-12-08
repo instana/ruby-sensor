@@ -10,7 +10,7 @@ class TraceTest < Minitest::Test
   end
 
   def test_trace_with_incoming_context
-    incoming_context = { :trace_id => "1234", :parent_id => "4321" }
+    incoming_context = { :trace_id => "1234", :span_id => "4321" }
     t = ::Instana::Trace.new(:test_trace, { :one => 1, :two => 2 }, incoming_context)
     first_span = t.spans.first
     assert_equal "1234", first_span[:t]

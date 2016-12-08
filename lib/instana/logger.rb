@@ -12,6 +12,12 @@ module Instana
       super(*args)
     end
 
+    # Sets the debug level for this logger.  The debug level is broken up into various
+    # sub-levels as defined in LEVELS.
+    #
+    # To use:
+    # ::Instana.logger.debug_level = [:agent_comm, :trace]
+    #
     def debug_level=(levels)
       LEVELS.each do |l|
         instance_variable_set("@level_#{l}", false)
