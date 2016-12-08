@@ -2,7 +2,7 @@ require "logger"
 
 module Instana
   class XLogger < Logger
-    LEVELS = [:agent, :agent_comm].freeze
+    LEVELS = [:agent, :agent_comm, :trace].freeze
     STAMP = "Instana: ".freeze
 
     def initialize(*args)
@@ -12,6 +12,12 @@ module Instana
       super(*args)
     end
 
+    # Sets the debug level for this logger.  The debug level is broken up into various
+    # sub-levels as defined in LEVELS.
+    #
+    # To use:
+    # ::Instana.logger.debug_level = [:agent_comm, :trace]
+    #
     def debug_level=(levels)
       LEVELS.each do |l|
         instance_variable_set("@level_#{l}", false)
@@ -31,6 +37,11 @@ module Instana
 
     def agent_comm(msg)
       return unless @level_agent_comm
+      self.debug(msg)
+    end
+
+    def trace(msg)
+      return unless @level_trace
       self.debug(msg)
     end
 
