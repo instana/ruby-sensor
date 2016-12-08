@@ -79,7 +79,7 @@ module Instana
       new_span = Span.new({
         :s => generate_id,          # Span ID
         :t => @id,                  # Trace ID (same as :s for root span)
-        :p => @current_span[:s],    # Parent ID
+        :p => @current_span.id,     # Parent ID
         :ts => ts_now,              # Timestamp
         :ta => :ruby,               # Agent
         :f => { :e => Process.pid, :h => :agent_id } # Entity Source
@@ -146,7 +146,7 @@ module Instana
     #
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def end_span(kvs = {}, span = nil)
+    def end_span(kvs = {})
       @current_span[:d] = ts_now - @current_span[:ts]
       add_info(kvs) unless kvs.empty?
       @current_span = @current_span.parent unless @current_span.is_root?
@@ -191,7 +191,7 @@ module Instana
       new_span = Span.new({
         :s => generate_id,          # Span ID
         :t => @id,                  # Trace ID (same as :s for root span)
-        :p => @current_span[:s],    # Parent ID
+        :p => @current_span.id,     # Parent ID
         :ts => ts_now,              # Timestamp
         :ta => :ruby,               # Agent
         :async => true,             # Asynchonous
@@ -212,7 +212,7 @@ module Instana
       # Add the new span to the span collection
       @spans.add(new_span)
 
-      { :trace_id => new_span[:t], :span_id => new_span[:s] }
+      { :trace_id => new_span[:t], :span_id => new_span.id }
     end
 
     # Log info into an asynchronous span
@@ -222,7 +222,7 @@ module Instana
     #
     def add_async_info(kvs, ids)
       @spans.each do |span|
-        if span[:s] == ids[:span_id]
+        if span.id == ids[:span_id]
           add_info(kvs, span)
         end
       end
@@ -235,7 +235,7 @@ module Instana
     #
     def add_async_error(e, ids)
       @spans.each do |span|
-        add_error(e, span)
+        add_error(e, span) if span.id == ids[:span_id]
       end
     end
 
@@ -249,7 +249,7 @@ module Instana
     #
     def end_async_span(kvs = {}, ids)
       @spans.each do |span|
-        if span[:s] == ids[:span_id]
+        if span.id == ids[:span_id]
           span[:d] = ts_now - span[:ts]
           add_info(kvs, span) unless kvs.empty?
         end
