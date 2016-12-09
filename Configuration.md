@@ -16,6 +16,7 @@ what extra debug info it reports.  It allows for:
 * `:agent` - shows all agent state related debug messages
 * `:agent_comm` - outputs all request/response pairs to and from the
   host agent
+* `:trace` - outputs debug messages related to tracing and trace management
 
 Log messages can be generated for these channels using:
 
@@ -27,7 +28,7 @@ Log messages can be generated for these channels using:
 To set the debug log level:
 
 ```Ruby
-::Instana.logger.debug_level = [:agent, :agent_comm]
+::Instana.logger.debug_level = [:agent, :agent_comm, :trace]
 # or
 ::Instana.logger.debug_level = [:agent_comm]
 # or
