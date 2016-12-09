@@ -1,5 +1,8 @@
 # Tracing
 
+Tracing with Instana is automatic but if you want even more visibility into custom code or some in-house
+component, you can use the following API to report additional trace data to Instana.
+
 # The API
 
 The Instana Ruby gem provides a simple to use API to trace any arbitrary part of your application.
