@@ -36,22 +36,24 @@ tracing methods:
 ```Ruby
 ::Instana.tracer.log_entry(:prep_job, { :helpful_kvs => @job.name })
 
-# The Async proc that will be executed out of band.
-block = Proc.new do 
-  t_context = ::Instana.tracer.log_async_entry(:my_async_op, { :helpful_kvs => true })
-  # Some Asynchronous work to be done
-  ::Instana.tracer.log_async_info({:info_kv => 1}, t_context)
-  # More Asynchronous work
-  ::Instana.tracer.log_async_exit(:my_async_op, { :helpful_exit_kv => true }, t_context)
+http_ops = {:get => "/", :post => "/post_data"}
+
+cb_block = Proc.new do |response, payload|
+  # The callback block that is invoked on HTTP response (payload == t_context)
+  #
+  # process response
+  #
+  ::Instana.tracer.log_async_exit(:http_op, :status => response.status, payload)
 end
 
-MyClass.run_in_1_minute(block)
-
-::Instana.tracer.log_exit(:prep_job, { :helpful_kvs => @job.name })
-
-# Then later (even after this request/job has completed) you the block can be called and will be
-# automatically be associated with the trace that spawned it.
-block.call
+http_ops.each do |op|
+  t_context = ::Instana.tracer.log_async_entry(:http_op)
+  
+  # Example op that returns immediately
+  request_id = connection.async_request(op, cb_block, t_context)
+  
+  ::Instana.tracer.log_async_info({:request_id => request_id}, t_context)
+end  
 ```
 
 # Carrying Context into New Threads
@@ -79,4 +81,29 @@ Thread.new do
   end
 end
 ```
+# Tracing Jobs Scheduled for Later
 
+Jobs that are queued to be run later can be instrumented as such:
+
+```Ruby
+::Instana.tracer.log_entry(:prep_job, { :job_name => @job.name })
+
+# Get the current tracing context
+t_context = ::Instana.tracer.context
+
+# The Async proc (job) that will be executed out of band.
+block = Proc.new do 
+  # This will pickup context and link the two traces (root + job)
+  t_context = ::Instana.tracer.log_start_or_continue_trace(:my_async_op, { :helpful_kvs => true }, t_context)
+  #
+  # Some Asynchronous work to be done
+  #
+  ::Instana.tracer.log_info({:job_name => Job.get(id).name})
+  # More Asynchronous work
+  ::Instana.tracer.log_end(:my_async_op, { :job_success => true })
+end
+
+MyClass.run_in_5_minutes(block)
+
+::Instana.tracer.log_exit(:prep_job, { :prep_successful => true })
+```
