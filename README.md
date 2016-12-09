@@ -48,6 +48,10 @@ The instana gem is a zero configuration tool that will automatically collect key
 
 Although the gem has no configuration required for out of the box metrics and tracing, components can be configured if needed.  See [Configuration.md](https://github.com/instana/ruby-sensor/blob/master/Configuration.md).
 
+## Tracing
+
+See [Tracing.md](https://github.com/instana/ruby-sensor/blob/master/Tracing.md)
+
 ## Documentation
 
 You can find more documentation covering supported components and minimum versions in the Instana [documentation portal](https://instana.atlassian.net/wiki/display/DOCS/Ruby).
