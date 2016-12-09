@@ -46,70 +46,7 @@ The instana gem is a zero configuration tool that will automatically collect key
 
 ## Configuration
 
-Although the gem has no configuration required for out of the box metrics and tracing, components can be configured if needed.
-
-### Agent Reporting
-
-This agent spawns a lightweight background thread to periodically collect and report metrics and traces.  Be default, this uses a standard Ruby thread.  If you wish to have greater control and potentially boot the agent reporting manually in an alternative thread system (such as actor based threads), you can do so with the following:
-
-```Ruby
-gem "instana", :require => "instana/setup"
-```
-
-...then in the background thread of your choice simply call:
-
-```Ruby
-::Instana.agent.start
-```
-
-Note that this call is blocking.  It kicks off a loop of timers that periodically collects and reports metrics and trace data.  This should only be called from inside an already initialized background thread:
-
-```Ruby
-Thread.new do
-  ::Instana.agent.start
-end
-```
-
-#### Caveat
-
-In the case of forking webservers such as Unicorn or Puma in clustered mode, the agent detects the pid change and re-spawns the background thread.  If you are managing the background thread yourself with the steps above _and_ you are using a forking webserver (or anything else that may fork the original process), you should also do the following.
-
-When a fork is detected, the agent handles the re-initialization and then calls `::Agent.instana.spawn_background_thread`.  This by default uses the standard `Thread.new`.  If you wish to control this, you should override this method by re-defining that method.  For example:
-
-```ruby
-# This method can be overridden with the following:
-#
-module Instana
-  class Agent
-    def spawn_background_thread
-      # start/identify custom thread
-      ::Instana.agent.start
-    end
-  end
-end
-```
-
-### Components
-
-Individual components can be disabled with a local config.
-
-To disable a single component in the gem, you can disable a single component with the following code:
-
-```Ruby
-::Instana.config[:metrics][:gc][:enabled] = false
-```
-Current components are `:gc`, `:memory` and `:thread`.
-
-### Rack Middleware
-
-This gem will detect and automagically insert the Instana Rack middleware into the middleware stack when a [supported framework](https://instana.atlassian.net/wiki/display/DOCS/Ruby) is present.  We are currently adding support for more frameworks.  If you are using a yet to be instrumented framework, you can insert the Instana Rack middleware with the following:
-
-```Ruby
-require "instana/rack"
-config.middleware.use ::Instana::Rack
-```
-
-...or whatever specific middleware call is appropriate for your framework.
+Although the gem has no configuration required for out of the box metrics and tracing, components can be configured if needed.  See [Configuration.md](https://github.com/instana/ruby-sensor/blob/master/Configuration.md).
 
 ## Documentation
 
