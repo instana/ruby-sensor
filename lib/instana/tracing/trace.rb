@@ -1,6 +1,6 @@
 module Instana
   class Trace
-    REGISTERED_SPANS = [ :rack, :'net-http', :'rest-client', :excon ]
+    REGISTERED_SPANS = [ :rack, :'net-http', :excon ]
 
     # @return [Integer] the ID for this trace
     attr_reader :id

@@ -72,7 +72,7 @@ module Instana
     #   - Prevent another run of the timer while this is running
     #
     def send
-      return if @queue.empty?
+      return if @queue.empty? || ENV['INSTANA_GEM_TEST']
 
       size = @queue.size
       if size > 100

@@ -25,10 +25,10 @@ class RestClientTest < Minitest::Test
     third_span = spans[2]
 
     # Span name validation
-    assert_equal :sdk, first_span[:n]
-    assert_equal :"restclient-test", first_span[:data][:sdk][:name]
-    assert_equal :"rest-client", second_span[:n]
-    assert_equal :"net-http", third_span[:n]
+    assert first_span.custom?
+    assert_equal :"restclient-test", first_span.name
+    assert_equal :"rest-client", second_span.name
+    assert_equal :"net-http", third_span.name
 
     # first_span is the parent of second_span
     assert_equal first_span.id, second_span[:p]

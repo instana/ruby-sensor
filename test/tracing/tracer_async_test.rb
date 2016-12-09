@@ -76,7 +76,7 @@ class TracerAsyncTest < Minitest::Test
 
     assert_equal false, ::Instana.tracer.tracing?
 
-    # Sleep for 2 seconds to wait for the async thread to finish
+    # Sleep for 1 seconds to wait for the async thread to finish
     sleep 1
 
     traces = ::Instana.processor.queued_traces
