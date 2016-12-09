@@ -28,7 +28,7 @@ module Instana
         end
 
         # Report all the collected goodies
-        ::Instana.agent.report_entity_data(payload)
+        ::Instana.agent.report_entity_data(payload) unless ENV['INSTANA_GEM_TEST']
       end
 
     end
