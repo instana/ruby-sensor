@@ -174,19 +174,8 @@ module Instana
     #
     # @param name [String] the name of the span to start
     # @param kvs [Hash] list of key values to be reported in the span
-    # @param t_context [Hash] the Trace ID and Span ID in the form of
-    #   :trace_id => 12345
-    #   :span_id => 12345
-    #   This can be retrieved by using ::Instana.tracer.context
     #
-    def new_async_span(name, kvs, t_context = nil)
-      if t_context
-        if @current_span
-          ::Instana.logger.trace "new_async_span: overwriting existing context!"
-        else
-          #pickup context
-        end
-      end
+    def new_async_span(name, kvs)
 
       new_span = Span.new({
         :s => generate_id,          # Span ID

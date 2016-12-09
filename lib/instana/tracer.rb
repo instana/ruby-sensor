@@ -35,6 +35,12 @@ module Instana
 
     # Trace a block of code within the context of the exiting trace
     #
+    # Example usage:
+    #
+    # ::Instana.tracer.trace(:dbwork, { :db_name => @db.name }) do
+    #   @db.select(1)
+    # end
+    #
     # @param name [String] the name of the span to start
     # @param kvs [Hash] list of key values to be reported in this new span
     #
@@ -145,10 +151,6 @@ module Instana
     #
     # @param name [String] the name of the span to create
     # @param kvs [Hash] list of key values to be reported in the span
-    # @param t_context [Hash] the Trace ID and Span ID in the form of
-    #   :trace_id => 12345
-    #   :span_id => 12345
-    #   This can be retrieved by using ::Instana.tracer.context
     #
     # @return [Hash] the context: Trace ID and Span ID in the form of
     #   :trace_id => 12345
@@ -156,7 +158,7 @@ module Instana
     #
     def log_async_entry(name, kvs, incoming_context = nil)
       return unless tracing?
-      self.current_trace.new_async_span(name, kvs, incoming_context)
+      self.current_trace.new_async_span(name, kvs)
     end
 
     # Add info to an asynchronous span
