@@ -1,6 +1,8 @@
 module Instana
   class Trace
     REGISTERED_SPANS = [ :rack, :'net-http', :excon ]
+    ENTRY_SPANS = [ :rack ]
+    EXIT_SPANS = [ :'net-http', :excon ]
 
     # @return [Integer] the ID for this trace
     attr_reader :id
@@ -24,9 +26,6 @@ module Instana
       # up this trace.
       @spans = Set.new
 
-      # The current active span
-      @current_span = nil
-
       # Generate a random 64bit ID for this trace
       @id = generate_id
 
@@ -45,6 +44,11 @@ module Instana
         :ta => :ruby,      # Agent
         :f => { :e => ::Instana.agent.report_pid, :h => ::Instana.agent.agent_uuid } # Entity Source
       })
+
+      # For entry spans, add a backtrace fingerprint
+      if ENTRY_SPANS.include?(name)
+        add_stack(2)
+      end
 
       # Check for custom tracing
       if !REGISTERED_SPANS.include?(name.to_sym)
@@ -96,6 +100,11 @@ module Instana
         @current_span[:n]    = name.to_sym
         @current_span[:data] = kvs
       end
+
+      # Attach a backtrace to all exit spans
+      if EXIT_SPANS.include?(name)
+        add_stack
+      end
     end
 
     # Add KVs to the current span
@@ -139,6 +148,10 @@ module Instana
       else
         span[:ec] = 1
       end
+
+      add_info(:log => {
+        :message => e.message,
+        :parameters => e.class })
     end
 
     # Close out the current span and set the parent as
@@ -383,6 +396,33 @@ module Instana
         end
       else
         #::Instana.processor.staged_trace(
+      end
+    end
+
+    # Adds a backtrace to the passed in span or on
+    # @current_span if not.
+    #
+    def add_stack(n = nil, span = nil)
+      span ||= @current_span
+      span[:stack] = []
+
+      if n
+        backtrace = Kernel.caller[0..(n-1)]
+      else
+        backtrace = Kernel.caller
+      end
+
+      backtrace.each do |i|
+        if !i.match(::Instana::VERSION_FULL).nil?
+          x = i.split(':')
+
+          # Don't include Instana gem frames
+          span[:stack] << {
+            :c => x[0],
+            :n => x[1],
+            :m => x[2]
+          }
+        end
       end
     end
 
