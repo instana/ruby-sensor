@@ -406,19 +406,13 @@ module Instana
       span ||= @current_span
       span[:stack] = []
 
-      if n
-        backtrace = Kernel.caller[0..(n-1)]
-      else
-        backtrace = Kernel.caller
-      end
-
-      backtrace.each do |i|
-        if !i.match(::Instana::VERSION_FULL).nil?
+      Kernel.caller.each do |i|
+        if i.match(::Instana::VERSION_FULL).nil?
           x = i.split(':')
 
           # Don't include Instana gem frames
           span[:stack] << {
-            :c => x[0],
+            :f => x[0],
             :n => x[1],
             :m => x[2]
           }
