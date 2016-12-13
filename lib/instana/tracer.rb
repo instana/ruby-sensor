@@ -249,6 +249,8 @@ module Instana
     # Retrieve the current context of the tracer.
     #
     def context
+      return nil unless tracing?
+
       { :trace_id => self.current_trace.id,
         :span_id => self.current_trace.current_span_id }
     end
