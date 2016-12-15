@@ -415,8 +415,8 @@ module Instana
       bt.each do |i|
         # If the stack has the full instana gem version in it's path
         # then don't include that frame. Also don't exclude the Rack module.
-        if (i.match(::Instana::VERSION_FULL).nil? && i.match('ruby-sensor').nil?) ||
-            !i.match(/instana\/instrumentation\/rack.rb/).nil?
+        if !i.match(/instana\/instrumentation\/rack.rb/).nil? ||
+          (i.match(::Instana::VERSION_FULL).nil? && i.match('lib/instana/').nil?)
 
           break if limit && frame_count >= limit
 
