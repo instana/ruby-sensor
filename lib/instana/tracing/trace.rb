@@ -75,7 +75,7 @@ module Instana
     # @param name [String] the name of the span to start
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def new_span(name, kvs)
+    def new_span(name, kvs = {})
       return unless @current_span
 
       new_span = Span.new({
