@@ -50,6 +50,11 @@ module Instana
       self.debug(msg)
     end
 
+    def agent_response(msg)
+      return unless @level_agent_response
+      self.debug(msg)
+    end
+
     def error(msg)
       super(STAMP + msg)
     end
