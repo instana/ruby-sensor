@@ -65,6 +65,58 @@ module Instana
           require 'ruby-debug'; debugger
         end
       end
+
+      # Retrieves and returns the source code for any ruby
+      # files requested by the UI via the host agent
+      #
+      # @param file [String] The fully qualified path to a file
+      #
+      def get_rb_source(file)
+        if (file =~ /.rb$/).nil?
+          { :error => "Only Ruby source files are allowed. (*.rb)" }
+        else
+          { :data => File.read(file) }
+        end
+      rescue => e
+        return { :error => e.inspect }
+      end
+
+      # Method to collect up process info for snapshots.  This
+      # is generally used once per process.
+      #
+      def take_snapshot
+        data = {}
+
+        data[:sensorVersion] = ::Instana::VERSION
+        data[:ruby_version] = RUBY_VERSION
+
+        # Since a snapshot is only taken on process boot,
+        # this is ok here.
+        data[:start_time] = Time.now.to_s
+
+        # Framework Detection
+        if defined?(::RailsLts::VERSION)
+          data[:framework] = "Rails on Rails LTS-#{::RailsLts::VERSION}"
+
+        elsif defined?(::Rails.version)
+          data[:framework] = "Ruby on Rails #{::Rails.version}"
+
+        elsif defined?(::Grape::VERSION)
+          data[:framework] = "Grape #{::Grape::VERSION}"
+
+        elsif defined?(::Padrino::VERSION)
+          data[:framework] = "Padrino #{::Padrino::VERSION}"
+
+        elsif defined?(::Sinatra::VERSION)
+          data[:framework] = "Sinatra #{::Sinatra::VERSION}"
+        end
+
+        data
+      rescue => e
+        ::Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+        ::Instana.logger.debug e.backtrace.join("\r\n")
+        return data
+      end
     end
   end
 end

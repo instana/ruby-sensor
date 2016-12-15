@@ -15,6 +15,8 @@ module Instana
       # Run through each collector, let them collect up
       # data and then report what we have via the agent
       #
+      # @return Boolean true on success
+      #
       def collect_and_report
         payload = {}
 
@@ -27,10 +29,13 @@ module Instana
           end
         end
 
-        # Report all the collected goodies
-        ::Instana.agent.report_entity_data(payload) unless ENV['INSTANA_GEM_TEST']
+        if ENV['INSTANA_GEM_TEST']
+          true
+        else
+          # Report all the collected goodies
+          ::Instana.agent.report_entity_data(payload)
+        end
       end
-
     end
   end
 end

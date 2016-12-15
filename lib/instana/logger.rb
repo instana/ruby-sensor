@@ -2,7 +2,7 @@ require "logger"
 
 module Instana
   class XLogger < Logger
-    LEVELS = [:agent, :agent_comm, :trace].freeze
+    LEVELS = [:agent, :agent_comm, :trace, :agent_response].freeze
     STAMP = "Instana: ".freeze
 
     def initialize(*args)
@@ -13,7 +13,12 @@ module Instana
     end
 
     # Sets the debug level for this logger.  The debug level is broken up into various
-    # sub-levels as defined in LEVELS.
+    # sub-levels as defined in LEVELS:
+    #
+    # :agent          - All agent related messages such as state & announcements
+    # :agent_comm     - Output all payload comm sent between this Ruby gem and the host agent
+    # :trace          - Output all traces reported to the host agent
+    # :agent_response - Outputs messages related to handling requests received by the host agent
     #
     # To use:
     # ::Instana.logger.debug_level = [:agent_comm, :trace]

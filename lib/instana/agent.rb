@@ -27,7 +27,7 @@ module Instana
 
       # Snapshot data is collected once per process but resent
       # every 10 minutes along side process metrics.
-      @snapshot = take_snapshot
+      @snapshot = ::Instana::Util.take_snapshot
 
       # Set last snapshot to just under 10 minutes ago
       # so we send a snapshot sooner than later
@@ -80,14 +80,6 @@ module Instana
       # This is usually Process.pid but in the case of docker, the host agent
       # will return to us the true host pid in which we use to report data.
       @process[:report_pid] = nil
-    end
-
-    # Determine whether the pid has changed since Agent start.
-    #
-    # @ return [Boolean] true or false to indicate if forked
-    #
-    def forked?
-      @pid != Process.pid
     end
 
     # Used post fork to re-initialize state and restart communications with
@@ -147,7 +139,7 @@ module Instana
       # every ::Instana::Collector.interval seconds.
       @collect_timer = @timers.every(::Instana::Collector.interval) do
         if @state == :announced
-          unless ::Instana::Collector.collect_and_report
+          if !::Instana::Collector.collect_and_report
             # If report has been failing for more than 1 minute,
             # fall back to unannounced state
             if (Time.now - @entity_last_seen) > 60
@@ -186,31 +178,6 @@ module Instana
         ::Instana.logger.debug "Agent exiting. Reporting final #{::Instana.processor.queue_count} trace(s)."
         ::Instana.processor.send
       end
-    end
-
-    # Indicates if the agent is ready to send metrics
-    # and/or data.
-    #
-    def ready?
-      # In test, we're always ready :-)
-      return true if ENV['INSTANA_GEM_TEST']
-
-      if forked?
-        ::Instana.logger.agent "Instana: detected fork.  Calling after_fork"
-        after_fork
-      end
-
-      @state == :announced
-    rescue => e
-      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-      Instana.logger.debug e.backtrace.join("\r\n")
-      return false
-    end
-
-    # Returns the PID that we are reporting to
-    #
-    def report_pid
-      @process[:report_pid]
     end
 
     # Collect process ID, name and arguments to notify
@@ -270,19 +237,49 @@ module Instana
       response = make_host_agent_request(req)
 
       if response
-        last_entity_response = response.code.to_i
+        if response.body.length > 2
+          # The host agent returned something indicating that is has a request for us that we
+          # need to process.
+          handle_response(response.body)
+        end
 
-        if last_entity_response == 200
+        if response.code.to_i == 200
           @entity_last_seen = Time.now
           @last_snapshot = Time.now if with_snapshot
-
           return true
         end
+
       end
       false
     rescue => e
       Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
+    end
+
+    # When a request is received by the host agent, it is sent here
+    # from processing and response.
+    #
+    # @param json_string [String] the request from the host agent
+    #
+    def handle_response(json_string)
+      their_request = JSON.parse(json_string).first
+
+      if their_request.key?("action")
+        if their_request["action"] == "ruby.source"
+          payload = ::Instana::Util.get_rb_source(their_request["args"]["file"])
+        else
+          payload = { :error => "Unrecognized action: #{their_request["action"]}. An newer Instana gem may be required for this. Current version: #{::Instana::VERSION}" }
+        end
+      else
+        payload = { :error => "Instana Ruby: No action specified in request." }
+      end
+
+      path = "com.instana.plugin.ruby/response.#{@process[:report_pid]}?messageId=#{URI.encode(their_request['messageId'])}"
+      uri = URI.parse("http://#{@host}:#{@port}/#{path}")
+      req = Net::HTTP::Post.new(uri)
+      req.body = payload.to_json
+      ::Instana.logger.agent_response "Responding to agent: #{req.inspect}"
+      make_host_agent_request(req)
     end
 
     # Accept and report spans to the host agent.
@@ -346,6 +343,31 @@ module Instana
       false
     rescue => e
       Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug e.backtrace.join("\r\n")
+      return false
+    end
+
+    # Returns the PID that we are reporting to
+    #
+    def report_pid
+      @process[:report_pid]
+    end
+
+    # Indicates if the agent is ready to send metrics
+    # and/or data.
+    #
+    def ready?
+      # In test, we're always ready :-)
+      return true if ENV['INSTANA_GEM_TEST']
+
+      if forked?
+        ::Instana.logger.agent "Instana: detected fork.  Calling after_fork"
+        after_fork
+      end
+
+      @state == :announced
+    rescue => e
+      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
       return false
     end
@@ -424,41 +446,12 @@ module Instana
       v.match(/\d+/).to_s.to_i
     end
 
-    # Method to collect up process info for snapshots.  This
-    # is generally used once per process.
+    # Determine whether the pid has changed since Agent start.
     #
-    def take_snapshot
-      data = {}
-
-      data[:sensorVersion] = ::Instana::VERSION
-      data[:ruby_version] = RUBY_VERSION
-
-      # Since a snapshot is only taken on process boot,
-      # this is ok here.
-      data[:start_time] = Time.now.to_s
-
-      # Framework Detection
-      if defined?(::RailsLts::VERSION)
-        data[:framework] = "Rails on Rails LTS-#{::RailsLts::VERSION}"
-
-      elsif defined?(::Rails.version)
-        data[:framework] = "Ruby on Rails #{::Rails.version}"
-
-      elsif defined?(::Grape::VERSION)
-        data[:framework] = "Grape #{::Grape::VERSION}"
-
-      elsif defined?(::Padrino::VERSION)
-        data[:framework] = "Padrino #{::Padrino::VERSION}"
-
-      elsif defined?(::Sinatra::VERSION)
-        data[:framework] = "Sinatra #{::Sinatra::VERSION}"
-      end
-
-      data
-    rescue => e
-      ::Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-      ::Instana.logger.debug e.backtrace.join("\r\n")
-      return data
+    # @ return [Boolean] true or false to indicate if forked
+    #
+    def forked?
+      @pid != Process.pid
     end
   end
 end
