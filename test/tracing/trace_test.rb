@@ -37,4 +37,18 @@ class TraceTest < Minitest::Test
       assert t.send(:generate_id) >= max_value
     end
   end
+
+  def test_entry_span_has_stack_with_limit
+    t = ::Instana::Trace.new(:rack)
+    first_span = t.spans.first
+    assert first_span.key?(:stack)
+    assert_equal 2, first_span[:stack].count
+  end
+
+  def test_exit_span_has_stack
+    t = ::Instana::Trace.new(:trace_test)
+    t.new_span(:excon)
+    second_span = t.spans.to_a[1]
+    assert second_span.key?(:stack)
+  end
 end
