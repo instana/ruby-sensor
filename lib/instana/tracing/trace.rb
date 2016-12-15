@@ -46,9 +46,7 @@ module Instana
       })
 
       # For entry spans, add a backtrace fingerprint
-      if ENTRY_SPANS.include?(name)
-        add_stack(2)
-      end
+      add_stack(2) if ENTRY_SPANS.include?(name)
 
       # Check for custom tracing
       if !REGISTERED_SPANS.include?(name.to_sym)
@@ -102,9 +100,7 @@ module Instana
       end
 
       # Attach a backtrace to all exit spans
-      if EXIT_SPANS.include?(name)
-        add_stack
-      end
+      add_stack if EXIT_SPANS.include?(name)
     end
 
     # Add KVs to the current span
@@ -210,6 +206,9 @@ module Instana
         new_span[:n]    = name.to_sym
         new_span[:data] = kvs
       end
+
+      # Attach a backtrace to all exit spans
+      add_stack(nil, new_span) if EXIT_SPANS.include?(name)
 
       # Add the new span to the span collection
       @spans.add(new_span)
@@ -402,20 +401,33 @@ module Instana
     # Adds a backtrace to the passed in span or on
     # @current_span if not.
     #
-    def add_stack(n = nil, span = nil)
+    # @param limit [Integer] Limit the backtrace to the top <limit> frames
+    # @param span [Span] the span to add the backtrace to or if unspecified
+    #   the current span
+    #
+    def add_stack(limit = nil, span = nil)
       span ||= @current_span
       span[:stack] = []
+      frame_count = 0
 
-      Kernel.caller.each do |i|
-        if i.match(::Instana::VERSION_FULL).nil?
+      bt = Kernel.caller
+
+      bt.each do |i|
+        # If the stack has the full instana gem version in it's path
+        # then don't include that frame. Also don't exclude the Rack module.
+        if (i.match(::Instana::VERSION_FULL).nil? && i.match('ruby-sensor').nil?) ||
+            !i.match(/instana\/instrumentation\/rack.rb/).nil?
+
+          break if limit && frame_count >= limit
+
           x = i.split(':')
 
-          # Don't include Instana gem frames
           span[:stack] << {
             :f => x[0],
             :n => x[1],
             :m => x[2]
           }
+         frame_count = frame_count + 1 if limit
         end
       end
     end
