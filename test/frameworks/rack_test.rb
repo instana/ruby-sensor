@@ -26,6 +26,7 @@ class RackTest < Minitest::Test
 
     # Span validation
     assert_equal 1, spans.count
+
     first_span = spans.first
     assert_equal :rack, first_span[:n]
     assert_equal :ruby, first_span[:ta]
@@ -39,6 +40,11 @@ class RackTest < Minitest::Test
     assert first_span[:f].key?(:e)
     assert first_span[:f].key?(:h)
     assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
+
+    # Backtrace fingerprint validation
+    assert first_span.key?(:stack)
+    assert_equal 2, first_span[:stack].count
+    refute_nil first_span[:stack].first[:f].match(/instana\/instrumentation\/rack.rb/)
   end
 
   def test_basic_post

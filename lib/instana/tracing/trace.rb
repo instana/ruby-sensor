@@ -1,6 +1,8 @@
 module Instana
   class Trace
     REGISTERED_SPANS = [ :rack, :'net-http', :excon ]
+    ENTRY_SPANS = [ :rack ]
+    EXIT_SPANS = [ :'net-http', :excon ]
 
     # @return [Integer] the ID for this trace
     attr_reader :id
@@ -24,9 +26,6 @@ module Instana
       # up this trace.
       @spans = Set.new
 
-      # The current active span
-      @current_span = nil
-
       # Generate a random 64bit ID for this trace
       @id = generate_id
 
@@ -45,6 +44,9 @@ module Instana
         :ta => :ruby,      # Agent
         :f => { :e => ::Instana.agent.report_pid, :h => ::Instana.agent.agent_uuid } # Entity Source
       })
+
+      # For entry spans, add a backtrace fingerprint
+      add_stack(2) if ENTRY_SPANS.include?(name)
 
       # Check for custom tracing
       if !REGISTERED_SPANS.include?(name.to_sym)
@@ -73,7 +75,7 @@ module Instana
     # @param name [String] the name of the span to start
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def new_span(name, kvs)
+    def new_span(name, kvs = {})
       return unless @current_span
 
       new_span = Span.new({
@@ -96,6 +98,9 @@ module Instana
         @current_span[:n]    = name.to_sym
         @current_span[:data] = kvs
       end
+
+      # Attach a backtrace to all exit spans
+      add_stack if EXIT_SPANS.include?(name)
     end
 
     # Add KVs to the current span
@@ -139,6 +144,10 @@ module Instana
       else
         span[:ec] = 1
       end
+
+      add_info(:log => {
+        :message => e.message,
+        :parameters => e.class })
     end
 
     # Close out the current span and set the parent as
@@ -197,6 +206,9 @@ module Instana
         new_span[:n]    = name.to_sym
         new_span[:data] = kvs
       end
+
+      # Attach a backtrace to all exit spans
+      add_stack(nil, new_span) if EXIT_SPANS.include?(name)
 
       # Add the new span to the span collection
       @spans.add(new_span)
@@ -383,6 +395,40 @@ module Instana
         end
       else
         #::Instana.processor.staged_trace(
+      end
+    end
+
+    # Adds a backtrace to the passed in span or on
+    # @current_span if not.
+    #
+    # @param limit [Integer] Limit the backtrace to the top <limit> frames
+    # @param span [Span] the span to add the backtrace to or if unspecified
+    #   the current span
+    #
+    def add_stack(limit = nil, span = nil)
+      span ||= @current_span
+      span[:stack] = []
+      frame_count = 0
+
+      bt = Kernel.caller
+
+      bt.each do |i|
+        # If the stack has the full instana gem version in it's path
+        # then don't include that frame. Also don't exclude the Rack module.
+        if !i.match(/instana\/instrumentation\/rack.rb/).nil? ||
+          (i.match(::Instana::VERSION_FULL).nil? && i.match('lib/instana/').nil?)
+
+          break if limit && frame_count >= limit
+
+          x = i.split(':')
+
+          span[:stack] << {
+            :f => x[0],
+            :n => x[1],
+            :m => x[2]
+          }
+         frame_count = frame_count + 1 if limit
+        end
       end
     end
 

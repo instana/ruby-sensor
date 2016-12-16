@@ -41,6 +41,9 @@ class ExconTest < Minitest::Test
     assert_equal "http://127.0.0.1:6511/", second_span[:data][:http][:url]
     assert_equal 200, second_span[:data][:http][:status]
 
+    # excon backtrace included check
+    assert second_span.key?(:stack)
+
     # Rack server trace validation
     assert_equal 1, rs_trace.spans.count
     rs_span = rs_trace.spans.to_a[0]
@@ -92,6 +95,9 @@ class ExconTest < Minitest::Test
     assert_equal "http://127.0.0.1:6500/", second_span[:data][:http][:url]
     assert_equal nil, second_span[:data][:http][:status]
 
+    # excon backtrace included check
+    assert second_span.key?(:stack)
+
     # error validation
     assert_equal true, second_span[:error]
     #assert_equal 1, second_span[:ec]
@@ -142,15 +148,18 @@ class ExconTest < Minitest::Test
     refute_nil second_span[:data].key?(:http)
     assert_equal "http://127.0.0.1:6511/", second_span[:data][:http][:url]
     assert_equal 200, second_span[:data][:http][:status]
+    assert second_span.key?(:stack)
 
     refute_nil third_span.key?(:data)
     refute_nil third_span[:data].key?(:http)
     assert_equal "http://127.0.0.1:6511/", third_span[:data][:http][:url]
     assert_equal 200, third_span[:data][:http][:status]
+    assert third_span.key?(:stack)
 
     refute_nil fourth_span.key?(:data)
     refute_nil fourth_span[:data].key?(:http)
     assert_equal "http://127.0.0.1:6511/", fourth_span[:data][:http][:url]
     assert_equal 200, fourth_span[:data][:http][:status]
+    assert fourth_span.key?(:stack)
   end
 end

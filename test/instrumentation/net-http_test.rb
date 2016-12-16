@@ -40,6 +40,7 @@ class NetHTTPTest < Minitest::Test
     refute_nil second_span[:data].key?(:http)
     assert_equal "http://127.0.0.1:6511/", second_span[:data][:http][:url]
     assert_equal "200", second_span[:data][:http][:status]
+    assert second_span.key?(:stack)
 
     # Rack server trace validation
     assert_equal 1, rs_trace.spans.count
