@@ -129,7 +129,7 @@ module Instana
       # In case of failure, we try again in 30 seconds.
       @announce_timer = @timers.now_and_every(30) do
         if host_agent_ready? && announce_sensor
-          ::Instana.logger.debug "Announce successful. Switching to metrics collection."
+          ::Instana.logger.warn "Host agent available. We're in business."
           transition_to(:announced)
         end
       end
@@ -143,7 +143,7 @@ module Instana
             # If report has been failing for more than 1 minute,
             # fall back to unannounced state
             if (Time.now - @entity_last_seen) > 60
-              ::Instana.logger.debug "Metrics reporting failed for >1 min.  Falling back to unannounced state."
+              ::Instana.logger.warn "Host agent offline for >1 min.  Going to sit in a corner..."
               transition_to(:unannounced)
             end
           end

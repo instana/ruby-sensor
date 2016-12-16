@@ -43,7 +43,7 @@ Net::HTTP.class_eval {
     ::Instana.tracer.log_exit(:'net-http')
   end
 
-  Instana.logger.info "Instrumenting net/http"
+  Instana.logger.warn "Instrumenting Net::HTTP"
 
   alias request_without_instana request
   alias request request_with_instana
