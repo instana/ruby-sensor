@@ -6,8 +6,13 @@ module Instana
     STAMP = "Instana: ".freeze
 
     def initialize(*args)
-      if ENV['INSTANA_GEM_DEV']
-        self.debug_level=:agent
+      if ENV.key?('INSTANA_GEM_TEST')
+        self.level = Logger::DEBUG
+      elsif ENV.key?('INSTANA_GEM_DEV')
+        self.level = Logger::DEBUG
+        self.debub_level = nil
+      else
+        self.level = Logger::WARN
       end
       super(*args)
     end
@@ -24,6 +29,8 @@ module Instana
     # ::Instana.logger.debug_level = [:agent_comm, :trace]
     #
     def debug_level=(levels)
+      return unless levels
+
       LEVELS.each do |l|
         instance_variable_set("@level_#{l}", false)
       end
