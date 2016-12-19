@@ -37,8 +37,28 @@ module Instana
       @pid = ::Process.pid
     end
 
+    # Indicates if the process ID has changed since we last check.
+    #
+    # @return Boolean
+    #
     def pid_change?
       @pid != ::Process.pid
+    end
+
+    # Indicates whether we are running in a development environment.
+    #
+    # @return Boolean
+    #
+    def debug?
+      ENV.key?('INSTANA_GEM_DEV')
+    end
+
+    # Indicates whether we are running in the test environment.
+    #
+    # @return Boolean
+    #
+    def test?
+      ENV.key?('INSTANA_GEM_TEST')
     end
   end
 end
