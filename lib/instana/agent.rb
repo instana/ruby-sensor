@@ -22,9 +22,6 @@ module Instana
       # Supported two states (unannounced & announced)
       @state = :unannounced
 
-      # Store the pid from process boot so we can detect forks
-      @pid = Process.pid
-
       # Snapshot data is collected once per process but resent
       # every 10 minutes along side process metrics.
       @snapshot = ::Instana::Util.take_snapshot
@@ -67,7 +64,6 @@ module Instana
       ::Instana.logger.agent "after_fork hook called. Falling back to unannounced state and spawning a new background agent thread."
 
       # Re-collect process information post fork
-      @pid = Process.pid
       @process ::Instana::Util.collect_process_info
 
       transition_to(:unannounced)
@@ -429,7 +425,7 @@ module Instana
     # @ return [Boolean] true or false to indicate if forked
     #
     def forked?
-      @pid != Process.pid
+      @process[:pid] != Process.pid
     end
   end
 end

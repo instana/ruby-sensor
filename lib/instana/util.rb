@@ -134,7 +134,7 @@ module Instana
           process[:name].rstrip!
         end
 
-        process[:original_pid] = Process.pid
+        process[:pid] = Process.pid
         # This is usually Process.pid but in the case of docker, the host agent
         # will return to us the true host pid in which we use to report data.
         process[:report_pid] = nil
