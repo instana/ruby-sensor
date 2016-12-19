@@ -20,8 +20,7 @@ Net::HTTP.class_eval {
 
     # Pickup response headers; convert back to base 10 integer
     if ::Instana.debug? && response.key?('X-Instana-T')
-      their_trace_id = ::Instana.tracer.header_to_id(response.header['X-Instana-T'])
-      if ::Instana.tracer.trace_id != their_trace_id
+      if ::Instana.tracer.trace_id != ::Instana.tracer.header_to_id(response.header['X-Instana-T'])
         ::Instana.logger.debug "#{Thread.current}: Trace ID mismatch on net/http response! ours: #{::Instana.tracer.trace_id} theirs: #{their_trace_id}"
       end
     end
