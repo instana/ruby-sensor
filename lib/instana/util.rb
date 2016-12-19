@@ -117,6 +117,29 @@ module Instana
         ::Instana.logger.debug e.backtrace.join("\r\n")
         return data
       end
+
+      # Used in class initialization and after a fork, this method
+      # collects up process information
+      #
+      def collect_process_info
+        process = {}
+        cmdline = ProcTable.ps(Process.pid).cmdline.split("\0")
+        process[:name] = cmdline.shift
+        process[:arguments] = cmdline
+
+        if @is_osx
+          # Handle OSX bug where env vars show up at the end of process name
+          # such as MANPATH etc..
+          process[:name].gsub!(/[_A-Z]+=\S+/, '')
+          process[:name].rstrip!
+        end
+
+        process[:original_pid] = Process.pid
+        # This is usually Process.pid but in the case of docker, the host agent
+        # will return to us the true host pid in which we use to report data.
+        process[:report_pid] = nil
+        process
+      end
     end
   end
 end

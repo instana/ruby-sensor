@@ -57,29 +57,7 @@ module Instana
       # The agent UUID returned from the host agent
       @agent_uuid = nil
 
-      collect_process_info
-    end
-
-    # Used in class initialization and after a fork, this method
-    # collects up process information and stores it in @process
-    #
-    def collect_process_info
-      @process = {}
-      cmdline = ProcTable.ps(Process.pid).cmdline.split("\0")
-      @process[:name] = cmdline.shift
-      @process[:arguments] = cmdline
-
-      if @is_osx
-        # Handle OSX bug where env vars show up at the end of process name
-        # such as MANPATH etc..
-        @process[:name].gsub!(/[_A-Z]+=\S+/, '')
-        @process[:name].rstrip!
-      end
-
-      @process[:original_pid] = @pid
-      # This is usually Process.pid but in the case of docker, the host agent
-      # will return to us the true host pid in which we use to report data.
-      @process[:report_pid] = nil
+      @process = ::Instana::Util.collect_process_info
     end
 
     # Used post fork to re-initialize state and restart communications with
@@ -90,7 +68,7 @@ module Instana
 
       # Re-collect process information post fork
       @pid = Process.pid
-      collect_process_info
+      @process ::Instana::Util.collect_process_info
 
       transition_to(:unannounced)
       setup
