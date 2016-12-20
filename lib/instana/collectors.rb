@@ -7,7 +7,6 @@ module Instana
   module Collector
     class << self
       attr_accessor :interval
-      attr_accessor :snapshot
 
       ##
       # collect_and_report

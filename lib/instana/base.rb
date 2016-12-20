@@ -20,25 +20,28 @@ module Instana
     #
     def setup
       @logger = ::Instana::XLogger.new(STDOUT)
-      if ENV.key?('INSTANA_GEM_TEST') || ENV.key?('INSTANA_GEM_DEV')
-        @logger.level = Logger::DEBUG
-      else
-        @logger.level = Logger::WARN
-      end
       @logger.unknown "Stan is on the scene.  Starting Instana instrumentation."
 
       @agent  = ::Instana::Agent.new
       @tracer = ::Instana::Tracer.new
       @processor = ::Instana::Processor.new
       @collectors = []
-
-      # Store the current pid so we can detect a potential fork
-      # later on
-      @pid = ::Process.pid
     end
 
-    def pid_change?
-      @pid != ::Process.pid
+    # Indicates whether we are running in a development environment.
+    #
+    # @return Boolean
+    #
+    def debug?
+      ENV.key?('INSTANA_GEM_DEV')
+    end
+
+    # Indicates whether we are running in the test environment.
+    #
+    # @return Boolean
+    #
+    def test?
+      ENV.key?('INSTANA_GEM_TEST')
     end
   end
 end
