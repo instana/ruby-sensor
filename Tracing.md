@@ -21,8 +21,17 @@ ensure
 end
 ```
 
-The above is a simple example but shows how easy it is to instrument any code you like.  Instana will
-take care of the rest.
+or alternatively you can use the `trace` block method that will automagically capture and
+log any exceptions raised:
+
+```Ruby
+::Instana.tracer.trace(:mywork, { :helpful_kvs => @user.id }) do
+  # The code to be instrumented
+  @id = User.find_by_name('john.smith')
+ end
+```
+
+The above are simple examples but shows how easy it is to instrument any arbitrary piece of code you like.
 
 See the [examples directory](https://github.com/instana/ruby-sensor/blob/master/examples/tracing.rb) for
 an expanded view and quick cheat sheet on tracing.
