@@ -127,7 +127,7 @@ module Instana
         process[:name] = cmdline.shift
         process[:arguments] = cmdline
 
-        if @is_osx
+        if RUBY_PLATFORM =~ /darwin/i
           # Handle OSX bug where env vars show up at the end of process name
           # such as MANPATH etc..
           process[:name].gsub!(/[_A-Z]+=\S+/, '')
