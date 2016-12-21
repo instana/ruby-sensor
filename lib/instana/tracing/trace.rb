@@ -159,7 +159,7 @@ module Instana
         end
 
         if HTTP_SPANS.include?(span.name)
-          add_info(:http => { :error => e.message })
+          add_info(:http => { :error => "#{e.class}: #{e.message}" })
         else
           add_info(:log => { :message => e.message, :parameters => e.class })
         end
