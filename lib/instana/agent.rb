@@ -64,7 +64,7 @@ module Instana
       ::Instana.logger.agent "after_fork hook called. Falling back to unannounced state and spawning a new background agent thread."
 
       # Re-collect process information post fork
-      @process ::Instana::Util.collect_process_info
+      @process = ::Instana::Util.collect_process_info
 
       transition_to(:unannounced)
       setup
