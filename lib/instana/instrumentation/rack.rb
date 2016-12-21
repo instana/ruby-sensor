@@ -30,6 +30,12 @@ module Instana
       if ::Instana.tracer.tracing?
         kvs[:http][:status] = status
 
+        if status.between?(500, 511)
+          # Because of the 5xx response, we flag this span as errored but
+          # without a backtrace (no exception)
+          ::Instana.tracer.log_error(nil)
+        end
+
         # Save the IDs before the trace ends so we can place
         # them in the response headers in the ensure block
         trace_id = ::Instana.tracer.trace_id
