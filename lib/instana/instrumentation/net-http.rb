@@ -16,6 +16,21 @@ Net::HTTP.class_eval {
     request['X-Instana-T'] = ::Instana.tracer.trace_id_header
     request['X-Instana-S'] = ::Instana.tracer.span_id_header
 
+    # Collect up KV info now in case any exception is raised
+    kv_payload = { :http => {} }
+    kv_payload[:http][:method] = request.method
+
+    if request.uri
+      kv_payload[:http][:url] = request.uri.to_s
+    else
+      if use_ssl?
+        kv_payload[:http][:url] = "https://#{@address}:#{@port}#{request.path}"
+      else
+        kv_payload[:http][:url] = "http://#{@address}:#{@port}#{request.path}"
+      end
+    end
+
+    # The core call
     response = request_without_instana(*args, &block)
 
     # Pickup response headers; convert back to base 10 integer
@@ -25,18 +40,19 @@ Net::HTTP.class_eval {
       end
     end
 
-    kv_payload = { :http => {} }
     kv_payload[:http][:status] = response.code
-    kv_payload[:http][:url] = request.uri.to_s
-    kv_payload[:http][:method] = request.method
-    ::Instana.tracer.log_info(kv_payload)
+    if response.code.to_i.between?(500, 511)
+      # Because of the 5xx response, we flag this span as errored but
+      # without a backtrace (no exception)
+      add_error(nil)
+    end
 
     response
   rescue => e
     ::Instana.tracer.log_error(e)
     raise
   ensure
-    ::Instana.tracer.log_exit(:'net-http')
+    ::Instana.tracer.log_exit(:'net-http', kv_payload)
   end
 
   Instana.logger.warn "Instrumenting Net::HTTP"

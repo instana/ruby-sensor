@@ -46,6 +46,12 @@ if defined?(::Excon) && ::Instana.config[:excon][:enabled]
             status = datum[:response][:status]
           end
 
+          if status.between?(500, 511)
+            # Because of the 5xx response, we flag this span as errored but
+            # without a backtrace (no exception)
+            ::Instana.tracer.log_error(nil)
+          end
+
           if datum[:pipeline] == true
             # Pickup context of this async span from datum[:instana_id]
             ::Instana.tracer.log_async_exit(:excon, { :http => {:status => status } }, datum[:instana_context])

@@ -1,8 +1,9 @@
 module Instana
   class Trace
-    REGISTERED_SPANS = [ :rack, :'net-http', :excon ]
-    ENTRY_SPANS = [ :rack ]
-    EXIT_SPANS = [ :'net-http', :excon ]
+    REGISTERED_SPANS = [ :rack, :'net-http', :excon ].freeze
+    ENTRY_SPANS = [ :rack ].freeze
+    EXIT_SPANS = [ :'net-http', :excon ].freeze
+    HTTP_SPANS = ENTRY_SPANS + EXIT_SPANS
 
     # @return [Integer] the ID for this trace
     attr_reader :id
@@ -135,6 +136,10 @@ module Instana
     # @param e [Exception] Add exception to the current span
     #
     def add_error(e, span = nil)
+      # Return if we've already logged this exception and it
+      # is just propogating up the spans.
+      return if e && e.instance_variable_get(:@instana_logged)
+
       span ||= @current_span
 
       span[:error] = true
@@ -145,9 +150,22 @@ module Instana
         span[:ec] = 1
       end
 
-      add_info(:log => {
-        :message => e.message,
-        :parameters => e.class })
+      # If a valid exception has been passed in, log the information about it
+      # In case of just logging an error for things such as HTTP client 5xx
+      # responses, an exception/backtrace may not exist.
+      if e
+        if e.backtrace.is_a?(Array)
+          add_backtrace_to_span(e.backtrace, nil, span)
+        end
+
+        if HTTP_SPANS.include?(span.name)
+          add_info(:http => { :error => "#{e.class}: #{e.message}" })
+        else
+          add_info(:log => { :message => e.message, :parameters => e.class })
+        end
+        e.instance_variable_set(:@instana_logged, true)
+      end
+
     end
 
     # Close out the current span and set the parent as
@@ -157,7 +175,7 @@ module Instana
     #
     def end_span(kvs = {})
       @current_span[:d] = ts_now - @current_span[:ts]
-      add_info(kvs) unless kvs.empty?
+      add_info(kvs) if kvs && !kvs.empty?
       @current_span = @current_span.parent unless @current_span.is_root?
     end
 
@@ -398,8 +416,7 @@ module Instana
       end
     end
 
-    # Adds a backtrace to the passed in span or on
-    # @current_span if not.
+    # Adds a backtrace to the passed in span or on @current_span if not.
     #
     # @param limit [Integer] Limit the backtrace to the top <limit> frames
     # @param span [Span] the span to add the backtrace to or if unspecified
@@ -407,10 +424,21 @@ module Instana
     #
     def add_stack(limit = nil, span = nil)
       span ||= @current_span
-      span[:stack] = []
-      frame_count = 0
 
-      bt = Kernel.caller
+      add_backtrace_to_span(Kernel.caller, limit, span)
+    end
+
+    # Adds the passed in backtrace to the specified span.  Backtrace can be one
+    # generated from Kernel.caller or one attached to an exception
+    #
+    # @param bt [Array] the backtrace
+    # @param limit [Integer] Limit the backtrace to the top <limit> frames
+    # @param span [Span] the span to add the backtrace to or if unspecified
+    #   the current span
+    #
+    def add_backtrace_to_span(bt, limit = nil, span)
+      frame_count = 0
+      span[:stack] = []
 
       bt.each do |i|
         # If the stack has the full instana gem version in it's path
