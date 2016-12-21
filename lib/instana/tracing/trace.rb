@@ -135,6 +135,10 @@ module Instana
     # @param e [Exception] Add exception to the current span
     #
     def add_error(e, span = nil)
+      # Return if we've already logged this exception and it
+      # is just propogating up the spans.
+      return if e && e.instance_variable_get(:@instana_logged)
+
       span ||= @current_span
 
       span[:error] = true
@@ -145,9 +149,15 @@ module Instana
         span[:ec] = 1
       end
 
+      if e.backtrace.is_a?(Array)
+        add_backtrace_to_span(e.backtrace, nil, span)
+      end
+
       add_info(:log => {
         :message => e.message,
         :parameters => e.class })
+
+      e.instance_variable_set(:@instana_logged, true)
     end
 
     # Close out the current span and set the parent as
@@ -398,8 +408,7 @@ module Instana
       end
     end
 
-    # Adds a backtrace to the passed in span or on
-    # @current_span if not.
+    # Adds a backtrace to the passed in span or on @current_span if not.
     #
     # @param limit [Integer] Limit the backtrace to the top <limit> frames
     # @param span [Span] the span to add the backtrace to or if unspecified
@@ -407,10 +416,21 @@ module Instana
     #
     def add_stack(limit = nil, span = nil)
       span ||= @current_span
-      span[:stack] = []
-      frame_count = 0
 
-      bt = Kernel.caller
+      add_backtrace_to_span(Kernel.caller, limit, span)
+    end
+
+    # Adds the passed in backtrace to the specified span.  Backtrace can be one
+    # generated from Kernel.caller or one attached to an exception
+    #
+    # @param bt [Array] the backtrace
+    # @param limit [Integer] Limit the backtrace to the top <limit> frames
+    # @param span [Span] the span to add the backtrace to or if unspecified
+    #   the current span
+    #
+    def add_backtrace_to_span(bt, limit = nil, span)
+      frame_count = 0
+      span[:stack] = []
 
       bt.each do |i|
         # If the stack has the full instana gem version in it's path
