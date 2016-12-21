@@ -1,8 +1,9 @@
 module Instana
   class Trace
-    REGISTERED_SPANS = [ :rack, :'net-http', :excon ]
-    ENTRY_SPANS = [ :rack ]
-    EXIT_SPANS = [ :'net-http', :excon ]
+    REGISTERED_SPANS = [ :rack, :'net-http', :excon ].freeze
+    ENTRY_SPANS = [ :rack ].freeze
+    EXIT_SPANS = [ :'net-http', :excon ].freeze
+    HTTP_SPANS = ENTRY_SPANS + EXIT_SPANS
 
     # @return [Integer] the ID for this trace
     attr_reader :id
@@ -157,10 +158,11 @@ module Instana
           add_backtrace_to_span(e.backtrace, nil, span)
         end
 
-        add_info(:log => {
-          :message => e.message,
-          :parameters => e.class })
-
+        if HTTP_SPANS.include?(span.name)
+          add_info(:http => { :error => e.message })
+        else
+          add_info(:log => { :message => e.message, :parameters => e.class })
+        end
         e.instance_variable_set(:@instana_logged, true)
       end
 
