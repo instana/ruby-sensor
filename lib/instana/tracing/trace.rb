@@ -149,15 +149,21 @@ module Instana
         span[:ec] = 1
       end
 
-      if e.backtrace.is_a?(Array)
-        add_backtrace_to_span(e.backtrace, nil, span)
+      # If a valid exception has been passed in, log the information about it
+      # In case of just logging an error for things such as HTTP client 5xx
+      # responses, an exception/backtrace may not exist.
+      if e
+        if e.backtrace.is_a?(Array)
+          add_backtrace_to_span(e.backtrace, nil, span)
+        end
+
+        add_info(:log => {
+          :message => e.message,
+          :parameters => e.class })
+
+        e.instance_variable_set(:@instana_logged, true)
       end
 
-      add_info(:log => {
-        :message => e.message,
-        :parameters => e.class })
-
-      e.instance_variable_set(:@instana_logged, true)
     end
 
     # Close out the current span and set the parent as
@@ -167,7 +173,7 @@ module Instana
     #
     def end_span(kvs = {})
       @current_span[:d] = ts_now - @current_span[:ts]
-      add_info(kvs) unless kvs.empty?
+      add_info(kvs) if kvs && !kvs.empty?
       @current_span = @current_span.parent unless @current_span.is_root?
     end
 
