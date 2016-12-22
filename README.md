@@ -65,7 +65,7 @@ a small javascript snippet of code to instrument browser events.  It's based on 
 
 As an example for Haml, you could do the following:
 
-```Haml
+```ruby
 %html{ :lang => "en", :xmlns => "http://www.w3.org/1999/xhtml" }
   %head
     - if user_signed_in?
@@ -75,6 +75,11 @@ As an example for Haml, you could do the following:
   %body
 ```
 Make sure to use the `raw` helper so the javascript isn't interpolated with escape strings.
+
+The optional second argument to `::Instana::Helpers.eum_snippet` is a hash of metadata key/values that will be reported along
+with the browser instrumentation.
+
+![Instana EUM example with metadata](https://s3.amazonaws.com/instana/Instana+Gameface+EUM+with+metadata+2016-12-22+at+15.32.01.png)
 
 See also the [End User Monitoring](https://instana.atlassian.net/wiki/display/DOCS/Web+End-User+Monitoring) in the Instana documentation portal.
 
