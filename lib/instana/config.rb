@@ -10,6 +10,10 @@ module Instana
       @config[:metrics][:memory] = { :enabled => true }
       @config[:metrics][:thread] = { :enabled => true }
 
+      # EUM Related
+      @config[:eum_api_key] = nil
+      @config[:eum_baggage] = {}
+
       # HTTP Clients
       @config[:excon] = { :enabled => true }
     end

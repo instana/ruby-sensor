@@ -3,10 +3,14 @@ module Instana
     EUM_SNIPPET= (File.read(File.dirname(__FILE__) + '/eum/eum.js.erb')).freeze
 
     class << self
+
       # Returns a processed javascript snippet to be placed within the HEAD tag of an HTML page.
       #
-      def eum_snippet
+      def eum_snippet(api_key, kvs = {})
         return nil if !::Instana.tracer.tracing?
+
+        ::Instana.config[:eum_api_key] = api_key
+        ::Instana.config[:eum_baggage] = kvs
 
         ERB.new(EUM_SNIPPET).result
       rescue => e
