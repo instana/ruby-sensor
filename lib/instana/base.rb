@@ -1,6 +1,7 @@
 require "instana/version"
 require 'instana/logger'
 require "instana/util"
+require "instana/helpers"
 
 module Instana
   class << self
