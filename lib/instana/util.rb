@@ -111,6 +111,15 @@ module Instana
           data[:framework] = "Sinatra #{::Sinatra::VERSION}"
         end
 
+        # Report Bundle
+        if defined?(::Gem) && Gem.respond_to?(:loaded_specs)
+          data[:versions] = {}
+
+          Gem.loaded_specs.each do |k, v|
+            data[:versions][k] = v.version.to_s
+          end
+        end
+
         data
       rescue => e
         ::Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
