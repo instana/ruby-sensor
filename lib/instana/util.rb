@@ -90,10 +90,6 @@ module Instana
         data[:sensorVersion] = ::Instana::VERSION
         data[:ruby_version] = RUBY_VERSION
 
-        # Since a snapshot is only taken on process boot,
-        # this is ok here.
-        data[:start_time] = Time.now.to_s
-
         # Framework Detection
         if defined?(::RailsLts::VERSION)
           data[:framework] = "Rails on Rails LTS-#{::RailsLts::VERSION}"
