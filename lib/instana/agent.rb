@@ -63,6 +63,10 @@ module Instana
     def after_fork
       ::Instana.logger.agent "after_fork hook called. Falling back to unannounced state and spawning a new background agent thread."
 
+      # Reseed the random number generator for this
+      # new thread.
+      srand
+
       # Re-collect process information post fork
       @process = ::Instana::Util.collect_process_info
 
