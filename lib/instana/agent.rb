@@ -215,7 +215,7 @@ module Instana
       response = make_host_agent_request(req)
 
       if response
-        if response.body.length > 2
+        if response.body && response.body.length > 2
           # The host agent returned something indicating that is has a request for us that we
           # need to process.
           handle_response(response.body)
