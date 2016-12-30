@@ -63,6 +63,10 @@ module Instana
     def after_fork
       ::Instana.logger.agent "after_fork hook called. Falling back to unannounced state and spawning a new background agent thread."
 
+      # Reseed the random number generator for this
+      # new thread.
+      srand
+
       # Re-collect process information post fork
       @process = ::Instana::Util.collect_process_info
 
@@ -211,7 +215,7 @@ module Instana
       response = make_host_agent_request(req)
 
       if response
-        if response.body.length > 2
+        if response.body && response.body.length > 2
           # The host agent returned something indicating that is has a request for us that we
           # need to process.
           handle_response(response.body)

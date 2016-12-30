@@ -21,6 +21,24 @@ module Instana
         end
       end
 
+      # Calls on target_class to 'extend' cls
+      #
+      # @param target_cls [Object] the class/module to do the 'extending'
+      # @param cls [Object] the class/module to be 'extended'
+      #
+      def send_extend(target_cls, cls)
+        target_cls.send(:extend, cls) if defined?(target_cls)
+      end
+
+      # Calls on <target_cls> to include <cls> into itself.
+      #
+      # @param target_cls [Object] the class/module to do the 'including'
+      # @param cls [Object] the class/module to be 'included'
+      #
+      def send_include(target_cls, cls)
+        target_cls.send(:include, cls) if defined?(target_cls)
+      end
+
       # Take two hashes, and make sure candidate does not have
       # any of the same values as `last`.  We only report
       # when values change.
@@ -90,10 +108,6 @@ module Instana
         data[:sensorVersion] = ::Instana::VERSION
         data[:ruby_version] = RUBY_VERSION
 
-        # Since a snapshot is only taken on process boot,
-        # this is ok here.
-        data[:start_time] = Time.now.to_s
-
         # Framework Detection
         if defined?(::RailsLts::VERSION)
           data[:framework] = "Rails on Rails LTS-#{::RailsLts::VERSION}"
@@ -109,6 +123,15 @@ module Instana
 
         elsif defined?(::Sinatra::VERSION)
           data[:framework] = "Sinatra #{::Sinatra::VERSION}"
+        end
+
+        # Report Bundle
+        if defined?(::Gem) && Gem.respond_to?(:loaded_specs)
+          data[:versions] = {}
+
+          Gem.loaded_specs.each do |k, v|
+            data[:versions][k] = v.version.to_s
+          end
         end
 
         data
