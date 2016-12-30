@@ -379,21 +379,7 @@ module Instana
     #
     def configure_custom_span(span, name, kvs = {})
       span ||= @current_span
-
-      span[:n] = :sdk
-      span[:data] = { :sdk => { :name => name.to_sym } }
-      span[:data][:sdk][:type] = kvs.key?(:type) ? kvs[:type] : :local
-
-      if kvs.key?(:arguments)
-        span[:data][:sdk][:arguments] = kvs[:arguments]
-      end
-
-      if kvs.key?(:return)
-        span[:data][:sdk][:return] = kvs[:return]
-      end
-      span[:data][:sdk][:custom] = kvs unless kvs.empty?
-      #span[:data][:sdk][:custom][:tags] = {}
-      #span[:data][:sdk][:custom][:logs] = {}
+      span.configure_custom(name, kvs)
     end
 
     # Locates the span in the current_trace or
