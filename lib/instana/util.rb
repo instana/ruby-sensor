@@ -163,6 +163,31 @@ module Instana
         process[:report_pid] = nil
         process
       end
+
+      # Get the current time in milliseconds
+      #
+      # @return [Integer] the current time in milliseconds
+      #
+      def ts_now
+        (Time.now.to_f * 1000).floor
+      end
+
+      # Convert a Time value to milliseconds
+      #
+      # @param time [Time]
+      #
+      def time_to_ms(time = Time.now)
+        (time.to_f * 1000).floor
+      end
+
+      # Generate a random 64bit ID
+      #
+      # @return [Integer] a random 64bit integer
+      #
+      def generate_id
+        # Max value is 9223372036854775807 (signed long in Java)
+        rand(-2**63..2**63-1)
+      end
     end
   end
 end

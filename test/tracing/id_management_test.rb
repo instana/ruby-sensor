@@ -3,10 +3,8 @@ require 'test_helper'
 
 class TracerIDMgmtTest < Minitest::Test
   def test_id_to_header_conversion
-    trace = ::Instana::Trace.new(:blah)
-
     # Test passing a standard Integer ID
-    original_id = trace.send(:generate_id)
+    original_id = ::Instana::Util.generate_id
     converted_id = Instana.tracer.id_to_header(original_id)
 
     # Assert that it is a string and there are no non-hex characters
@@ -14,7 +12,7 @@ class TracerIDMgmtTest < Minitest::Test
     assert !converted_id[/\H/]
 
     # Test passing a standard Integer ID as a String
-    original_id = trace.send(:generate_id)
+    original_id = ::Instana::Util.generate_id
     converted_id = Instana.tracer.id_to_header(original_id)
 
     # Assert that it is a string and there are no non-hex characters
@@ -46,10 +44,8 @@ class TracerIDMgmtTest < Minitest::Test
   end
 
   def test_header_to_id_conversion
-    trace = ::Instana::Trace.new(:blah)
-
     # Get a hex string to test against & convert
-    header_id = Instana.tracer.id_to_header(trace.send(:generate_id))
+    header_id = Instana.tracer.id_to_header(::Instana::Util.generate_id)
     converted_id = Instana.tracer.header_to_id(header_id)
 
     # Assert that it is an Integer
@@ -71,10 +67,8 @@ class TracerIDMgmtTest < Minitest::Test
   end
 
   def test_id_conversion_back_and_forth
-    trace = ::Instana::Trace.new(:blah)
-
     # id --> header --> id
-    original_id = trace.send(:generate_id)
+    original_id = ::Instana::Util.generate_id
     header_id = Instana.tracer.id_to_header(original_id)
     converted_back_id = Instana.tracer.header_to_id(header_id)
     assert original_id == converted_back_id
