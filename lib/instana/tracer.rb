@@ -1,6 +1,7 @@
 require "instana/thread_local"
 require "instana/tracing/trace"
 require "instana/tracing/span"
+require "instana/tracing/span_context"
 
 module Instana
   class Tracer
@@ -156,7 +157,7 @@ module Instana
     #   :trace_id => 12345
     #   :span_id => 12345
     #
-    def log_async_entry(name, kvs, incoming_context = nil)
+    def log_async_entry(name, kvs)
       return unless tracing?
       self.current_trace.new_async_span(name, kvs)
     end
@@ -164,41 +165,39 @@ module Instana
     # Add info to an asynchronous span
     #
     # @param kvs [Hash] list of key values to be reported in the span
-    # @param t_context [Hash] the Trace ID and Span ID in the form of
-    #   :trace_id => 12345
-    #   :span_id => 12345
-    #   This can be retrieved by using ::Instana.tracer.context
+    # @param span [Span] the span for this Async op (previously returned
+    #   from `log_async_entry`)
     #
-    def log_async_info(kvs, ids)
+    def log_async_info(kvs, span)
       # Asynchronous spans can persist longer than the parent
       # trace.  With the trace ID, we check the current trace
       # but otherwise, we search staged traces.
 
-      if tracing? && self.current_trace.id == ids[:trace_id]
-        self.current_trace.add_async_info(kvs, ids)
+      if tracing? && self.current_trace.id == span.context.trace_id
+        self.current_trace.add_async_info(kvs, span)
       else
-        trace = ::Instana.processor.staged_trace(ids)
-        trace.add_async_info(kvs, ids)
+        ::Instana::Util.pry!
+        trace = ::Instana.processor.staged_trace(span.context.trace_id)
+        trace.add_async_info(kvs, span)
       end
     end
 
     # Add an error to an asynchronous span
     #
     # @param e [Exception] Add exception to the current span
-    # @param ids [Hash] the Trace ID and Span ID in the form of
-    #   :trace_id => 12345
-    #   :span_id => 12345
+    # @param span [Span] the span for this Async op (previously returned
+    #   from `log_async_entry`)
     #
-    def log_async_error(e, ids)
+    def log_async_error(e, span)
       # Asynchronous spans can persist longer than the parent
       # trace.  With the trace ID, we check the current trace
       # but otherwise, we search staged traces.
 
-      if tracing? && self.current_trace.id == ids[:trace_id]
-        self.current_trace.add_async_error(e, ids)
+      if tracing? && self.current_trace.id == span.context.trace_id
+        self.current_trace.add_async_error(e, span)
       else
-        trace = ::Instana.processor.staged_trace(ids)
-        trace.add_async_error(e, ids)
+        trace = ::Instana.processor.staged_trace(span.context.trace_id)
+        trace.add_async_error(e, span)
       end
     end
 
@@ -206,27 +205,53 @@ module Instana
     #
     # @param name [String] the name of the async span to exit (close out)
     # @param kvs [Hash] list of key values to be reported in the span
-    # @param ids [Hash] the Trace ID and Span ID in the form of
-    #   :trace_id => 12345
-    #   :span_id => 12345
+    # @param span [Span] the span for this Async op (previously returned
+    #   from `log_async_entry`)
     #
-    def log_async_exit(name, kvs, ids)
+    def log_async_exit(name, kvs, span)
       # An asynchronous span can end after the current trace has
       # already completed so we make sure that we end the span
       # on the right trace.
 
-      if tracing? && (self.current_trace.id == ids[:trace_id])
-        self.current_trace.end_async_span(kvs, ids)
+      if tracing? && self.current_trace.id == span.context.trace_id
+        self.current_trace.end_async_span(kvs, span)
       else
         # Different trace from current so find the staged trace
         # and close out the span on it.
-        trace = ::Instana.processor.staged_trace(ids)
+        trace = ::Instana.processor.staged_trace(span.context.trace_id)
         if trace
-          trace.end_async_span(kvs, ids)
+          trace.end_async_span(kvs, span)
         else
-          ::Instana.logger.debug "log_async_exit: Couldn't find staged trace. #{ids.inspect}"
+          ::Instana.logger.debug "log_async_exit: Couldn't find staged trace. #{span.inspect}"
         end
       end
+    end
+
+    ###########################################################################
+    # OpenTracing Support
+    ###########################################################################
+
+    # Start a new span
+    #
+    # @param operation_name [String] The name of the operation represented by the span
+    # @param child_of [Span] A span to be used as the ChildOf reference
+    # @param start_time [Time] the start time of the span
+    # @param tags [Hash] Starting tags for the span
+    #
+    # @return [Span]
+    #
+    def start_span(operation_name, child_of: nil, start_time: Time.now, tags: nil)
+      return unless ::Instana.agent.ready?
+
+      if tracing?
+        span = self.current_trace.new_span(operation_name, tags, start_time)
+      else
+        self.current_trace = ::Instana::Trace.new(operation_name, tags)
+        span = self.current_trace.current_span
+      end
+      span.parent_id = child_of.id if child_of
+      span.set_tags(tags)
+      span
     end
 
     ###########################################################################

@@ -147,21 +147,20 @@ module Instana
     # are traces that have completed but may have outstanding
     # asynchronous spans.
     #
-    # @param ids [Hash] the Trace ID and Span ID in the form of
-    #   :trace_id => 12345
-    #   :span_id => 12345
+    # @param trace_id [Integer] the Trace ID to be searched for
     #
-    def staged_trace(ids)
+    def staged_trace(trace_id)
       candidate = nil
       @staging_lock.synchronize {
         @staging_queue.each do |trace|
-          if trace.id == ids[:trace_id]
+          if trace.id == trace_id
             candidate = trace
+            break
           end
         end
       }
       unless candidate
-        ::Instana.logger.trace("Couldn't find staged trace with trace_id: #{ids[:trace_id]}")
+        ::Instana.logger.trace("Couldn't find staged trace with trace_id: #{trace_id}")
       end
       candidate
     end

@@ -8,16 +8,16 @@ class TracerAsyncTest < Minitest::Test
     ::Instana.tracer.log_start_or_continue(:rack, {:rack_start_kv => 1})
 
     # Start an asynchronous span
-    ids = ::Instana.tracer.log_async_entry(:my_async_op, { :entry_kv => 1})
+    span = ::Instana.tracer.log_async_entry(:my_async_op, { :entry_kv => 1})
 
-    refute_nil ids[:trace_id]
-    refute_nil ids[:span_id]
+    refute_nil span
+    refute_nil span.context
 
     # Current span should still be rack
     assert_equal :rack, ::Instana.tracer.current_trace.current_span_name
 
     # End an asynchronous span
-    ::Instana.tracer.log_async_exit(:my_async_op, { :exit_kv => 1 }, ids)
+    ::Instana.tracer.log_async_exit(:my_async_op, { :exit_kv => 1 }, span)
 
     # Current span should still be rack
     assert_equal :rack, ::Instana.tracer.current_trace.current_span_name
@@ -126,17 +126,17 @@ class TracerAsyncTest < Minitest::Test
     ::Instana.tracer.log_start_or_continue(:rack, {:rack_start_kv => 1})
 
     # Start an asynchronous span
-    ids = ::Instana.tracer.log_async_entry(:my_async_op, { :async_entry_kv => 1})
+    span = ::Instana.tracer.log_async_entry(:my_async_op, { :async_entry_kv => 1})
 
-    refute_nil ids[:trace_id]
-    refute_nil ids[:span_id]
+    refute_nil span
+    refute_nil span.context
 
     # Current span should still be rack
     assert_equal :rack, ::Instana.tracer.current_trace.current_span_name
 
     # DON'T end the asynchronous span
     # This trace should end up in staging_queue
-    # ::Instana.tracer.log_async_exit(:my_async_op, { :exit_kv => 1 }, ids)
+    # ::Instana.tracer.log_async_exit(:my_async_op, { :exit_kv => 1 }, span)
 
     # Current span should still be rack
     assert_equal :rack, ::Instana.tracer.current_trace.current_span_name
@@ -186,25 +186,25 @@ class TracerAsyncTest < Minitest::Test
     ::Instana.tracer.log_start_or_continue(:rack, {:rack_start_kv => 1})
 
     # Start three asynchronous spans
-    id1 = ::Instana.tracer.log_async_entry(:my_async_op, { :entry_kv => 1})
-    id2 = ::Instana.tracer.log_async_entry(:my_async_op, { :entry_kv => 2})
-    id3 = ::Instana.tracer.log_async_entry(:my_async_op, { :entry_kv => 3})
+    span1 = ::Instana.tracer.log_async_entry(:my_async_op, { :entry_kv => 1})
+    span2 = ::Instana.tracer.log_async_entry(:my_async_op, { :entry_kv => 2})
+    span3 = ::Instana.tracer.log_async_entry(:my_async_op, { :entry_kv => 3})
 
     # Current span should still be rack
     assert_equal :rack, ::Instana.tracer.current_trace.current_span_name
 
     # Log info to the async spans (out of order)
-    ::Instana.tracer.log_async_info({ :info_kv => 2 }, id2)
-    ::Instana.tracer.log_async_info({ :info_kv => 1 }, id1)
-    ::Instana.tracer.log_async_info({ :info_kv => 3 }, id3)
+    ::Instana.tracer.log_async_info({ :info_kv => 2 }, span2)
+    ::Instana.tracer.log_async_info({ :info_kv => 1 }, span1)
+    ::Instana.tracer.log_async_info({ :info_kv => 3 }, span3)
 
     # Log out of order errors to the async spans
-    ::Instana.tracer.log_async_error(Exception.new("Async span 3"), id3)
-    ::Instana.tracer.log_async_error(Exception.new("Async span 2"), id2)
+    ::Instana.tracer.log_async_error(Exception.new("Async span 3"), span3)
+    ::Instana.tracer.log_async_error(Exception.new("Async span 2"), span2)
 
     # End two out of order asynchronous spans
-    ::Instana.tracer.log_async_exit(:my_async_op, { :exit_kv => 3 }, id3)
-    ::Instana.tracer.log_async_exit(:my_async_op, { :exit_kv => 2 }, id2)
+    ::Instana.tracer.log_async_exit(:my_async_op, { :exit_kv => 3 }, span3)
+    ::Instana.tracer.log_async_exit(:my_async_op, { :exit_kv => 2 }, span2)
 
     # Current span should still be rack
     assert_equal :rack, ::Instana.tracer.current_trace.current_span_name
@@ -213,8 +213,8 @@ class TracerAsyncTest < Minitest::Test
     ::Instana.tracer.log_end(:rack, {:rack_end_kv => 1})
 
     # Log an error to and close out the remaining async span after the parent trace has finished
-    ::Instana.tracer.log_async_error(Exception.new("Async span 1"), id1)
-    ::Instana.tracer.log_async_exit(:my_async_op, { :exit_kv => 1 }, id1)
+    ::Instana.tracer.log_async_error(Exception.new("Async span 1"), span1)
+    ::Instana.tracer.log_async_exit(:my_async_op, { :exit_kv => 1 }, span1)
 
     # Run process_staged to move staged complete traces to main queue
     ::Instana.processor.process_staged
@@ -268,10 +268,10 @@ class TracerAsyncTest < Minitest::Test
     ::Instana.tracer.log_start_or_continue(:rack, {:rack_start_kv => 1})
 
     # Start an asynchronous span
-    ids = ::Instana.tracer.log_async_entry(:my_async_op, { :async_entry_kv => 1})
+    span = ::Instana.tracer.log_async_entry(:my_async_op, { :async_entry_kv => 1})
 
-    refute_nil ids[:trace_id]
-    refute_nil ids[:span_id]
+    refute_nil span
+    refute_nil span.context
 
     # Current span should still be rack
     assert_equal :rack, ::Instana.tracer.current_trace.current_span_name
@@ -287,7 +287,7 @@ class TracerAsyncTest < Minitest::Test
     assert_equal 0, ::Instana.processor.queue_count
 
     # Now end the async span completing the trace
-    ::Instana.tracer.log_async_exit(:my_async_op, { :exit_kv => 1 }, ids)
+    ::Instana.tracer.log_async_exit(:my_async_op, { :exit_kv => 1 }, span)
 
     ::Instana.processor.process_staged
 
