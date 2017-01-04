@@ -18,8 +18,8 @@ module Instana
       # Check incoming context
       incoming_context = {}
       if env.key?('HTTP_X_INSTANA_T')
-        incoming_context[:trace_id]  = ::Instana.tracer.header_to_id(env['HTTP_X_INSTANA_T'])
-        incoming_context[:span_id]   = ::Instana.tracer.header_to_id(env['HTTP_X_INSTANA_S']) if env.key?('HTTP_X_INSTANA_S')
+        incoming_context[:trace_id]  = ::Instana::Util.header_to_id(env['HTTP_X_INSTANA_T'])
+        incoming_context[:span_id]   = ::Instana::Util.header_to_id(env['HTTP_X_INSTANA_S']) if env.key?('HTTP_X_INSTANA_S')
         incoming_context[:level]     = env['HTTP_X_INSTANA_L'] if env.key?('HTTP_X_INSTANA_L')
       end
 
@@ -49,8 +49,8 @@ module Instana
     ensure
       if headers && ::Instana.tracer.tracing?
         # Set reponse headers; encode as hex string
-        headers['X-Instana-T'] = ::Instana.tracer.id_to_header(trace_id)
-        headers['X-Instana-S'] = ::Instana.tracer.id_to_header(span_id)
+        headers['X-Instana-T'] = ::Instana::Util.id_to_header(trace_id)
+        headers['X-Instana-S'] = ::Instana::Util.id_to_header(span_id)
       end
       ::Instana.tracer.log_end(:rack, kvs)
     end

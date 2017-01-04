@@ -188,6 +188,40 @@ module Instana
         # Max value is 9223372036854775807 (signed long in Java)
         rand(-2**63..2**63-1)
       end
+
+      # Convert an ID to a value appropriate to pass in a header.
+      #
+      # @param id [Integer] the id to be converted
+      #
+      # @return [String]
+      #
+      def id_to_header(id)
+        unless id.is_a?(Integer) || id.is_a?(String)
+          Instana.logger.debug "id_to_header received a #{id.class}: returning empty string"
+          return String.new
+        end
+        [id.to_i].pack('q>').unpack('H*')[0]
+      rescue => e
+        Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+        Instana.logger.debug e.backtrace.join("\r\n")
+      end
+
+      # Convert a received header value into a valid ID
+      #
+      # @param header_id [String] the header value to be converted
+      #
+      # @return [Integer]
+      #
+      def header_to_id(header_id)
+        if !header_id.is_a?(String)
+          Instana.logger.debug "header_to_id received a #{header_id.class}: returning 0"
+          return 0
+        end
+        [header_id].pack("H*").unpack("q>")[0]
+      rescue => e
+        Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+        Instana.logger.debug e.backtrace.join("\r\n")
+      end
     end
   end
 end
