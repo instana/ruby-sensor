@@ -153,4 +153,59 @@ class OpenTracerTest < Minitest::Test
     assert_equal 1, ac_span_context.baggage[:my_bag]
     assert_equal 1, av_span_context.baggage[:my_bag]
   end
+
+  def test_baggage_with_complex_data
+    ::Instana.processor.clear!
+    otracer = ::Instana.tracer
+
+    entry_span = otracer.start_span(:rack)
+    entry_span_context = entry_span.context
+
+    ac_span = otracer.start_span(:action_controller)
+
+    ac_span.set_baggage_item(:integer, 1)
+    ac_span.set_baggage_item(:float, 1.0123948293)
+    ac_span.set_baggage_item(:hash, { :hash_sublevel => "blah",
+                                      :another => {} })
+    ac_span_context = ac_span.context
+
+    av_span = otracer.start_span(:action_view)
+    av_span_context = av_span.context
+
+    sleep 0.1
+    av_span.finish
+    ac_span.finish
+    entry_span.finish
+
+    traces = ::Instana.processor.queued_traces
+
+    assert_equal 1, traces.count
+    trace = traces.first
+    assert trace.valid?
+    assert_equal 3, trace.spans.count
+
+    # Context
+    assert_equal true, entry_span_context.baggage.empty?
+    assert_equal true, entry_span.baggage.empty?
+
+    assert_equal 1, ac_span_context.baggage[:integer]
+    assert_equal 1.0123948293, ac_span_context.baggage[:float]
+    assert_equal true, ac_span_context.baggage[:hash][:another].empty?
+    assert_equal "blah", ac_span_context.baggage[:hash][:hash_sublevel]
+    assert_equal 1, av_span_context.baggage[:integer]
+    assert_equal 1.0123948293, av_span_context.baggage[:float]
+    assert_equal true, av_span_context.baggage[:hash][:another].empty?
+    assert_equal "blah", av_span_context.baggage[:hash][:hash_sublevel]
+
+    # Spans
+    assert_equal true, entry_span.baggage.empty?
+    assert_equal 1, ac_span.baggage[:integer]
+    assert_equal 1.0123948293, ac_span.baggage[:float]
+    assert_equal true, ac_span.baggage[:hash][:another].empty?
+    assert_equal "blah", ac_span.baggage[:hash][:hash_sublevel]
+    assert_equal 1, av_span.baggage[:integer]
+    assert_equal 1.0123948293, av_span.baggage[:float]
+    assert_equal true, av_span.baggage[:hash][:another].empty?
+    assert_equal "blah", av_span.baggage[:hash][:hash_sublevel]
+  end
 end
