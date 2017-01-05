@@ -15,5 +15,17 @@ module Instana
       @span_id = sid
       @baggage = baggage
     end
+
+    def trace_id_header
+      ::Instana::Util.id_to_header(@trace_id)
+    end
+
+    def span_id_header
+      ::Instana::Util.id_to_header(@span_id)
+    end
+
+    def to_hash
+      { :trace_id => @trace_id, :span_id => @span_id }
+    end
   end
 end

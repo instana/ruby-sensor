@@ -56,11 +56,11 @@ class TracerAsyncTest < Minitest::Test
     ::Instana.tracer.log_start_or_continue(:rack, {:rack_start_kv => 1})
 
     t_context = ::Instana.tracer.context
-    refute_nil t_context[:trace_id]
-    refute_nil t_context[:span_id]
+    refute_nil t_context.trace_id
+    refute_nil t_context.span_id
 
     Thread.new do
-      ::Instana.tracer.log_start_or_continue(:async_thread, { :async_start => 1 }, t_context)
+      ::Instana.tracer.log_start_or_continue(:async_thread, { :async_start => 1 }, t_context.to_hash)
       ::Instana.tracer.log_entry(:sleepy_time, { :tired => 1 })
       # Sleep beyond the end of this root trace
       sleep 0.5
