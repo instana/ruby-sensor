@@ -61,6 +61,8 @@ module Instana
 
       new_span = Span.new(name, @id, parent_id: @current_span.id, start_time: Time.now)
       new_span.set_tags(kvs) if kvs
+      # FIXME: dup is a shallow duplicate.  In case of nested hashes?
+      new_span.baggage = @current_span.baggage.dup
       new_span.parent = @current_span
 
       @spans.add(new_span)

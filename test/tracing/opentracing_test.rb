@@ -90,8 +90,8 @@ class OpenTracerTest < Minitest::Test
     ::Instana.processor.clear!
     otracer = ::Instana.tracer
     entry_span = otracer.start_span(:rack)
-    entry_span.set_baggage_item(:my_bag, 1)
     ac_span = otracer.start_span(:action_controller)
+    ac_span.set_baggage_item(:my_bag, 1)
     av_span = otracer.start_span(:action_view)
     sleep 0.1
     av_span.finish
@@ -116,5 +116,41 @@ class OpenTracerTest < Minitest::Test
     assert first_span.is_root?
     assert_equal first_span[:s], second_span[:p]
     assert_equal second_span[:s], third_span[:p]
+
+    # Every span should have baggage
+    assert_equal nil, first_span.get_baggage_item(:my_bag)
+    assert_equal 1, second_span.get_baggage_item(:my_bag)
+    assert_equal 1, third_span.get_baggage_item(:my_bag)
+  end
+
+  def test_context_should_carry_baggage
+    ::Instana.processor.clear!
+    otracer = ::Instana.tracer
+
+    entry_span = otracer.start_span(:rack)
+    entry_span_context = entry_span.context
+
+    ac_span = otracer.start_span(:action_controller)
+    ac_span.set_baggage_item(:my_bag, 1)
+    ac_span_context = ac_span.context
+
+    av_span = otracer.start_span(:action_view)
+    av_span_context = av_span.context
+
+    sleep 0.1
+    av_span.finish
+    ac_span.finish
+    entry_span.finish
+
+    traces = ::Instana.processor.queued_traces
+
+    assert_equal 1, traces.count
+    trace = traces.first
+    assert trace.valid?
+    assert_equal 3, trace.spans.count
+
+    assert_equal nil, entry_span_context.baggage[:my_bag]
+    assert_equal 1, ac_span_context.baggage[:my_bag]
+    assert_equal 1, av_span_context.baggage[:my_bag]
   end
 end
