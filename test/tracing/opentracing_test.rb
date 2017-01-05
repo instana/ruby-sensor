@@ -55,6 +55,37 @@ class OpenTracerTest < Minitest::Test
     assert_equal (ts_finish_ms - ts_start_ms), span[:d]
   end
 
+  def test_nested_spans_using_child_of
+    ::Instana.processor.clear!
+    otracer = ::Instana.tracer
+    entry_span = otracer.start_span(:rack)
+    ac_span = otracer.start_span(:action_controller, child_of: entry_span)
+    av_span = otracer.start_span(:action_view, child_of: entry_span)
+    sleep 0.1
+    av_span.finish
+    ac_span.finish
+    entry_span.finish
+
+    traces = ::Instana.processor.queued_traces
+
+    assert_equal 1, traces.count
+    trace = traces.first
+    assert trace.valid?
+    assert_equal 3, trace.spans.count
+
+    first_span, second_span, third_span = trace.spans.to_a
+
+    # IDs
+    assert_equal trace.id, first_span[:t]
+    assert_equal trace.id, second_span[:t]
+    assert_equal trace.id, third_span[:t]
+
+    # Linkage
+    assert first_span.is_root?
+    assert_equal first_span[:s], second_span[:p]
+    assert_equal first_span[:s], third_span[:p]
+  end
+
   def test_start_span_with_nested_spans
     ::Instana.processor.clear!
     otracer = ::Instana.tracer

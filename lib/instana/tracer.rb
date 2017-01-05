@@ -244,12 +244,12 @@ module Instana
       return unless ::Instana.agent.ready?
 
       if tracing?
-        span = self.current_trace.new_span(operation_name, tags, start_time)
+        span = self.current_trace.new_span(operation_name, tags, start_time, child_of)
       else
         self.current_trace = ::Instana::Trace.new(operation_name, tags)
         span = self.current_trace.current_span
       end
-      span.parent_id = child_of.id if child_of
+      #span.parent_id = child_of.id if child_of
       span.set_tags(tags)
       span
     end

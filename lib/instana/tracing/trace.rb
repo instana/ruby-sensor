@@ -56,14 +56,19 @@ module Instana
     # @param name [String] the name of the span to start
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def new_span(name, kvs = nil, start_time = Time.now)
+    def new_span(name, kvs = nil, start_time = Time.now, child_of = nil)
       return unless @current_span
 
-      new_span = Span.new(name, @id, parent_id: @current_span.id, start_time: start_time)
+      if child_of && child_of.is_a?(::Instana::Span)
+        new_span = Span.new(name, @id, parent_id: child_of.id, start_time: start_time)
+        new_span.parent = child_of
+        new_span.baggage = child_of.baggage.dup
+      else
+        new_span = Span.new(name, @id, parent_id: @current_span.id, start_time: start_time)
+        new_span.parent = @current_span
+        new_span.baggage = @current_span.baggage.dup
+      end
       new_span.set_tags(kvs) if kvs
-      # FIXME: dup is a shallow duplicate.  In case of nested hashes?
-      new_span.baggage = @current_span.baggage.dup
-      new_span.parent = @current_span
 
       @spans.add(new_span)
       @current_span = new_span
