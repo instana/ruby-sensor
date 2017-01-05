@@ -254,6 +254,46 @@ module Instana
       span
     end
 
+    # Inject a span into the given carrier
+    #
+    # @param span_context [SpanContext]
+    # @param format [OpenTracing::FORMAT_TEXT_MAP, OpenTracing::FORMAT_BINARY, OpenTracing::FORMAT_RACK]
+    # @param carrier [Carrier]
+    #
+    def inject(span_context, format, carrier)
+      case format
+      when OpenTracing::FORMAT_TEXT_MAP, OpenTracing::FORMAT_BINARY
+        ::Instana.logger.debug 'Unsupported inject format'
+      when OpenTracing::FORMAT_RACK
+        carrier['X-Instana-T'] = ::Instana::Util.id_to_header(span_context.trace_id)
+        carrier['X-Instana-S'] = ::Instana::Util.id_to_header(span_context.span_id)
+      else
+        ::Instana.logger.debug 'Unknown inject format'
+      end
+    end
+
+    # Extract a span from a carrier
+    #
+    # @param operation_name [String]
+    # @param format [OpenTracing::FORMAT_TEXT_MAP, OpenTracing::FORMAT_BINARY, OpenTracing::FORMAT_RACK]
+    # @param carrier [Carrier]
+    #
+    # @return [SpanContext]
+    #
+    def extract(operation_name, format, carrier)
+      case format
+      when OpenTracing::FORMAT_TEXT_MAP, OpenTracing::FORMAT_BINARY
+        ::Instana.logger.debug 'Unsupported extract format'
+      when OpenTracing::FORMAT_RACK
+        span_context = ::Instana::SpanContext.new(::Instana::Util.header_to_id(env['HTTP_X_INSTANA_T']),
+                                                    ::Instana::Util.header_to_id(env['HTTP_X_INSTANA_S']))
+        span_context
+      else
+        ::Instana.logger.debug 'Unknown inject format'
+        nil
+      end
+    end
+
     ###########################################################################
     # Helper methods
     ###########################################################################
@@ -277,9 +317,7 @@ module Instana
     #
     def context
       return nil unless tracing?
-
-      { :trace_id => self.current_trace.id,
-        :span_id => self.current_trace.current_span_id }
+      self.current_trace.current_span.context
     end
 
     # Take the current trace_id and convert it to a header compatible
