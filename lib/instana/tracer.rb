@@ -127,10 +127,10 @@ module Instana
     # @param name [String] the name of the span to end
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def log_end(name, kvs = {})
+    def log_end(name, kvs = {}, end_time = Time.now)
       return unless tracing?
 
-      self.current_trace.finish(kvs)
+      self.current_trace.finish(kvs, end_time)
 
       if !self.current_trace.has_async? ||
           (self.current_trace.has_async? && self.current_trace.complete?)
@@ -245,7 +245,7 @@ module Instana
       if tracing?
         span = self.current_trace.new_span(operation_name, tags, start_time, child_of)
       else
-        self.current_trace = ::Instana::Trace.new(operation_name, tags)
+        self.current_trace = ::Instana::Trace.new(operation_name, tags, nil, start_time)
         span = self.current_trace.current_span
       end
       span.set_tags(tags)

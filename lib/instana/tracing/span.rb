@@ -356,16 +356,16 @@ module Instana
         ::Instana.logger.debug "span.finish: Passed #{end_time.class} instead of Time class"
       end
 
-      ::Instana.tracer.current_trace.end_span({}, end_time)
-
-      if ::Instana.tracer.current_span.id != @id
+      if ::Instana.tracer.current_span.id != id
         ::Instana.logger.tracing "Closing a span that isn't active. This will result in a broken trace: #{self.inspect}"
       end
 
       if is_root?
         # This is the root span for the trace.  Call log_end to close
         # out and queue the trace
-        ::Instana.tracer.log_end(name)
+        ::Instana.tracer.log_end(name, {}, end_time)
+      else
+        ::Instana.tracer.current_trace.end_span({}, end_time)
       end
       self
     end

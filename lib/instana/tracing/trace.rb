@@ -17,7 +17,7 @@ module Instana
     #     :span_id the ID of the parent span (must be an unsigned hex-string)
     #     :level specifies data collection level (optional)
     #
-    def initialize(name, kvs = nil, incoming_context = {})
+    def initialize(name, kvs = nil, incoming_context = {}, start_time = Time.now)
       # The collection of spans that make
       # up this trace.
       @spans = Set.new
@@ -34,11 +34,11 @@ module Instana
 
       # This is a new trace so open the first span with the proper
       # root span IDs.
-      @current_span = Span.new(name, @id, parent_id: @id)
+      @current_span = Span.new(name, @id, parent_id: @id, start_time: start_time)
       @current_span.set_tags(kvs) if kvs
 
       # Handle potential incoming context
-      if incoming_context.empty?
+      if !incoming_context || incoming_context.empty?
         # No incoming context. Set trace ID the same
         # as this first span.
         @current_span[:s] = @id
@@ -130,8 +130,8 @@ module Instana
     #
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def finish(kvs = {})
-      end_span(kvs)
+    def finish(kvs = {}, end_time = Time.now)
+      end_span(kvs, end_time)
     end
 
     ###########################################################################

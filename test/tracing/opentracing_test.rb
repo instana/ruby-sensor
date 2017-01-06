@@ -156,15 +156,18 @@ class OpenTracerTest < Minitest::Test
   def test_start_span_with_timestamps
     ::Instana.processor.clear!
     otracer = ::Instana.tracer
-    ts_start = Time.now
     span_tags = {:start_tag => 1234, :another_tag => 'tag_value'}
+
+    ts_start = Time.now - 1 # Put start time a bit in the past
+    ts_start_ms = ::Instana::Util.time_to_ms(ts_start)
+
     span = otracer.start_span('my_app_entry', tags: span_tags, start_time: ts_start)
     sleep 0.1
-    ts_finish = Time.now
-    span.finish(ts_finish)
 
-    ts_start_ms = ::Instana::Util.time_to_ms(ts_start)
+    ts_finish = Time.now + 5 # Put end time in the future
     ts_finish_ms = ::Instana::Util.time_to_ms(ts_finish)
+
+    span.finish(ts_finish)
 
     assert_equal ts_start_ms, span[:ts]
     assert_equal (ts_finish_ms - ts_start_ms), span[:d]
