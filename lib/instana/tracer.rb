@@ -176,7 +176,6 @@ module Instana
       if tracing? && self.current_trace.id == span.context.trace_id
         self.current_trace.add_async_info(kvs, span)
       else
-        ::Instana::Util.pry!
         trace = ::Instana.processor.staged_trace(span.context.trace_id)
         trace.add_async_info(kvs, span)
       end
@@ -249,7 +248,6 @@ module Instana
         self.current_trace = ::Instana::Trace.new(operation_name, tags)
         span = self.current_trace.current_span
       end
-      #span.parent_id = child_of.id if child_of
       span.set_tags(tags)
       span
     end
@@ -350,6 +348,12 @@ module Instana
     #
     def span_id
       self.current_trace  ? current_trace.current_span_id : nil
+    end
+
+    # Helper method to retrieve the currently active span for the active trace.
+    #
+    def current_span
+      self.current_trace ? self.current_trace.current_span : nil
     end
   end
 end
