@@ -252,11 +252,16 @@ module Instana
     #############################################################
 
     # Set the name of the operation
+    # Spec: OpenTracing API
+    #
+    # @params name [String] or [Symbol]
+    #
     def operation_name=(name)
       @data[:n] = name
     end
 
     # Set a tag value on this span
+    # Spec: OpenTracing API
     #
     # @param key [String] the key of the tag
     # @param value [String, Numeric, Boolean] the value of the tag. If it's not
@@ -292,6 +297,7 @@ module Instana
     end
 
     # Set a baggage item on the span
+    # Spec: OpenTracing API
     #
     # @param key [String] the key of the baggage item
     # @param value [String] the value of the baggage item
@@ -309,6 +315,7 @@ module Instana
     end
 
     # Get a baggage item
+    # Spec: OpenTracing API
     #
     # @param key [String] the key of the baggage item
     # @return Value of the baggage item
@@ -329,6 +336,7 @@ module Instana
     end
 
     # Add a log entry to this span
+    # Spec: OpenTracing API
     #
     # @param event [String] event name for the log
     # @param timestamp [Time] time of the log
@@ -339,6 +347,7 @@ module Instana
     end
 
     # Finish the {Span}
+    # Spec: OpenTracing API
     #
     # @param end_time [Time] custom end time, if not now
     #
@@ -347,7 +356,11 @@ module Instana
         ::Instana.logger.debug "span.finish: Passed #{end_time.class} instead of Time class"
       end
 
-      @data[:d] = (::Instana::Util.time_to_ms(end_time) - @data[:ts])
+      ::Instana.tracer.current_trace.end_span({}, end_time)
+
+      if ::Instana.tracer.current_span.id != @id
+        ::Instana.logger.tracing "Closing a span that isn't active. This will result in a broken trace: #{self.inspect}"
+      end
 
       if is_root?
         # This is the root span for the trace.  Call log_end to close

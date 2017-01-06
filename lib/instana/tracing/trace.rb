@@ -118,8 +118,8 @@ module Instana
     #
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def end_span(kvs = {})
-      @current_span.close
+    def end_span(kvs = {}, end_time = Time.now)
+      @current_span.close(end_time)
       add_info(kvs) if kvs && !kvs.empty?
       @current_span = @current_span.parent unless @current_span.is_root?
     end
