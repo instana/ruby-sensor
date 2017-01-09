@@ -278,14 +278,12 @@ module Instana
     # @return [SpanContext]
     #
     def extract(format, carrier)
-      span_context = nil
       case format
       when OpenTracing::FORMAT_TEXT_MAP, OpenTracing::FORMAT_BINARY
         ::Instana.logger.debug 'Unsupported extract format'
       when OpenTracing::FORMAT_RACK
-        span_context = ::Instana::SpanContext.new(::Instana::Util.header_to_id(carrier['HTTP_X_INSTANA_T']),
-                                                    ::Instana::Util.header_to_id(carrier['HTTP_X_INSTANA_S']))
-        span_context
+        ::Instana::SpanContext.new(::Instana::Util.header_to_id(carrier['HTTP_X_INSTANA_T']),
+                                     ::Instana::Util.header_to_id(carrier['HTTP_X_INSTANA_S']))
       else
         ::Instana.logger.debug 'Unknown inject format'
         nil
