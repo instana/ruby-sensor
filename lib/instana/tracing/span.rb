@@ -342,7 +342,7 @@ module Instana
     # @param timestamp [Time] time of the log
     # @param fields [Hash] Additional information to log
     #
-    def log(event = nil, timestamp = (Time.now.to_f * 1000).floor, **fields)
+    def log(event = nil, _timestamp = Time.now, **fields)
       set_tags(:log => { :message => event, :parameters => fields })
     end
 
