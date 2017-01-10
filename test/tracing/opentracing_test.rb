@@ -49,8 +49,33 @@ class OpenTracerTest < Minitest::Test
     }
   end
 
+  def test_supplies_all_ot_interfaces
+    clear_all!
+    assert defined?(OpenTracing)
+    assert OpenTracing.respond_to?(:global_tracer)
+    assert OpenTracing.global_tracer.respond_to?(:start_span)
+    assert OpenTracing.global_tracer.respond_to?(:inject)
+    assert OpenTracing.global_tracer.respond_to?(:extract)
+
+    assert defined?(OpenTracing::Carrier)
+    carrier = OpenTracing::Carrier.new
+    assert carrier.respond_to?(:[])
+    assert carrier.respond_to?(:[]=)
+    assert carrier.respond_to?(:each)
+
+    span = OpenTracing.start_span(:blah)
+    assert span.respond_to?(:finish)
+    assert span.respond_to?(:set_tag)
+    assert span.respond_to?(:tags)
+    assert span.respond_to?(:operation_name=)
+    assert span.respond_to?(:set_baggage_item)
+    assert span.respond_to?(:get_baggage_item)
+    assert span.respond_to?(:context)
+    assert span.respond_to?(:log)
+  end
+
   def test_basic_get_with_opentracing
-    ::Instana.processor.clear!
+    clear_all!
     get '/mrlobster'
     assert last_response.ok?
 
@@ -89,7 +114,7 @@ class OpenTracerTest < Minitest::Test
   end
 
   def test_get_with_inject_extract
-    ::Instana.processor.clear!
+    clear_all!
 
     trace_id = ::Instana::Util.generate_id
     span_id = ::Instana::Util.generate_id
@@ -117,12 +142,11 @@ class OpenTracerTest < Minitest::Test
   end
 
   def test_start_span_with_tags
-    ::Instana.processor.clear!
-    otracer = ::Instana.tracer
-    span = otracer.start_span('my_app_entry')
+    clear_all!
+    span = OpenTracing.start_span('my_app_entry')
 
     assert span.is_a?(::Instana::Span)
-    assert_equal :my_app_entry, otracer.current_trace.current_span.name
+    assert_equal :my_app_entry, OpenTracing.current_trace.current_span.name
 
     span.set_tag(:tag_integer, 1234)
     span.set_tag(:tag_boolean, true)
@@ -137,10 +161,8 @@ class OpenTracerTest < Minitest::Test
   end
 
   def test_start_span_with_baggage
-    ::Instana.processor.clear!
-    otracer = ::Instana.tracer
-    assert otracer.respond_to?(:start_span)
-    span = otracer.start_span('my_app_entry')
+    clear_all!
+    span = OpenTracing.start_span('my_app_entry')
     span.set_baggage_item(:baggage_integer, 1234)
     span.set_baggage_item(:baggage_boolean, false)
     span.set_baggage_item(:baggage_array, [1,2,3,4])
@@ -154,14 +176,13 @@ class OpenTracerTest < Minitest::Test
   end
 
   def test_start_span_with_timestamps
-    ::Instana.processor.clear!
-    otracer = ::Instana.tracer
+    clear_all!
     span_tags = {:start_tag => 1234, :another_tag => 'tag_value'}
 
     ts_start = Time.now - 1 # Put start time a bit in the past
     ts_start_ms = ::Instana::Util.time_to_ms(ts_start)
 
-    span = otracer.start_span('my_app_entry', tags: span_tags, start_time: ts_start)
+    span = OpenTracing.start_span('my_app_entry', tags: span_tags, start_time: ts_start)
     sleep 0.1
 
     ts_finish = Time.now + 5 # Put end time in the future
@@ -174,11 +195,10 @@ class OpenTracerTest < Minitest::Test
   end
 
   def test_nested_spans_using_child_of
-    ::Instana.processor.clear!
-    otracer = ::Instana.tracer
-    entry_span = otracer.start_span(:rack)
-    ac_span = otracer.start_span(:action_controller, child_of: entry_span)
-    av_span = otracer.start_span(:action_view, child_of: ac_span)
+    clear_all!
+    entry_span = OpenTracing.start_span(:rack)
+    ac_span = OpenTracing.start_span(:action_controller, child_of: entry_span)
+    av_span = OpenTracing.start_span(:action_view, child_of: ac_span)
     sleep 0.1
     av_span.finish
     ac_span.finish
@@ -206,11 +226,10 @@ class OpenTracerTest < Minitest::Test
   end
 
   def test_start_span_with_nested_spans
-    ::Instana.processor.clear!
-    otracer = ::Instana.tracer
-    entry_span = otracer.start_span(:rack)
-    ac_span = otracer.start_span(:action_controller)
-    av_span = otracer.start_span(:action_view)
+    clear_all!
+    entry_span = OpenTracing.start_span(:rack)
+    ac_span = OpenTracing.start_span(:action_controller)
+    av_span = OpenTracing.start_span(:action_view)
     sleep 0.1
     av_span.finish
     ac_span.finish
@@ -237,12 +256,11 @@ class OpenTracerTest < Minitest::Test
   end
 
   def test_nested_spans_with_baggage
-    ::Instana.processor.clear!
-    otracer = ::Instana.tracer
-    entry_span = otracer.start_span(:rack)
-    ac_span = otracer.start_span(:action_controller)
+    clear_all!
+    entry_span = OpenTracing.start_span(:rack)
+    ac_span = OpenTracing.start_span(:action_controller)
     ac_span.set_baggage_item(:my_bag, 1)
-    av_span = otracer.start_span(:action_view)
+    av_span = OpenTracing.start_span(:action_view)
     sleep 0.1
     av_span.finish
     ac_span.finish
@@ -274,17 +292,16 @@ class OpenTracerTest < Minitest::Test
   end
 
   def test_context_should_carry_baggage
-    ::Instana.processor.clear!
-    otracer = ::Instana.tracer
+    clear_all!
 
-    entry_span = otracer.start_span(:rack)
+    entry_span = OpenTracing.start_span(:rack)
     entry_span_context = entry_span.context
 
-    ac_span = otracer.start_span(:action_controller)
+    ac_span = OpenTracing.start_span(:action_controller)
     ac_span.set_baggage_item(:my_bag, 1)
     ac_span_context = ac_span.context
 
-    av_span = otracer.start_span(:action_view)
+    av_span = OpenTracing.start_span(:action_view)
     av_span_context = av_span.context
 
     sleep 0.1
@@ -305,13 +322,12 @@ class OpenTracerTest < Minitest::Test
   end
 
   def test_baggage_with_complex_data
-    ::Instana.processor.clear!
-    otracer = ::Instana.tracer
+    clear_all!
 
-    entry_span = otracer.start_span(:rack)
+    entry_span = OpenTracing.start_span(:rack)
     entry_span_context = entry_span.context
 
-    ac_span = otracer.start_span(:action_controller)
+    ac_span = OpenTracing.start_span(:action_controller)
 
     ac_span.set_baggage_item(:integer, 1)
     ac_span.set_baggage_item(:float, 1.0123948293)
@@ -319,7 +335,7 @@ class OpenTracerTest < Minitest::Test
                                       :another => {} })
     ac_span_context = ac_span.context
 
-    av_span = otracer.start_span(:action_view)
+    av_span = OpenTracing.start_span(:action_view)
     av_span_context = av_span.context
 
     sleep 0.1

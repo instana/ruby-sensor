@@ -353,5 +353,11 @@ module Instana
     def current_span
       self.current_trace ? self.current_trace.current_span : nil
     end
+
+    # Used in the test suite, this resets the tracer to non-tracing state.
+    #
+    def clear!
+      self.current_trace = nil
+    end
   end
 end
