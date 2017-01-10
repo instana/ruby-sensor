@@ -12,7 +12,7 @@ module Instana
       @data = {}
       @data[:t] = trace_id                    # Trace ID
       @data[:s] = ::Instana::Util.generate_id # Span ID
-      @data[:p] = parent_id                   # Parent ID
+      @data[:p] = parent_id if parent_id      # Parent ID
       @data[:ta] = :ruby                      # Agent
       @data[:data] = {}
 

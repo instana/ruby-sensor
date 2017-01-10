@@ -34,7 +34,7 @@ module Instana
 
       # This is a new trace so open the first span with the proper
       # root span IDs.
-      @current_span = Span.new(name, @id, parent_id: @id, start_time: start_time)
+      @current_span = Span.new(name, @id, start_time: start_time)
       @current_span.set_tags(kvs) if kvs
 
       # Handle potential incoming context
