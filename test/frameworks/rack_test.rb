@@ -95,8 +95,8 @@ class RackTest < Minitest::Test
 
   def test_context_continuation
     ::Instana.processor.clear!
-    header 'X-INSTANA-T', Instana.tracer.id_to_header(1234)
-    header 'X-INSTANA-S', Instana.tracer.id_to_header(4321)
+    header 'X-INSTANA-T', Instana::Util.id_to_header(1234)
+    header 'X-INSTANA-S', Instana::Util.id_to_header(4321)
 
     get '/mrlobster'
     assert last_response.ok?

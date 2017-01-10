@@ -1,6 +1,7 @@
 require "instana/thread_local"
 require "instana/tracing/trace"
 require "instana/tracing/span"
+require "instana/tracing/span_context"
 
 module Instana
   class Tracer
@@ -126,10 +127,10 @@ module Instana
     # @param name [String] the name of the span to end
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def log_end(name, kvs = {})
+    def log_end(name, kvs = {}, end_time = Time.now)
       return unless tracing?
 
-      self.current_trace.finish(kvs)
+      self.current_trace.finish(kvs, end_time)
 
       if !self.current_trace.has_async? ||
           (self.current_trace.has_async? && self.current_trace.complete?)
@@ -156,7 +157,7 @@ module Instana
     #   :trace_id => 12345
     #   :span_id => 12345
     #
-    def log_async_entry(name, kvs, incoming_context = nil)
+    def log_async_entry(name, kvs)
       return unless tracing?
       self.current_trace.new_async_span(name, kvs)
     end
@@ -164,41 +165,38 @@ module Instana
     # Add info to an asynchronous span
     #
     # @param kvs [Hash] list of key values to be reported in the span
-    # @param t_context [Hash] the Trace ID and Span ID in the form of
-    #   :trace_id => 12345
-    #   :span_id => 12345
-    #   This can be retrieved by using ::Instana.tracer.context
+    # @param span [Span] the span for this Async op (previously returned
+    #   from `log_async_entry`)
     #
-    def log_async_info(kvs, ids)
+    def log_async_info(kvs, span)
       # Asynchronous spans can persist longer than the parent
       # trace.  With the trace ID, we check the current trace
       # but otherwise, we search staged traces.
 
-      if tracing? && self.current_trace.id == ids[:trace_id]
-        self.current_trace.add_async_info(kvs, ids)
+      if tracing? && self.current_trace.id == span.context.trace_id
+        self.current_trace.add_async_info(kvs, span)
       else
-        trace = ::Instana.processor.staged_trace(ids)
-        trace.add_async_info(kvs, ids)
+        trace = ::Instana.processor.staged_trace(span.context.trace_id)
+        trace.add_async_info(kvs, span)
       end
     end
 
     # Add an error to an asynchronous span
     #
     # @param e [Exception] Add exception to the current span
-    # @param ids [Hash] the Trace ID and Span ID in the form of
-    #   :trace_id => 12345
-    #   :span_id => 12345
+    # @param span [Span] the span for this Async op (previously returned
+    #   from `log_async_entry`)
     #
-    def log_async_error(e, ids)
+    def log_async_error(e, span)
       # Asynchronous spans can persist longer than the parent
       # trace.  With the trace ID, we check the current trace
       # but otherwise, we search staged traces.
 
-      if tracing? && self.current_trace.id == ids[:trace_id]
-        self.current_trace.add_async_error(e, ids)
+      if tracing? && self.current_trace.id == span.context.trace_id
+        self.current_trace.add_async_error(e, span)
       else
-        trace = ::Instana.processor.staged_trace(ids)
-        trace.add_async_error(e, ids)
+        trace = ::Instana.processor.staged_trace(span.context.trace_id)
+        trace.add_async_error(e, span)
       end
     end
 
@@ -206,26 +204,89 @@ module Instana
     #
     # @param name [String] the name of the async span to exit (close out)
     # @param kvs [Hash] list of key values to be reported in the span
-    # @param ids [Hash] the Trace ID and Span ID in the form of
-    #   :trace_id => 12345
-    #   :span_id => 12345
+    # @param span [Span] the span for this Async op (previously returned
+    #   from `log_async_entry`)
     #
-    def log_async_exit(name, kvs, ids)
+    def log_async_exit(name, kvs, span)
       # An asynchronous span can end after the current trace has
       # already completed so we make sure that we end the span
       # on the right trace.
 
-      if tracing? && (self.current_trace.id == ids[:trace_id])
-        self.current_trace.end_async_span(kvs, ids)
+      if tracing? && self.current_trace.id == span.context.trace_id
+        self.current_trace.end_async_span(kvs, span)
       else
         # Different trace from current so find the staged trace
         # and close out the span on it.
-        trace = ::Instana.processor.staged_trace(ids)
+        trace = ::Instana.processor.staged_trace(span.context.trace_id)
         if trace
-          trace.end_async_span(kvs, ids)
+          trace.end_async_span(kvs, span)
         else
-          ::Instana.logger.debug "log_async_exit: Couldn't find staged trace. #{ids.inspect}"
+          ::Instana.logger.debug "log_async_exit: Couldn't find staged trace. #{span.inspect}"
         end
+      end
+    end
+
+    ###########################################################################
+    # OpenTracing Support
+    ###########################################################################
+
+    # Start a new span
+    #
+    # @param operation_name [String] The name of the operation represented by the span
+    # @param child_of [Span] A span to be used as the ChildOf reference
+    # @param start_time [Time] the start time of the span
+    # @param tags [Hash] Starting tags for the span
+    #
+    # @return [Span]
+    #
+    def start_span(operation_name, child_of: nil, start_time: Time.now, tags: nil)
+      return unless ::Instana.agent.ready?
+
+      if tracing?
+        span = self.current_trace.new_span(operation_name, tags, start_time, child_of)
+      else
+        self.current_trace = ::Instana::Trace.new(operation_name, tags, nil, start_time)
+        span = self.current_trace.current_span
+      end
+      span.set_tags(tags)
+      span
+    end
+
+    # Inject a span into the given carrier
+    #
+    # @param span_context [SpanContext]
+    # @param format [OpenTracing::FORMAT_TEXT_MAP, OpenTracing::FORMAT_BINARY, OpenTracing::FORMAT_RACK]
+    # @param carrier [Carrier]
+    #
+    def inject(span_context, format, carrier)
+      case format
+      when OpenTracing::FORMAT_TEXT_MAP, OpenTracing::FORMAT_BINARY
+        ::Instana.logger.debug 'Unsupported inject format'
+      when OpenTracing::FORMAT_RACK
+        carrier['X-Instana-T'] = ::Instana::Util.id_to_header(span_context.trace_id)
+        carrier['X-Instana-S'] = ::Instana::Util.id_to_header(span_context.span_id)
+      else
+        ::Instana.logger.debug 'Unknown inject format'
+      end
+    end
+
+    # Extract a span from a carrier
+    #
+    # @param format [OpenTracing::FORMAT_TEXT_MAP, OpenTracing::FORMAT_BINARY, OpenTracing::FORMAT_RACK]
+    # @param carrier [Carrier]
+    #
+    # @return [SpanContext]
+    #
+    def extract(format, carrier)
+      case format
+      when OpenTracing::FORMAT_TEXT_MAP, OpenTracing::FORMAT_BINARY
+        ::Instana.logger.debug 'Unsupported extract format'
+      when OpenTracing::FORMAT_RACK
+        ::Instana::SpanContext.new(::Instana::Util.header_to_id(carrier['HTTP_X_INSTANA_T']),
+                                     ::Instana::Util.header_to_id(carrier['HTTP_X_INSTANA_S']))
+      else
+        ::Instana.logger.debug 'Unknown inject format'
+        nil
       end
     end
 
@@ -248,11 +309,11 @@ module Instana
 
     # Retrieve the current context of the tracer.
     #
+    # @return [SpanContext] or nil if not tracing
+    #
     def context
       return nil unless tracing?
-
-      { :trace_id => self.current_trace.id,
-        :span_id => self.current_trace.current_span_id }
+      self.current_trace.current_span.context
     end
 
     # Take the current trace_id and convert it to a header compatible
@@ -261,7 +322,7 @@ module Instana
     # @return [String] a hexadecimal representation of the current trace ID
     #
     def trace_id_header
-      id_to_header(trace_id)
+      ::Instana::Util.id_to_header(trace_id)
     end
 
     # Take the current span_id and convert it to a header compatible
@@ -270,41 +331,7 @@ module Instana
     # @return [String] a hexadecimal representation of the current span ID
     #
     def span_id_header
-      id_to_header(span_id)
-    end
-
-    # Convert an ID to a value appropriate to pass in a header.
-    #
-    # @param id [Integer] the id to be converted
-    #
-    # @return [String]
-    #
-    def id_to_header(id)
-      unless id.is_a?(Integer) || id.is_a?(String)
-        Instana.logger.debug "id_to_header received a #{id.class}: returning empty string"
-        return String.new
-      end
-      [id.to_i].pack('q>').unpack('H*')[0]
-    rescue => e
-      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-      Instana.logger.debug e.backtrace.join("\r\n")
-    end
-
-    # Convert a received header value into a valid ID
-    #
-    # @param header_id [String] the header value to be converted
-    #
-    # @return [Integer]
-    #
-    def header_to_id(header_id)
-      if !header_id.is_a?(String)
-        Instana.logger.debug "header_to_id received a #{header_id.class}: returning 0"
-        return 0
-      end
-      [header_id].pack("H*").unpack("q>")[0]
-    rescue => e
-      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-      Instana.logger.debug e.backtrace.join("\r\n")
+      ::Instana::Util.id_to_header(span_id)
     end
 
     # Returns the trace ID for the active trace (if there is one),
@@ -319,6 +346,18 @@ module Instana
     #
     def span_id
       self.current_trace  ? current_trace.current_span_id : nil
+    end
+
+    # Helper method to retrieve the currently active span for the active trace.
+    #
+    def current_span
+      self.current_trace ? self.current_trace.current_span : nil
+    end
+
+    # Used in the test suite, this resets the tracer to non-tracing state.
+    #
+    def clear!
+      self.current_trace = nil
     end
   end
 end

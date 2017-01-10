@@ -19,8 +19,9 @@ if defined?(::Excon) && ::Instana.config[:excon][:enabled]
           end
 
           # Set request headers; encode IDs as hexadecimal strings
-          datum[:headers]['X-Instana-T'] = ::Instana.tracer.trace_id_header
-          datum[:headers]['X-Instana-S'] = ::Instana.tracer.span_id_header
+          t_context = ::Instana.tracer.context
+          datum[:headers]['X-Instana-T'] = t_context.trace_id_header
+          datum[:headers]['X-Instana-S'] = t_context.span_id_header
 
           @stack.request_call(datum)
         end

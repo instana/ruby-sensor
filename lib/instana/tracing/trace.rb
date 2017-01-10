@@ -1,10 +1,5 @@
 module Instana
   class Trace
-    REGISTERED_SPANS = [ :rack, :'net-http', :excon ].freeze
-    ENTRY_SPANS = [ :rack ].freeze
-    EXIT_SPANS = [ :'net-http', :excon ].freeze
-    HTTP_SPANS = ENTRY_SPANS + EXIT_SPANS
-
     # @return [Integer] the ID for this trace
     attr_reader :id
 
@@ -22,13 +17,13 @@ module Instana
     #     :span_id the ID of the parent span (must be an unsigned hex-string)
     #     :level specifies data collection level (optional)
     #
-    def initialize(name, kvs = {}, incoming_context = {})
+    def initialize(name, kvs = nil, incoming_context = {}, start_time = Time.now)
       # The collection of spans that make
       # up this trace.
       @spans = Set.new
 
       # Generate a random 64bit ID for this trace
-      @id = generate_id
+      @id = ::Instana::Util.generate_id
 
       # Indicates the time when this trace was started.  Used to timeout
       # traces that have asynchronous spans that never close out.
@@ -39,29 +34,14 @@ module Instana
 
       # This is a new trace so open the first span with the proper
       # root span IDs.
-      @current_span = Span.new({
-        :s => @id,         # Span ID
-        :ts => ts_now,     # Timestamp
-        :ta => :ruby,      # Agent
-        :f => { :e => ::Instana.agent.report_pid, :h => ::Instana.agent.agent_uuid } # Entity Source
-      })
-
-      # For entry spans, add a backtrace fingerprint
-      add_stack(2) if ENTRY_SPANS.include?(name)
-
-      # Check for custom tracing
-      if !REGISTERED_SPANS.include?(name.to_sym)
-        configure_custom_span(nil, name, kvs)
-      else
-        @current_span[:n]    = name.to_sym
-        @current_span[:data] = kvs
-      end
+      @current_span = Span.new(name, @id, parent_id: @id, start_time: start_time)
+      @current_span.set_tags(kvs) if kvs
 
       # Handle potential incoming context
-      if incoming_context.empty?
+      if !incoming_context || incoming_context.empty?
         # No incoming context. Set trace ID the same
         # as this first span.
-        @current_span[:t] = @id
+        @current_span[:s] = @id
       else
         @id = incoming_context[:trace_id]
         @current_span[:t] = incoming_context[:trace_id]
@@ -76,32 +56,22 @@ module Instana
     # @param name [String] the name of the span to start
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def new_span(name, kvs = {})
+    def new_span(name, kvs = nil, start_time = Time.now, child_of = nil)
       return unless @current_span
 
-      new_span = Span.new({
-        :s => generate_id,          # Span ID
-        :t => @id,                  # Trace ID (same as :s for root span)
-        :p => @current_span.id,     # Parent ID
-        :ts => ts_now,              # Timestamp
-        :ta => :ruby,               # Agent
-        :f => { :e => Process.pid, :h => :agent_id } # Entity Source
-      })
+      if child_of && child_of.is_a?(::Instana::Span)
+        new_span = Span.new(name, @id, parent_id: child_of.id, start_time: start_time)
+        new_span.parent = child_of
+        new_span.baggage = child_of.baggage.dup
+      else
+        new_span = Span.new(name, @id, parent_id: @current_span.id, start_time: start_time)
+        new_span.parent = @current_span
+        new_span.baggage = @current_span.baggage.dup
+      end
+      new_span.set_tags(kvs) if kvs
 
-      new_span.parent = @current_span
       @spans.add(new_span)
       @current_span = new_span
-
-      # Check for custom tracing
-      if !REGISTERED_SPANS.include?(name.to_sym)
-        configure_custom_span(nil, name, kvs)
-      else
-        @current_span[:n]    = name.to_sym
-        @current_span[:data] = kvs
-      end
-
-      # Attach a backtrace to all exit spans
-      add_stack if EXIT_SPANS.include?(name)
     end
 
     # Add KVs to the current span
@@ -139,33 +109,8 @@ module Instana
       # Return if we've already logged this exception and it
       # is just propogating up the spans.
       return if e && e.instance_variable_get(:@instana_logged)
-
       span ||= @current_span
-
-      span[:error] = true
-
-      if span.key?(:ec)
-        span[:ec] = span[:ec] + 1
-      else
-        span[:ec] = 1
-      end
-
-      # If a valid exception has been passed in, log the information about it
-      # In case of just logging an error for things such as HTTP client 5xx
-      # responses, an exception/backtrace may not exist.
-      if e
-        if e.backtrace.is_a?(Array)
-          add_backtrace_to_span(e.backtrace, nil, span)
-        end
-
-        if HTTP_SPANS.include?(span.name)
-          add_info(:http => { :error => "#{e.class}: #{e.message}" })
-        else
-          add_info(:log => { :message => e.message, :parameters => e.class })
-        end
-        e.instance_variable_set(:@instana_logged, true)
-      end
-
+      span.add_error(e)
     end
 
     # Close out the current span and set the parent as
@@ -173,20 +118,20 @@ module Instana
     #
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def end_span(kvs = {})
-      @current_span[:d] = ts_now - @current_span[:ts]
+    def end_span(kvs = {}, end_time = Time.now)
+      @current_span.close(end_time)
       add_info(kvs) if kvs && !kvs.empty?
       @current_span = @current_span.parent unless @current_span.is_root?
     end
 
     # Closes out the final span in this trace and runs any finalizer
     # steps required.
-    # This should be called only on the root span to end the trace.
+    # This should be called only when on the root span to end the trace.
     #
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def finish(kvs = {})
-      end_span(kvs)
+    def finish(kvs = {}, end_time = Time.now)
+      end_span(kvs, end_time)
     end
 
     ###########################################################################
@@ -202,77 +147,47 @@ module Instana
     # @param name [String] the name of the span to start
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def new_async_span(name, kvs)
-
-      new_span = Span.new({
-        :s => generate_id,          # Span ID
-        :t => @id,                  # Trace ID (same as :s for root span)
-        :p => @current_span.id,     # Parent ID
-        :ts => ts_now,              # Timestamp
-        :ta => :ruby,               # Agent
-        :async => true,             # Asynchonous
-        :f => { :e => Process.pid, :h => :agent_id } # Entity Source
-      })
-
+    def new_async_span(name, kvs = {})
+      new_span = Span.new(name, @id, parent_id: @current_span.id)
+      new_span.set_tags(kvs) unless kvs.empty?
       new_span.parent = @current_span
-      @has_async = true
-
-      # Check for custom tracing
-      if !REGISTERED_SPANS.include?(name.to_sym)
-        configure_custom_span(new_span, name, kvs)
-      else
-        new_span[:n]    = name.to_sym
-        new_span[:data] = kvs
-      end
-
-      # Attach a backtrace to all exit spans
-      add_stack(nil, new_span) if EXIT_SPANS.include?(name)
+      new_span[:async] = @has_async = true
 
       # Add the new span to the span collection
       @spans.add(new_span)
-
-      { :trace_id => new_span[:t], :span_id => new_span.id }
+      new_span
     end
 
     # Log info into an asynchronous span
     #
     # @param kvs [Hash] list of key values to be reported in the span
-    # @param span [Span] the span to configure
+    # @param span [Span] the span of this Async op (previously returned
+    #   from `log_async_entry`)
     #
-    def add_async_info(kvs, ids)
-      @spans.each do |span|
-        if span.id == ids[:span_id]
-          add_info(kvs, span)
-        end
-      end
+    def add_async_info(kvs, span)
+      span.set_tags(kvs)
     end
 
     # Log an error into an asynchronous span
     #
-    # @param span [Span] the span to configure
     # @param e [Exception] Add exception to the current span
+    # @param span [Span] the span of this Async op (previously returned
+    #   from `log_async_entry`)
     #
-    def add_async_error(e, ids)
-      @spans.each do |span|
-        add_error(e, span) if span.id == ids[:span_id]
-      end
+    def add_async_error(e, span)
+      span.add_error(e)
     end
 
     # End an asynchronous span
     #
     # @param name [Symbol] the name of the span
     # @param kvs [Hash] list of key values to be reported in the span
-    # @param ids [Hash] the Trace ID and Span ID in the form of
-    #   :trace_id => 12345
-    #   :span_id => 12345
+    # @param span [Span] the span of this Async op (previously returned
+    #   from `log_async_entry`)
     #
-    def end_async_span(kvs = {}, ids)
-      @spans.each do |span|
-        if span.id == ids[:span_id]
-          span[:d] = ts_now - span[:ts]
-          add_info(kvs, span) unless kvs.empty?
-        end
-      end
+    def end_async_span(kvs = {}, span)
+      span.set_tags(kvs) unless kvs.empty?
+      span.close
     end
 
     ###########################################################################
@@ -290,6 +205,7 @@ module Instana
           return false
         end
       end
+      true
     end
 
     # Indicates if every span of this trace has completed.  Useful when
@@ -325,6 +241,14 @@ module Instana
         end
       end
       false
+    end
+
+    # Get the current span.
+    #
+    # @return [Span]
+    #
+    def current_span
+      @current_span
     end
 
     # Get the ID of the current span for this trace.
@@ -379,53 +303,7 @@ module Instana
     #
     def configure_custom_span(span, name, kvs = {})
       span ||= @current_span
-
-      span[:n] = :sdk
-      span[:data] = { :sdk => { :name => name.to_sym } }
-      span[:data][:sdk][:type] = kvs.key?(:type) ? kvs[:type] : :local
-
-      if kvs.key?(:arguments)
-        span[:data][:sdk][:arguments] = kvs[:arguments]
-      end
-
-      if kvs.key?(:return)
-        span[:data][:sdk][:return] = kvs[:return]
-      end
-      span[:data][:sdk][:custom] = kvs unless kvs.empty?
-      #span[:data][:sdk][:custom][:tags] = {}
-      #span[:data][:sdk][:custom][:logs] = {}
-    end
-
-    # Locates the span in the current_trace or
-    # in the staging queue.  This is generally used by async
-    # operations.
-    #
-    # @param ids [Hash] the Trace ID and Span ID in the form of
-    #   :trace_id => 12345
-    #   :span_id => 12345
-    #
-    # @return [Span]
-    #
-    def find_span(ids)
-      if ids[:trace_id] == @id
-        @spans.each do |s|
-          return s if s[:s] == ids[:span_id]
-        end
-      else
-        #::Instana.processor.staged_trace(
-      end
-    end
-
-    # Adds a backtrace to the passed in span or on @current_span if not.
-    #
-    # @param limit [Integer] Limit the backtrace to the top <limit> frames
-    # @param span [Span] the span to add the backtrace to or if unspecified
-    #   the current span
-    #
-    def add_stack(limit = nil, span = nil)
-      span ||= @current_span
-
-      add_backtrace_to_span(Kernel.caller, limit, span)
+      span.configure_custom(name, kvs)
     end
 
     # Adds the passed in backtrace to the specified span.  Backtrace can be one
@@ -458,23 +336,6 @@ module Instana
          frame_count = frame_count + 1 if limit
         end
       end
-    end
-
-    # Get the current time in milliseconds
-    #
-    # @return [Integer] the current time in milliseconds
-    #
-    def ts_now
-      (Time.now.to_f * 1000).floor
-    end
-
-    # Generate a random 64bit ID
-    #
-    # @return [Integer] a random 64bit integer
-    #
-    def generate_id
-      # Max value is 9223372036854775807 (signed long in Java)
-      rand(-2**63..2**63-1)
     end
   end
 end
