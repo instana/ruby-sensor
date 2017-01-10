@@ -10,5 +10,9 @@ module OpenTracing
     FORMAT_RACK = 3
 
     attr_accessor :global_tracer
+
+    def method_missing(method_name, *args, &block)
+      @global_tracer.send(method_name, *args, &block)
+    end
   end
 end
