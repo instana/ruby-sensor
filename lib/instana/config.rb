@@ -15,7 +15,9 @@ module Instana
       @config[:eum_baggage] = {}
 
       # HTTP Clients
-      @config[:excon] = { :enabled => true }
+      @config[:excon]         = { :enabled => true }
+      @config[:nethttp]       = { :enabled => true }
+      @config[:'rest-client'] = { :enabled => true }
     end
 
     def [](key)
