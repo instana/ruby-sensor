@@ -29,6 +29,26 @@ class AgentTest < Minitest::Test
     assert_equal nil, discovered
   end
 
+  def test_custom_configure_agent
+    original_host = ::Instana.config[:agent_host]
+    original_port = ::Instana.config[:agent_port]
+
+    # Set custom agent/port
+    ::Instana.config[:agent_host] = '172.0.12.100'
+    ::Instana.config[:agent_port] = 12829
+
+    url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/"
+    stub_request(:get, url)
+    discovered = ::Instana.agent.run_discovery
+
+    assert discovered.is_a?(Hash)
+    assert_equal "172.0.12.100", discovered[:agent_host]
+    assert_equal 12829, discovered[:agent_port]
+
+    ::Instana.config[:agent_host] = original_host
+    ::Instana.config[:agent_port] = original_port
+  end
+
   def test_no_host_agent
     localhost_url = "http://#{::Instana::Agent::LOCALHOST}:#{::Instana.config[:agent_port]}/"
     stub_request(:get, localhost_url).to_raise(Errno::ECONNREFUSED)
