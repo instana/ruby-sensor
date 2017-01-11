@@ -18,7 +18,7 @@ class RackTest < Minitest::Test
   end
 
   def test_basic_get
-    ::Instana.processor.clear!
+    clear_all!
     get '/mrlobster'
     assert last_response.ok?
 
@@ -48,7 +48,7 @@ class RackTest < Minitest::Test
   end
 
   def test_basic_post
-    ::Instana.processor.clear!
+    clear_all!
     post '/mrlobster'
     assert last_response.ok?
 
@@ -71,7 +71,7 @@ class RackTest < Minitest::Test
   end
 
   def test_basic_put
-    ::Instana.processor.clear!
+    clear_all!
     put '/mrlobster'
     assert last_response.ok?
 
@@ -94,7 +94,7 @@ class RackTest < Minitest::Test
   end
 
   def test_context_continuation
-    ::Instana.processor.clear!
+    clear_all!
     header 'X-INSTANA-T', Instana::Util.id_to_header(1234)
     header 'X-INSTANA-S', Instana::Util.id_to_header(4321)
 
@@ -126,7 +126,7 @@ class RackTest < Minitest::Test
   end
 
   def test_instana_response_headers
-    ::Instana.processor.clear!
+    clear_all!
     get '/mrlobster'
     assert last_response.ok?
 
@@ -135,7 +135,7 @@ class RackTest < Minitest::Test
   end
 
   def test_that_url_params_not_logged
-    ::Instana.processor.clear!
+    clear_all!
     get '/mrlobster?blah=2&wilma=1&betty=2;fred=3'
 
     traces = ::Instana.processor.queued_traces

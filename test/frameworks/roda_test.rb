@@ -10,7 +10,7 @@ class RodaTest < Minitest::Test
   end
 
   def test_basic_get
-    ::Instana.processor.clear!
+    clear_all!
 
     r = get '/hello'
     assert last_response.ok?

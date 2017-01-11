@@ -8,7 +8,7 @@ class NetHTTPTest < Minitest::Test
   end
 
   def test_block_request
-    ::Instana.processor.clear!
+    clear_all!
     WebMock.allow_net_connect!
     url = "http://127.0.0.1:6511/"
 
@@ -61,7 +61,7 @@ class NetHTTPTest < Minitest::Test
   end
 
   def test_basic_post_without_uri
-    ::Instana.processor.clear!
+    clear_all!
     WebMock.allow_net_connect!
 
     response = nil
@@ -109,7 +109,7 @@ class NetHTTPTest < Minitest::Test
   end
 
   def test_request_with_dns_error
-    ::Instana.processor.clear!
+    clear_all!
     WebMock.allow_net_connect!
 
     begin

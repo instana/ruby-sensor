@@ -2,7 +2,7 @@ require 'test_helper'
 
 class CustomTracingTest < Minitest::Test
   def test_custom_tracing
-    ::Instana.processor.clear!
+    clear_all!
 
     assert_equal false, ::Instana.tracer.tracing?
     # Start tracing
@@ -36,8 +36,7 @@ class CustomTracingTest < Minitest::Test
   end
 
   def test_custom_tracing_with_args
-    ::Instana.processor.clear!
-
+    clear_all!
     assert_equal false, ::Instana.tracer.tracing?
 
     # Start tracing
@@ -86,8 +85,7 @@ class CustomTracingTest < Minitest::Test
   end
 
   def test_custom_tracing_with_error
-    ::Instana.processor.clear!
-
+    clear_all!
     assert_equal false, ::Instana.tracer.tracing?
 
     # Start tracing
@@ -142,5 +140,4 @@ class CustomTracingTest < Minitest::Test
     assert_equal true, second_span[:error]
     assert_equal 1, second_span[:ec]
   end
-
 end

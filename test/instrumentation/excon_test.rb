@@ -8,7 +8,7 @@ class ExconTest < Minitest::Test
   end
 
   def test_basic_get
-    ::Instana.processor.clear!
+    clear_all!
 
     # A slight hack but webmock chokes with pipelined requests.
     # Delete their excon middleware
@@ -60,7 +60,7 @@ class ExconTest < Minitest::Test
   end
 
   def test_basic_get_with_error
-    ::Instana.processor.clear!
+    clear_all!
 
     # A slight hack but webmock chokes with pipelined requests.
     # Delete their excon middleware
@@ -110,7 +110,7 @@ class ExconTest < Minitest::Test
   end
 
   def test_pipelined_requests
-    ::Instana.processor.clear!
+    clear_all!
 
     # A slight hack but webmock chokes with pipelined requests.
     # Delete their excon middleware

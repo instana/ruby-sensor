@@ -8,7 +8,7 @@ class RestClientTest < Minitest::Test
   end
 
   def test_basic_get
-    ::Instana.processor.clear!
+    clear_all!
     WebMock.allow_net_connect!
 
     url = "http://127.0.0.1:6511/"
