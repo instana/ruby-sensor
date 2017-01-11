@@ -1,6 +1,12 @@
 require 'test_helper'
 
 class ExconTest < Minitest::Test
+  def test_config_defaults
+    assert ::Instana.config[:excon].is_a?(Hash)
+    assert ::Instana.config[:excon].key?(:enabled)
+    assert_equal true, ::Instana.config[:excon][:enabled]
+  end
+
   def test_basic_get
     ::Instana.processor.clear!
 

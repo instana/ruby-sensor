@@ -1,6 +1,12 @@
 require 'test_helper'
 
 class RestClientTest < Minitest::Test
+  def test_config_defaults
+    assert ::Instana.config[:'rest-client'].is_a?(Hash)
+    assert ::Instana.config[:'rest-client'].key?(:enabled)
+    assert_equal true, ::Instana.config[:'rest-client'][:enabled]
+  end
+
   def test_basic_get
     ::Instana.processor.clear!
     WebMock.allow_net_connect!

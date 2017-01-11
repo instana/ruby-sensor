@@ -1,6 +1,12 @@
 require 'test_helper'
 
 class NetHTTPTest < Minitest::Test
+  def test_config_defaults
+    assert ::Instana.config[:nethttp].is_a?(Hash)
+    assert ::Instana.config[:nethttp].key?(:enabled)
+    assert_equal true, ::Instana.config[:nethttp][:enabled]
+  end
+
   def test_block_request
     ::Instana.processor.clear!
     WebMock.allow_net_connect!
