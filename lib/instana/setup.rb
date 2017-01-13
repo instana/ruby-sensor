@@ -1,7 +1,7 @@
 require "instana/base"
 require "instana/config"
 require "instana/agent"
-require "instana/collectors"
+require "instana/collector"
 require "instana/tracer"
 require "instana/tracing/processor"
 require "instana/instrumentation"
