@@ -7,7 +7,7 @@ class TracerTest < Minitest::Test
   end
 
   def test_basic_trace_block
-    ::Instana.processor.clear!
+    clear_all!
 
     assert_equal false, ::Instana.tracer.tracing?
 
@@ -34,7 +34,7 @@ class TracerTest < Minitest::Test
   end
 
   def test_errors_are_properly_propogated
-    ::Instana.processor.clear!
+    clear_all!
     exception_raised = false
     begin
       ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do
@@ -65,7 +65,7 @@ class TracerTest < Minitest::Test
   end
 
   def test_complex_trace_block
-    ::Instana.processor.clear!
+    clear_all!
     ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do
       sleep 0.2
       ::Instana.tracer.trace(:sub_block, {:sub_two => 2}) do
@@ -81,7 +81,7 @@ class TracerTest < Minitest::Test
   end
 
   def test_basic_low_level_tracing
-    ::Instana.processor.clear!
+    clear_all!
 
     assert_equal false, ::Instana.tracer.tracing?
     # Start tracing
@@ -100,7 +100,7 @@ class TracerTest < Minitest::Test
   end
 
   def test_complex_low_level_tracing
-    ::Instana.processor.clear!
+    clear_all!
 
     assert_equal false, ::Instana.tracer.tracing?
 
@@ -140,7 +140,7 @@ class TracerTest < Minitest::Test
   end
 
   def test_block_tracing_error_capture
-    ::Instana.processor.clear!
+    clear_all!
     exception_raised = false
     begin
       ::Instana.tracer.start_or_continue_trace(:test_trace, {:one => 1}) do
@@ -162,7 +162,7 @@ class TracerTest < Minitest::Test
   end
 
   def test_low_level_error_logging
-    ::Instana.processor.clear!
+    clear_all!
     ::Instana.tracer.log_start_or_continue(:test_trace, {:one => 1})
     ::Instana.tracer.log_info({:info_logged => 1})
     ::Instana.tracer.log_error(Exception.new("Low level tracing api error"))
@@ -178,7 +178,7 @@ class TracerTest < Minitest::Test
   end
 
   def test_instana_headers_in_response
-    ::Instana.processor.clear!
+    clear_all!
     ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do
       sleep 0.5
     end

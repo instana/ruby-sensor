@@ -2,7 +2,7 @@ require 'test_helper'
 
 class TracerAsyncTest < Minitest::Test
   def test_same_thread_async_tracing
-    ::Instana.processor.clear!
+    clear_all!
 
     # Start tracing
     ::Instana.tracer.log_start_or_continue(:rack, {:rack_start_kv => 1})
@@ -50,7 +50,7 @@ class TracerAsyncTest < Minitest::Test
   end
 
   def test_diff_thread_async_tracing
-    ::Instana.processor.clear!
+    clear_all!
 
     # Start tracing
     ::Instana.tracer.log_start_or_continue(:rack, {:rack_start_kv => 1})
@@ -120,7 +120,7 @@ class TracerAsyncTest < Minitest::Test
   end
 
   def test_never_ending_async
-    ::Instana.processor.clear!
+    clear_all!
 
     # Start tracing
     ::Instana.tracer.log_start_or_continue(:rack, {:rack_start_kv => 1})
@@ -180,7 +180,7 @@ class TracerAsyncTest < Minitest::Test
   end
 
   def test_out_of_order_async_tracing
-    ::Instana.processor.clear!
+    clear_all!
 
     # Start tracing
     ::Instana.tracer.log_start_or_continue(:rack, {:rack_start_kv => 1})
@@ -262,7 +262,7 @@ class TracerAsyncTest < Minitest::Test
 
 
   def test_staged_trace_moved_to_queue
-    ::Instana.processor.clear!
+    clear_all!
 
     # Start tracing
     ::Instana.tracer.log_start_or_continue(:rack, {:rack_start_kv => 1})
