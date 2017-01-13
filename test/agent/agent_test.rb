@@ -84,7 +84,7 @@ class AgentTest < Minitest::Test
     assert_equal false, ::Instana.agent.announce_sensor
   end
 
-  def test_entity_data_report
+  def test_metric_report
     # Fake discovery values
     discovery = {}
     discovery[:agent_host] = ::Instana.config[:agent_host]
@@ -100,10 +100,10 @@ class AgentTest < Minitest::Test
     stub_request(:post, url)
 
     payload = { :test => 'true' }
-    assert_equal true, ::Instana.agent.report_entity_data(payload)
+    assert_equal true, ::Instana.agent.report_metrics(payload)
   end
 
-  def test_failed_entity_data_report
+  def test_failed_metric_report
     # Fake discovery values
     discovery = {}
     discovery[:agent_host] = ::Instana.config[:agent_host]
@@ -120,7 +120,7 @@ class AgentTest < Minitest::Test
     stub_request(:post, url).to_raise(Errno::ECONNREFUSED)
 
     payload = { :test => 'true' }
-    assert_equal false, ::Instana.agent.report_entity_data(payload)
+    assert_equal false, ::Instana.agent.report_metrics(payload)
   end
 
   def test_agent_timeout

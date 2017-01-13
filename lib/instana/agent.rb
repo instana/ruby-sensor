@@ -9,6 +9,7 @@ module Instana
   class Agent
     attr_accessor :state
     attr_accessor :agent_uuid
+    attr_accessor :process
 
     LOCALHOST = '127.0.0.1'.freeze
     MIME_JSON = 'application/json'.freeze
@@ -17,14 +18,6 @@ module Instana
     def initialize
       # Supported two states (unannounced & announced)
       @state = :unannounced
-
-      # Snapshot data is collected once per process but resent
-      # every 10 minutes along side process metrics.
-      @snapshot = ::Instana::Util.take_snapshot
-
-      # Set last snapshot to just under 10 minutes ago
-      # so we send a snapshot sooner than later
-      @last_snapshot = Time.now - 570
 
       # Timestamp of the last successful response from
       # entity data reporting.
@@ -114,10 +107,10 @@ module Instana
 
       # The collect timer
       # If we are in announced state, send metric data (only delta reporting)
-      # every ::Instana::Collector.interval seconds.
-      @collect_timer = @timers.every(::Instana::Collector.interval) do
+      # every ::Instana.config[:collector][:interval] seconds.
+      @collect_timer = @timers.every(::Instana.config[:collector][:interval]) do
         if @state == :announced
-          if !::Instana::Collector.collect_and_report
+          if !::Instana.collector.collect_and_report
             # If report has been failing for more than 1 minute,
             # fall back to unannounced state
             if (Time.now - @entity_last_seen) > 60
@@ -197,29 +190,17 @@ module Instana
     #
     # @param paylod [Hash] The collection of metrics to report.
     #
-    def report_entity_data(payload)
+    # @return [Boolean] true on success, false otherwise
+    #
+    def report_metrics(payload)
       unless @discovered
         ::Instana.logger.agent("#{__method__} called but discovery hasn't run yet!")
         return false
       end
 
-      with_snapshot = false
       path = "com.instana.plugin.ruby.#{@process[:report_pid]}"
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{path}")
       req = Net::HTTP::Post.new(uri)
-
-      # Every 5 minutes, send snapshot data as well
-      if (Time.now - @last_snapshot) > 600
-        with_snapshot = true
-        payload.merge!(@snapshot)
-
-        # Add in process related that could have changed since
-        # snapshot was taken.
-        p = { :pid => @process[:report_pid] }
-        p[:name] = @process[:name]
-        p[:exec_args] = @process[:arguments]
-        payload.merge!(p)
-      end
 
       req.body = payload.to_json
       response = make_host_agent_request(req)
@@ -233,7 +214,6 @@ module Instana
 
         if response.code.to_i == 200
           @entity_last_seen = Time.now
-          @last_snapshot = Time.now if with_snapshot
           return true
         end
 
@@ -417,18 +397,14 @@ module Instana
         # Reset the entity timer
         @entity_last_seen = Time.now
 
-        # Set last snapshot to 10 minutes ago
-        # so we send a snapshot on first report
-        @last_snapshot = Time.now - 601
       when :unannounced
         @state = :unannounced
 
-        # Set last snapshot to 10 minutes ago
-        # so we send a snapshot on first report
-        @last_snapshot = Time.now - 601
       else
         ::Instana.logger.warn "Uknown agent state: #{state}"
       end
+      ::Instana.collector.reset_timer!
+      true
     end
 
     # Centralization of the net/http communications

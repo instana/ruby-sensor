@@ -1,15 +1,18 @@
 require "instana/base"
 require "instana/config"
 require "instana/agent"
+require "instana/collectors"
 require "instana/tracer"
 require "instana/tracing/processor"
-
-::Instana.setup
-
-require "instana/collectors"
 require "instana/instrumentation"
 
+::Instana.setup
 ::Instana.agent.setup
+
+# Register the metric collectors
+require 'instana/collectors/gc'
+require 'instana/collectors/memory'
+require 'instana/collectors/thread'
 
 # Require supported OpenTracing interfaces
 require "opentracing"

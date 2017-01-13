@@ -1,11 +1,10 @@
 module Instana
-  module Collector
+  module Collectors
     class GC
       attr_accessor :payload_key
 
       def initialize
         @payload_key = :gc
-        @last_report = {}
         @this_gc = {}
         @last_major_count = 0
         @last_minor_count = 0
@@ -40,15 +39,7 @@ module Instana
         # GC Heap
         @this_gc[:heap_live] = stats[:heap_live_slot] || stats[:heap_live_slots] || stats[:heap_live_num]
         @this_gc[:heap_free] = stats[:heap_free_slot] || stats[:heap_free_slots] || stats[:heap_free_num]
-
-        @this_gc = ::Instana::Util.enforce_deltas(@this_gc, @last_report)
-
-        unless @this_gc.empty?
-          @last_report.merge!(@this_gc)
-          @this_gc
-        else
-          nil
-        end
+        @this_gc
       rescue => e
         ::Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
         ::Instana.logger.debug e.backtrace.join("\r\n")
@@ -59,5 +50,5 @@ end
 
 # Register the metrics collector if enabled
 if ::Instana.config[:metrics][:gc][:enabled]
-  ::Instana.collectors << ::Instana::Collector::GC.new
+  ::Instana.collector.register(::Instana::Collectors::GC)
 end
