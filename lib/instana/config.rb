@@ -10,6 +10,12 @@ module Instana
       @config[:metrics][:memory] = { :enabled => true }
       @config[:metrics][:thread] = { :enabled => true }
 
+      if ENV.key?('INSTANA_GEM_DEV')
+        @config[:collector] = { :enabled => true, :interval => 3 }
+      else
+        @config[:collector] = { :enabled => true, :interval => 1 }
+      end
+
       # EUM Related
       @config[:eum_api_key] = nil
       @config[:eum_baggage] = {}

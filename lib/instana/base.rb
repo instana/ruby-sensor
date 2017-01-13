@@ -6,7 +6,7 @@ require "instana/helpers"
 module Instana
   class << self
     attr_accessor :agent
-    attr_accessor :collectors
+    attr_accessor :collector
     attr_accessor :tracer
     attr_accessor :processor
     attr_accessor :config
@@ -20,13 +20,10 @@ module Instana
     # to run" state.
     #
     def setup
-      @logger = ::Instana::XLogger.new(STDOUT)
-      @logger.unknown "Stan is on the scene.  Starting Instana instrumentation."
-
       @agent  = ::Instana::Agent.new
       @tracer = ::Instana::Tracer.new
       @processor = ::Instana::Processor.new
-      @collectors = []
+      @collector = ::Instana::Collector.new
     end
 
     # Indicates whether we are running in a development environment.
@@ -46,3 +43,7 @@ module Instana
     end
   end
 end
+
+# Setup the logger as early as possible
+::Instana.logger = ::Instana::XLogger.new(STDOUT)
+::Instana.logger.unknown "Stan is on the scene.  Starting Instana instrumentation."

@@ -39,24 +39,6 @@ module Instana
         target_cls.send(:include, cls) if defined?(target_cls)
       end
 
-      # Take two hashes, and make sure candidate does not have
-      # any of the same values as `last`.  We only report
-      # when values change.
-      #
-      # Note this is not recursive, so only pass in the single
-      # hashes that you want delta reporting with.
-      #
-      def enforce_deltas(candidate, last)
-        return unless last.is_a?(Hash)
-
-        candidate.each do |k,v|
-          if candidate[k] == last[k]
-            candidate.delete(k)
-          end
-        end
-        candidate
-      end
-
       # Debugging helper method
       #
       def pry!
