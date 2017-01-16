@@ -308,6 +308,20 @@ module Instana
       self.current_trace ? true : false
     end
 
+    # Indicates if we're tracing and the current span name matches
+    # <name>
+    #
+    # @param name [Symbol] the name to check against the current span
+    #
+    # @return [Boolean]
+    #
+    def tracing_span?(name)
+      if self.current_trace
+        return self.current_trace.current_span.name == name
+      end
+      false
+    end
+
     # Retrieve the current context of the tracer.
     #
     # @return [SpanContext] or nil if not tracing
