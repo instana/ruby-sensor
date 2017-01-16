@@ -22,6 +22,9 @@ group :development, :test do
   # HTTP Clients
   gem 'excon'
 
+  # Memcache
+  gem 'dalli'
+
   # Rack v2 dropped support for Ruby 2.2 and higher.
   if RUBY_VERSION < '2.2'
     gem 'rack', '< 2.0'
