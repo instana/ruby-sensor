@@ -237,6 +237,9 @@ class DalliTest < Minitest::Test
   def test_get_multi
     clear_all!
 
+    @dc.set(:one, 1)
+    @dc.set(:three, 3)
+
     ::Instana.tracer.start_or_continue_trace(:dalli_test) do
       @dc.get_multi(:one, :two, :three, :four)
     end
@@ -260,10 +263,12 @@ class DalliTest < Minitest::Test
     assert second_span[:data][:memcache].key?(:command)
     assert_equal :get_multi, second_span[:data][:memcache][:command]
     assert second_span[:data][:memcache].key?(:keys)
-    assert_equal [:one, :two, :three, :four], second_span[:data][:memcache][:keys]
+    assert_equal "one, two, three, four", second_span[:data][:memcache][:keys]
     assert second_span[:data][:memcache].key?(:namespace)
     assert_equal 'instana_test', second_span[:data][:memcache][:namespace]
     assert second_span[:data][:memcache].key?(:server)
     assert_equal ENV['MEMCACHED_HOST'], second_span[:data][:memcache][:server]
+    assert second_span[:data][:memcache].key?(:hits)
+    assert_equal 2, second_span[:data][:memcache][:hits]
   end
 end

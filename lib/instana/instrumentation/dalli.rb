@@ -8,6 +8,7 @@ module Instana
 
       def perform_with_instana(*args, &blk)
         if !::Instana.tracer.tracing? || ::Instana.tracer.tracing_span?(:memcache)
+          do_skip = true
           return perform_without_instana(*args, &blk)
         end
 
@@ -22,32 +23,34 @@ module Instana
         result = perform_without_instana(*args, &blk)
 
         kv_payload = { :memcache => {}}
-        kv_payload[:memcache][:hit] = result ? true : false
+        if op == :get
+          kv_payload[:memcache][:hit] = result ? 1 : 0
+        end
         result
       rescue => e
         ::Instana.tracer.log_error(e)
         raise
       ensure
-        ::Instana.tracer.log_exit(:memcache, kv_payload)
+        ::Instana.tracer.log_exit(:memcache, kv_payload) unless do_skip
       end
 
       def get_multi_with_instana(*keys)
         entry_payload = { :memcache => {} }
         entry_payload[:memcache][:namespace] = @options[:namespace] if @options.key?(:namespace)
         entry_payload[:memcache][:command] = :get_multi
-        entry_payload[:memcache][:keys] = keys.flatten
+        entry_payload[:memcache][:keys] = keys.flatten.join(", ")
 
         ::Instana.tracer.log_entry(:memcache, entry_payload)
         result = get_multi_without_instana(*keys)
 
-        kv_payload = {}
-        kv_payload[:hit_count] = result.length
+        exit_payload = { :memcache => {} }
+        exit_payload[:memcache][:hits] = result.length
         result
       rescue => e
         ::Instana.tracer.log_error(e)
         raise
       ensure
-        ::Instana.tracer.log_exit(:memcache, kv_payload)
+        ::Instana.tracer.log_exit(:memcache, exit_payload)
       end
     end
 
