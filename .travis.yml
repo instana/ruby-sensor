@@ -19,6 +19,9 @@ before_install:
 
 script: "bundle exec rake test"
 
+services:
+  - memcached
+
 notifications:
   slack:
     rooms:
