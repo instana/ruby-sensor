@@ -86,6 +86,80 @@ class DalliTest < Minitest::Test
     assert_equal ENV['MEMCACHED_HOST'], second_span[:data][:memcache][:server]
   end
 
+  def test_replace
+    clear_all!
+
+    @dc.set(:instana, :rocks)
+    result = nil
+    ::Instana.tracer.start_or_continue_trace(:dalli_test) do
+      result = @dc.replace(:instana, :rocks)
+    end
+
+    assert result.is_a?(Integer)
+
+    traces = Instana.processor.queued_traces
+    assert_equal 1, traces.count
+    trace = traces.first
+
+    # Excon validation
+    assert_equal 2, trace.spans.count
+    spans = trace.spans.to_a
+    first_span = spans[0]
+    second_span = spans[1]
+
+    assert_equal :dalli_test, first_span.name
+    assert_equal :memcache, second_span.name
+    assert_equal false, second_span.key?(:error)
+    assert second_span[:p] == first_span[:s]
+    assert first_span[:t] == first_span[:s]
+    assert second_span[:data].key?(:memcache)
+    assert second_span[:data][:memcache].key?(:command)
+    assert_equal :replace, second_span[:data][:memcache][:command]
+    assert second_span[:data][:memcache].key?(:key)
+    assert_equal :instana, second_span[:data][:memcache][:key]
+    assert second_span[:data][:memcache].key?(:namespace)
+    assert_equal 'instana_test', second_span[:data][:memcache][:namespace]
+    assert second_span[:data][:memcache].key?(:server)
+    assert_equal ENV['MEMCACHED_HOST'], second_span[:data][:memcache][:server]
+  end
+
+  def test_delete
+    clear_all!
+
+    @dc.set(:instana, :rocks)
+    result = nil
+    ::Instana.tracer.start_or_continue_trace(:dalli_test) do
+      result = @dc.delete(:instana)
+    end
+
+    assert_equal true, result
+
+    traces = Instana.processor.queued_traces
+    assert_equal 1, traces.count
+    trace = traces.first
+
+    # Excon validation
+    assert_equal 2, trace.spans.count
+    spans = trace.spans.to_a
+    first_span = spans[0]
+    second_span = spans[1]
+
+    assert_equal :dalli_test, first_span.name
+    assert_equal :memcache, second_span.name
+    assert_equal false, second_span.key?(:error)
+    assert second_span[:p] == first_span[:s]
+    assert first_span[:t] == first_span[:s]
+    assert second_span[:data].key?(:memcache)
+    assert second_span[:data][:memcache].key?(:command)
+    assert_equal :delete, second_span[:data][:memcache][:command]
+    assert second_span[:data][:memcache].key?(:key)
+    assert_equal :instana, second_span[:data][:memcache][:key]
+    assert second_span[:data][:memcache].key?(:namespace)
+    assert_equal 'instana_test', second_span[:data][:memcache][:namespace]
+    assert second_span[:data][:memcache].key?(:server)
+    assert_equal ENV['MEMCACHED_HOST'], second_span[:data][:memcache][:server]
+  end
+
   def test_incr
     clear_all!
 
