@@ -21,6 +21,7 @@ module Instana
       @config[:eum_baggage] = {}
 
       # HTTP Clients
+      @config[:dalli]         = { :enabled => true }
       @config[:excon]         = { :enabled => true }
       @config[:nethttp]       = { :enabled => true }
       @config[:'rest-client'] = { :enabled => true }
