@@ -7,7 +7,8 @@ module Instana
       # @param method [Symbol] The name of the method to be aliased.
       #
       def method_alias(klass, method)
-        if klass.method_defined?(method.to_sym)
+        if klass.method_defined?(method.to_sym) ||
+            klass.private_method_defined?(method.to_sym)
 
           with = "#{method}_with_instana"
           without = "#{method}_without_instana"
