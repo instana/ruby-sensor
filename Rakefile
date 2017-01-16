@@ -17,6 +17,8 @@ task :environment do
 end
 
 task :console => :environment do
+  # Possible debug levels: :agent, :agent_comm, :trace, :agent_response, :tracing
+  # ::Instana.logger.debug_level = [ :agent, :agent_comm ]
   ARGV.clear
   Pry.start
 end
