@@ -73,6 +73,7 @@ module Instana
     #
     def log_start_or_continue(name, kvs = {}, incoming_context = {})
       return unless ::Instana.agent.ready?
+      ::Instana.logger.debug "#{__method__} passed a block.  Use `start_or_continue` instead!" if block_given?
       self.current_trace = ::Instana::Trace.new(name, kvs, incoming_context)
     end
 
