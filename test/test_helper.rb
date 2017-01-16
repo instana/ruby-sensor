@@ -11,6 +11,9 @@ require "minitest/debugger" if ENV['DEBUG']
 require 'webmock/minitest'
 ::WebMock.disable_net_connect!(allow_localhost: true)
 
+# Supported environment variables
+ENV['MEMCACHED_HOST'] ||= '127.0.0.1:11211'
+
 # Boot background webservers to test against.
 require "./test/servers/rackapp_6511"
 
