@@ -73,6 +73,7 @@ module Instana
     #
     def log_start_or_continue(name, kvs = {}, incoming_context = {})
       return unless ::Instana.agent.ready?
+      ::Instana.logger.debug "#{__method__} passed a block.  Use `start_or_continue` instead!" if block_given?
       self.current_trace = ::Instana::Trace.new(name, kvs, incoming_context)
     end
 
@@ -305,6 +306,20 @@ module Instana
       # indicates if we are currently tracing
       # in this thread or not.
       self.current_trace ? true : false
+    end
+
+    # Indicates if we're tracing and the current span name matches
+    # <name>
+    #
+    # @param name [Symbol] the name to check against the current span
+    #
+    # @return [Boolean]
+    #
+    def tracing_span?(name)
+      if self.current_trace
+        return self.current_trace.current_span.name == name
+      end
+      false
     end
 
     # Retrieve the current context of the tracer.
