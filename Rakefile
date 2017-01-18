@@ -9,6 +9,15 @@ Rake::TestTask.new(:test) do |t|
   t.libs << "test"
   t.libs << "lib"
   t.test_files = FileList['test/**/*_test.rb']
+
+  case File.basename(ENV['BUNDLE_GEMFILE']).split('.').first
+  when /libraries/
+    t.test_files = FileList['test/instrumentation/*_test.rb']
+  else
+    t.test_files = FileList['test/agent/*_test.rb'] +
+                   FileList['test/tracing/*_test.rb'] +
+                   FileList['test/profiling/*_test.rb']
+  end
 end
 
 task :environment do

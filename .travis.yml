@@ -3,10 +3,10 @@ language: ruby
 cache:
   bundler: true
   directories:
-  - vendor/bundle
+    - vendor/bundle
 
 rvm:
-  - 2.3.2
+  - 2.3.3
   - 2.2.6
   - 2.1.9
   - ruby-2.0.0-p648
@@ -17,12 +17,17 @@ before_install:
   - gem update bundler
   - gem --version
 
+before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres
+
 script: "bundle exec rake test"
 
 services:
   - memcached
 
 gemfile:
+  Gemfile
+  gemfiles/libraries.gemfile
   gemfiles/rails501.gemfile
 
 matrix:
