@@ -22,6 +22,17 @@ script: "bundle exec rake test"
 services:
   - memcached
 
+gemfile:
+  gemfiles/rails501.gemfile
+
+matrix:
+  exclude:
+    # Rails 5.0+ requires Ruby 2.2.2 or higher
+    - rvm: 2.1.9
+      gemfile: gemfiles/rails501.gemfile
+    - rvm: ruby-2.0.0-p648
+      gemfile: gemfiles/rails501.gemfile
+
 notifications:
   slack:
     rooms:
