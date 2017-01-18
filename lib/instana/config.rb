@@ -20,7 +20,8 @@ module Instana
       @config[:eum_api_key] = nil
       @config[:eum_baggage] = {}
 
-      # HTTP Clients
+      # Instrumentation
+      @config[:active_record] = { :enabled => true }
       @config[:dalli]         = { :enabled => true }
       @config[:excon]         = { :enabled => true }
       @config[:nethttp]       = { :enabled => true }
