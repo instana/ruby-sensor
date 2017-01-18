@@ -50,7 +50,7 @@ Although the gem has no configuration required for out of the box metrics and tr
 
 ## Tracing
 
-See [Tracing.md](https://github.com/instana/ruby-sensor/blob/master/Tracing.md)
+This Ruby gem provides a simple API for tracing and also supports [OpenTracing](http://opentracing.io/).  See [Tracing.md](https://github.com/instana/ruby-sensor/blob/master/Tracing.md) for details.
 
 ## Documentation
 
