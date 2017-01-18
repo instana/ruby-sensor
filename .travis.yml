@@ -26,9 +26,9 @@ services:
   - memcached
 
 gemfile:
-  Gemfile
-  gemfiles/libraries.gemfile
-  gemfiles/rails501.gemfile
+  - Gemfile
+  - gemfiles/libraries.gemfile
+  - gemfiles/rails501.gemfile
 
 matrix:
   exclude:
