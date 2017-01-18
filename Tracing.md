@@ -1,9 +1,36 @@
 # Tracing
 
 Tracing with Instana is automatic but if you want even more visibility into custom code or some in-house
-component, you can use the following API to report additional trace data to Instana.
+component, you can use Instana's tracing API or [OpenTracing](http://opentracing.io/).
 
-# The API
+# OpenTracing
+
+Existing applications that utilize the OpenTracing API or those who wish to add support should have no problem
+as the Instana Ruby gem fully supports the OpenTracing specification.
+
+To start, simply set the Instana tracer as the global tracer for OpenTracing:
+
+```Ruby
+require 'opentracing'
+OpenTracing.global_tracer = ::Instana.tracer
+```
+
+Then OpenTracing code can be run normally:
+
+```Ruby
+begin
+  span = OpenTracing.start_span('job')
+  # The code to be instrumented
+  @id = User.find_by_name('john.smith')
+  span.set_tag(:job_id, @id)
+rescue => e
+  span.set_tag(:error, e.message)
+ensure
+  span.finish
+end
+```
+
+# The Instana Ruby API
 
 The Instana Ruby gem provides a simple to use API to trace any arbitrary part of your application.
 
