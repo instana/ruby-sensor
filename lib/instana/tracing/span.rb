@@ -1,8 +1,8 @@
 module Instana
   class Span
-    REGISTERED_SPANS = [ :rack, :'net-http', :excon, :memcache ].freeze
+    REGISTERED_SPANS = [ :activerecord, :excon, :memcache, :'net-http', :rack ].freeze
     ENTRY_SPANS = [ :rack ].freeze
-    EXIT_SPANS = [ :'net-http', :excon ].freeze
+    EXIT_SPANS = [ :'net-http', :excon, :activerecord ].freeze
     HTTP_SPANS = ENTRY_SPANS + EXIT_SPANS
 
     attr_accessor :parent
