@@ -18,7 +18,7 @@ require "instana/test"
 require "./test/servers/rackapp_6511"
 
 case File.basename(ENV['BUNDLE_GEMFILE'])
-when /rails5x_pg|rails42x_pg|rails32x_pg/
+when /rails50|rails42|rails32/
   require './test/servers/rails_3205'
 end
 

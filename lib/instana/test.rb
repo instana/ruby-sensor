@@ -14,6 +14,8 @@ module Instana
 
         if ENV['DB_FLAVOR'] == 'mysql2'
           ENV['DATABASE_URL'] = "mysql2://#{ENV['TRAVIS_MYSQL_USER']}:#{ENV['TRAVIS_MYSQL_PASS']}@#{ENV['TRAVIS_MYSQL_HOST']}:3306/travis_ci_test"
+        elsif ENV['DB_FLAVOR'] == 'mysql'
+          ENV['DATABASE_URL'] = "mysql://#{ENV['TRAVIS_MYSQL_USER']}:#{ENV['TRAVIS_MYSQL_PASS']}@#{ENV['TRAVIS_MYSQL_HOST']}:3306/travis_ci_test"
         else
           ENV['DB_FLAVOR'] ||= 'postgresql'
           ENV['DATABASE_URL'] = "postgresql://#{ENV['TRAVIS_PSQL_USER']}:#{ENV['TRAVIS_PSQL_PASS']}@#{ENV['TRAVIS_PSQL_HOST']}:5432/travis_ci_test"
@@ -28,6 +30,10 @@ module Instana
 
       def mysql2?
         ENV['DB_FLAVOR'] == 'mysql2'
+      end
+
+      def mysql?
+        ENV['DB_FLAVOR'] == 'mysql'
       end
     end
   end
