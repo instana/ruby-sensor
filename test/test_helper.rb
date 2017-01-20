@@ -21,7 +21,7 @@ require "./test/servers/rackapp_6511"
 case File.basename(ENV['BUNDLE_GEMFILE'])
 when /rails5x_pg|rails42x_pg|rails32x_pg/
   ENV['DB_FLAVOR'] = 'postgresql'
-  require './test/servers/rails5x_3205'
+  require './test/servers/rails_3205'
 end
 
 WebMock.disable_net_connect!(allow_localhost: true)
