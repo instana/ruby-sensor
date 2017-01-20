@@ -35,5 +35,8 @@ gem 'jbuilder', '~> 2.0'
 gem 'sdoc', '~> 0.4.0', group: :doc
 gem "pg"
 
-gem 'instana', :path => "~/Projects/instana/ruby-sensor"
+# Include the Instana Ruby gem's base set of gems
+gemspec :path => File.expand_path(File.dirname(__FILE__) + '/../')
+
+# vim:syntax=ruby
 
