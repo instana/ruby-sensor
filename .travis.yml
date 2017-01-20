@@ -38,6 +38,8 @@ matrix:
       gemfile: gemfiles/rails5x_pg.gemfile
     - rvm: ruby-2.0.0-p648
       gemfile: gemfiles/rails5x_pg.gemfile
+    - rvm: ruby-2.0.0-p648
+      gemfile: gemfiles/rails42x_pg.gemfile
 
 notifications:
   slack:
