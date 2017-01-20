@@ -369,6 +369,12 @@ module Instana
       self.current_trace ? self.current_trace.current_span : nil
     end
 
+    # Indicates if the name of the current span matches <candidate>
+    #
+    def current_span_name?(candidate)
+      self.current_trace &&  self.current_trace.current_span.name == candidate
+    end
+
     # Used in the test suite, this resets the tracer to non-tracing state.
     #
     def clear!
