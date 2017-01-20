@@ -14,6 +14,8 @@ module Instana
           # ActiveRecord 3.1 and up
           Instana::Util.method_alias(klass, :exec_query)
           Instana::Util.method_alias(klass, :exec_delete)
+
+          @@sanitize_regexp = Regexp.new('(\'[\s\S][^\']*\'|\d*\.\d+|\d+|NULL)', Regexp::IGNORECASE)
         end
       end
 
@@ -25,7 +27,7 @@ module Instana
       #
       def collect(sql, name = nil, binds = [])
         payload = { :activerecord => {} }
-        payload[:activerecord][:sql] = sql
+        payload[:activerecord][:sql] = sql.gsub(@@sanitize_regexp, '?')
         payload[:activerecord][:adapter] = @config[:adapter]
         payload[:activerecord][:host] = @config[:host]
         payload[:activerecord][:db] = @config[:database]
