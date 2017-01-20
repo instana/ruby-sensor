@@ -29,6 +29,7 @@ gemfile:
   - Gemfile
   - gemfiles/libraries.gemfile
   - gemfiles/rails5x_pg.gemfile
+  - gemfiles/rails42x_pg.gemfile
 
 matrix:
   exclude:

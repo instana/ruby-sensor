@@ -12,7 +12,9 @@ Rake::TestTask.new(:test) do |t|
 
   case File.basename(ENV['BUNDLE_GEMFILE']).split('.').first
   when /rails5x_pg/
-    t.test_files = FileList['test/frameworks/rails/*_test.rb']
+    t.test_files = FileList['test/frameworks/rails/activerecord5_test.rb']
+  when /rails42x_pg/
+    t.test_files = FileList['test/frameworks/rails/activerecord4_test.rb']
   when /libraries/
     t.test_files = FileList['test/instrumentation/*_test.rb']
   else
