@@ -1,14 +1,5 @@
 
-# Set the database.  Default is postgresql.
-if ENV['DB_FLAVOR'] == 'mysql2'
-  Instana.logger.warn "Starting background Rails 5 test stack with a mysql DB on localhost:3205."
-  ENV['DATABASE_URL'] = "mysql://root:#{ENV['TRAVIS_MYSQL_PASS']}@#{ENV['TRAVIS_MYSQL_HOST']}:3306/travis_ci_test"
-elsif ENV['DB_FLAVOR'] == 'postgresql'
-  Instana.logger.warn "Starting background Rails 5 test stack with a postgres DB on localhost:3205."
-  ENV['DATABASE_URL'] = "postgresql://postgres:#{ENV['TRAVIS_PSQL_PASS']}@#{ENV['TRAVIS_PSQL_HOST']}:5432/travis_ci_test"
-else
-  Instana.logger.error "Rails test server.  Unsupported database type: #{ENV['DB_FLAVOR']}"
-end
+::Instana.logger.warn "Starting background Ruby on Rails application on port 3205"
 
 require "rails/all"
 require "action_controller/railtie" # require more if needed
