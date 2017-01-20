@@ -22,10 +22,9 @@ module Instana
       # Collect up this DB connection info for reporting.
       #
       # @param sql [String]
-      # @param name [String]
-      # @param binds [Array]
+      # @return [Hash] Hash of collected KVs
       #
-      def collect(sql, name = nil, binds = [])
+      def collect(sql)
         payload = { :activerecord => {} }
         payload[:activerecord][:sql] = sql.gsub(@@sanitize_regexp, '?')
         payload[:activerecord][:adapter] = @config[:adapter]
@@ -42,8 +41,8 @@ module Instana
       # @param payload [String]
       # @return [Boolean]
       #
-      def ignore_payload?(payload, sql)
-        IGNORED_PAYLOADS.include?(:name) || sql !~ EXPLAINED_SQLS
+      def ignore_payload?(name, sql)
+        IGNORED_PAYLOADS.include?(name) || sql !~ EXPLAINED_SQLS
       end
 
       def exec_query_with_instana(sql, name = 'SQL', binds = [], *args)
@@ -51,7 +50,7 @@ module Instana
           return exec_query_without_instana(sql, name, binds, *args)
         end
 
-        kv_payload = collect(sql, name, binds)
+        kv_payload = collect(sql)
         ::Instana.tracer.trace(:activerecord, kv_payload) do
           exec_query_without_instana(sql, name, binds, *args)
         end
@@ -62,7 +61,7 @@ module Instana
           return exec_delete_without_instana(sql, name, binds)
         end
 
-        kv_payload = collect(sql, name, binds)
+        kv_payload = collect(sql)
         ::Instana.tracer.trace(:activerecord, kv_payload) do
           exec_delete_without_instana(sql, name, binds)
         end
