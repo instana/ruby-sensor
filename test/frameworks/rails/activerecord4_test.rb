@@ -43,9 +43,9 @@ class ActiveRecordPgTest < Minitest::Test
     assert_equal :activerecord, third_span.name
     assert_equal :activerecord, fourth_span.name
 
-    assert_equal "INSERT INTO \"blocks\" (\"name\", \"color\", \"created_at\", \"updated_at\") VALUES ($1, $2, $3, $4) RETURNING \"id\"", second_span[:data][:activerecord][:sql]
-    assert_equal "SELECT  \"blocks\".* FROM \"blocks\" WHERE \"blocks\".\"name\" = $1  ORDER BY \"blocks\".\"id\" ASC LIMIT 1", third_span[:data][:activerecord][:sql]
-    assert_equal "DELETE FROM \"blocks\" WHERE \"blocks\".\"id\" = $1", fourth_span[:data][:activerecord][:sql]
+    assert_equal "INSERT INTO \"blocks\" (\"name\", \"color\", \"created_at\", \"updated_at\") VALUES ($?, $?, $?, $?) RETURNING \"id\"", second_span[:data][:activerecord][:sql]
+    assert_equal "SELECT  \"blocks\".* FROM \"blocks\" WHERE \"blocks\".\"name\" = $?  ORDER BY \"blocks\".\"id\" ASC LIMIT ?", third_span[:data][:activerecord][:sql]
+    assert_equal "DELETE FROM \"blocks\" WHERE \"blocks\".\"id\" = $?", fourth_span[:data][:activerecord][:sql]
 
     assert_equal "postgresql", second_span[:data][:activerecord][:adapter]
     assert_equal "postgresql", third_span[:data][:activerecord][:adapter]
