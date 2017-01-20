@@ -19,7 +19,7 @@ ENV['TRAVIS_PSQL_HOST'] ||= "127.0.0.1"
 require "./test/servers/rackapp_6511"
 
 case File.basename(ENV['BUNDLE_GEMFILE'])
-when /rails5x_pg|rails42x_pg/
+when /rails5x_pg|rails42x_pg|rails32x_pg/
   ENV['DB_FLAVOR'] = 'postgresql'
   require './test/servers/rails5x_3205'
 end
