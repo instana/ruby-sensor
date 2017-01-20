@@ -18,7 +18,11 @@ require File.expand_path(File.dirname(__FILE__) + '/../models/block')
 ActiveRecord::Base.establish_connection(ENV['DATABASE_URL'])
 
 unless ActiveRecord::Base.connection.table_exists? 'blocks'
-  ActiveRecord::Migration.run(CreateBlocks)
+  if Rails::VERSION::STRING < '4.0'
+    CreateBlocks.migrate(:up)
+  else
+    ActiveRecord::Migration.run(CreateBlocks)
+  end
 end
 
 class Rails50App < Rails::Application
