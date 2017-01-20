@@ -15,10 +15,19 @@ module Instana
         if ENV['DB_FLAVOR'] == 'mysql2'
           ENV['DATABASE_URL'] = "mysql2://#{ENV['TRAVIS_MYSQL_USER']}:#{ENV['TRAVIS_MYSQL_PASS']}@#{ENV['TRAVIS_MYSQL_HOST']}:3306/travis_ci_test"
         else
+          ENV['DB_FLAVOR'] ||= 'postgresql'
           ENV['DATABASE_URL'] = "postgresql://#{ENV['TRAVIS_PSQL_USER']}:#{ENV['TRAVIS_PSQL_PASS']}@#{ENV['TRAVIS_PSQL_HOST']}:5432/travis_ci_test"
         end
 
         Instana.logger.warn "Database connect string configured to: #{ENV['DATABASE_URL']}"
+      end
+
+      def postgresql?
+        ENV['DB_FLAVOR'] == 'postgresql'
+      end
+
+      def mysql2?
+        ENV['DB_FLAVOR'] == 'mysql2'
       end
     end
   end
