@@ -2,16 +2,6 @@ require 'test_helper'
 require 'active_record'
 
 class ActiveRecordPgTest < Minitest::Test
-  def setup
-     ActiveRecord::Base.establish_connection(
-       adapter:  "postgresql",
-       host:     ENV['TRAVIS_PSQL_HOST'],
-       username: "postgres",
-       password: ENV['TRAVIS_PSQL_PASS'],
-       database: "travis_ci_test"
-     )
-  end
-
   def test_config_defaults
     assert ::Instana.config[:active_record].is_a?(Hash)
     assert ::Instana.config[:active_record].key?(:enabled)
