@@ -13,11 +13,13 @@ Rake::TestTask.new(:test) do |t|
   case File.basename(ENV['BUNDLE_GEMFILE']).split('.').first
   when /rails50/
     t.test_files = FileList['test/frameworks/rails/activerecord5_test.rb']
+    t.test_files = FileList['test/frameworks/rails/actioncontroller_test.rb']
   when /rails42/
     t.test_files = FileList['test/frameworks/rails/activerecord4_test.rb']
+    t.test_files = FileList['test/frameworks/rails/actioncontroller_test.rb']
   when /rails32/
     t.test_files = FileList['test/frameworks/rails/activerecord3_test.rb']
-    t.test_files = FileList['test/frameworks/rails/actioncontroller3_test.rb']
+    t.test_files = FileList['test/frameworks/rails/actioncontroller_test.rb']
   when /libraries/
     t.test_files = FileList['test/instrumentation/*_test.rb']
   else
