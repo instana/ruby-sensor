@@ -41,7 +41,11 @@ end
 
 class TestController < ActionController::Base
   def world
-    render :text => "Hello test world!"
+    if ::Rails::VERSION::MAJOR > 4
+      render :plain => "Hello test world!"
+    else
+      render :text => "Hello test world!"
+    end
   end
 
   def db
