@@ -41,7 +41,7 @@ end
 
 class TestController < ActionController::Base
   def world
-    render :plain => "Hello test world!"
+    render :text => "Hello test world!"
   end
 
   def db
