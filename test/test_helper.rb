@@ -11,11 +11,18 @@ require "minitest/debugger" if ENV['DEBUG']
 require 'webmock/minitest'
 ::WebMock.disable_net_connect!(allow_localhost: true)
 
-# Supported environment variables
-ENV['MEMCACHED_HOST'] ||= '127.0.0.1:11211'
+require "instana/test"
+::Instana::Test.setup_environment
 
 # Boot background webservers to test against.
 require "./test/servers/rackapp_6511"
+
+case File.basename(ENV['BUNDLE_GEMFILE'])
+when /rails50|rails42|rails32/
+  require './test/servers/rails_3205'
+end
+
+WebMock.disable_net_connect!(allow_localhost: true)
 
 Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
 

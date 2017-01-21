@@ -16,6 +16,10 @@ if defined?(::Rails)
           ::Instana.logger.warn "Instrumenting Rack"
           app.config.middleware.insert 0, ::Instana::Rack
         end
+
+        config.after_initialize do
+          require "instana/frameworks/instrumentation/active_record"
+        end
       end
     end
   end

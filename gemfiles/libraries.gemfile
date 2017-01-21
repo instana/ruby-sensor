@@ -5,14 +5,9 @@ group :development, :test do
   gem 'minitest', '5.9.1'
   gem 'minitest-reporters'
   gem 'minitest-debugger', :require => false
+  gem 'rack-test'
   gem 'webmock'
   gem 'puma'
-
-  # Rack v2 dropped support for Ruby 2.2 and higher.
-  if RUBY_VERSION < '2.2'
-    gem 'rack', '< 2.0'
-  end
-  gem 'rack-test'
 end
 
 group :development do
@@ -27,5 +22,29 @@ group :development do
   end
 end
 
-# instana.gemspec
-gemspec
+# Frameworks
+gem "sinatra", '1.4.7'
+gem "cuba"
+gem "roda"
+
+# HTTP Clients
+gem 'rest-client'
+
+# Webservers
+gem "puma"
+
+# HTTP Clients
+gem 'excon'
+
+# Memcache
+gem 'dalli'
+
+# Rack v2 dropped support for Ruby 2.2 and higher.
+if RUBY_VERSION < '2.2'
+  gem 'rack', '< 2.0'
+end
+
+# Include the Instana Ruby gem's base set of gems
+gemspec :path => File.expand_path(File.dirname(__FILE__) + '/../')
+
+# vim:syntax=ruby
