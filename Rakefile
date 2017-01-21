@@ -17,6 +17,7 @@ Rake::TestTask.new(:test) do |t|
     t.test_files = FileList['test/frameworks/rails/activerecord4_test.rb']
   when /rails32/
     t.test_files = FileList['test/frameworks/rails/activerecord3_test.rb']
+    t.test_files = FileList['test/frameworks/rails/actioncontroller3_test.rb']
   when /libraries/
     t.test_files = FileList['test/instrumentation/*_test.rb']
   else
