@@ -20,6 +20,7 @@ class Rails50App < Rails::Application
   routes.append do
     get "/test/world" => "test#world"
     get "/test/db"    => "test#db"
+    get "/test/error" => "test#error"
   end
 
   # Enable cache classes. Production style.
@@ -53,7 +54,16 @@ class TestController < ActionController::Base
     white_block.save
     found = Block.where(:name => 'Part #28349').first
     found.delete
-    render :plain => "Hello Test Rails DB!"
+
+    if ::Rails::VERSION::MAJOR > 4
+      render :plain => "Hello test db!"
+    else
+      render :text => "Hello test db!"
+    end
+  end
+
+  def error
+    raise Exception.new("Warning: This is a simulated Error")
   end
 end
 
