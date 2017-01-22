@@ -27,4 +27,46 @@ class ActionControllerTest < Minitest::Test
     assert_equal "TestController", second_span[:data][:actioncontroller][:controller]
     assert_equal "world", second_span[:data][:actioncontroller][:action]
   end
+
+  def test_controller_error
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/error'))
+
+    traces = Instana.processor.queued_traces
+    assert_equal 1, traces.count
+    trace = traces.first
+
+    assert_equal 2, trace.spans.count
+    spans = trace.spans.to_a
+    first_span = spans[0]
+    second_span = spans[1]
+
+    assert_equal :rack, first_span.name
+
+    assert_equal :actioncontroller, second_span.name
+    assert_equal "TestController", second_span[:data][:actioncontroller][:controller]
+    assert_equal "error", second_span[:data][:actioncontroller][:action]
+    assert second_span.key?(:error)
+    assert second_span.key?(:stack)
+    assert_equal "Warning: This is a simulated Error", second_span[:data][:log][:message]
+    assert_equal Exception, second_span[:data][:log][:parameters]
+  end
+
+  def test_404
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/404'))
+
+    traces = Instana.processor.queued_traces
+    assert_equal 1, traces.count
+    trace = traces.first
+
+    assert_equal 1, trace.spans.count
+    spans = trace.spans.to_a
+    first_span = spans[0]
+
+    assert_equal :rack, first_span.name
+
+  end
 end

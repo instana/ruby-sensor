@@ -1,6 +1,26 @@
 module Instana
   module Instrumentation
     module ActionController
+      # This is the Rails 5 version of the process_action method where we use prepend to
+      # instrument the class method instead of using the older alias_method_chain.
+      #
+      def process_action(*args)
+        kv_payload = { :actioncontroller => {} }
+        kv_payload[:actioncontroller][:controller] = self.class.name
+        kv_payload[:actioncontroller][:action] = action_name
+
+        ::Instana.tracer.log_entry(:actioncontroller, kv_payload)
+
+        super(*args)
+      rescue Exception => e
+        ::Instana.tracer.log_error(e)
+        raise
+      ensure
+        ::Instana.tracer.log_exit(:actioncontroller)
+      end
+    end
+
+    module ActionControllerLegacy
       def self.included(klass)
         klass.class_eval do
           alias_method_chain :process_action, :instana
@@ -18,25 +38,7 @@ module Instana
         ::Instana.tracer.log_entry(:actioncontroller, kv_payload)
 
         process_action_without_instana(*args)
-      rescue => e
-        ::Instana.tracer.log_error(e)
-        raise
-      ensure
-        ::Instana.tracer.log_exit(:actioncontroller)
-      end
-
-      # This is the Rails 5 version of the method above where we use prepend to
-      # instrument the method instead of using alias_method_chain.
-      #
-      def process_action(*args)
-        kv_payload = { :actioncontroller => {} }
-        kv_payload[:actioncontroller][:controller] = self.class.name
-        kv_payload[:actioncontroller][:action] = action_name
-
-        ::Instana.tracer.log_entry(:actioncontroller, kv_payload)
-
-        super(*args)
-      rescue => e
+      rescue Exception => e
         ::Instana.tracer.log_error(e)
         raise
       ensure
@@ -50,6 +52,6 @@ if defined?(::ActionController) && ::Instana.config[:action_controller][:enabled
   if ActionPack::VERSION::MAJOR >= 5
     ::ActionController::Base.send(:prepend, ::Instana::Instrumentation::ActionController)
   else
-    ::ActionController::Base.send(:include, ::Instana::Instrumentation::ActionController)
+    ::ActionController::Base.send(:include, ::Instana::Instrumentation::ActionControllerLegacy)
   end
 end
