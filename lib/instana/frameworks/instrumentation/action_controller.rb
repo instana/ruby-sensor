@@ -49,8 +49,11 @@ module Instana
 end
 
 if defined?(::ActionController) && ::Instana.config[:action_controller][:enabled] && ::ActionPack::VERSION::MAJOR >= 3
+  ::Instana.logger.warn "Instrumenting ActionController"
   if ActionPack::VERSION::MAJOR >= 5
     ::ActionController::Base.send(:prepend, ::Instana::Instrumentation::ActionController)
+    ::Instana.logger.warn "Instrumenting ActionController API"
+    ::ActionController::API.send(:prepend, ::Instana::Instrumentation::ActionController)
   else
     ::ActionController::Base.send(:include, ::Instana::Instrumentation::ActionControllerLegacy)
   end
