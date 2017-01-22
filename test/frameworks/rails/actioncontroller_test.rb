@@ -83,8 +83,6 @@ class ActionControllerTest < Minitest::Test
     assert_equal 1, traces.count
     trace = traces.first
 
-    ::Instana::Util.pry!
-
     assert_equal 2, trace.spans.count
     spans = trace.spans.to_a
     first_span = spans[0]
