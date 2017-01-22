@@ -54,6 +54,9 @@ class ActionControllerTest < Minitest::Test
   end
 
   def test_api_controller_reporting
+    # Run only when ActionController::API is used/defined
+    skip unless defined?(::ActionController::API)
+
     clear_all!
 
     Net::HTTP.get(URI.parse('http://localhost:3205/api/world'))
@@ -75,6 +78,9 @@ class ActionControllerTest < Minitest::Test
   end
 
   def test_api_controller_error
+    # Run only when ActionController::API is used/defined
+    skip unless defined?(::ActionController::API)
+
     clear_all!
 
     Net::HTTP.get(URI.parse('http://localhost:3205/api/error'))
@@ -113,6 +119,5 @@ class ActionControllerTest < Minitest::Test
     first_span = spans[0]
 
     assert_equal :rack, first_span.name
-
   end
 end
