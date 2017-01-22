@@ -16,11 +16,14 @@ unless ActiveRecord::Base.connection.table_exists? 'blocks'
   end
 end
 
-class Rails50App < Rails::Application
+class RailsTestApp < Rails::Application
   routes.append do
     get "/test/world" => "test#world"
     get "/test/db"    => "test#db"
     get "/test/error" => "test#error"
+
+    get "/api/world" => "socket#world"
+    get "/api/error" => "socket#error"
   end
 
   # Enable cache classes. Production style.
@@ -67,10 +70,26 @@ class TestController < ActionController::Base
   end
 end
 
-Rails50App.initialize!
+if ::Rails::VERSION::MAJOR > 4
+  class SocketController < ActionController::API
+    def world
+      if ::Rails::VERSION::MAJOR > 4
+        render :plain => "Hello api world!"
+      else
+        render :text => "Hello api world!"
+      end
+    end
+
+    def error
+      raise Exception.new("Warning: This is a simulated Socket API Error")
+    end
+  end
+end
+
+RailsTestApp.initialize!
 
 Thread.new do
-  Rack::Handler::Puma.run(Rails50App.to_app, {:Host => '127.0.0.1', :Port => 3205})
+  Rack::Handler::Puma.run(RailsTestApp.to_app, {:Host => '127.0.0.1', :Port => 3205})
 end
 
 sleep(1)
