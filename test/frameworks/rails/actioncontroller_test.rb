@@ -50,7 +50,7 @@ class ActionControllerTest < Minitest::Test
     assert second_span.key?(:error)
     assert second_span.key?(:stack)
     assert_equal "Warning: This is a simulated Error", second_span[:data][:log][:message]
-    assert_equal Exception, second_span[:data][:log][:parameters]
+    assert_equal "Exception", second_span[:data][:log][:parameters]
   end
 
   def test_api_controller_reporting
@@ -102,7 +102,7 @@ class ActionControllerTest < Minitest::Test
     assert second_span.key?(:error)
     assert second_span.key?(:stack)
     assert_equal "Warning: This is a simulated Socket API Error", second_span[:data][:log][:message]
-    assert_equal Exception, second_span[:data][:log][:parameters]
+    assert_equal "Exception", second_span[:data][:log][:parameters]
   end
 
   def test_404
