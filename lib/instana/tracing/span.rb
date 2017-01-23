@@ -90,7 +90,7 @@ module Instana
         if HTTP_SPANS.include?(@data[:n])
           set_tags(:http => { :error => "#{e.class}: #{e.message}" })
         else
-          set_tags(:log => { :message => e.message, :parameters => e.class })
+          set_tags(:log => { :message => e.message, :parameters => e.class.to_s })
         end
         e.instance_variable_set(:@instana_logged, true)
       end
