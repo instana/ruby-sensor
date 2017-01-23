@@ -1,6 +1,6 @@
 module Instana
   class Span
-    REGISTERED_SPANS = [ :activerecord, :excon, :memcache, :'net-http', :rack ].freeze
+    REGISTERED_SPANS = [ :actioncontroller, :activerecord, :excon, :memcache, :'net-http', :rack ].freeze
     ENTRY_SPANS = [ :rack ].freeze
     EXIT_SPANS = [ :'net-http', :excon, :activerecord ].freeze
     HTTP_SPANS = ENTRY_SPANS + EXIT_SPANS
@@ -90,7 +90,7 @@ module Instana
         if HTTP_SPANS.include?(@data[:n])
           set_tags(:http => { :error => "#{e.class}: #{e.message}" })
         else
-          set_tags(:log => { :message => e.message, :parameters => e.class })
+          set_tags(:log => { :message => e.message, :parameters => e.class.to_s })
         end
         e.instance_variable_set(:@instana_logged, true)
       end

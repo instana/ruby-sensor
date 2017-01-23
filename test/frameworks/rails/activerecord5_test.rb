@@ -19,12 +19,12 @@ class ActiveRecordTest < Minitest::Test
     assert_equal 1, traces.count
     trace = traces.first
 
-    assert_equal 4, trace.spans.count
+    assert_equal 5, trace.spans.count
     spans = trace.spans.to_a
     first_span = spans[0]
-    second_span = spans[1]
-    third_span = spans[2]
-    fourth_span = spans[3]
+    second_span = spans[2]
+    third_span = spans[3]
+    fourth_span = spans[4]
 
     assert_equal :rack, first_span.name
     assert_equal :activerecord, second_span.name
@@ -59,12 +59,12 @@ class ActiveRecordTest < Minitest::Test
     assert_equal 1, traces.count
     trace = traces.first
 
-    assert_equal 4, trace.spans.count
+    assert_equal 5, trace.spans.count
     spans = trace.spans.to_a
     first_span = spans[0]
-    second_span = spans[1]
-    third_span = spans[2]
-    fourth_span = spans[3]
+    second_span = spans[2]
+    third_span = spans[3]
+    fourth_span = spans[4]
 
     assert_equal :rack, first_span.name
     assert_equal :activerecord, second_span.name

@@ -116,6 +116,13 @@ module Instana
     #
     def log_exit(name, kvs = {})
       return unless tracing?
+
+      if ::Instana.debug? || ::Instana.test?
+        unless current_span_name?(name)
+          ::Instana.logger.debug "Span mismatch: Attempt to exit #{name} span but #{current_span.name} is active."
+        end
+      end
+
       self.current_trace.end_span(kvs)
     end
 
@@ -130,6 +137,12 @@ module Instana
     #
     def log_end(name, kvs = {}, end_time = Time.now)
       return unless tracing?
+
+      if ::Instana.debug? || ::Instana.test?
+        unless current_span_name?(name)
+          ::Instana.logger.debug "Span mismatch: Attempt to end #{name} span but #{current_span.name} is active."
+        end
+      end
 
       self.current_trace.finish(kvs, end_time)
 

@@ -21,11 +21,12 @@ module Instana
       @config[:eum_baggage] = {}
 
       # Instrumentation
-      @config[:active_record] = { :enabled => true }
-      @config[:dalli]         = { :enabled => true }
-      @config[:excon]         = { :enabled => true }
-      @config[:nethttp]       = { :enabled => true }
-      @config[:'rest-client'] = { :enabled => true }
+      @config[:action_controller]  = { :enabled => true }
+      @config[:active_record]      = { :enabled => true }
+      @config[:dalli]              = { :enabled => true }
+      @config[:excon]              = { :enabled => true }
+      @config[:nethttp]            = { :enabled => true }
+      @config[:'rest-client']      = { :enabled => true }
     end
 
     def [](key)
