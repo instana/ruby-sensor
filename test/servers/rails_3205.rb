@@ -18,9 +18,12 @@ end
 
 class RailsTestApp < Rails::Application
   routes.append do
-    get "/test/world" => "test#world"
-    get "/test/db"    => "test#db"
-    get "/test/error" => "test#error"
+    get "/test/world"              => "test#world"
+    get "/test/db"                 => "test#db"
+    get "/test/error"              => "test#error"
+    get "/test/render_view"        => "test#render_view"
+    get "/test/render_partial"     => "test#render_partial"
+    get "/test/render_collection"  => "test#render_collection"
 
     get "/api/world" => "socket#world"
     get "/api/error" => "socket#error"
@@ -32,6 +35,8 @@ class RailsTestApp < Rails::Application
 
   # uncomment below to display errors
   # config.consider_all_requests_local = true
+
+  config.paths['app/views'].unshift(File.expand_path(File.dirname(__FILE__) + '/../views'))
 
   config.active_support.deprecation = :stderr
 
@@ -63,6 +68,18 @@ class TestController < ActionController::Base
     else
       render :text => "Hello test db!"
     end
+  end
+
+  def render_view
+    @message = "Hello Instana!"
+  end
+
+  def render_partial
+    @message = "Hello Instana!"
+  end
+
+  def render_collection
+    @blocks = Block.all
   end
 
   def error
