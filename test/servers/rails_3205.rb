@@ -1,5 +1,9 @@
 
-::Instana.logger.warn "Starting background Ruby on Rails application on port 3205"
+::Instana.logger.warn "Starting background Ruby on Rails #{Rails::VERSION::STRING} application on port 3205"
+
+if Rails::VERSION::STRING >= '5.0' && ::Instana::Test.mysql?
+  ::Instana.logger.fatal "Rails 5.x doesn't support the mysql adapter (discontinued).  Set DB_FLAVOR=msyql2 instead.  This will fail as is."
+end
 
 require "rails/all"
 require "action_controller/railtie" # require more if needed
