@@ -73,6 +73,10 @@ class ActionViewTest < Minitest::Test
     assert_equal :render, fourth_span.name
     assert_equal :partial, fourth_span[:data][:render][:type]
     assert_equal 'syntax_error', fourth_span[:data][:render][:name]
+    assert fourth_span[:data][:log].key?(:message)
+    assert_equal "ActionView::Template::Error", fourth_span[:data][:log][:parameters]
+    assert fourth_span[:error]
+    assert fourth_span[:stack]
   end
 
   def test_render_collection
