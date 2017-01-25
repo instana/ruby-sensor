@@ -114,6 +114,10 @@ end
 
 RailsTestApp.initialize!
 
+# Initialize some blocks so we have stuff to test against.
+Block.new(:name => :corner, :color => :blue).save
+Block.new(:name => :floor, :color => :green).save
+
 Thread.new do
   Rack::Handler::Puma.run(RailsTestApp.to_app, {:Host => '127.0.0.1', :Port => 3205})
 end
