@@ -16,11 +16,7 @@ class ActionControllerTest < Minitest::Test
     assert_equal 1, traces.count
     trace = traces.first
 
-    if ::Rails::VERSION::MAJOR > 4
-      assert_equal 2, trace.spans.count
-    else
-      assert_equal 3, trace.spans.count
-    end
+    assert_equal 3, trace.spans.count
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -69,7 +65,7 @@ class ActionControllerTest < Minitest::Test
     assert_equal 1, traces.count
     trace = traces.first
 
-    assert_equal 2, trace.spans.count
+    assert_equal 3, trace.spans.count
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]

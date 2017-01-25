@@ -27,6 +27,7 @@ class RailsTestApp < Rails::Application
     get "/test/error"              => "test#error"
     get "/test/render_view"        => "test#render_view"
     get "/test/render_partial"     => "test#render_partial"
+    get "/test/render_partial_that_errors"     => "test#render_partial_that_errors"
     get "/test/render_collection"  => "test#render_collection"
 
     get "/api/world" => "socket#world"
@@ -82,6 +83,10 @@ class TestController < ActionController::Base
     @message = "Hello Instana!"
   end
 
+  def render_partial_that_errors
+    @message = "Hello Instana!"
+  end
+
   def render_collection
     @blocks = Block.all
   end
@@ -108,6 +113,10 @@ if ::Rails::VERSION::MAJOR > 4
 end
 
 RailsTestApp.initialize!
+
+# Initialize some blocks so we have stuff to test against.
+Block.new(:name => :corner, :color => :blue).save
+Block.new(:name => :floor, :color => :green).save
 
 Thread.new do
   Rack::Handler::Puma.run(RailsTestApp.to_app, {:Host => '127.0.0.1', :Port => 3205})
