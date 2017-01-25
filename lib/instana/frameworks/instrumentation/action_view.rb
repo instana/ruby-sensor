@@ -14,7 +14,7 @@ module Instana
         ::Instana.tracer.log_entry(:render, kv_payload)
         render_partial_without_instana
       rescue Exception => e
-        ::Instana.tracer.log_error(e) unless has_rails_handler?
+        ::Instana.tracer.log_error(e)
         raise
       ensure
         ::Instana.tracer.log_exit(:render)
@@ -28,7 +28,7 @@ module Instana
         ::Instana.tracer.log_entry(:render, kv_payload)
         render_collection_without_instana
       rescue Exception => e
-        ::Instana.tracer.log_error(e) unless has_rails_handler?
+        ::Instana.tracer.log_error(e)
         raise
       ensure
         ::Instana.tracer.log_exit(:render)
