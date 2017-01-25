@@ -27,6 +27,7 @@ class RailsTestApp < Rails::Application
     get "/test/error"              => "test#error"
     get "/test/render_view"        => "test#render_view"
     get "/test/render_partial"     => "test#render_partial"
+    get "/test/render_partial_that_errors"     => "test#render_partial_that_errors"
     get "/test/render_collection"  => "test#render_collection"
 
     get "/api/world" => "socket#world"
@@ -79,6 +80,10 @@ class TestController < ActionController::Base
   end
 
   def render_partial
+    @message = "Hello Instana!"
+  end
+
+  def render_partial_that_errors
     @message = "Hello Instana!"
   end
 

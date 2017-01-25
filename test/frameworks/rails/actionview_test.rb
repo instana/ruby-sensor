@@ -51,6 +51,30 @@ class ActionViewTest < Minitest::Test
     assert_equal 'message', fourth_span[:data][:render][:name]
   end
 
+  def test_render_partial_that_errors
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/render_partial_that_errors'))
+
+    traces = Instana.processor.queued_traces
+    assert_equal 1, traces.count
+    trace = traces.first
+
+    assert_equal 4, trace.spans.count
+    spans = trace.spans.to_a
+    first_span = spans[0]
+    second_span = spans[1]
+    third_span = spans[2]
+    fourth_span = spans[3]
+
+    assert_equal :rack, first_span.name
+    assert_equal :actioncontroller, second_span.name
+    assert_equal :actionview, third_span.name
+    assert_equal :render, fourth_span.name
+    assert_equal :partial, fourth_span[:data][:render][:type]
+    assert_equal 'syntax_error', fourth_span[:data][:render][:name]
+  end
+
   def test_render_collection
     clear_all!
 
