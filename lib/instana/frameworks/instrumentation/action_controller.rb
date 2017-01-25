@@ -4,7 +4,7 @@ module Instana
     # Contains the methods common to both ::Instana::Instrumentation::ActionController
     # and ::Instana::Instrumentation::ActionControllerLegacy
     #
-    module ActionControllerCommon
+    module ActionHelpers
 
       # Indicates whether a Controller rescue handler is in place.  If so, this affects
       # error logging and reporting. (Hence the need for this method).
@@ -30,7 +30,7 @@ module Instana
     # instrumentation for ActionController (a part of ActionPack)
     #
     module ActionController
-      include ::Instana::Instrumentation::ActionControllerCommon
+      include ::Instana::Instrumentation::ActionHelpers
 
       # This is the Rails 5 version of the process_action method where we use prepend to
       # instrument the class method instead of using the older alias_method_chain.
@@ -55,7 +55,7 @@ module Instana
     # instrumentation for ActionController (a part of ActionPack)
     #
     module ActionControllerLegacy
-      include ::Instana::Instrumentation::ActionControllerCommon
+      include ::Instana::Instrumentation::ActionHelpers
 
       def self.included(klass)
         klass.class_eval do
