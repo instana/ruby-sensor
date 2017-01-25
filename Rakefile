@@ -14,15 +14,15 @@ Rake::TestTask.new(:test) do |t|
   when /rails50/
     t.test_files = [ 'test/frameworks/rails/activerecord5_test.rb',
                      'test/frameworks/rails/actioncontroller_test.rb',
-                     'test/frameworks/rails/actionview_test.rb' ]
+                     'test/frameworks/rails/actionview5_test.rb' ]
   when /rails42/
     t.test_files = [ 'test/frameworks/rails/activerecord4_test.rb',
                      'test/frameworks/rails/actioncontroller_test.rb',
-                     'test/frameworks/rails/actionview_test.rb' ]
+                     'test/frameworks/rails/actionview4_test.rb' ]
   when /rails32/
     t.test_files = [ 'test/frameworks/rails/activerecord3_test.rb',
                      'test/frameworks/rails/actioncontroller_test.rb',
-                     'test/frameworks/rails/actionview_test.rb' ]
+                     'test/frameworks/rails/actionview3_test.rb' ]
   when /libraries/
     t.test_files = FileList['test/instrumentation/*_test.rb']
   else
