@@ -27,6 +27,8 @@ module Instana
       @config[:excon]              = { :enabled => true }
       @config[:nethttp]            = { :enabled => true }
       @config[:'rest-client']      = { :enabled => true }
+      @config[:sidekiq_client]     = { :enabled => true }
+      @config[:sidekiq_worker]     = { :enabled => true }
     end
 
     def [](key)
