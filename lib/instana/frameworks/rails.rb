@@ -20,6 +20,7 @@ if defined?(::Rails)
         config.after_initialize do
           require "instana/frameworks/instrumentation/active_record"
           require "instana/frameworks/instrumentation/action_controller"
+          require "instana/frameworks/instrumentation/action_view"
         end
       end
     end

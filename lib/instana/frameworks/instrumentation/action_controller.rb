@@ -60,6 +60,7 @@ module Instana
       def self.included(klass)
         klass.class_eval do
           alias_method_chain :process_action, :instana
+          alias_method_chain :render, :instana
         end
       end
 
@@ -79,6 +80,19 @@ module Instana
         raise
       ensure
         ::Instana.tracer.log_exit(:actioncontroller)
+      end
+
+      # The Instana wrapper method for ActionController::Base.render
+      # for versions 3 and 4.
+      #
+      def render_with_instana(*args, &blk)
+        ::Instana.tracer.log_entry(:actionview)
+        render_without_instana(*args, &blk)
+      rescue Exception => e
+        ::Instana.tracer.log_error(e) unless has_rails_handler?
+        raise
+      ensure
+        ::Instana.tracer.log_exit(:actionview)
       end
     end
   end

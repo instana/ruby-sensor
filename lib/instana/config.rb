@@ -22,6 +22,7 @@ module Instana
 
       # Instrumentation
       @config[:action_controller]  = { :enabled => true }
+      @config[:action_view]        = { :enabled => true }
       @config[:active_record]      = { :enabled => true }
       @config[:dalli]              = { :enabled => true }
       @config[:excon]              = { :enabled => true }

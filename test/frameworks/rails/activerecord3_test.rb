@@ -23,7 +23,7 @@ class ActiveRecordTest < Minitest::Test
     assert_equal 1, traces.count
     trace = traces.first
 
-    assert_equal 5, trace.spans.count
+    assert_equal 6, trace.spans.count
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[2]
@@ -63,7 +63,7 @@ class ActiveRecordTest < Minitest::Test
     assert_equal 1, traces.count
     trace = traces.first
 
-    assert_equal 5, trace.spans.count
+    assert_equal 6, trace.spans.count
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[2]
@@ -103,7 +103,7 @@ class ActiveRecordTest < Minitest::Test
     assert_equal 1, traces.count
     trace = traces.first
 
-    assert_equal 5, trace.spans.count
+    assert_equal 6, trace.spans.count
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[2]
