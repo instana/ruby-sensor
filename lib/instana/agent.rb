@@ -23,6 +23,9 @@ module Instana
       # entity data reporting.
       @entity_last_seen = Time.now
 
+      # Used to track the last time the collect timer was run.
+      @last_collect_run = Time.now
+
       # Two timers, one for each state (unannounced & announced)
       @timers = ::Timers::Group.new
       @announce_timer = nil
@@ -109,16 +112,22 @@ module Instana
       # If we are in announced state, send metric data (only delta reporting)
       # every ::Instana.config[:collector][:interval] seconds.
       @collect_timer = @timers.every(::Instana.config[:collector][:interval]) do
-        if @state == :announced
-          if !::Instana.collector.collect_and_report
-            # If report has been failing for more than 1 minute,
-            # fall back to unannounced state
-            if (Time.now - @entity_last_seen) > 60
-              ::Instana.logger.warn "Host agent offline for >1 min.  Going to sit in a corner..."
-              transition_to(:unannounced)
+        # Make sure that this block doesn't get called more often than the interval.  This can
+        # happen on high CPU load and a back up of timer runs.  If we are called before `interval`
+        # then we just skip.
+        unless (Time.now - @last_collect_run) < ::Instana.config[:collector][:interval]
+          @last_collect_run = Time.now
+          if @state == :announced
+            if !::Instana.collector.collect_and_report
+              # If report has been failing for more than 1 minute,
+              # fall back to unannounced state
+              if (Time.now - @entity_last_seen) > 60
+                ::Instana.logger.warn "Host agent offline for >1 min.  Going to sit in a corner..."
+                transition_to(:unannounced)
+              end
             end
+            ::Instana.processor.send
           end
-          ::Instana.processor.send
         end
       end
     end
