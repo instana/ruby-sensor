@@ -10,3 +10,4 @@
 /log/
 .ruby-version
 gemfiles/*.lock
+/test/tmp/*.pid
