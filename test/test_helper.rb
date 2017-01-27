@@ -23,6 +23,14 @@ when /rails50|rails42|rails32/
   require './test/servers/rails_3205'
 when /libraries/
   require './test/servers/grpc_50051.rb'
+  require './test/servers/sidekiq/worker'
+end
+
+if defined?(::Sidekiq)
+  ENV['I_REDIS_URL'] ||= 'redis://127.0.0.1:6379'
+  Sidekiq.configure_client do |config|
+    config.redis = { :url => ENV['I_REDIS_URL'] }
+  end
 end
 
 Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
