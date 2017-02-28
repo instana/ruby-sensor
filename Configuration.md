@@ -1,6 +1,24 @@
 # Configuration
 
-## Enabling/Disabling Components
+## Global Enable/Disable
+
+The entire gem can be disabled at runtime with:
+
+```Ruby
+::Instana.config[:enabled] = false # default: true
+```
+
+Other global enable/disable options are:
+
+```Ruby
+# Enable/Disable metrics collection and reporting
+Instana.config[:metrics][:enabled] # default true
+
+# Enable/Disable tracing
+Instana.config[:tracing][:enabled] # default true
+```
+
+## Enabling/Disabling Individual Components
 
 Individual components can be enabled and disabled with a local config.
 
