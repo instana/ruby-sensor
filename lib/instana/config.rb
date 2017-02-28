@@ -47,6 +47,13 @@ module Instana
 
     def []=(key, value)
       @config[key.to_sym] = value
+
+      if key == :enabled
+        # Configuring global enable/disable flag, then set the
+        # appropriate children flags.
+        @config[:metrics][:enabled] = value
+        @config[:tracing][:enabled] = value
+      end
     end
   end
 end
