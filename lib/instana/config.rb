@@ -3,12 +3,23 @@ module Instana
 
     def initialize
       @config = {}
+
       @config[:agent_host] = '127.0.0.1'
       @config[:agent_port] = 42699
-      @config[:metrics] = {}
+
+      # Global on/off switch for prebuilt environments
+      # Setting this to false will disable this gem
+      # from doing anything.
+      @config[:enabled] = true
+
+      # Enable/disable metrics globally or individually (default: all enabled)
+      @config[:metrics] = { :enabled => true }
       @config[:metrics][:gc]     = { :enabled => true }
       @config[:metrics][:memory] = { :enabled => true }
       @config[:metrics][:thread] = { :enabled => true }
+
+      # Enable/disable tracing (default: enabled)
+      @config[:tracing] = { :enabled => true }
 
       if ENV.key?('INSTANA_GEM_DEV')
         @config[:collector] = { :enabled => true, :interval => 3 }
