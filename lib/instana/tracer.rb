@@ -72,7 +72,7 @@ module Instana
     #     :level specifies data collection level (optional)
     #
     def log_start_or_continue(name, kvs = {}, incoming_context = {})
-      return unless ::Instana.agent.ready?
+      return if !::Instana.agent.ready? || !::Instana.config[:tracing][:enabled]
       ::Instana.logger.debug "#{__method__} passed a block.  Use `start_or_continue` instead!" if block_given?
       self.current_trace = ::Instana::Trace.new(name, kvs, incoming_context)
     end
@@ -191,7 +191,11 @@ module Instana
         self.current_trace.add_async_info(kvs, span)
       else
         trace = ::Instana.processor.staged_trace(span.context.trace_id)
-        trace.add_async_info(kvs, span)
+        if trace
+          trace.add_async_info(kvs, span)
+        else
+          ::Instana.logger.debug "#{__method__}: Couldn't find staged trace. #{span.inspect}"
+        end
       end
     end
 
@@ -210,7 +214,11 @@ module Instana
         self.current_trace.add_async_error(e, span)
       else
         trace = ::Instana.processor.staged_trace(span.context.trace_id)
-        trace.add_async_error(e, span)
+        if trace
+          trace.add_async_error(e, span)
+        else
+          ::Instana.logger.debug "#{__method__}: Couldn't find staged trace. #{span.inspect}"
+        end
       end
     end
 
@@ -235,7 +243,7 @@ module Instana
         if trace
           trace.end_async_span(kvs, span)
         else
-          ::Instana.logger.debug "log_async_exit: Couldn't find staged trace. #{span.inspect}"
+          ::Instana.logger.debug "#{__method__}: Couldn't find staged trace. #{span.inspect}"
         end
       end
     end
