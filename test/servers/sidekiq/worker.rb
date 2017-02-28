@@ -14,7 +14,13 @@ end
 ::Instana.logger.warn "Booting background Sidekiq worker..."
 
 Thread.new do
-  system("INSTANA_GEM_TEST=true sidekiq #{cmd_line}")
+  begin
+    system("INSTANA_GEM_TEST=true sidekiq #{cmd_line}")
+  ensure
+    # Get and send a kill signal to the sidekiq process
+    s = File.read(Dir.pwd + "/test/tmp/sidekiq_#{Process.pid}.pid")
+    Process.kill("QUIT", s.chop.to_i)
+  end
 end
 
-sleep 10
+sleep 7
