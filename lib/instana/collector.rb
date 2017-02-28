@@ -45,6 +45,8 @@ module Instana
     # @return Boolean true on success
     #
     def collect_and_report
+      return unless ::Instana.config[:metrics][:enabled]
+
       payload = {}
       with_snapshot = false
 
