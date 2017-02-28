@@ -10,6 +10,10 @@ class ConfigTest < Minitest::Test
     assert_equal '127.0.0.1', ::Instana.config[:agent_host]
     assert_equal 42699, ::Instana.config[:agent_port]
 
+    assert ::Instana.config[:enabled]
+    assert ::Instana.config[:tracing][:enabled]
+    assert ::Instana.config[:metrics][:enabled]
+
     ::Instana.config[:metrics].each do |k, v|
       assert_equal true, ::Instana.config[:metrics][k].key?(:enabled)
     end
