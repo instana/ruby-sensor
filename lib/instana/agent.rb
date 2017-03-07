@@ -170,15 +170,18 @@ module Instana
         return false
       end
 
-      # We create an open socket to the host agent in case we are running in a container
-      # and the real pid needs to be detected.
-      socket = TCPSocket.new @discovered[:agent_host], @discovered[:agent_port]
-
       announce_payload = {}
       announce_payload[:pid] = pid_namespace? ? get_real_pid : Process.pid
       announce_payload[:args] = @process[:arguments]
-      announce_payload[:fd] = socket.fileno
-      announce_payload[:inode] = File.readlink("/proc/#{Process.pid}/fd/#{socket.fileno}")
+
+
+      unless ::Instana.test?
+        # We create an open socket to the host agent in case we are running in a container
+        # and the real pid needs to be detected.
+        socket = TCPSocket.new @discovered[:agent_host], @discovered[:agent_port]
+        announce_payload[:fd] = socket.fileno
+        announce_payload[:inode] = File.readlink("/proc/#{Process.pid}/fd/#{socket.fileno}")
+      end
 
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH}")
       req = Net::HTTP::Put.new(uri)
@@ -201,7 +204,7 @@ module Instana
       Instana.logger.debug e.backtrace.join("\r\n")
       return false
     ensure
-      socket.close
+      socket.close if socket
     end
 
     # Method to report metrics data to the host agent.
