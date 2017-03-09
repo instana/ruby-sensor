@@ -175,7 +175,7 @@ module Instana
       announce_payload[:args] = @process[:arguments]
 
 
-      unless ::Instana.test?
+      if @is_linux && !::Instana.test?
         # We create an open socket to the host agent in case we are running in a container
         # and the real pid needs to be detected.
         socket = TCPSocket.new @discovered[:agent_host], @discovered[:agent_port]
