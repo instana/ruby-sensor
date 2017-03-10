@@ -46,7 +46,7 @@ if defined?(::Net::HTTP) && ::Instana.config[:nethttp][:enabled]
       if response.code.to_i.between?(500, 511)
         # Because of the 5xx response, we flag this span as errored but
         # without a backtrace (no exception)
-        add_error(nil)
+        ::Instana.tracer.log_error(nil)
       end
 
       response
