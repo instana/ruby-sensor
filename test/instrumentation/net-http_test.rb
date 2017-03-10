@@ -137,4 +137,32 @@ class NetHTTPTest < Minitest::Test
 
     WebMock.disable_net_connect!
   end
+
+  def test_request_with_5xx_response
+    clear_all!
+    WebMock.allow_net_connect!
+
+    response = nil
+    Instana.tracer.start_or_continue_trace('net-http-error-test') do
+      http = Net::HTTP.new("127.0.0.1", 6511)
+      response = http.request(Net::HTTP::Get.new("/error"))
+    end
+
+    traces = Instana.processor.queued_traces
+    assert_equal 2, traces.count
+
+    request_trace = traces[1]
+    assert_equal 2, request_trace.spans.count
+    assert request_trace.has_error?
+    http_span = request_trace.spans.to_a[1]
+
+    refute_nil http_span.key?(:data)
+    refute_nil http_span[:data].key?(:http)
+    assert_equal "http://127.0.0.1:6511/error", http_span[:data][:http][:url]
+    assert_equal "500", http_span[:data][:http][:status]
+    assert_equal :'net-http', http_span.name
+    assert http_span.key?(:stack)
+
+    WebMock.disable_net_connect!
+  end
 end
