@@ -99,7 +99,22 @@ require "logger"
 ::Instana.logger.level = ::Logger::WARN
 ```
 
-It also allows the debug level to be configured that affects
+The gem can be configured to use your application logger instead:
+
+```
+::Instana.logger = ::Rails.logger
+``
+
+### Debugging & More Verbosity
+
+#### Environment Variable
+
+Setting `INSTANA_GEM_DEV` to a non nil value will enable extra logging output generally useful
+for development.
+
+#### Extended Debug Logging
+
+The gem allows the debug level to be configured that affects
 what extra debug info it reports.  It allows for:
 
 * `:agent` - shows all agent state related debug messages
