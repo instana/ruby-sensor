@@ -103,7 +103,7 @@ The gem can be configured to use your application logger instead:
 
 ```
 ::Instana.logger = ::Rails.logger
-``
+```
 
 ### Debugging & More Verbosity
 
@@ -113,6 +113,8 @@ Setting `INSTANA_GEM_DEV` to a non nil value will enable extra logging output ge
 for development.
 
 #### Extended Debug Logging
+
+_Note: To use this, you must leave the gem original logger intact and not replace it as described above._
 
 The gem allows the debug level to be configured that affects
 what extra debug info it reports.  It allows for:
