@@ -466,8 +466,15 @@ module Instana
     #
     def get_real_pid
       raise RuntimeError.new("Unsupported platform: get_real_pid") unless @is_linux
-      v = File.open("/proc/#{Process.pid}/sched", &:readline)
-      v.match(/\d+/).to_s.to_i
+
+      sched_file = "/proc/#{Process.pid}/sched"
+      pid = Process.pid
+
+      if File.exist?(sched_file)
+        v = File.open(sched_file, &:readline)
+        pid = v.match(/\d+/).to_s.to_i
+      end
+      pid
     end
 
     # Determine whether the pid has changed since Agent start.
