@@ -172,8 +172,8 @@ module Instana
 
       announce_payload = {}
       announce_payload[:pid] = pid_namespace? ? get_real_pid : Process.pid
+      announce_payload[:name] = @process[:name]
       announce_payload[:args] = @process[:arguments]
-
 
       if @is_linux && !::Instana.test?
         # We create an open socket to the host agent in case we are running in a container

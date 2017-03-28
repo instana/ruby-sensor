@@ -137,21 +137,19 @@ module Instana
         if File.exist?(cmdline_file)
           cmdline = IO.read(cmdline_file).split(?\x00)
         else
-          cmdline = ProcTable.ps(Process.pid).cmdline.split(?\x00)
+          cmdline = ProcTable.ps(Process.pid).cmdline.split(' ')
         end
 
-        process[:name] = cmdline.shift
-        process[:arguments] = cmdline
-
         if RUBY_PLATFORM =~ /darwin/i
-          # Handle OSX bug where env vars show up at the end of process name
-          # such as MANPATH etc..
-          process[:name].gsub!(/[_A-Z]+=\S+/, '')
-          process[:name].rstrip!
+          cmdline.delete_if{ |e| e.include?('=') }
+          process[:name] = cmdline.join(' ')
+        else
+          process[:name] = cmdline.shift
+          process[:arguments] = cmdline
         end
 
         process[:pid] = Process.pid
-        # This is usually Process.pid but in the case of docker, the host agent
+        # This is usually Process.pid but in the case of containers, the host agent
         # will return to us the true host pid in which we use to report data.
         process[:report_pid] = nil
         process
