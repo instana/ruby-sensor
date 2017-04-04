@@ -160,6 +160,33 @@ class OpenTracerTest < Minitest::Test
     span.finish
   end
 
+  def test_span_kind_translation
+    clear_all!
+    span = OpenTracing.start_span('my_app_entry')
+
+    assert span.is_a?(::Instana::Span)
+    assert_equal :my_app_entry, OpenTracing.current_trace.current_span.name
+
+    span.set_tag(:'span.kind', :server)
+    assert_equal :entry, span[:data][:sdk][:type]
+
+    span.set_tag(:'span.kind', :consumer)
+    assert_equal :entry, span[:data][:sdk][:type]
+
+    span.set_tag(:'span.kind', :client)
+    assert_equal :exit, span[:data][:sdk][:type]
+
+    span.set_tag(:'span.kind', :producer)
+    assert_equal :exit, span[:data][:sdk][:type]
+
+    span[:data][:sdk].delete(:type)
+    span.set_tag(:'span.kind', :blah)
+    assert_equal false, span[:data][:sdk].key?(:type)
+    assert_equal :blah, span[:data][:sdk][:custom][:'span.kind']
+
+    span.finish
+  end
+
   def test_start_span_with_baggage
     clear_all!
     span = OpenTracing.start_span('my_app_entry')
