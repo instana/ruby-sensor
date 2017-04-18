@@ -271,6 +271,15 @@ module Instana
       if custom?
         @data[:data][:sdk][:custom] ||= {}
         @data[:data][:sdk][:custom][key] = value
+
+        if key.to_sym == :'span.kind'
+          case value.to_sym
+          when :server || :consumer
+            @data[:data][:sdk][:type] = :entry
+          when :client || :producer
+            @data[:data][:sdk][:type] = :exit
+          end
+        end
       else
         if !@data[:data].key?(key)
           @data[:data][key] = value
