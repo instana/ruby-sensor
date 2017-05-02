@@ -27,8 +27,11 @@ class RailsTestApp < Rails::Application
     get "/test/error"              => "test#error"
     get "/test/render_view"        => "test#render_view"
     get "/test/render_partial"     => "test#render_partial"
-    get "/test/render_partial_that_errors"     => "test#render_partial_that_errors"
     get "/test/render_collection"  => "test#render_collection"
+    get "/test/render_file"        => "test#render_file"
+    get "/test/render_nothing"     => "test#render_nothing"
+    get "/test/render_alternate_layout"        => "test#render_alternate_layout"
+    get "/test/render_partial_that_errors"     => "test#render_partial_that_errors"
 
     get "/api/world" => "socket#world"
     get "/api/error" => "socket#error"
@@ -89,6 +92,21 @@ class TestController < ActionController::Base
 
   def render_collection
     @blocks = Block.all
+  end
+
+  def render_file
+    @message = "Hello Instana!"
+    render :file => '/etc/issue'
+  end
+
+  def render_alternate_layout
+    @message = "Hello Instana!"
+    render :layout => 'layouts/mobile'
+  end
+
+  def render_nothing
+    @message = "Hello Instana!"
+    render :nothing => true
   end
 
   def error

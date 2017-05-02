@@ -24,6 +24,30 @@ module Instana
         ::Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
         return false
       end
+
+      # Render can be called with many options across the various supported
+      # versions of Rails.  This method attempts to make sense and provide
+      # insight into what is happening (rendering a layout, file, nothing,
+      # plaintext etc.)
+      def get_render_topic(opts)
+        if opts.key?(:layout)
+          case opts[:layout]
+          when FalseClass
+            name = "Without layout"
+          when String
+            name = opts[:layout]
+          when Proc
+            name = "Proc"
+          else
+            name = "Default"
+          end
+        end
+        name ||= opts[:template]
+        name ||= opts[:file]
+        name = "Nothing" if opts[:nothing]
+        name = "Plaintext" if opts[:plain]
+        name
+      end
     end
 
     # Used in ActionPack versions 5 and beyond, this module provides
@@ -54,7 +78,14 @@ module Instana
       # for versions 5+.
       #
       def render(*args, &blk)
-        ::Instana.tracer.log_entry(:actionview)
+        # Figure out what's being rendered
+        if args.length > 0 && args[0].is_a?(Hash)
+          name = get_render_topic(args[0])
+        end
+        name ||= "Default"
+
+        ::Instana.tracer.log_entry(:actionview, :actionview => { :name => name })
+
         super(*args, &blk)
       rescue Exception => e
         ::Instana.tracer.log_error(e) unless has_rails_handler?
@@ -99,7 +130,11 @@ module Instana
       # for versions 3 and 4.
       #
       def render_with_instana(*args, &blk)
-        ::Instana.tracer.log_entry(:actionview)
+        if args.length > 0 && args[0].is_a?(Hash)
+          name = get_render_topic(args[0])
+        end
+        name ||= "Default"
+        ::Instana.tracer.log_entry(:actionview, :actionview => { :name => name })
         render_without_instana(*args, &blk)
       rescue Exception => e
         ::Instana.tracer.log_error(e) unless has_rails_handler?

@@ -27,6 +27,69 @@ class ActionViewTest < Minitest::Test
     assert_equal :actionview, third_span.name
   end
 
+  def test_render_nothing
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/render_nothing'))
+
+    traces = Instana.processor.queued_traces
+    assert_equal 1, traces.count
+    trace = traces.first
+
+    assert_equal 3, trace.spans.count
+    spans = trace.spans.to_a
+    first_span = spans[0]
+    second_span = spans[1]
+    third_span = spans[2]
+
+    assert_equal :rack, first_span.name
+    assert_equal :actioncontroller, second_span.name
+    assert_equal "Nothing", third_span[:data][:actionview][:name]
+    assert_equal :actionview, third_span.name
+  end
+
+  def test_render_file
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/render_file'))
+
+    traces = Instana.processor.queued_traces
+    assert_equal 1, traces.count
+    trace = traces.first
+
+    assert_equal 3, trace.spans.count
+    spans = trace.spans.to_a
+    first_span = spans[0]
+    second_span = spans[1]
+    third_span = spans[2]
+
+    assert_equal :rack, first_span.name
+    assert_equal :actioncontroller, second_span.name
+    assert_equal "/etc/issue", third_span[:data][:actionview][:name]
+    assert_equal :actionview, third_span.name
+  end
+
+  def test_render_alternate_layout
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/render_alternate_layout'))
+
+    traces = Instana.processor.queued_traces
+    assert_equal 1, traces.count
+    trace = traces.first
+
+    assert_equal 3, trace.spans.count
+    spans = trace.spans.to_a
+    first_span = spans[0]
+    second_span = spans[1]
+    third_span = spans[2]
+
+    assert_equal :rack, first_span.name
+    assert_equal :actioncontroller, second_span.name
+    assert_equal "layouts/mobile", third_span[:data][:actionview][:name]
+    assert_equal :actionview, third_span.name
+  end
+
   def test_render_partial
     clear_all!
 
@@ -113,4 +176,3 @@ class ActionViewTest < Minitest::Test
     assert_equal 'blocks/block', fifth_span[:data][:render][:name]
   end
 end
-
