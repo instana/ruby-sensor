@@ -69,6 +69,90 @@ class ActionViewTest < Minitest::Test
     assert_equal :actionview, third_span.name
   end
 
+  def test_render_json
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/render_json'))
+
+    traces = Instana.processor.queued_traces
+    assert_equal 1, traces.count
+    trace = traces.first
+
+    assert_equal 3, trace.spans.count
+    spans = trace.spans.to_a
+    first_span = spans[0]
+    second_span = spans[1]
+    third_span = spans[2]
+
+    assert_equal :rack, first_span.name
+    assert_equal :actioncontroller, second_span.name
+    assert_equal "json", third_span[:data][:actionview][:name]
+    assert_equal :actionview, third_span.name
+  end
+
+  def test_render_xml
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/render_xml'))
+
+    traces = Instana.processor.queued_traces
+    assert_equal 1, traces.count
+    trace = traces.first
+
+    assert_equal 3, trace.spans.count
+    spans = trace.spans.to_a
+    first_span = spans[0]
+    second_span = spans[1]
+    third_span = spans[2]
+
+    assert_equal :rack, first_span.name
+    assert_equal :actioncontroller, second_span.name
+    assert_equal "XML", third_span[:data][:actionview][:name]
+    assert_equal :actionview, third_span.name
+  end
+
+  def test_render_body
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/render_rawbody'))
+
+    traces = Instana.processor.queued_traces
+    assert_equal 1, traces.count
+    trace = traces.first
+
+    assert_equal 3, trace.spans.count
+    spans = trace.spans.to_a
+    first_span = spans[0]
+    second_span = spans[1]
+    third_span = spans[2]
+
+    assert_equal :rack, first_span.name
+    assert_equal :actioncontroller, second_span.name
+    assert_equal "Raw", third_span[:data][:actionview][:name]
+    assert_equal :actionview, third_span.name
+  end
+
+  def test_render_js
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/render_js'))
+
+    traces = Instana.processor.queued_traces
+    assert_equal 1, traces.count
+    trace = traces.first
+
+    assert_equal 3, trace.spans.count
+    spans = trace.spans.to_a
+    first_span = spans[0]
+    second_span = spans[1]
+    third_span = spans[2]
+
+    assert_equal :rack, first_span.name
+    assert_equal :actioncontroller, second_span.name
+    assert_equal "Javascript", third_span[:data][:actionview][:name]
+    assert_equal :actionview, third_span.name
+  end
+
   def test_render_alternate_layout
     clear_all!
 

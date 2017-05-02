@@ -46,6 +46,10 @@ module Instana
         name ||= opts[:file]
         name = "Nothing" if opts[:nothing]
         name = "Plaintext" if opts[:plain]
+        name = "json" if opts[:json]
+        name = "XML" if opts[:xml]
+        name = "Raw" if opts[:body]
+        name = "Javascript" if opts[:js]
         name
       end
     end
