@@ -27,8 +27,15 @@ class RailsTestApp < Rails::Application
     get "/test/error"              => "test#error"
     get "/test/render_view"        => "test#render_view"
     get "/test/render_partial"     => "test#render_partial"
-    get "/test/render_partial_that_errors"     => "test#render_partial_that_errors"
     get "/test/render_collection"  => "test#render_collection"
+    get "/test/render_file"        => "test#render_file"
+    get "/test/render_nothing"     => "test#render_nothing"
+    get "/test/render_json"        => "test#render_json"
+    get "/test/render_xml"         => "test#render_xml"
+    get "/test/render_rawbody"     => "test#render_rawbody"
+    get "/test/render_js"          => "test#render_js"
+    get "/test/render_alternate_layout"        => "test#render_alternate_layout"
+    get "/test/render_partial_that_errors"     => "test#render_partial_that_errors"
 
     get "/api/world" => "socket#world"
     get "/api/error" => "socket#error"
@@ -89,6 +96,41 @@ class TestController < ActionController::Base
 
   def render_collection
     @blocks = Block.all
+  end
+
+  def render_file
+    @message = "Hello Instana!"
+    render :file => '/etc/issue'
+  end
+
+  def render_alternate_layout
+    @message = "Hello Instana!"
+    render :layout => 'layouts/mobile'
+  end
+
+  def render_nothing
+    @message = "Hello Instana!"
+    render :nothing => true
+  end
+
+  def render_json
+    @message = "Hello Instana!"
+    render :json => @message
+  end
+
+  def render_xml
+    @message = "Hello Instana!"
+    render :xml => @message
+  end
+
+  def render_rawbody
+    @message = "Hello Instana!"
+    render :body => 'raw body output'
+  end
+
+  def render_js
+    @message = "Hello Instana!"
+    render :js => @message
   end
 
   def error
