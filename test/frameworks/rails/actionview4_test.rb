@@ -86,7 +86,7 @@ class ActionViewTest < Minitest::Test
 
     assert_equal :rack, first_span.name
     assert_equal :actioncontroller, second_span.name
-    assert_equal "json", third_span[:data][:actionview][:name]
+    assert_equal "JSON", third_span[:data][:actionview][:name]
     assert_equal :actionview, third_span.name
   end
 
