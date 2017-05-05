@@ -44,6 +44,10 @@ module Instana
         @default_gateway = nil
       end
 
+      # Collect initial process info - repeat prior to announce
+      # in `announce_sensor` in case of process rename, after fork etc.
+      @process = ::Instana::Util.collect_process_info
+
       # The agent UUID returned from the host agent
       @agent_uuid = nil
 
