@@ -47,9 +47,6 @@ module Instana
       # The agent UUID returned from the host agent
       @agent_uuid = nil
 
-      # Collect process information
-      @process = ::Instana::Util.collect_process_info
-
       # This will hold info on the discovered agent host
       @discovered = nil
     end
@@ -63,9 +60,6 @@ module Instana
       # Reseed the random number generator for this
       # new thread.
       srand
-
-      # Re-collect process information post fork
-      @process = ::Instana::Util.collect_process_info
 
       transition_to(:unannounced)
       setup
@@ -102,7 +96,7 @@ module Instana
       # The announce timer
       # We attempt to announce this ruby sensor to the host agent.
       # In case of failure, we try again in 30 seconds.
-      @announce_timer = @timers.now_and_every(30) do
+      @announce_timer = @timers.every(30) do
         if host_agent_ready? && announce_sensor
           ::Instana.logger.warn "Host agent available. We're in business."
           transition_to(:announced)
@@ -169,6 +163,10 @@ module Instana
         ::Instana.logger.agent("#{__method__} called but discovery hasn't run yet!")
         return false
       end
+
+      # Always re-collect process info before announce in case the process name has been
+      # re-written (looking at you puma!)
+      @process = ::Instana::Util.collect_process_info
 
       announce_payload = {}
       announce_payload[:pid] = pid_namespace? ? get_real_pid : Process.pid
