@@ -1,4 +1,4 @@
 module Instana
-  VERSION = "1.4.5"
+  VERSION = "1.4.6"
   VERSION_FULL = "instana-#{VERSION}"
 end
