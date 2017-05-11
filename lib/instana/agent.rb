@@ -101,9 +101,11 @@ module Instana
       # We attempt to announce this ruby sensor to the host agent.
       # In case of failure, we try again in 30 seconds.
       @announce_timer = @timers.every(30) do
-        if host_agent_ready? && announce_sensor
-          ::Instana.logger.warn "Host agent available. We're in business."
-          transition_to(:announced)
+        if @state == :unannounced
+          if host_agent_ready? && announce_sensor
+            transition_to(:announced)
+            ::Instana.logger.warn "Host agent available. We're in business. (#{@state} pid:#{Process.pid} #{@process[:name]})"
+          end
         end
       end
 
