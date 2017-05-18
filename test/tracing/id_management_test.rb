@@ -78,6 +78,16 @@ class TracerIDMgmtTest < Minitest::Test
     id = Instana::Util.header_to_id(original_header_id)
     converted_back_header_id = Instana::Util.id_to_header(id)
     assert_equal original_header_id, converted_back_header_id
+
+    # Test a random value
+    id = -7815363404733516491
+    header = "938a406416457535"
+
+    result = Instana::Util.header_to_id(header)
+    assert_equal id, result
+
+    result = Instana::Util.id_to_header(id)
+    assert_equal header, result
   end
 
   def test_id_max_value_and_conversion
@@ -92,5 +102,4 @@ class TracerIDMgmtTest < Minitest::Test
     assert_equal max_id, Instana::Util.header_to_id(max_hex)
     assert_equal min_id, Instana::Util.header_to_id(min_hex)
   end
-
 end
