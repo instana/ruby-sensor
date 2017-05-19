@@ -88,6 +88,13 @@ class TracerIDMgmtTest < Minitest::Test
 
     result = Instana::Util.id_to_header(id)
     assert_equal header, result
+
+    10000.times do
+      original_id = ::Instana::Util.generate_id
+      header_id = Instana::Util.id_to_header(original_id)
+      converted_back_id = Instana::Util.header_to_id(header_id)
+      assert original_id == converted_back_id
+    end
   end
 
   def test_id_max_value_and_conversion
