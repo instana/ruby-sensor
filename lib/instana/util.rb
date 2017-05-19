@@ -211,7 +211,8 @@ module Instana
         if header_id.length < 16
           # The header is less than 16 chars.  Prepend
           # zeros so we can convert correctly
-          header_id = "%016d" % header_id
+          missing = 16 - header_id.length
+          header_id = ("0" * missing) + header_id
         end
         [header_id].pack("H*").unpack("q>")[0]
       rescue => e

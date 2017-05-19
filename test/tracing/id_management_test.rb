@@ -113,5 +113,11 @@ class TracerIDMgmtTest < Minitest::Test
 
     id = ::Instana::Util.header_to_id("0000000000000010")
     assert_equal 16, id
+
+    id = ::Instana::Util.header_to_id("88b6c735206ca42")
+    assert_equal 615705016619420226, id
+
+    id = ::Instana::Util.header_to_id("088b6c735206ca42")
+    assert_equal 615705016619420226, id
   end
 end
