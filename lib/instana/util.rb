@@ -191,7 +191,7 @@ module Instana
           Instana.logger.debug "id_to_header received a #{id.class}: returning empty string"
           return String.new
         end
-        [id.to_i].pack('q>').unpack('H*')[0]
+        [id.to_i].pack('q>').unpack('H*')[0].gsub(/^0+/, '')
       rescue => e
         Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
         Instana.logger.debug e.backtrace.join("\r\n")
@@ -207,6 +207,12 @@ module Instana
         if !header_id.is_a?(String)
           Instana.logger.debug "header_to_id received a #{header_id.class}: returning 0"
           return 0
+        end
+        if header_id.length < 16
+          # The header is less than 16 chars.  Prepend
+          # zeros so we can convert correctly
+          missing = 16 - header_id.length
+          header_id = ("0" * missing) + header_id
         end
         [header_id].pack("H*").unpack("q>")[0]
       rescue => e
