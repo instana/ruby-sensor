@@ -26,7 +26,7 @@ class TracerIDMgmtTest < Minitest::Test
 
     # Assert that it is a string and there are no non-hex characters
     assert converted_id.is_a?(String)
-    assert converted_id == "0000000000000000"
+    assert converted_id == ''
 
     # Test passing a nil
     converted_id = Instana::Util.id_to_header(nil)
@@ -101,5 +101,17 @@ class TracerIDMgmtTest < Minitest::Test
 
     assert_equal max_id, Instana::Util.header_to_id(max_hex)
     assert_equal min_id, Instana::Util.header_to_id(min_hex)
+  end
+
+  def test_that_leading_zeros_handled_correctly
+
+    header = ::Instana::Util.id_to_header(16)
+    assert_equal "10", header
+
+    id = ::Instana::Util.header_to_id("10")
+    assert_equal 16, id
+
+    id = ::Instana::Util.header_to_id("0000000000000010")
+    assert_equal 16, id
   end
 end
