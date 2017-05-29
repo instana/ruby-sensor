@@ -1,10 +1,8 @@
 require 'json'
 require 'net/http'
 require 'socket'
-require 'sys/proctable'
 require 'timers'
 require 'uri'
-include Sys
 
 module Instana
   class Agent
