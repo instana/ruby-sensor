@@ -18,6 +18,18 @@ Instana.config[:metrics][:enabled] # default true
 Instana.config[:tracing][:enabled] # default true
 ```
 
+## Agent Communication
+
+The sensor tries to communicate with the Instana agent via IP 127.0.0.1 and as a fallback via the host's default gateway. Should the agent not be available under either of these IPs, e.g. due to iptables or other networking tricks, you can use the agentHost option to use a custom IP.
+
+```Ruby
+# Leverage environment variable
+::Instana.config[:agent_host] = ENV['INSTANA_AGENT_IP']
+
+# Custom agent port
+::Instana.config[:agent_port] = 42699
+```
+
 ## Enabling/Disabling Individual Components
 
 Individual components can be enabled and disabled with a local config.
