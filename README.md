@@ -96,5 +96,5 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/instan
 
 ## More
 
-Want Chef change visibility for your deploys?  Checkout [instana-chef](https://github.com/instana/instana-chef).
+Want to instrument other languages?  See our [Nodejs instrumentation](https://github.com/instana/nodejs-sensor), [Go instrumentation](https://github.com/instana/golang-sensor) or [many other supported technologies](https://www.instana.com/supported-technologies/).
 
