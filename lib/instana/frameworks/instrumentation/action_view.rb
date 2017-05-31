@@ -1,6 +1,8 @@
 module Instana
   module Instrumentation
     module ActionViewRenderer
+      include ::Instana::Instrumentation::ActionHelpers
+
       def self.included(klass)
         ::Instana::Util.method_alias(klass, :render_partial)
         ::Instana::Util.method_alias(klass, :render_collection)
