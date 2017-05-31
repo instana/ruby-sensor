@@ -38,7 +38,7 @@ if defined?(GRPC::RpcDesc)
   GRPC::RpcDesc.class_eval do
     def run_server_method_with_instana(active_call, mth)
       unless ::Instana.tracer.tracing?
-        run_server_method_without_instana(active_call, mth)
+        return run_server_method_without_instana(active_call, mth)
       end
 
       metadata = active_call.metadata
