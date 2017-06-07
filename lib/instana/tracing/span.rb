@@ -107,19 +107,6 @@ module Instana
     def configure_custom(name)
       @data[:n] = :sdk
       @data[:data] = { :sdk => { :name => name.to_sym } }
-
-      #if kvs.is_a?(Hash)
-      #  @data[:data][:sdk][:type] = kvs.key?(:type) ? kvs[:type] : :local
-#
-#        if kvs.key?(:arguments)
-#          @data[:data][:sdk][:arguments] = kvs[:arguments]
-#        end
-#
-#        if kvs.key?(:return)
-#          @data[:data][:sdk][:return] = kvs[:return]
-#        end
-#        @data[:data][:sdk][:custom] = kvs unless kvs.empty?
-#      end
       self
     end
 
