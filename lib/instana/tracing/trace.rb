@@ -82,23 +82,9 @@ module Instana
     def add_info(kvs, span = nil)
       span ||= @current_span
 
-      if span.custom?
-        if span[:data][:sdk].key?(:custom)
-          span[:data][:sdk][:custom].merge!(kvs)
-        else
-          span[:data][:sdk][:custom] = kvs
-        end
-      else
-        kvs.each_pair do |k,v|
-          if !span[:data].key?(k)
-            span[:data][k] = v
-          elsif v.is_a?(Hash) && span[:data][k].is_a?(Hash)
-            span[:data][k].merge!(v)
-          else
-            span[:data][k] = v
-          end
-        end
-      end
+      # Pass on to the OT span interface which will properly
+      # apply KVs based on span type
+      span.set_tags(kvs)
     end
 
     # Log an error into the current span
