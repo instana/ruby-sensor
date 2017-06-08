@@ -5,13 +5,14 @@ if defined?(GRPC::ActiveCall)
         return request_response_without_instana(method, *others, **options)
       end
 
-      parts = method.split('/')
       kvs = {
-        host: @host,
-        service: parts[1],
-        rpc: parts[2]
+        rpc: {
+          flavor: :grpc,
+          host: @host,
+          call: method
+        }
       }
-      ::Instana.tracer.log_entry(:'grpc-call', kvs)
+      ::Instana.tracer.log_entry(:'rpc-client', {})
 
       context = ::Instana.tracer.context
       if context
@@ -23,10 +24,12 @@ if defined?(GRPC::ActiveCall)
 
       request_response_without_instana(method, *others, **options)
     rescue => e
+      kvs[:rpc][:error] = true
+      ::Instana.tracer.log_info(kvs)
       ::Instana.tracer.log_error(e)
       raise
     ensure
-      ::Instana.tracer.log_exit(:'grpc-call', {})
+      ::Instana.tracer.log_exit(:'rpc-client', kvs)
     end
 
     ::Instana.logger.warn 'Instrumenting GRPC client'
@@ -51,20 +54,27 @@ if defined?(GRPC::RpcDesc)
           end
 
           kvs = {
-            host: Socket.gethostname,
-            service: mth.owner.service_name,
-            rpc: name
+            rpc: {
+              flavor: :grpc,
+              host: Socket.gethostname,
+              call: "/\#{mth.owner.service_name}/\#{name}",
+              peer: {
+                address: active_call.peer
+              }
+            }
           }
           ::Instana.tracer.log_start_or_continue(
-            :'grpc-server', kvs, incoming_context
+            :'rpc-server', {}, incoming_context
           )
 
           #{method}_without_instana(active_call, mth)
         rescue => e
+          kvs[:rpc][:error] = true
+          ::Instana.tracer.log_info(kvs)
           ::Instana.tracer.log_error(e)
           raise
         ensure
-          ::Instana.tracer.log_end(:'grpc-server', {})
+          ::Instana.tracer.log_end(:'rpc-server', kvs)
         end
 
         ::Instana.logger.warn 'Instrumenting GRPC server'
