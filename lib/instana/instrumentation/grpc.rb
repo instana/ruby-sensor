@@ -36,12 +36,12 @@ if defined?(GRPC::ActiveCall) && ::Instana.config[:'grpc'][:enabled]
         ::Instana.tracer.log_exit(:'rpc-client', {})
       end
 
-      ::Instana.logger.warn 'Instrumenting GRPC client'
 
       alias #{call_type}_without_instana #{call_type}
       alias #{call_type} #{call_type}_with_instana
     RUBY
   end
+  ::Instana.logger.warn 'Instrumenting GRPC client'
 end
 
 if defined?(GRPC::RpcDesc) && ::Instana.config[:'grpc'][:enabled]
@@ -82,10 +82,9 @@ if defined?(GRPC::RpcDesc) && ::Instana.config[:'grpc'][:enabled]
         ::Instana.tracer.log_end(:'rpc-server', {}) if ::Instana.tracer.tracing?
       end
 
-      ::Instana.logger.warn 'Instrumenting GRPC server'
-
       alias handle_#{call_type}_without_instana handle_#{call_type}
       alias handle_#{call_type} handle_#{call_type}_with_instana
     RUBY
   end
+  ::Instana.logger.warn 'Instrumenting GRPC server'
 end
