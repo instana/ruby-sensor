@@ -1,4 +1,5 @@
-calla_types = [:request_response, :client_streamer, :server_streamer, :bidi_streamer]
+call_types = [:request_response, :client_streamer, :server_streamer, :bidi_streamer]
+
 if defined?(GRPC::ActiveCall) && ::Instana.config[:'grpc'][:enabled]
   call_types.each do |call_type|
     GRPC::ClientStub.class_eval <<-RUBY, __FILE__, __LINE__ + 1
@@ -86,22 +87,5 @@ if defined?(GRPC::RpcDesc) && ::Instana.config[:'grpc'][:enabled]
       alias handle_#{call_type}_without_instana handle_#{call_type}
       alias handle_#{call_type} handle_#{call_type}_with_instana
     RUBY
-  end
-
-  # Special case for Bi-derectional streaming that gRPC starts a new Bidi
-  # server to handle the streaming and doesn't go through ending statement
-  # above.
-  GRPC::BidiCall.class_eval do
-    def run_on_server_with_instana(*args)
-      run_on_server_without_instana(*args)
-    rescue => e
-      ::Instana.tracer.log_error(e)
-      raise
-    ensure
-      ::Instana.tracer.log_end(:'rpc-server', {}) if ::Instana.tracer.tracing?
-    end
-
-    alias run_on_server_without_instana run_on_server
-    alias run_on_server run_on_server_with_instana
   end
 end
