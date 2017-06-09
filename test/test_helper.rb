@@ -20,6 +20,9 @@ require "./test/servers/rackapp_6511"
 case File.basename(ENV['BUNDLE_GEMFILE'])
 when /rails50|rails42|rails32/
   require './test/servers/rails_3205'
+when /libraries/
+  # Boot background grpc server
+  require './test/servers/grpc_50051'
 end
 
 WebMock.disable_net_connect!(allow_localhost: true)
