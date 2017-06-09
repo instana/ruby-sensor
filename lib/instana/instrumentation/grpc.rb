@@ -4,18 +4,17 @@ if defined?(GRPC::ActiveCall) && ::Instana.config[:'grpc'][:enabled]
   call_types.each do |call_type|
     GRPC::ClientStub.class_eval <<-RUBY, __FILE__, __LINE__ + 1
       def #{call_type}_with_instana(method, *others, **options)
+        kvs = { rpc: {} }
+
         unless ::Instana.tracer.tracing?
           return #{call_type}_without_instana(method, *others, **options)
         end
 
-        kvs = {
-          rpc: {
-            flavor: :grpc,
-            host: @host,
-            call: method,
-            call_type: :#{call_type}
-          }
-        }
+        kvs[:rpc][:flavor] = :grpc
+        kvs[:rpc][:host] = @host
+        kvs[:rpc][:call] = method
+        kvs[:rpc][:call_type] = :#{call_type}
+
         ::Instana.tracer.log_entry(:'rpc-client', kvs)
 
         context = ::Instana.tracer.context
@@ -36,7 +35,6 @@ if defined?(GRPC::ActiveCall) && ::Instana.config[:'grpc'][:enabled]
         ::Instana.tracer.log_exit(:'rpc-client', {})
       end
 
-
       alias #{call_type}_without_instana #{call_type}
       alias #{call_type} #{call_type}_with_instana
     RUBY
@@ -48,6 +46,7 @@ if defined?(GRPC::RpcDesc) && ::Instana.config[:'grpc'][:enabled]
   call_types.each do |call_type|
     GRPC::RpcDesc.class_eval <<-RUBY, __FILE__, __LINE__ + 1
       def handle_#{call_type}_with_instana(active_call, mth)
+        kvs = { rpc: {} }
         metadata = active_call.metadata
 
         incoming_context = {}
@@ -57,17 +56,12 @@ if defined?(GRPC::RpcDesc) && ::Instana.config[:'grpc'][:enabled]
           incoming_context[:level]     = metadata['x-instana-l'] if metadata.key?('x-instana-l')
         end
 
-        kvs = {
-          rpc: {
-            flavor: :grpc,
-            host: Socket.gethostname,
-            call: "/\#{mth.owner.service_name}/\#{name}",
-            call_type: :#{call_type},
-            peer: {
-              address: active_call.peer
-            }
-          }
-        }
+        kvs[:rpc][:flavor] = :grpc
+        kvs[:rpc][:host] = Socket.gethostname
+        kvs[:rpc][:call] = "/\#{mth.owner.service_name}/\#{name}"
+        kvs[:rpc][:call_type] = :#{call_type}
+        kvs[:rpc][:peer] = { address: active_call.peer }
+
         ::Instana.tracer.log_start_or_continue(
           :'rpc-server', kvs, incoming_context
         )
