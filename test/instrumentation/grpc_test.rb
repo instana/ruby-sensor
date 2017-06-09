@@ -5,6 +5,24 @@ class GrpcTest < Minitest::Test
     PingPongService::Stub.new('127.0.0.1:50051', :this_channel_is_insecure)
   end
 
+  # The order of traces are non-deterministic, could not predict
+  # which trace is server or client. This method is to choose the
+  # right trace based on span's name
+  def differentiate_trace(traces)
+    trying_client = traces[0]
+    trying_server = traces[1]
+
+    try_successfully = trying_client.spans.any? do |span|
+      span[:data][:sdk][:name] == :'rpc-client'
+    end
+
+    if try_successfully
+      [trying_client, trying_server]
+    else
+      [trying_server, trying_client]
+    end
+  end
+
   def assert_client_trace(client_trace, call:, call_type:, error: nil)
     assert_equal 2, client_trace.spans.count
     spans = client_trace.spans.to_a
@@ -67,10 +85,9 @@ class GrpcTest < Minitest::Test
     assert 'Hello World', response.message
 
     assert_equal 2, ::Instana.processor.queue_count
-    traces = Instana.processor.queued_traces
-
-    server_trace = traces[0]
-    client_trace = traces[1]
+    client_trace, server_trace = differentiate_trace(
+      Instana.processor.queued_traces
+    )
 
     assert_client_trace(
       client_trace,
@@ -100,10 +117,9 @@ class GrpcTest < Minitest::Test
     assert '01234', response.message
 
     assert_equal 2, ::Instana.processor.queue_count
-    traces = Instana.processor.queued_traces
-
-    server_trace = traces[0]
-    client_trace = traces[1]
+    client_trace, server_trace = differentiate_trace(
+      Instana.processor.queued_traces
+    )
 
     assert_client_trace(
       client_trace,
@@ -127,14 +143,14 @@ class GrpcTest < Minitest::Test
         PingPongService::PingRequest.new(message: 'Hello World')
       )
     end
+    sleep 1
 
     assert %w(0 1 2 3 4), responses.map(&:message)
 
     assert_equal 2, ::Instana.processor.queue_count
-    traces = Instana.processor.queued_traces
-
-    client_trace = traces[0]
-    server_trace = traces[1]
+    client_trace, server_trace = differentiate_trace(
+      Instana.processor.queued_traces
+    )
 
     assert_client_trace(
       client_trace,
@@ -160,14 +176,14 @@ class GrpcTest < Minitest::Test
         end
       )
     end
+    sleep 1
 
     assert %w(0 2 4 6 8), responses.to_a.map(&:message)
 
     assert_equal 2, ::Instana.processor.queue_count
-    traces = Instana.processor.queued_traces
-
-    client_trace = traces[0]
-    server_trace = traces[1]
+    client_trace, server_trace = differentiate_trace(
+      Instana.processor.queued_traces
+    )
 
     assert_client_trace(
       client_trace,
@@ -192,10 +208,9 @@ class GrpcTest < Minitest::Test
     end
 
     assert_equal 2, ::Instana.processor.queue_count
-    traces = Instana.processor.queued_traces
-
-    server_trace = traces[0]
-    client_trace = traces[1]
+    client_trace, server_trace = differentiate_trace(
+      Instana.processor.queued_traces
+    )
 
     assert_client_trace(
       client_trace,
@@ -225,10 +240,9 @@ class GrpcTest < Minitest::Test
     end
 
     assert_equal 2, ::Instana.processor.queue_count
-    traces = Instana.processor.queued_traces
-
-    server_trace = traces[0]
-    client_trace = traces[1]
+    client_trace, server_trace = differentiate_trace(
+      Instana.processor.queued_traces
+    )
 
     assert_client_trace(
       client_trace,
@@ -258,10 +272,9 @@ class GrpcTest < Minitest::Test
     sleep 1
 
     assert_equal 2, ::Instana.processor.queue_count
-    traces = Instana.processor.queued_traces
-
-    client_trace = traces[0]
-    server_trace = traces[1]
+    client_trace, server_trace = differentiate_trace(
+      Instana.processor.queued_traces
+    )
 
     assert_client_trace(
       client_trace,
@@ -289,10 +302,9 @@ class GrpcTest < Minitest::Test
     sleep 1
 
     assert_equal 2, ::Instana.processor.queue_count
-    traces = Instana.processor.queued_traces
-
-    client_trace = traces[0]
-    server_trace = traces[1]
+    client_trace, server_trace = differentiate_trace(
+      Instana.processor.queued_traces
+    )
 
     assert_client_trace(
       client_trace,
