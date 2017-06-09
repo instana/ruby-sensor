@@ -5,7 +5,7 @@ class GrpcTest < Minitest::Test
     PingPongService::Stub.new('127.0.0.1:50051', :this_channel_is_insecure)
   end
 
-  def assert_client_trace(client_trace, call:, call_type:)
+  def assert_client_trace(client_trace, call:, call_type:, error: nil)
     assert_equal 2, client_trace.spans.count
     spans = client_trace.spans.to_a
     first_span = spans[0]
@@ -26,9 +26,14 @@ class GrpcTest < Minitest::Test
     assert_equal :grpc, data[:rpc][:flavor]
     assert_equal call, data[:rpc][:call]
     assert_equal call_type, data[:rpc][:call_type]
+
+    if error
+      assert_equal true, data[:rpc][:error]
+      assert_equal "2:RuntimeError: #{error}", data[:log][:message]
+    end
   end
 
-  def assert_server_trace(server_trace, call:, call_type:)
+  def assert_server_trace(server_trace, call:, call_type:, error: nil)
     assert_equal 1, server_trace.spans.count
     span = server_trace.spans.to_a.first
 
@@ -42,6 +47,11 @@ class GrpcTest < Minitest::Test
     assert_equal :grpc, data[:rpc][:flavor]
     assert_equal call, data[:rpc][:call]
     assert_equal call_type, data[:rpc][:call_type]
+
+    if error
+      assert_equal true, data[:rpc][:error]
+      assert_equal error, data[:log][:message]
+    end
   end
 
   def test_request_response
@@ -169,6 +179,132 @@ class GrpcTest < Minitest::Test
       server_trace,
       call: '/PingPongService/PingWithBidiStream',
       call_type: :bidi_streamer
+    )
+  end
+
+  def test_request_response_failure
+    clear_all!
+    Instana.tracer.start_or_continue_trace(:'rpc-client') do
+      begin
+        client_stub.fail_to_ping( PingPongService::PingRequest.new(message: 'Hello World'))
+      rescue
+      end
+    end
+
+    assert_equal 2, ::Instana.processor.queue_count
+    traces = Instana.processor.queued_traces
+
+    server_trace = traces[0]
+    client_trace = traces[1]
+
+    assert_client_trace(
+      client_trace,
+      call: '/PingPongService/FailToPing',
+      call_type: :request_response,
+      error: 'Unexpected failed'
+    )
+    assert_server_trace(
+      server_trace,
+      call: '/PingPongService/FailToPing',
+      call_type: :request_response,
+      error: 'Unexpected failed'
+    )
+  end
+
+  def test_client_streamer_failure
+    clear_all!
+    Instana.tracer.start_or_continue_trace(:'rpc-client') do
+      begin
+        client_stub.fail_to_ping_with_client_stream(
+          (0..5).map do |index|
+            PingPongService::PingRequest.new(message: index.to_s)
+          end
+        )
+      rescue
+      end
+    end
+
+    assert_equal 2, ::Instana.processor.queue_count
+    traces = Instana.processor.queued_traces
+
+    server_trace = traces[0]
+    client_trace = traces[1]
+
+    assert_client_trace(
+      client_trace,
+      call: '/PingPongService/FailToPingWithClientStream',
+      call_type: :client_streamer,
+      error: 'Unexpected failed'
+    )
+
+    assert_server_trace(
+      server_trace,
+      call: '/PingPongService/FailToPingWithClientStream',
+      call_type: :client_streamer,
+      error: 'Unexpected failed'
+    )
+  end
+
+  def test_server_streamer_failure
+    clear_all!
+    Instana.tracer.start_or_continue_trace(:'rpc-client') do
+      begin
+        client_stub.fail_to_ping_with_server_stream(
+          PingPongService::PingRequest.new(message: 'Hello World')
+        )
+      rescue
+      end
+    end
+    sleep 1
+
+    assert_equal 2, ::Instana.processor.queue_count
+    traces = Instana.processor.queued_traces
+
+    client_trace = traces[0]
+    server_trace = traces[1]
+
+    assert_client_trace(
+      client_trace,
+      call: '/PingPongService/FailToPingWithServerStream',
+      call_type: :server_streamer
+    )
+
+    assert_server_trace(
+      server_trace,
+      call: '/PingPongService/FailToPingWithServerStream',
+      call_type: :server_streamer,
+      error: 'Unexpected failed'
+    )
+  end
+
+  def test_bidi_streamer_failure
+    clear_all!
+    Instana.tracer.start_or_continue_trace(:'rpc-client') do
+      client_stub.fail_to_ping_with_bidi_stream(
+        (0..5).map do |index|
+          PingPongService::PingRequest.new(message: (index * 2).to_s)
+        end
+      )
+    end
+    sleep 1
+
+    assert_equal 2, ::Instana.processor.queue_count
+    traces = Instana.processor.queued_traces
+
+    client_trace = traces[0]
+    server_trace = traces[1]
+
+    assert_client_trace(
+      client_trace,
+      call: '/PingPongService/FailToPingWithBidiStream',
+      call_type: :bidi_streamer
+    )
+
+    assert_server_trace(
+      server_trace,
+      call: '/PingPongService/FailToPingWithBidiStream',
+      call_type: :bidi_streamer,
+      error: 'Unexpected failed'
     )
   end
 end

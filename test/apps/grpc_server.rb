@@ -28,6 +28,11 @@ module PingPongService
     rpc :PingWithClientStream, stream(PingRequest), PongReply
     rpc :PingWithServerStream, PingRequest, stream(PongReply)
     rpc :PingWithBidiStream, stream(PingRequest), stream(PongReply)
+
+    rpc :FailToPing, PingRequest, PongReply
+    rpc :FailToPingWithClientStream, stream(PingRequest), PongReply
+    rpc :FailToPingWithServerStream, PingRequest, stream(PongReply)
+    rpc :FailToPingWithBidiStream, stream(PingRequest), stream(PongReply)
   end
 
   Stub = Service.rpc_stub_class
@@ -46,15 +51,31 @@ class PingPongServer < PingPongService::Service
     PingPongService::PongReply.new(message: message)
   end
 
-  def ping_with_server_stream(request, active_call)
-    (0..5).map do |result|
-      PingPongService::PongReply.new(message: result.to_s)
+  def ping_with_server_stream(ping_request, active_call)
+    (0..5).map do |index|
+      PingPongService::PongReply.new(message: index.to_s)
     end
   end
 
-  def ping_with_bidi_stream(requests)
-    requests.map do |request|
-      PingPongService::PongReply.new(message: request.message)
+  def ping_with_bidi_stream(ping_requests)
+    ping_requests.map do |ping_request|
+      PingPongService::PongReply.new(message: ping_request.message)
     end
+  end
+
+  def fail_to_ping(ping_request, active_call)
+    raise 'Unexpected failed'
+  end
+
+  def fail_to_ping_with_client_stream(active_call)
+    raise 'Unexpected failed'
+  end
+
+  def fail_to_ping_with_server_stream(ping_request, active_call)
+    raise 'Unexpected failed'
+  end
+
+  def fail_to_ping_with_bidi_stream(ping_requests)
+    raise 'Unexpected failed'
   end
 end
