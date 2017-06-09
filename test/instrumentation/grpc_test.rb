@@ -19,10 +19,26 @@ class GrpcTest < Minitest::Test
     assert_equal first_span.id, second_span[:p]
 
     # data keys/values
-    refute_nil second_span.key?(:data)
+    assert_equal :'rpc-client', second_span[:data][:sdk][:name]
 
     data = second_span[:data][:sdk][:custom]
     assert_equal '127.0.0.1:50051', data[:rpc][:host]
+    assert_equal :grpc, data[:rpc][:flavor]
+    assert_equal call, data[:rpc][:call]
+    assert_equal call_type, data[:rpc][:call_type]
+  end
+
+  def assert_server_trace(server_trace, call:, call_type:)
+    assert_equal 1, server_trace.spans.count
+    span = server_trace.spans.to_a.first
+
+    # Span name validation
+    assert_equal :sdk, span[:n]
+
+    # data keys/values
+    assert_equal :'rpc-server', span[:data][:sdk][:name]
+
+    data = span[:data][:sdk][:custom]
     assert_equal :grpc, data[:rpc][:flavor]
     assert_equal call, data[:rpc][:call]
     assert_equal call_type, data[:rpc][:call_type]
@@ -48,6 +64,12 @@ class GrpcTest < Minitest::Test
 
     assert_client_trace(
       client_trace,
+      call: '/PingPongService/Ping',
+      call_type: :request_response
+    )
+
+    assert_server_trace(
+      server_trace,
       call: '/PingPongService/Ping',
       call_type: :request_response
     )
@@ -78,6 +100,12 @@ class GrpcTest < Minitest::Test
       call: '/PingPongService/PingWithClientStream',
       call_type: :client_streamer
     )
+
+    assert_server_trace(
+      server_trace,
+      call: '/PingPongService/PingWithClientStream',
+      call_type: :client_streamer
+    )
   end
 
   def test_server_streamer
@@ -100,6 +128,12 @@ class GrpcTest < Minitest::Test
 
     assert_client_trace(
       client_trace,
+      call: '/PingPongService/PingWithServerStream',
+      call_type: :server_streamer
+    )
+
+    assert_server_trace(
+      server_trace,
       call: '/PingPongService/PingWithServerStream',
       call_type: :server_streamer
     )
@@ -127,6 +161,12 @@ class GrpcTest < Minitest::Test
 
     assert_client_trace(
       client_trace,
+      call: '/PingPongService/PingWithBidiStream',
+      call_type: :bidi_streamer
+    )
+
+    assert_server_trace(
+      server_trace,
       call: '/PingPongService/PingWithBidiStream',
       call_type: :bidi_streamer
     )
