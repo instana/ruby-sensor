@@ -1,6 +1,6 @@
 call_types = [:request_response, :client_streamer, :server_streamer, :bidi_streamer]
 
-if defined?(GRPC::ActiveCall) && ::Instana.config[:'grpc'][:enabled]
+if defined?(GRPC::ActiveCall) && ::Instana.config[:grpc][:enabled]
   call_types.each do |call_type|
     GRPC::ClientStub.class_eval <<-RUBY, __FILE__, __LINE__ + 1
       def #{call_type}_with_instana(method, *others, **options)
@@ -42,7 +42,7 @@ if defined?(GRPC::ActiveCall) && ::Instana.config[:'grpc'][:enabled]
   ::Instana.logger.warn 'Instrumenting GRPC client'
 end
 
-if defined?(GRPC::RpcDesc) && ::Instana.config[:'grpc'][:enabled]
+if defined?(GRPC::RpcDesc) && ::Instana.config[:grpc][:enabled]
   call_types.each do |call_type|
     GRPC::RpcDesc.class_eval <<-RUBY, __FILE__, __LINE__ + 1
       def handle_#{call_type}_with_instana(active_call, mth)

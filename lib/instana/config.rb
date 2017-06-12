@@ -39,7 +39,7 @@ module Instana
       @config[:excon]              = { :enabled => true }
       @config[:nethttp]            = { :enabled => true }
       @config[:'rest-client']      = { :enabled => true }
-      @config[:'grpc']             = { :enabled => true }
+      @config[:grpc]               = { :enabled => true }
     end
 
     def [](key)
