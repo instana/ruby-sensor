@@ -204,7 +204,7 @@ module Instana
         false
       end
     rescue => e
-      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
       return false
     ensure
@@ -245,7 +245,7 @@ module Instana
       end
       false
     rescue => e
-      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
     end
 
@@ -328,7 +328,7 @@ module Instana
       end
       false
     rescue => e
-      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n") unless ::Instana.test?
       return false
     end
@@ -426,7 +426,7 @@ module Instana
         @state = :unannounced
 
       else
-        ::Instana.logger.warn "Uknown agent state: #{state}"
+        ::Instana.logger.debug "Uknown agent state: #{state}"
       end
       ::Instana.collector.reset_timer!
       true
@@ -452,7 +452,7 @@ module Instana
     rescue Errno::ECONNREFUSED
       return nil
     rescue => e
-      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n") unless ::Instana.test?
       return nil
     end

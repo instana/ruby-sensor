@@ -21,7 +21,7 @@ module Instana
         @this_mem[:rss_size] = ::GetProcessMem.new(Process.pid).kb
         @this_mem
       rescue => e
-        ::Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+        ::Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
         ::Instana.logger.debug e.backtrace.join("\r\n")
       end
     end
