@@ -41,7 +41,7 @@ module Instana
         @this_gc[:heap_free] = stats[:heap_free_slot] || stats[:heap_free_slots] || stats[:heap_free_num]
         @this_gc
       rescue => e
-        ::Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+        ::Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
         ::Instana.logger.debug e.backtrace.join("\r\n")
       end
     end
