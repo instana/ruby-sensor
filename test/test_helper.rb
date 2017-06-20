@@ -9,7 +9,6 @@ require "minitest/autorun"
 require "minitest/reporters"
 require "minitest/debugger" if ENV['DEBUG']
 require 'webmock/minitest'
-::WebMock.disable_net_connect!(allow_localhost: true)
 
 require "instana/test"
 ::Instana::Test.setup_environment
@@ -21,8 +20,6 @@ case File.basename(ENV['BUNDLE_GEMFILE'])
 when /rails50|rails42|rails32/
   require './test/servers/rails_3205'
 end
-
-WebMock.disable_net_connect!(allow_localhost: true)
 
 Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
 
