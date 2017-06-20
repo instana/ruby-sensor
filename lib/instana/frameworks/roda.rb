@@ -1,6 +1,6 @@
 require "instana/rack"
 
 if defined?(::Roda)
-  ::Instana.logger.warn "Instrumenting Roda"
+  ::Instana.logger.info "Instrumenting Roda"
   Roda.use ::Instana::Rack
 end
