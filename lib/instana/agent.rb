@@ -428,6 +428,8 @@ module Instana
 
       when :unannounced
         @state = :unannounced
+        # Reset our HTTP client
+        @httpclient = nil
 
       else
         ::Instana.logger.debug "Uknown agent state: #{state}"
@@ -448,13 +450,17 @@ module Instana
       req['Content-Type'] = MIME_JSON
 
       if @httpclient.nil?
-        @httpclient = Net::HTTP.new(@discovered[:agent_host], @discovered[:agent_port])
+        @httpclient = Net::HTTP.new(req.uri.hostname, req.uri.port)
         @httpclient.open_timeout = 1
         @httpclient.read_timeout = 1
       end
 
-      response = httpclient.request(req)
+      response = @httpclient.request(req)
       ::Instana.logger.agent_comm "#{req.method}->#{req.uri} body:(#{req.body}) Response:#{response} body:(#{response.body})"
+
+      # Don't reuse the HTTP client until we are announced as we're
+      # likely probing around for the agent
+      @httpclient = nil if @state == :unannounced
       response
     rescue Errno::ECONNREFUSED
       return nil
