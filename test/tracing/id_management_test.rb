@@ -26,7 +26,7 @@ class TracerIDMgmtTest < Minitest::Test
 
     # Assert that it is a string and there are no non-hex characters
     assert converted_id.is_a?(String)
-    assert converted_id == "0000000000000000"
+    assert converted_id == ''
 
     # Test passing a nil
     converted_id = Instana::Util.id_to_header(nil)
@@ -78,6 +78,23 @@ class TracerIDMgmtTest < Minitest::Test
     id = Instana::Util.header_to_id(original_header_id)
     converted_back_header_id = Instana::Util.id_to_header(id)
     assert_equal original_header_id, converted_back_header_id
+
+    # Test a random value
+    id = -7815363404733516491
+    header = "938a406416457535"
+
+    result = Instana::Util.header_to_id(header)
+    assert_equal id, result
+
+    result = Instana::Util.id_to_header(id)
+    assert_equal header, result
+
+    10000.times do
+      original_id = ::Instana::Util.generate_id
+      header_id = Instana::Util.id_to_header(original_id)
+      converted_back_id = Instana::Util.header_to_id(header_id)
+      assert original_id == converted_back_id
+    end
   end
 
   def test_id_max_value_and_conversion
@@ -93,4 +110,21 @@ class TracerIDMgmtTest < Minitest::Test
     assert_equal min_id, Instana::Util.header_to_id(min_hex)
   end
 
+  def test_that_leading_zeros_handled_correctly
+
+    header = ::Instana::Util.id_to_header(16)
+    assert_equal "10", header
+
+    id = ::Instana::Util.header_to_id("10")
+    assert_equal 16, id
+
+    id = ::Instana::Util.header_to_id("0000000000000010")
+    assert_equal 16, id
+
+    id = ::Instana::Util.header_to_id("88b6c735206ca42")
+    assert_equal 615705016619420226, id
+
+    id = ::Instana::Util.header_to_id("088b6c735206ca42")
+    assert_equal 615705016619420226, id
+  end
 end

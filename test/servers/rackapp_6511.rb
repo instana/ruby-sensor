@@ -12,6 +12,11 @@ Thread.new do
         [200, {"Content-Type" => "application/json"}, ["[\"Stan\",\"is\",\"on\",\"the\",\"scene!\"]"]]
       }
     end
+    map "/error" do
+      run Proc.new { |env|
+        [500, {"Content-Type" => "application/json"}, ["[\"Stan\",\"is\",\"on\",\"the\",\"error!\"]"]]
+      }
+    end
   }
 
   Rack::Handler::Puma.run(app, {:Host => '127.0.0.1', :Port => 6511})

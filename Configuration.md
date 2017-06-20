@@ -1,6 +1,36 @@
 # Configuration
 
-## Enabling/Disabling Components
+## Global Enable/Disable
+
+The entire gem can be disabled at runtime with:
+
+```Ruby
+::Instana.config[:enabled] = false # default: true
+```
+
+Other global enable/disable options are:
+
+```Ruby
+# Enable/Disable metrics collection and reporting
+Instana.config[:metrics][:enabled] # default true
+
+# Enable/Disable tracing
+Instana.config[:tracing][:enabled] # default true
+```
+
+## Agent Communication
+
+The sensor tries to communicate with the Instana agent via IP 127.0.0.1 and as a fallback via the host's default gateway. Should the agent not be available under either of these IPs, e.g. due to iptables or other networking tricks, you can use the agentHost option to use a custom IP.
+
+```Ruby
+# Leverage environment variable
+::Instana.config[:agent_host] = ENV['INSTANA_AGENT_IP']
+
+# Custom agent port
+::Instana.config[:agent_port] = 42699
+```
+
+## Enabling/Disabling Individual Components
 
 Individual components can be enabled and disabled with a local config.
 
@@ -81,7 +111,24 @@ require "logger"
 ::Instana.logger.level = ::Logger::WARN
 ```
 
-It also allows the debug level to be configured that affects
+The gem can be configured to use your application logger instead:
+
+```
+::Instana.logger = ::Rails.logger
+```
+
+### Debugging & More Verbosity
+
+#### Environment Variable
+
+Setting `INSTANA_GEM_DEV` to a non nil value will enable extra logging output generally useful
+for development.
+
+#### Extended Debug Logging
+
+_Note: To use this, you must leave the gem original logger intact and not replace it as described above._
+
+The gem allows the debug level to be configured that affects
 what extra debug info it reports.  It allows for:
 
 * `:agent` - shows all agent state related debug messages

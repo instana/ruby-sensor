@@ -119,7 +119,7 @@ module Instana
 
         data
       rescue => e
-        ::Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+        ::Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
         ::Instana.logger.debug e.backtrace.join("\r\n")
         return data
       end
@@ -129,19 +129,27 @@ module Instana
       #
       def collect_process_info
         process = {}
-        cmdline = ProcTable.ps(Process.pid).cmdline.split("\0")
-        process[:name] = cmdline.shift
-        process[:arguments] = cmdline
+        cmdline_file = "/proc/#{Process.pid}/cmdline"
+
+        # If there is a /proc filesystem, we read this manually so
+        # we can split on embedded null bytes.  Otherwise (e.g. OSX, Windows)
+        # use ProcTable.
+        if File.exist?(cmdline_file)
+          cmdline = IO.read(cmdline_file).split(?\x00)
+        else
+          cmdline = ProcTable.ps(Process.pid).cmdline.split(' ')
+        end
 
         if RUBY_PLATFORM =~ /darwin/i
-          # Handle OSX bug where env vars show up at the end of process name
-          # such as MANPATH etc..
-          process[:name].gsub!(/[_A-Z]+=\S+/, '')
-          process[:name].rstrip!
+          cmdline.delete_if{ |e| e.include?('=') }
+          process[:name] = cmdline.join(' ')
+        else
+          process[:name] = cmdline.shift
+          process[:arguments] = cmdline
         end
 
         process[:pid] = Process.pid
-        # This is usually Process.pid but in the case of docker, the host agent
+        # This is usually Process.pid but in the case of containers, the host agent
         # will return to us the true host pid in which we use to report data.
         process[:report_pid] = nil
         process
@@ -183,9 +191,9 @@ module Instana
           Instana.logger.debug "id_to_header received a #{id.class}: returning empty string"
           return String.new
         end
-        [id.to_i].pack('q>').unpack('H*')[0]
+        [id.to_i].pack('q>').unpack('H*')[0].gsub(/^0+/, '')
       rescue => e
-        Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+        Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
         Instana.logger.debug e.backtrace.join("\r\n")
       end
 
@@ -200,9 +208,15 @@ module Instana
           Instana.logger.debug "header_to_id received a #{header_id.class}: returning 0"
           return 0
         end
+        if header_id.length < 16
+          # The header is less than 16 chars.  Prepend
+          # zeros so we can convert correctly
+          missing = 16 - header_id.length
+          header_id = ("0" * missing) + header_id
+        end
         [header_id].pack("H*").unpack("q>")[0]
       rescue => e
-        Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+        Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
         Instana.logger.debug e.backtrace.join("\r\n")
       end
     end

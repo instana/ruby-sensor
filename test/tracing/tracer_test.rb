@@ -6,6 +6,20 @@ class TracerTest < Minitest::Test
     assert ::Instana.tracer.is_a?(::Instana::Tracer)
   end
 
+  def test_obey_tracing_config
+    clear_all!
+
+    ::Instana.config[:tracing][:enabled] = false
+    assert_equal false, ::Instana.tracer.tracing?
+
+    ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do
+      assert_equal false, ::Instana.tracer.tracing?
+    end
+
+    ::Instana.config[:tracing][:enabled] = true
+  end
+
+
   def test_basic_trace_block
     clear_all!
 
@@ -13,7 +27,7 @@ class TracerTest < Minitest::Test
 
     ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do
       assert_equal true, ::Instana.tracer.tracing?
-      sleep 0.5
+      sleep 0.3
     end
 
     traces = ::Instana.processor.queued_traces

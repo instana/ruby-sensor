@@ -1,8 +1,9 @@
-require 'net/http'
-require 'uri'
 require 'json'
-require 'timers'
+require 'net/http'
+require 'socket'
 require 'sys/proctable'
+require 'timers'
+require 'uri'
 include Sys
 
 module Instana
@@ -43,11 +44,12 @@ module Instana
         @default_gateway = nil
       end
 
+      # Collect initial process info - repeat prior to announce
+      # in `announce_sensor` in case of process rename, after fork etc.
+      @process = ::Instana::Util.collect_process_info
+
       # The agent UUID returned from the host agent
       @agent_uuid = nil
-
-      # Collect process information
-      @process = ::Instana::Util.collect_process_info
 
       # This will hold info on the discovered agent host
       @discovered = nil
@@ -62,9 +64,6 @@ module Instana
       # Reseed the random number generator for this
       # new thread.
       srand
-
-      # Re-collect process information post fork
-      @process = ::Instana::Util.collect_process_info
 
       transition_to(:unannounced)
       setup
@@ -101,10 +100,12 @@ module Instana
       # The announce timer
       # We attempt to announce this ruby sensor to the host agent.
       # In case of failure, we try again in 30 seconds.
-      @announce_timer = @timers.now_and_every(30) do
-        if host_agent_ready? && announce_sensor
-          ::Instana.logger.warn "Host agent available. We're in business."
-          transition_to(:announced)
+      @announce_timer = @timers.every(30) do
+        if @state == :unannounced
+          if host_agent_ready? && announce_sensor
+            transition_to(:announced)
+            ::Instana.logger.warn "Host agent available. We're in business. (#{@state} pid:#{Process.pid} #{@process[:name]})"
+          end
         end
       end
 
@@ -169,9 +170,22 @@ module Instana
         return false
       end
 
+      # Always re-collect process info before announce in case the process name has been
+      # re-written (looking at you puma!)
+      @process = ::Instana::Util.collect_process_info
+
       announce_payload = {}
       announce_payload[:pid] = pid_namespace? ? get_real_pid : Process.pid
+      announce_payload[:name] = @process[:name]
       announce_payload[:args] = @process[:arguments]
+
+      if @is_linux && !::Instana.test?
+        # We create an open socket to the host agent in case we are running in a container
+        # and the real pid needs to be detected.
+        socket = TCPSocket.new @discovered[:agent_host], @discovered[:agent_port]
+        announce_payload[:fd] = socket.fileno
+        announce_payload[:inode] = File.readlink("/proc/#{Process.pid}/fd/#{socket.fileno}")
+      end
 
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH}")
       req = Net::HTTP::Put.new(uri)
@@ -190,9 +204,11 @@ module Instana
         false
       end
     rescue => e
-      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
       return false
+    ensure
+      socket.close if socket
     end
 
     # Method to report metrics data to the host agent.
@@ -229,7 +245,7 @@ module Instana
       end
       false
     rescue => e
-      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n")
     end
 
@@ -312,7 +328,7 @@ module Instana
       end
       false
     rescue => e
-      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n") unless ::Instana.test?
       return false
     end
@@ -410,7 +426,7 @@ module Instana
         @state = :unannounced
 
       else
-        ::Instana.logger.warn "Uknown agent state: #{state}"
+        ::Instana.logger.debug "Uknown agent state: #{state}"
       end
       ::Instana.collector.reset_timer!
       true
@@ -436,7 +452,7 @@ module Instana
     rescue Errno::ECONNREFUSED
       return nil
     rescue => e
-      Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n") unless ::Instana.test?
       return nil
     end
@@ -454,8 +470,15 @@ module Instana
     #
     def get_real_pid
       raise RuntimeError.new("Unsupported platform: get_real_pid") unless @is_linux
-      v = File.open("/proc/#{Process.pid}/sched", &:readline)
-      v.match(/\d+/).to_s.to_i
+
+      sched_file = "/proc/#{Process.pid}/sched"
+      pid = Process.pid
+
+      if File.exist?(sched_file)
+        v = File.open(sched_file, &:readline)
+        pid = v.match(/\d+/).to_s.to_i
+      end
+      pid
     end
 
     # Determine whether the pid has changed since Agent start.

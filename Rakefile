@@ -24,7 +24,10 @@ Rake::TestTask.new(:test) do |t|
                      'test/frameworks/rails/actioncontroller_test.rb',
                      'test/frameworks/rails/actionview3_test.rb' ]
   when /libraries/
-    t.test_files = FileList['test/instrumentation/*_test.rb']
+    t.test_files = FileList['test/instrumentation/*_test.rb',
+                            'test/frameworks/cuba_test.rb',
+                            'test/frameworks/roda_test.rb',
+                            'test/frameworks/sinatra_test.rb']
   else
     t.test_files = FileList['test/agent/*_test.rb'] +
                    FileList['test/tracing/*_test.rb'] +

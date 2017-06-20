@@ -20,6 +20,7 @@ Any and all feedback is welcome.  Happy Ruby visibility.
 [![rails](https://s3.amazonaws.com/instana/rails-logo.jpg?1)](http://rubyonrails.org/)
 [![roda](https://s3.amazonaws.com/instana/roda-logo.png?1)](http://roda.jeremyevans.net/)
 [![cuba](https://s3.amazonaws.com/instana/cuba-logo.png?1)](http://cuba.is/)
+[![mina logo 100px](https://cloud.githubusercontent.com/assets/395132/23832558/fcd5bdb2-0736-11e7-9809-3016e89698e2.png)](https://github.com/instana/mina-instana)
 [![sinatra](https://s3.amazonaws.com/instana/sinatra-logo.png?1)](http://www.sinatrarb.com/)
 [![padrino](https://s3.amazonaws.com/instana/padrino-logo.png?1)](http://padrinorb.com/)
 [![rack](https://s3.amazonaws.com/instana/rack-logo.png?1)](https://rack.github.io/)
@@ -95,5 +96,5 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/instan
 
 ## More
 
-Want Chef change visibility for your deploys?  Checkout [instana-chef](https://github.com/instana/instana-chef).
+Want to instrument other languages?  See our [Nodejs instrumentation](https://github.com/instana/nodejs-sensor), [Go instrumentation](https://github.com/instana/golang-sensor) or [many other supported technologies](https://www.instana.com/supported-technologies/).
 

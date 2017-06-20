@@ -6,6 +6,7 @@ module Instana
     STAMP = "Instana: ".freeze
 
     def initialize(*args)
+      super(*args)
       if ENV.key?('INSTANA_GEM_TEST')
         self.level = Logger::DEBUG
       elsif ENV.key?('INSTANA_GEM_DEV')
@@ -14,7 +15,6 @@ module Instana
       else
         self.level = Logger::WARN
       end
-      super(*args)
     end
 
     # Sets the debug level for this logger.  The debug level is broken up into various
