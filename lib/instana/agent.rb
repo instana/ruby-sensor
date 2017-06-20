@@ -449,7 +449,7 @@ module Instana
       req['Accept'] = MIME_JSON
       req['Content-Type'] = MIME_JSON
 
-      if @httpclient.nil?
+      if @state == :unannounced
         @httpclient = Net::HTTP.new(req.uri.hostname, req.uri.port)
         @httpclient.open_timeout = 1
         @httpclient.read_timeout = 1
@@ -458,9 +458,6 @@ module Instana
       response = @httpclient.request(req)
       ::Instana.logger.agent_comm "#{req.method}->#{req.uri} body:(#{req.body}) Response:#{response} body:(#{response.body})"
 
-      # Don't reuse the HTTP client until we are announced as we're
-      # likely probing around for the agent
-      @httpclient = nil if @state == :unannounced
       response
     rescue Errno::ECONNREFUSED
       return nil
