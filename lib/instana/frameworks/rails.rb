@@ -6,14 +6,14 @@ if defined?(::Rails)
 
   if ::Rails::VERSION::MAJOR < 3
     ::Rails.configuration.after_initialization do
-      ::Instana.logger.warn "Instrumenting Rack"
+      ::Instana.logger.info "Instrumenting Rack"
       ::Rails.configuration.middleware.insert 0, ::Instana::Rack
     end
   else
     module ::Instana
       class Railtie < ::Rails::Railtie
         initializer 'instana.rack' do |app|
-          ::Instana.logger.warn "Instrumenting Rack"
+          ::Instana.logger.info "Instrumenting Rack"
           app.config.middleware.insert 0, ::Instana::Rack
         end
 

@@ -90,6 +90,7 @@ module Instana
 
         data[:sensorVersion] = ::Instana::VERSION
         data[:ruby_version] = RUBY_VERSION
+        data[:rpl] = RUBY_PATCHLEVEL if defined?(RUBY_PATCHLEVEL)
 
         # Framework Detection
         if defined?(::RailsLts::VERSION)

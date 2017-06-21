@@ -30,7 +30,7 @@ module Instana
       if ::Instana.tracer.tracing?
         kvs[:http][:status] = status
 
-        if status.between?(500, 511)
+        if !status.is_a?(Integer) || status.between?(500, 511)
           # Because of the 5xx response, we flag this span as errored but
           # without a backtrace (no exception)
           ::Instana.tracer.log_error(nil)

@@ -29,6 +29,6 @@ module Instana
 end
 
 if defined?(::RestClient::Request) && ::Instana.config[:'rest-client'][:enabled]
-  ::Instana.logger.warn "Instrumenting RestClient"
+  ::Instana.logger.info "Instrumenting RestClient"
   ::RestClient::Request.send(:include, ::Instana::Instrumentation::RestClientRequest)
 end

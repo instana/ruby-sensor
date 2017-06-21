@@ -34,11 +34,14 @@ module Instana
           # time around.
           @last_major_count = stats[:major_gc_count]
           @last_minor_count = stats[:minor_gc_count]
+
+          @this_gc[:heap_live] = stats[:heap_live_slots] || stats[:heap_live_num]
+          @this_gc[:heap_free] = stats[:heap_free_slots] || stats[:heap_free_num]
+        else
+          @this_gc[:heap_live] = stats[:heap_live_slot] || stats[:heap_live_num]
+          @this_gc[:heap_free] = stats[:heap_free_slot] || stats[:heap_free_num]
         end
 
-        # GC Heap
-        @this_gc[:heap_live] = stats[:heap_live_slot] || stats[:heap_live_slots] || stats[:heap_live_num]
-        @this_gc[:heap_free] = stats[:heap_free_slot] || stats[:heap_free_slots] || stats[:heap_free_num]
         @this_gc
       rescue => e
         ::Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"

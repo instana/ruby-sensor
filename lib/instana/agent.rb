@@ -44,6 +44,10 @@ module Instana
         @default_gateway = nil
       end
 
+      # Re-useable HTTP client for communication with
+      # the host agent.
+      @httpclient = nil
+
       # Collect initial process info - repeat prior to announce
       # in `announce_sensor` in case of process rename, after fork etc.
       @process = ::Instana::Util.collect_process_info
@@ -424,6 +428,8 @@ module Instana
 
       when :unannounced
         @state = :unannounced
+        # Reset our HTTP client
+        @httpclient = nil
 
       else
         ::Instana.logger.debug "Uknown agent state: #{state}"
@@ -443,11 +449,15 @@ module Instana
       req['Accept'] = MIME_JSON
       req['Content-Type'] = MIME_JSON
 
-      response = nil
-      Net::HTTP.start(req.uri.hostname, req.uri.port, :open_timeout => 1, :read_timeout => 1) do |http|
-        response = http.request(req)
+      if @state == :unannounced
+        @httpclient = Net::HTTP.new(req.uri.hostname, req.uri.port)
+        @httpclient.open_timeout = 1
+        @httpclient.read_timeout = 1
       end
+
+      response = @httpclient.request(req)
       ::Instana.logger.agent_comm "#{req.method}->#{req.uri} body:(#{req.body}) Response:#{response} body:(#{response.body})"
+
       response
     rescue Errno::ECONNREFUSED
       return nil
