@@ -21,6 +21,8 @@ when /rails50|rails42|rails32/
   # Allow localhost calls to the internal rails servers
   ::WebMock.disable_net_connect!(allow_localhost: true)
   require './test/servers/rails_3205'
+when /libraries/
+  require './test/servers/grpc_50051.rb'
 end
 
 Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new

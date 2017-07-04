@@ -27,6 +27,9 @@ gem "sinatra", '1.4.7'
 gem "cuba"
 gem "roda"
 
+# gRPC
+gem 'grpc'
+
 # HTTP Clients
 gem 'rest-client'
 
