@@ -1,9 +1,11 @@
 module Instana
   class Span
-    REGISTERED_SPANS = [ :actioncontroller, :actionview, :activerecord, :excon, :memcache, :'net-http', :rack, :render ].freeze
-    ENTRY_SPANS = [ :rack ].freeze
-    EXIT_SPANS = [ :'net-http', :excon, :activerecord ].freeze
-    HTTP_SPANS = ENTRY_SPANS + EXIT_SPANS
+    REGISTERED_SPANS = [ :actioncontroller, :actionview, :activerecord, :excon,
+                         :memcache, :'net-http', :rack, :render, :'rpc-client',
+                         :'rpc-server' ].freeze
+    ENTRY_SPANS = [ :rack, :'rpc-server' ].freeze
+    EXIT_SPANS = [ :activerecord, :excon, :'net-http', :'rpc-client' ].freeze
+    HTTP_SPANS = [ :rack, :excon, :'net-http' ].freeze
 
     attr_accessor :parent
     attr_accessor :baggage
