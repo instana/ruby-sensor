@@ -23,7 +23,7 @@ class GrpcTest < Minitest::Test
     end
   end
 
-  def assert_client_trace(client_trace, call:, call_type:, error: nil)
+  def assert_client_trace(client_trace, call: '', call_type: '', error: nil)
     assert_equal 2, client_trace.spans.count
     spans = client_trace.spans.to_a
     first_span = spans[0]
@@ -51,7 +51,7 @@ class GrpcTest < Minitest::Test
     end
   end
 
-  def assert_server_trace(server_trace, call:, call_type:, error: nil)
+  def assert_server_trace(server_trace, call: '', call_type: '', error: nil)
     assert_equal 1, server_trace.spans.count
     span = server_trace.spans.to_a.first
 
