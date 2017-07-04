@@ -13,7 +13,7 @@ class GrpcTest < Minitest::Test
     trying_server = traces[1]
 
     try_successfully = trying_client.spans.any? do |span|
-      span[:data][:sdk][:name] == :'rpc-client'
+      span.name == :'rpc-client'
     end
 
     if try_successfully
@@ -31,15 +31,13 @@ class GrpcTest < Minitest::Test
 
     # Span name validation
     assert_equal :sdk, first_span[:n]
-    assert_equal :sdk, second_span[:n]
+    assert_equal :rpctests, first_span[:data][:sdk][:name]
+    assert_equal :'rpc-client', second_span[:n]
 
     # first_span is the parent of second_span
     assert_equal first_span.id, second_span[:p]
 
-    # data keys/values
-    assert_equal :'rpc-client', second_span[:data][:sdk][:name]
-
-    data = second_span[:data][:sdk][:custom]
+    data = second_span[:data]
     assert_equal '127.0.0.1:50051', data[:rpc][:host]
     assert_equal :grpc, data[:rpc][:flavor]
     assert_equal call, data[:rpc][:call]
@@ -56,12 +54,9 @@ class GrpcTest < Minitest::Test
     span = server_trace.spans.to_a.first
 
     # Span name validation
-    assert_equal :sdk, span[:n]
+    assert_equal :'rpc-server', span[:n]
 
-    # data keys/values
-    assert_equal :'rpc-server', span[:data][:sdk][:name]
-
-    data = span[:data][:sdk][:custom]
+    data = span[:data]
     assert_equal :grpc, data[:rpc][:flavor]
     assert_equal call, data[:rpc][:call]
     assert_equal call_type, data[:rpc][:call_type]
@@ -76,7 +71,7 @@ class GrpcTest < Minitest::Test
     clear_all!
     response = nil
 
-    Instana.tracer.start_or_continue_trace(:'rpc-client') do
+    Instana.tracer.start_or_continue_trace(:rpctests) do
       response = client_stub.ping(
         PingPongService::PingRequest.new(message: 'Hello World')
       )
@@ -106,7 +101,7 @@ class GrpcTest < Minitest::Test
     clear_all!
     response = nil
 
-    Instana.tracer.start_or_continue_trace(:'rpc-client') do
+    Instana.tracer.start_or_continue_trace(:rpctests) do
       response = client_stub.ping_with_client_stream(
         (0..5).map do |index|
           PingPongService::PingRequest.new(message: index.to_s)
@@ -138,7 +133,7 @@ class GrpcTest < Minitest::Test
     clear_all!
     responses = []
 
-    Instana.tracer.start_or_continue_trace(:'rpc-client') do
+    Instana.tracer.start_or_continue_trace(:rpctests) do
       responses = client_stub.ping_with_server_stream(
         PingPongService::PingRequest.new(message: 'Hello World')
       )
@@ -169,7 +164,7 @@ class GrpcTest < Minitest::Test
     clear_all!
     responses = []
 
-    Instana.tracer.start_or_continue_trace(:'rpc-client') do
+    Instana.tracer.start_or_continue_trace(:rpctests) do
       responses = client_stub.ping_with_bidi_stream(
         (0..5).map do |index|
           PingPongService::PingRequest.new(message: (index * 2).to_s)
@@ -200,7 +195,7 @@ class GrpcTest < Minitest::Test
 
   def test_request_response_failure
     clear_all!
-    Instana.tracer.start_or_continue_trace(:'rpc-client') do
+    Instana.tracer.start_or_continue_trace(:rpctests) do
       begin
         client_stub.fail_to_ping( PingPongService::PingRequest.new(message: 'Hello World'))
       rescue
@@ -228,7 +223,7 @@ class GrpcTest < Minitest::Test
 
   def test_client_streamer_failure
     clear_all!
-    Instana.tracer.start_or_continue_trace(:'rpc-client') do
+    Instana.tracer.start_or_continue_trace(:rpctests) do
       begin
         client_stub.fail_to_ping_with_client_stream(
           (0..5).map do |index|
@@ -261,7 +256,7 @@ class GrpcTest < Minitest::Test
 
   def test_server_streamer_failure
     clear_all!
-    Instana.tracer.start_or_continue_trace(:'rpc-client') do
+    Instana.tracer.start_or_continue_trace(:rpctests) do
       begin
         client_stub.fail_to_ping_with_server_stream(
           PingPongService::PingRequest.new(message: 'Hello World')
@@ -292,7 +287,7 @@ class GrpcTest < Minitest::Test
 
   def test_bidi_streamer_failure
     clear_all!
-    Instana.tracer.start_or_continue_trace(:'rpc-client') do
+    Instana.tracer.start_or_continue_trace(:rpctests) do
       client_stub.fail_to_ping_with_bidi_stream(
         (0..5).map do |index|
           PingPongService::PingRequest.new(message: (index * 2).to_s)
