@@ -24,6 +24,7 @@ Any and all feedback is welcome.  Happy Ruby visibility.
 [![sinatra](https://s3.amazonaws.com/instana/sinatra-logo.png?1)](http://www.sinatrarb.com/)
 [![padrino](https://s3.amazonaws.com/instana/padrino-logo.png?1)](http://padrinorb.com/)
 [![rack](https://s3.amazonaws.com/instana/rack-logo.png?1)](https://rack.github.io/)
+[![rack](https://user-images.githubusercontent.com/395132/27842764-27e0e452-610d-11e7-811f-8575f83b8944.png?1)](http://www.grpc.io/)
 
 ## Installation
 
