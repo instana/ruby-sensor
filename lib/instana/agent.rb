@@ -275,7 +275,7 @@ module Instana
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{path}")
       req = Net::HTTP::Post.new(uri)
       req.body = payload.to_json
-      ::Instana.logger.debug_response "Responding to agent: #{req.inspect}"
+      ::Instana.logger.debug "Responding to agent request: #{req.inspect}"
       make_host_agent_request(req)
     end
 
