@@ -25,7 +25,7 @@ module Instana
     #
     # @param [Trace] the trace to be added to the queue
     def add(trace)
-      ::Instana.logger.trace("Queuing completed trace id: #{trace.id}")
+      ::Instana.logger.debug("Queuing completed trace id: #{trace.id}")
       @queue.push(trace)
     end
 
@@ -33,7 +33,7 @@ module Instana
     #
     # @param [Trace] the trace to be added to the queue
     def stage(trace)
-      ::Instana.logger.trace("Staging incomplete trace id: #{trace.id}")
+      ::Instana.logger.debug("Staging incomplete trace id: #{trace.id}")
       @staging_queue.add(trace)
     end
 
@@ -46,7 +46,7 @@ module Instana
         if @staging_queue.size > 0
           @staging_queue.delete_if do |t|
             if t.complete?
-              ::Instana.logger.trace("Moving staged complete trace to main queue: #{t.id}")
+              ::Instana.logger.debug("Moving staged complete trace to main queue: #{t.id}")
               add(t)
               true
             elsif t.discard?
@@ -160,7 +160,7 @@ module Instana
         end
       }
       unless candidate
-        ::Instana.logger.trace("Couldn't find staged trace with trace_id: #{trace_id}")
+        ::Instana.logger.debug("Couldn't find staged trace with trace_id: #{trace_id}")
       end
       candidate
     end

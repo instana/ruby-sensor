@@ -355,7 +355,7 @@ module Instana
       end
 
       if ::Instana.tracer.current_span.id != id
-        ::Instana.logger.tracing "Closing a span that isn't active. This will result in a broken trace: #{self.inspect}"
+        ::Instana.logger.debug "Closing a span that isn't active. This will result in a broken trace: #{self.inspect}"
       end
 
       if is_root?
