@@ -5,7 +5,7 @@ if defined?(::Rails)
   ::Instana.logger = ::Rails.logger if ::Rails.logger
 
   if ::Rails::VERSION::MAJOR < 3
-    ::Rails.configuration.after_initialization do
+    ::Rails.configuration.after_initialize do
       ::Instana.logger.info "Instrumenting Rack"
       ::Rails.configuration.middleware.insert 0, ::Instana::Rack
     end

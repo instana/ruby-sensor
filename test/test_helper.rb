@@ -27,9 +27,6 @@ end
 
 Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
 
-# Set this (or a subset) if you want increased debug output
-#::Instana.logger.debug_level = [ :agent, :agent_comm, :trace ]
-
 # Used to reset the gem to boot state.  It clears out any queued and/or staged
 # traces and resets the tracer to no active trace.
 #

@@ -63,7 +63,7 @@ module Instana
     # the host agent.
     #
     def after_fork
-      ::Instana.logger.agent "after_fork hook called. Falling back to unannounced state and spawning a new background agent thread."
+      ::Instana.logger.debug "after_fork hook called. Falling back to unannounced state and spawning a new background agent thread."
 
       # Reseed the random number generator for this
       # new thread.
@@ -170,7 +170,7 @@ module Instana
     #
     def announce_sensor
       unless @discovered
-        ::Instana.logger.agent("#{__method__} called but discovery hasn't run yet!")
+        ::Instana.logger.debug("#{__method__} called but discovery hasn't run yet!")
         return false
       end
 
@@ -195,7 +195,7 @@ module Instana
       req = Net::HTTP::Put.new(uri)
       req.body = announce_payload.to_json
 
-      ::Instana.logger.agent "Announce: http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH} - payload: #{req.body}"
+      ::Instana.logger.debug "Announce: http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH} - payload: #{req.body}"
 
       response = make_host_agent_request(req)
 
@@ -223,7 +223,7 @@ module Instana
     #
     def report_metrics(payload)
       unless @discovered
-        ::Instana.logger.agent("#{__method__} called but discovery hasn't run yet!")
+        ::Instana.logger.debug("#{__method__} called but discovery hasn't run yet!")
         return false
       end
 
@@ -275,7 +275,7 @@ module Instana
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{path}")
       req = Net::HTTP::Post.new(uri)
       req.body = payload.to_json
-      ::Instana.logger.agent_response "Responding to agent: #{req.inspect}"
+      ::Instana.logger.debug_response "Responding to agent: #{req.inspect}"
       make_host_agent_request(req)
     end
 
@@ -288,7 +288,7 @@ module Instana
       return unless @state == :announced
 
       unless @discovered
-        ::Instana.logger.agent("#{__method__} called but discovery hasn't run yet!")
+        ::Instana.logger.debug("#{__method__} called but discovery hasn't run yet!")
         return false
       end
 
@@ -397,7 +397,7 @@ module Instana
       return true if ENV['INSTANA_GEM_TEST']
 
       if forked?
-        ::Instana.logger.agent "Instana: detected fork.  Calling after_fork"
+        ::Instana.logger.debug "Instana: detected fork.  Calling after_fork"
         after_fork
       end
 
@@ -417,7 +417,7 @@ module Instana
     #   `:announced`, `:unannounced`
     #
     def transition_to(state)
-      ::Instana.logger.agent("Transitioning to #{state}")
+      ::Instana.logger.debug("Transitioning to #{state}")
       case state
       when :announced
         # announce successful; set state
@@ -456,7 +456,7 @@ module Instana
       end
 
       response = @httpclient.request(req)
-      ::Instana.logger.agent_comm "#{req.method}->#{req.uri} body:(#{req.body}) Response:#{response} body:(#{response.body})"
+      # ::Instana.logger.debug "#{req.method}->#{req.uri} body:(#{req.body}) Response:#{response} body:(#{response.body})"
 
       response
     rescue Errno::ECONNREFUSED
