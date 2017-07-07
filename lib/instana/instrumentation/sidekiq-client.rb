@@ -8,16 +8,15 @@ module Instana
         kv_payload[:sidekiqclient][:retry] = msg['retry']
         ::Instana.tracer.log_entry(:sidekiqclient, kv_payload)
 
-        # Pass the tracing context along with the message so tracing
-        # can be continued on the worker side.
-        msg['X-Instana-T'] = ::Instana::Util.trace_id_header
-        msg['X-Instana-S'] = ::Instana::Util.span_id_header
+        context = ::Instana.tracer.context
+        if context
+          msg['X-Instana-T'] = context.trace_id_header
+          msg['X-Instana-S'] = context.span_id_header
+        end
 
         result = yield
 
-        kv_payload.clear!
-        kv_payload[:sidekiqclient] = {}
-        kv_payload[:sidekiqclient][:jobid] = result['jid']
+        kv_payload[:sidekiqclient][:job_id] = result['jid']
         result
       rescue => e
         ::Instana.tracer.log_error(e)
