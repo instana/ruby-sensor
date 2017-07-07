@@ -11,6 +11,7 @@ require "minitest/debugger" if ENV['DEBUG']
 require 'webmock/minitest'
 
 require "instana/test"
+require "byebug"
 ::Instana::Test.setup_environment
 
 # Boot background webservers to test against.
@@ -27,10 +28,18 @@ when /libraries/
 end
 
 if defined?(::Sidekiq)
+  require 'sidekiq/api'
   ENV['I_REDIS_URL'] ||= 'redis://127.0.0.1:6379'
   Sidekiq.configure_client do |config|
-    config.redis = { :url => ENV['I_REDIS_URL'] }
+    config.redis = { url: ENV['I_REDIS_URL'] }
   end
+  Sidekiq.configure_server do |config|
+    config.redis = { url: ENV['I_REDIS_URL'] }
+  end
+end
+
+if defined?(::Redis)
+  $redis = Redis.new(url: ENV['I_REDIS_URL'])
 end
 
 Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
@@ -41,5 +50,6 @@ Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
 def clear_all!
   ::Instana.processor.clear!
   ::Instana.tracer.clear!
+  $redis.flushall
   nil
 end

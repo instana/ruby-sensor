@@ -2,7 +2,7 @@ ENV['BUNDLE_GEMFILE'] = Dir.pwd + "/gemfiles/libraries.gemfile"
 
 require 'rubygems'
 require 'bundler/setup'
-require Dir.pwd + '/test/jobs/sidekiq_job1'
+require Dir.pwd + '/test/jobs/sidekiq_job_1'
 
 ENV["RACK_ENV"] = "test"
 ENV["INSTANA_GEM_TEST"] = "true"
