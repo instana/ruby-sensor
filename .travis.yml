@@ -24,6 +24,7 @@ script: "bundle exec rake test"
 
 services:
   - memcached
+  - redis
 
 gemfile:
   - Gemfile

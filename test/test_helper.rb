@@ -50,6 +50,6 @@ Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
 def clear_all!
   ::Instana.processor.clear!
   ::Instana.tracer.clear!
-  $redis.flushall
+  $redis.flushall if $redis
   nil
 end
