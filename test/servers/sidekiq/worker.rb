@@ -25,3 +25,6 @@ Thread.new do
 end
 
 sleep 7
+# Sidekiq's server checking. If CLI constant is available, sidekiq treats
+# current thread is in server mode, which is not we are expecting
+::Sidekiq.send(:remove_const, :CLI)
