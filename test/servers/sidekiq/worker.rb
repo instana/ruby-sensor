@@ -1,5 +1,6 @@
 require 'sidekiq/cli'
 require Dir.pwd + '/test/jobs/sidekiq_job_1.rb'
+require Dir.pwd + '/test/jobs/sidekiq_job_2.rb'
 
 options = []
 options << ["-r", Dir.pwd + "/test/servers/sidekiq/initializer.rb"]
