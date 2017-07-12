@@ -2,9 +2,9 @@ require 'test_helper'
 
 class SidekiqClientTest < Minitest::Test
   def test_config_defaults
-    assert ::Instana.config[:sidekiq_client].is_a?(Hash)
-    assert ::Instana.config[:sidekiq_client].key?(:enabled)
-    assert_equal true, ::Instana.config[:sidekiq_client][:enabled]
+    assert ::Instana.config[:'sidekiq-client'].is_a?(Hash)
+    assert ::Instana.config[:'sidekiq-client'].key?(:enabled)
+    assert_equal true, ::Instana.config[:'sidekiq-client'][:enabled]
   end
 
   def test_enqueue
@@ -78,11 +78,11 @@ class SidekiqClientTest < Minitest::Test
     assert_equal :sdk, second_span[:n]
     data = second_span[:data][:sdk]
 
-    assert_equal :sidekiqclient, data[:name]
-    assert_equal 'some_random_queue', data[:custom][:sidekiqclient][:queue]
-    assert_equal 'SidekiqJobOne', data[:custom][:sidekiqclient][:job]
-    assert_equal false, data[:custom][:sidekiqclient][:retry]
-    assert_equal job['jid'], data[:custom][:sidekiqclient][:job_id]
+    assert_equal :'sidekiq-client', data[:name]
+    assert_equal 'some_random_queue', data[:custom][:'sidekiq-client'][:queue]
+    assert_equal 'SidekiqJobOne', data[:custom][:'sidekiq-client'][:job]
+    assert_equal false, data[:custom][:'sidekiq-client'][:retry]
+    assert_equal job['jid'], data[:custom][:'sidekiq-client'][:job_id]
   end
 
   def assert_failure_trace_recorded
@@ -106,10 +106,10 @@ class SidekiqClientTest < Minitest::Test
 
     data = second_span[:data][:sdk]
 
-    assert_equal :sidekiqclient, data[:name]
-    assert_equal 'some_random_queue', data[:custom][:sidekiqclient][:queue]
-    assert_equal 'SidekiqJobTwo', data[:custom][:sidekiqclient][:job]
-    assert_equal false, data[:custom][:sidekiqclient][:retry]
+    assert_equal :'sidekiq-client', data[:name]
+    assert_equal 'some_random_queue', data[:custom][:'sidekiq-client'][:queue]
+    assert_equal 'SidekiqJobTwo', data[:custom][:'sidekiq-client'][:job]
+    assert_equal false, data[:custom][:'sidekiq-client'][:retry]
     assert_equal 'Fail to enqueue job', data[:custom][:log][:message]
   end
 

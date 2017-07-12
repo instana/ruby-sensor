@@ -2,11 +2,11 @@ module Instana
   module Instrumentation
     class SidekiqClient
       def call(worker_class, msg, queue, redis_pool)
-        kv_payload = { :sidekiqclient => {} }
-        kv_payload[:sidekiqclient][:queue] = queue
-        kv_payload[:sidekiqclient][:job] = worker_class
-        kv_payload[:sidekiqclient][:retry] = msg['retry']
-        ::Instana.tracer.log_entry(:sidekiqclient, kv_payload)
+        kv_payload = { :'sidekiq-client' => {} }
+        kv_payload[:'sidekiq-client'][:queue] = queue
+        kv_payload[:'sidekiq-client'][:job] = worker_class
+        kv_payload[:'sidekiq-client'][:retry] = msg['retry']
+        ::Instana.tracer.log_entry(:'sidekiq-client', kv_payload)
 
         context = ::Instana.tracer.context
         if context
@@ -16,19 +16,19 @@ module Instana
 
         result = yield
 
-        kv_payload[:sidekiqclient][:job_id] = result['jid']
+        kv_payload[:'sidekiq-client'][:job_id] = result['jid']
         result
       rescue => e
         ::Instana.tracer.log_error(e)
         raise
       ensure
-        ::Instana.tracer.log_exit(:sidekiqclient, kv_payload)
+        ::Instana.tracer.log_exit(:'sidekiq-client', kv_payload)
       end
     end
   end
 end
 
-if defined?(::Sidekiq) && ::Instana.config[:sidekiq_client][:enabled]
+if defined?(::Sidekiq) && ::Instana.config[:'sidekiq-client'][:enabled]
   ::Sidekiq.configure_client do |cfg|
     cfg.client_middleware do |chain|
       ::Instana.logger.warn "Instrumenting Sidekiq client"
