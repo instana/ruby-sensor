@@ -23,15 +23,25 @@ when /rails50|rails42|rails32/
   ::WebMock.disable_net_connect!(allow_localhost: true)
   require './test/servers/rails_3205'
 when /libraries/
+  # Configure gRPC
   require './test/servers/grpc_50051.rb'
-  require './test/servers/sidekiq/worker'
-end
 
-if defined?(::Sidekiq)
+  # Configure sidekiq
+  require './test/servers/sidekiq/worker'
   require 'sidekiq/api'
+  require 'sidekiq/processor'
+
   ENV['I_REDIS_URL'] ||= 'redis://127.0.0.1:6379'
   Sidekiq.configure_client do |config|
     config.redis = { url: ENV['I_REDIS_URL'] }
+  end
+
+  # Hook into sidekiq to control the current mode
+  $sidekiq_mode = :client
+  class << Sidekiq
+    def server?
+      $sidekiq_mode == :server
+    end
   end
 end
 
