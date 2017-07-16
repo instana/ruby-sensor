@@ -76,6 +76,7 @@ class GrpcTest < Minitest::Test
         PingPongService::PingRequest.new(message: 'Hello World')
       )
     end
+    sleep 1
 
     assert 'Hello World', response.message
 
@@ -108,6 +109,7 @@ class GrpcTest < Minitest::Test
         end
       )
     end
+    sleep 1
 
     assert '01234', response.message
 
