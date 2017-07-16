@@ -27,15 +27,6 @@ when /libraries/
   require './test/servers/grpc_50051.rb'
 
   # Configure sidekiq
-  require './test/servers/sidekiq/worker'
-  require 'sidekiq/api'
-  require 'sidekiq/processor'
-
-  ENV['I_REDIS_URL'] ||= 'redis://127.0.0.1:6379'
-  Sidekiq.configure_client do |config|
-    config.redis = { url: ENV['I_REDIS_URL'] }
-  end
-
   # Hook into sidekiq to control the current mode
   $sidekiq_mode = :client
   class << Sidekiq
@@ -43,6 +34,20 @@ when /libraries/
       $sidekiq_mode == :server
     end
   end
+
+  # Config sidekiq redis
+  ENV['I_REDIS_URL'] ||= 'redis://127.0.0.1:6379'
+  Sidekiq.configure_client do |config|
+    config.redis = { url: ENV['I_REDIS_URL'] }
+  end
+
+  $sidekiq_mode = :server
+  ::Sidekiq.configure_server do |config|
+    config.redis = { url: ENV['I_REDIS_URL'] }
+  end
+  $sidekiq_mode = :client
+
+  require './test/servers/sidekiq/worker'
 end
 
 if defined?(::Redis)
