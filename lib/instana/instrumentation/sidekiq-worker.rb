@@ -23,7 +23,7 @@ module Instana
         yield
       rescue => e
         kv_payload[:'sidekiq-worker'][:error] = true
-        ::Instana.tracer.log_info(kvs)
+        ::Instana.tracer.log_info(kv_payload)
         ::Instana.tracer.log_error(e)
         raise
       ensure
