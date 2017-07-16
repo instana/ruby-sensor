@@ -26,7 +26,6 @@ when /libraries/
   # Configure gRPC
   require './test/servers/grpc_50051.rb'
 
-  # Configure sidekiq
   # Hook into sidekiq to control the current mode
   $sidekiq_mode = :client
   class << Sidekiq
@@ -35,12 +34,14 @@ when /libraries/
     end
   end
 
-  # Config sidekiq redis
   ENV['I_REDIS_URL'] ||= 'redis://127.0.0.1:6379'
+
+  # Configure redis for sidekiq client
   Sidekiq.configure_client do |config|
     config.redis = { url: ENV['I_REDIS_URL'] }
   end
 
+  # Configure redis for sidekiq worker
   $sidekiq_mode = :server
   ::Sidekiq.configure_server do |config|
     config.redis = { url: ENV['I_REDIS_URL'] }
