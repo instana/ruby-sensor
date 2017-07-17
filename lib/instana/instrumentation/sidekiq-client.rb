@@ -1,7 +1,7 @@
 module Instana
   module Instrumentation
     class SidekiqClient
-      def call(worker_class, msg, queue, redis_pool)
+      def call(worker_class, msg, queue, _redis_pool)
         kv_payload = { :'sidekiq-client' => {} }
         kv_payload[:'sidekiq-client'][:queue] = queue
         kv_payload[:'sidekiq-client'][:job] = worker_class

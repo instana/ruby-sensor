@@ -11,7 +11,6 @@ require "minitest/debugger" if ENV['DEBUG']
 require 'webmock/minitest'
 
 require "instana/test"
-require "byebug"
 ::Instana::Test.setup_environment
 
 # Boot background webservers to test against.
