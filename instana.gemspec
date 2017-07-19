@@ -36,5 +36,5 @@ Gem::Specification.new do |spec|
 
   # Indirect dependency
   # https://github.com/instana/ruby-sensor/issues/10
-  spec.add_runtime_dependency('ffi', '>= 1.9.3')
+  spec.add_runtime_dependency('ffi', '>= 1.8.1')
 end
