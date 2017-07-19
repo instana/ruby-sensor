@@ -79,6 +79,9 @@ class GrpcTest < Minitest::Test
 
     assert 'Hello World', response.message
 
+    # Pause for a split second to allow traces to be queued
+    sleep 0.2
+
     assert_equal 2, ::Instana.processor.queue_count
     client_trace, server_trace = differentiate_trace(
       Instana.processor.queued_traces
@@ -111,6 +114,9 @@ class GrpcTest < Minitest::Test
 
     assert '01234', response.message
 
+    # Pause for a split second to allow traces to be queued
+    sleep 0.2
+
     assert_equal 2, ::Instana.processor.queue_count
     client_trace, server_trace = differentiate_trace(
       Instana.processor.queued_traces
@@ -138,9 +144,10 @@ class GrpcTest < Minitest::Test
         PingPongService::PingRequest.new(message: 'Hello World')
       )
     end
-    sleep 1
-
     assert %w(0 1 2 3 4), responses.map(&:message)
+
+    # Pause for a split second to allow traces to be queued
+    sleep 0.2
 
     assert_equal 2, ::Instana.processor.queue_count
     client_trace, server_trace = differentiate_trace(
@@ -175,6 +182,9 @@ class GrpcTest < Minitest::Test
 
     assert %w(0 2 4 6 8), responses.to_a.map(&:message)
 
+    # Pause for a split second to allow traces to be queued
+    sleep 0.2
+
     assert_equal 2, ::Instana.processor.queue_count
     client_trace, server_trace = differentiate_trace(
       Instana.processor.queued_traces
@@ -201,6 +211,9 @@ class GrpcTest < Minitest::Test
       rescue
       end
     end
+
+    # Pause for a split second to allow traces to be queued
+    sleep 0.2
 
     assert_equal 2, ::Instana.processor.queue_count
     client_trace, server_trace = differentiate_trace(
@@ -234,6 +247,9 @@ class GrpcTest < Minitest::Test
       end
     end
 
+    # Pause for a split second to allow traces to be queued
+    sleep 0.2
+
     assert_equal 2, ::Instana.processor.queue_count
     client_trace, server_trace = differentiate_trace(
       Instana.processor.queued_traces
@@ -264,7 +280,9 @@ class GrpcTest < Minitest::Test
       rescue
       end
     end
-    sleep 1
+
+    # Pause for a split second to allow traces to be queued
+    sleep 0.2
 
     assert_equal 2, ::Instana.processor.queue_count
     client_trace, server_trace = differentiate_trace(
@@ -294,7 +312,9 @@ class GrpcTest < Minitest::Test
         end
       )
     end
-    sleep 1
+
+    # Pause for a split second to allow traces to be queued
+    sleep 0.2
 
     assert_equal 2, ::Instana.processor.queue_count
     client_trace, server_trace = differentiate_trace(
