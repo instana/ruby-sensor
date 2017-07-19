@@ -25,7 +25,7 @@ module Instana
     #
     # @param [Trace] the trace to be added to the queue
     def add(trace)
-      ::Instana.logger.debug("Queuing completed trace id: #{trace.id}")
+      # ::Instana.logger.debug("Queuing completed trace id: #{trace.id}")
       @queue.push(trace)
     end
 
