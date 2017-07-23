@@ -40,6 +40,8 @@ module Instana
       @config[:nethttp]            = { :enabled => true }
       @config[:'rest-client']      = { :enabled => true }
       @config[:grpc]               = { :enabled => true }
+      @config[:'sidekiq-client']   = { :enabled => true }
+      @config[:'sidekiq-worker']   = { :enabled => true }
     end
 
     def [](key)

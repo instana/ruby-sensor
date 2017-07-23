@@ -22,7 +22,36 @@ when /rails50|rails42|rails32/
   ::WebMock.disable_net_connect!(allow_localhost: true)
   require './test/servers/rails_3205'
 when /libraries/
+  # Configure gRPC
   require './test/servers/grpc_50051.rb'
+
+  # Hook into sidekiq to control the current mode
+  $sidekiq_mode = :client
+  class << Sidekiq
+    def server?
+      $sidekiq_mode == :server
+    end
+  end
+
+  ENV['I_REDIS_URL'] ||= 'redis://127.0.0.1:6379'
+
+  # Configure redis for sidekiq client
+  Sidekiq.configure_client do |config|
+    config.redis = { url: ENV['I_REDIS_URL'] }
+  end
+
+  # Configure redis for sidekiq worker
+  $sidekiq_mode = :server
+  ::Sidekiq.configure_server do |config|
+    config.redis = { url: ENV['I_REDIS_URL'] }
+  end
+  $sidekiq_mode = :client
+
+  require './test/servers/sidekiq/worker'
+end
+
+if defined?(::Redis)
+  $redis = Redis.new(url: ENV['I_REDIS_URL'])
 end
 
 Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
@@ -33,5 +62,6 @@ Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
 def clear_all!
   ::Instana.processor.clear!
   ::Instana.tracer.clear!
+  $redis.flushall if $redis
   nil
 end
