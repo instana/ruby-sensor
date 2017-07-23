@@ -75,14 +75,11 @@ class SidekiqClientTest < Minitest::Test
 
     assert_equal first_span.id, second_span[:p]
 
-    assert_equal :sdk, second_span[:n]
-    data = second_span[:data][:sdk]
-
-    assert_equal :'sidekiq-client', data[:name]
-    assert_equal 'some_random_queue', data[:custom][:'sidekiq-client'][:queue]
-    assert_equal 'SidekiqJobOne', data[:custom][:'sidekiq-client'][:job]
-    assert_equal false, data[:custom][:'sidekiq-client'][:retry]
-    assert_equal job['jid'], data[:custom][:'sidekiq-client'][:job_id]
+    assert_equal :'sidekiq-client', second_span[:n]
+    assert_equal 'some_random_queue', second_span[:data][:'sidekiq-client'][:queue]
+    assert_equal 'SidekiqJobOne', second_span[:data][:'sidekiq-client'][:job]
+    assert_equal false, second_span[:data][:'sidekiq-client'][:retry]
+    assert_equal job['jid'], second_span[:data][:'sidekiq-client'][:job_id]
   end
 
   def assert_failure_trace_recorded
@@ -99,18 +96,14 @@ class SidekiqClientTest < Minitest::Test
 
     assert_equal first_span.id, second_span[:p]
 
-    assert_equal :sdk, second_span[:n]
+    assert_equal :'sidekiq-client', second_span[:n]
     assert_equal true, second_span[:error]
     assert_equal false, second_span[:stack].nil?
 
-
-    data = second_span[:data][:sdk]
-
-    assert_equal :'sidekiq-client', data[:name]
-    assert_equal 'some_random_queue', data[:custom][:'sidekiq-client'][:queue]
-    assert_equal 'SidekiqJobTwo', data[:custom][:'sidekiq-client'][:job]
-    assert_equal false, data[:custom][:'sidekiq-client'][:retry]
-    assert_equal 'Fail to enqueue job', data[:custom][:log][:message]
+    assert_equal 'some_random_queue', second_span[:data][:'sidekiq-client'][:queue]
+    assert_equal 'SidekiqJobTwo', second_span[:data][:'sidekiq-client'][:job]
+    assert_equal false, second_span[:data][:'sidekiq-client'][:retry]
+    assert_equal 'Fail to enqueue job', second_span[:data][:log][:message]
   end
 
   SidekiqMiddlewareException = Class.new do
