@@ -142,29 +142,25 @@ class SidekiqServerTest < Minitest::Test
     assert_equal 1, worker_trace.spans.count
     span = worker_trace.spans.first
 
-    assert_equal :sdk, span[:n]
-    data = span[:data][:sdk]
+    assert_equal :'sidekiq-worker', span[:n]
 
-    assert_equal :'sidekiq-worker', data[:name]
-    assert_equal 'important', data[:custom][:'sidekiq-worker'][:queue]
-    assert_equal 'SidekiqJobOne', data[:custom][:'sidekiq-worker'][:job]
-    assert_equal false, data[:custom][:'sidekiq-worker'][:job_id].nil?
+    assert_equal 'important', span[:data][:'sidekiq-worker'][:queue]
+    assert_equal 'SidekiqJobOne', span[:data][:'sidekiq-worker'][:job]
+    assert_equal false, span[:data][:'sidekiq-worker'][:job_id].nil?
   end
 
   def assert_failed_worker_trace(worker_trace)
     assert_equal 1, worker_trace.spans.count
     span = worker_trace.spans.first
 
-    assert_equal :sdk, span[:n]
-    data = span[:data][:sdk]
+    assert_equal :'sidekiq-worker', span[:n]
 
-    assert_equal :'sidekiq-worker', data[:name]
-    assert_equal 'important', data[:custom][:'sidekiq-worker'][:queue]
-    assert_equal 'SidekiqJobTwo', data[:custom][:'sidekiq-worker'][:job]
-    assert_equal false, data[:custom][:'sidekiq-worker'][:job_id].nil?
+    assert_equal 'important', span[:data][:'sidekiq-worker'][:queue]
+    assert_equal 'SidekiqJobTwo', span[:data][:'sidekiq-worker'][:job]
+    assert_equal false, span[:data][:'sidekiq-worker'][:job_id].nil?
 
-    assert_equal true, data[:custom][:'sidekiq-worker'][:error]
-    assert_equal 'Fail to execute the job', data[:custom][:log][:message]
+    assert_equal true, span[:data][:'sidekiq-worker'][:error]
+    assert_equal 'Fail to execute the job', span[:data][:log][:message]
   end
 
   def assert_client_trace(client_trace, job)
@@ -176,11 +172,8 @@ class SidekiqServerTest < Minitest::Test
 
     assert_equal first_span.id, second_span[:p]
 
-    assert_equal :sdk, second_span[:n]
-    data = second_span[:data][:sdk]
-
-    assert_equal :'sidekiq-client', data[:name]
-    assert_equal 'important', data[:custom][:'sidekiq-client'][:queue]
-    assert_equal job.name, data[:custom][:'sidekiq-client'][:job]
+    assert_equal :'sidekiq-client', second_span[:n]
+    assert_equal 'important', second_span[:data][:'sidekiq-client'][:queue]
+    assert_equal job.name, second_span[:data][:'sidekiq-client'][:job]
   end
 end
