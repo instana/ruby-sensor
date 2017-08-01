@@ -3,7 +3,7 @@
 #
 # export BUNDLE_GEMFILE=/path/to/ruby-sensor/gemfiles/libraries.gemfile
 # bundle install
-# bundle exec sidekiq -c 2 -q important -r ./test/jobs/sidekiq_job_1.rb -r ./test/jobs/sidekiq_job_2.rb
+# bundle exec sidekiq -c 2 -q important -r ./test/servers/helpers/sidekiq_worker_initializer.rb
 #
 # In another shell, you can boot a console to queue jobs:
 #
@@ -15,8 +15,12 @@
 # >                          'args' => [1, 2, 3], 'retry' => false)
 # > end
 #
+
+# Load test jobs.
 require Dir.pwd + '/test/jobs/sidekiq_job_1.rb'
 require Dir.pwd + '/test/jobs/sidekiq_job_2.rb'
 
+require "sidekiq"
+require "instana"
 ::Instana.logger.info "Booting instrumented sidekiq worker for tests."
 ::Sidekiq.logger.level = ::Logger::DEBUG
