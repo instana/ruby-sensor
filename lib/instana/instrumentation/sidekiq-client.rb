@@ -5,8 +5,15 @@ module Instana
         kv_payload = { :'sidekiq-client' => {} }
         kv_payload[:'sidekiq-client'][:queue] = queue
         kv_payload[:'sidekiq-client'][:job] = worker_class
-        kv_payload[:'sidekiq-client'][:retry] = msg['retry']
+        kv_payload[:'sidekiq-client'][:retry] = msg['retry'].to_s
         ::Instana.tracer.log_entry(:'sidekiq-client', kv_payload)
+
+        # Temporary until we move connection collection to redis
+        # instrumentation
+        Sidekiq.redis_pool.with do |conn|
+          opts = conn.client.options
+          kv_payload[:'sidekiq-client'][:'redis-url'] = "#{opts[:host]}:#{opts[:port]}"
+        end
 
         context = ::Instana.tracer.context
         if context
