@@ -10,6 +10,7 @@
 # export BUNDLE_GEMFILE=/path/to/ruby-sensor/gemfiles/libraries.gemfile
 # bundle install
 # bundle exec rake console
+# > require Dir.pwd + '/test/jobs/sidekiq_job_1.rb'
 # > Instana.tracer.start_or_continue_trace(:sidekiq_demo) do
 # >  ::Sidekiq::Client.push( 'queue' => 'important', 'class' => ::SidekiqJobOne,
 # >                          'args' => [1, 2, 3], 'retry' => false)
