@@ -8,6 +8,13 @@ module Instana
         kv_payload[:'sidekiq-client'][:retry] = msg['retry']
         ::Instana.tracer.log_entry(:'sidekiq-client', kv_payload)
 
+        # Temporary until we move connection collection to redis
+        # instrumentation
+        Sidekiq.redis_pool.with do |conn|
+          opts = conn.client.options
+          kv_payload[:'sidekiq-client'][:'redis-url'] = "#{opts[:host]}:#{opts[:port]}"
+        end
+
         context = ::Instana.tracer.context
         if context
           msg['X-Instana-T'] = context.trace_id_header

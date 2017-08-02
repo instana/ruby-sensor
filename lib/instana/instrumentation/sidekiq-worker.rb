@@ -8,6 +8,13 @@ module Instana
         kv_payload[:'sidekiq-worker'][:job] = msg['class']
         kv_payload[:'sidekiq-worker'][:retry] = msg['retry']
 
+        # Temporary until we move connection collection to redis
+        # instrumentation
+        Sidekiq.redis_pool.with do |conn|
+          opts = conn.client.options
+          kv_payload[:'sidekiq-worker'][:'redis-url'] = "#{opts[:host]}:#{opts[:port]}"
+        end
+
         context = {}
         if msg.key?('X-Instana-T')
           trace_id = msg.delete('X-Instana-T')
