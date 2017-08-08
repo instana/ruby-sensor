@@ -9,8 +9,18 @@ module Instana
         client.port
       end
 
+      def self.pipeline_operation(pipeline)
+        pipeline.is_a?(::Redis::Pipeline::Multi) ? 'MULTI' : 'PIPELINE'
+      end
+
       def self.stringify_command(command)
-        Array(command).join(' ')
+        command.join(' ')
+      end
+
+      def self.stringify_pipeline_command(pipeline)
+        pipeline.commands.map do |command|
+          command.join(' ')
+        end.join("\n")
       end
     end
   end
@@ -48,5 +58,35 @@ if defined?(::Redis) && ::Instana.config[:redis][:enabled]
 
     alias call_without_instana call
     alias call call_with_instana
+
+    def call_pipeline_with_instana(*args, &block)
+      kv_payload = { redis: {} }
+
+      if !Instana.tracer.tracing?
+        return call_pipeline_without_instana(*args, &block)
+      end
+
+      pipeline = args.first
+      kv_payload[:redis] = {
+        host: ::Instana::Instrumentation::Redis.get_host(self),
+        port: ::Instana::Instrumentation::Redis.get_port(self),
+        db: db,
+        operation: ::Instana::Instrumentation::Redis.pipeline_operation(pipeline),
+        command: ::Instana::Instrumentation::Redis.stringify_pipeline_command(pipeline)
+      }
+      ::Instana.tracer.log_entry(:redis, kv_payload)
+
+      call_pipeline_without_instana(*args, &block)
+    rescue => e
+      kv_payload[:redis][:error] = true
+      ::Instana.tracer.log_info(kv_payload)
+      ::Instana.tracer.log_error(e)
+      raise
+    ensure
+      ::Instana.tracer.log_exit(:redis, {})
+    end
+
+    alias call_pipeline_without_instana call_pipeline
+    alias call_pipeline call_pipeline_with_instana
   end
 end
