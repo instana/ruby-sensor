@@ -142,12 +142,11 @@ class RedisTest < Minitest::Test
 
     assert_trace_basic_info(data, first_span, second_span)
 
-    command =
-      <<~COMMAND
-        set hello world
-        set other world
-        hmset awesome wonderful world
-      COMMAND
+    command = <<-COMMAND
+set hello world
+set other world
+hmset awesome wonderful world
+    COMMAND
 
     assert_equal command.strip, data[:redis][:command]
     assert_equal 'PIPELINE', data[:redis][:operation]
@@ -168,14 +167,13 @@ class RedisTest < Minitest::Test
 
     assert_trace_basic_info(data, first_span, second_span)
 
-    command =
-      <<~COMMAND
-        multi
-        set hello world
-        set other world
-        hmset awesome wonderful world
-        exec
-      COMMAND
+    command = <<-COMMAND
+multi
+set hello world
+set other world
+hmset awesome wonderful world
+exec
+    COMMAND
     assert_equal command.strip, data[:redis][:command]
     assert_equal 'MULTI', data[:redis][:operation]
 
