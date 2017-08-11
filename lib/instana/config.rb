@@ -42,6 +42,7 @@ module Instana
       @config[:grpc]               = { :enabled => true }
       @config[:'sidekiq-client']   = { :enabled => true }
       @config[:'sidekiq-worker']   = { :enabled => true }
+      @config[:redis]              = { :enabled => true }
     end
 
     def [](key)

@@ -65,3 +65,17 @@ def clear_all!
   $redis.flushall if $redis
   nil
 end
+
+def disable_redis_instrumentation
+  ::Redis::Client.class_eval do
+    alias call call_without_instana
+    alias call_pipeline call_pipeline_without_instana
+  end
+end
+
+def enable_redis_instrumentation
+  ::Redis::Client.class_eval do
+    alias call call_with_instana
+    alias call_pipeline call_pipeline_with_instana
+  end
+end

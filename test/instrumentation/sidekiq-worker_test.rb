@@ -12,6 +12,7 @@ class SidekiqServerTest < Minitest::Test
     $sidekiq_mode = :server
     inject_instrumentation
 
+    disable_redis_instrumentation
     ::Sidekiq.redis_pool.with do |redis|
       redis.sadd('queues'.freeze, 'important')
       redis.lpush(
@@ -26,6 +27,7 @@ class SidekiqServerTest < Minitest::Test
         JSON
       )
     end
+    enable_redis_instrumentation
     sleep 1
 
     assert_equal 1, ::Instana.processor.queue_count
@@ -39,6 +41,7 @@ class SidekiqServerTest < Minitest::Test
     $sidekiq_mode = :server
     inject_instrumentation
 
+    disable_redis_instrumentation
     ::Sidekiq.redis_pool.with do |redis|
       redis.sadd('queues'.freeze, 'important')
       redis.lpush(
@@ -53,6 +56,8 @@ class SidekiqServerTest < Minitest::Test
         JSON
       )
     end
+    enable_redis_instrumentation
+
     sleep 1
     assert_equal 1, ::Instana.processor.queue_count
     assert_failed_worker_trace(::Instana.processor.queued_traces.first)
@@ -66,11 +71,13 @@ class SidekiqServerTest < Minitest::Test
     inject_instrumentation
 
     Instana.tracer.start_or_continue_trace(:sidekiqtests) do
+      disable_redis_instrumentation
       ::Sidekiq::Client.push(
         'queue' => 'important',
         'class' => ::SidekiqJobOne,
         'args' => [1, 2, 3]
       )
+      enable_redis_instrumentation
     end
     sleep 1
     assert_equal 2, ::Instana.processor.queue_count
@@ -92,11 +99,13 @@ class SidekiqServerTest < Minitest::Test
     inject_instrumentation
 
     Instana.tracer.start_or_continue_trace(:sidekiqtests) do
+      disable_redis_instrumentation
       ::Sidekiq::Client.push(
         'queue' => 'important',
         'class' => ::SidekiqJobTwo,
         'args' => [1, 2, 3]
       )
+      enable_redis_instrumentation
     end
     sleep 1
     assert_equal 2, ::Instana.processor.queue_count
