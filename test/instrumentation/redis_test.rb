@@ -122,9 +122,7 @@ class RedisTest < Minitest::Test
     data = second_span[:data][:sdk][:custom]
 
     assert_trace_basic_info(data, first_span, second_span)
-
-    assert_equal 'set', data[:redis][:operation]
-    assert_equal 'set hello world', data[:redis][:command]
+    assert_equal 'SET', data[:redis][:command]
 
     if with_error
       assert_equal true, data[:redis][:error]
@@ -141,15 +139,7 @@ class RedisTest < Minitest::Test
     data = second_span[:data][:sdk][:custom]
 
     assert_trace_basic_info(data, first_span, second_span)
-
-    command = <<-COMMAND
-set hello world
-set other world
-hmset awesome wonderful world
-    COMMAND
-
-    assert_equal command.strip, data[:redis][:command]
-    assert_equal 'PIPELINE', data[:redis][:operation]
+    assert_equal 'PIPELINE', data[:redis][:command]
 
     if with_error
       assert_equal true, data[:redis][:error]
@@ -166,16 +156,7 @@ hmset awesome wonderful world
     data = second_span[:data][:sdk][:custom]
 
     assert_trace_basic_info(data, first_span, second_span)
-
-    command = <<-COMMAND
-multi
-set hello world
-set other world
-hmset awesome wonderful world
-exec
-    COMMAND
-    assert_equal command.strip, data[:redis][:command]
-    assert_equal 'MULTI', data[:redis][:operation]
+    assert_equal 'MULTI', data[:redis][:command]
 
     if with_error
       assert_equal true, data[:redis][:error]
@@ -195,8 +176,7 @@ exec
     assert_equal :redis, second_span[:data][:sdk][:name]
 
     uri = URI.parse(ENV['I_REDIS_URL'])
-    assert_equal uri.host, data[:redis][:host]
-    assert_equal uri.port, data[:redis][:port]
+    assert_equal "#{uri.host}:#{uri.port}", data[:redis][:connection]
     assert_equal 0, data[:redis][:db]
   end
 end

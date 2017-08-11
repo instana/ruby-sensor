@@ -9,18 +9,8 @@ module Instana
         client.port
       end
 
-      def self.pipeline_operation(pipeline)
+      def self.pipeline_command(pipeline)
         pipeline.is_a?(::Redis::Pipeline::Multi) ? 'MULTI' : 'PIPELINE'
-      end
-
-      def self.stringify_command(command)
-        command.join(' ')
-      end
-
-      def self.stringify_pipeline_command(pipeline)
-        pipeline.commands.map do |command|
-          command.join(' ')
-        end.join("\n")
       end
     end
   end
@@ -35,12 +25,12 @@ if defined?(::Redis) && ::Instana.config[:redis][:enabled]
         return call_without_instana(*args, &block)
       end
 
+      host = ::Instana::Instrumentation::Redis.get_host(self)
+      port = ::Instana::Instrumentation::Redis.get_port(self)
       kv_payload[:redis] = {
-        host: ::Instana::Instrumentation::Redis.get_host(self),
-        port: ::Instana::Instrumentation::Redis.get_port(self),
+        connection: "#{host}:#{port}",
         db: db,
-        operation: args[0][0].to_s,
-        command: ::Instana::Instrumentation::Redis.stringify_command(args[0])
+        command: args[0][0].to_s.upcase
       }
       ::Instana.tracer.log_entry(:redis, kv_payload)
 
@@ -67,12 +57,12 @@ if defined?(::Redis) && ::Instana.config[:redis][:enabled]
       end
 
       pipeline = args.first
+      host = ::Instana::Instrumentation::Redis.get_host(self)
+      port = ::Instana::Instrumentation::Redis.get_port(self)
       kv_payload[:redis] = {
-        host: ::Instana::Instrumentation::Redis.get_host(self),
-        port: ::Instana::Instrumentation::Redis.get_port(self),
+        connection: "#{host}:#{port}",
         db: db,
-        operation: ::Instana::Instrumentation::Redis.pipeline_operation(pipeline),
-        command: ::Instana::Instrumentation::Redis.stringify_pipeline_command(pipeline)
+        command: ::Instana::Instrumentation::Redis.pipeline_command(pipeline)
       }
       ::Instana.tracer.log_entry(:redis, kv_payload)
 
