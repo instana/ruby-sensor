@@ -1,3 +1,6 @@
+require 'sys/proctable'
+include Sys
+
 module Instana
   module Util
     class << self
@@ -132,21 +135,25 @@ module Instana
         process = {}
         cmdline_file = "/proc/#{Process.pid}/cmdline"
 
-        # If there is a /proc filesystem, we read this manually so
-        # we can split on embedded null bytes.  Otherwise (e.g. OSX, Windows)
-        # use ProcTable.
-        if File.exist?(cmdline_file)
-          cmdline = IO.read(cmdline_file).split(?\x00)
-        else
-          cmdline = ProcTable.ps(Process.pid).cmdline.split(' ')
-        end
+        ptable = ProcTable.ps(Process.pid)
 
-        if RUBY_PLATFORM =~ /darwin/i
-          cmdline.delete_if{ |e| e.include?('=') }
-          process[:name] = cmdline.join(' ')
+        if RUBY_PLATFORM =~ /darwin/i ||
+          RUBY_PLATFORM =~ /linux/i
+          # SysProctable supports OSX, Linux well
+          process[:name] = ptable.pname
+          process[:arguments] = ptable.arguments
         else
-          process[:name] = cmdline.shift
-          process[:arguments] = cmdline
+          # Some other platform - try using /proc first
+          if File.exist?(cmdline_file)
+            cmdline = IO.read(cmdline_file).split(?\x00)
+            process[:name] = cmdline.shift
+            process[:arguments] = cmdline
+          else
+            # Last ditch effort
+            parts = ptable.cmdline.split(' ')
+            process[:name] = parts.shift
+            process[:arguments] = parts
+          end
         end
 
         process[:pid] = Process.pid
