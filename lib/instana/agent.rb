@@ -4,6 +4,7 @@ require 'socket'
 require 'sys/proctable'
 require 'timers'
 require 'uri'
+require 'thread'
 include Sys
 
 module Instana
@@ -12,6 +13,7 @@ module Instana
     attr_accessor :agent_uuid
     attr_accessor :process
     attr_accessor :collect_thread
+    attr_accessor :thread_spawn_lock
 
     LOCALHOST = '127.0.0.1'.freeze
     MIME_JSON = 'application/json'.freeze
@@ -32,6 +34,8 @@ module Instana
       @timers = ::Timers::Group.new
       @announce_timer = nil
       @collect_timer = nil
+
+      @thread_spawn_lock = Mutex.new
 
       # Detect platform flags
       @is_linux = (RUBY_PLATFORM =~ /linux/i) ? true : false
@@ -91,13 +95,15 @@ module Instana
     # end
     #
     def spawn_background_thread
-      if @collect_thread && @collect_thread.alive?
-        ::Instana.logger.info "[instana] Collect thread already started & alive.  Not spawning another."
-      else
-        @collect_thread = Thread.new do
-          start
+      @thread_spawn_lock.synchronize {
+        if @collect_thread && @collect_thread.alive?
+          ::Instana.logger.info "[instana] Collect thread already started & alive.  Not spawning another."
+        else
+          @collect_thread = Thread.new do
+            start
+          end
         end
-      end
+      }
     end
 
     # Sets up periodic timers and starts the agent in a background thread.
