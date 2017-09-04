@@ -11,6 +11,7 @@ module Instana
     attr_accessor :state
     attr_accessor :agent_uuid
     attr_accessor :process
+    attr_accessor :collect_thread
 
     LOCALHOST = '127.0.0.1'.freeze
     MIME_JSON = 'application/json'.freeze
@@ -90,11 +91,12 @@ module Instana
     # end
     #
     def spawn_background_thread
-      # The thread calling fork is the only thread in the created child process.
-      # fork doesn’t copy other threads.
-      # Restart our background thread
-      Thread.new do
-        start
+      if @collect_thread && @collect_thread.alive?
+        ::Instana.logger.info "[instana] Collect thread already started & alive.  Not spawning another."
+      else
+        @collect_thread = Thread.new do
+          start
+        end
       end
     end
 
@@ -104,7 +106,7 @@ module Instana
       # The announce timer
       # We attempt to announce this ruby sensor to the host agent.
       # In case of failure, we try again in 30 seconds.
-      @announce_timer = @timers.every(30) do
+      @announce_timer = @timers.now_and_every(30) do
         if @state == :unannounced
           if host_agent_ready? && announce_sensor
             transition_to(:announced)
@@ -143,6 +145,7 @@ module Instana
     #
     def start
       ::Instana.logger.warn "Host agent not available.  Will retry periodically." unless host_agent_ready?
+
       loop do
         if @state == :unannounced
           @collect_timer.pause

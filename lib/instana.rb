@@ -5,9 +5,8 @@ require "instana/setup"
 #
 #   gem "instana", :require => "instana/setup"
 #
-# ...and manually call ::Instana.agent.start in the thread
-# of your choice
+# ...and override ::Instana::Agent.spawn_background_thread to boot
+# the thread of your choice.
 #
-Thread.new do
-  ::Instana.agent.start
-end
+
+::Instana.agent.spawn_background_thread
