@@ -25,6 +25,11 @@ module Instana
     #
     # @param [Trace] the trace to be added to the queue
     def add(trace)
+      # Do a quick checkup on our background thread.
+      if ::Instana.agent.collect_thread.nil? || !::Instana.agent.collect_thread.alive?
+        ::Instana.agent.spawn_background_thread
+      end
+
       # ::Instana.logger.debug("Queuing completed trace id: #{trace.id}")
       @queue.push(trace)
     end
