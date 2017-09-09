@@ -10,6 +10,8 @@ module Instana
         self.level = Logger::DEBUG
       elsif ENV.key?('INSTANA_GEM_DEV')
         self.level = Logger::DEBUG
+      elsif ENV.key?('INSTANA_QUIET')
+        self.level = Logger::FATAL
       else
         self.level = Logger::WARN
       end
