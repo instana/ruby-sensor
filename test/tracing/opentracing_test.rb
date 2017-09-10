@@ -90,6 +90,10 @@ class OpenTracerTest < Minitest::Test
     first_span, second_span, third_span = trace.spans.to_a
 
     assert_equal :rack, first_span.name
+    assert first_span[:ts].is_a?(Integer)
+    assert first_span[:ts] > 0
+    assert first_span[:d].is_a?(Integer)
+    assert first_span[:d].between?(0, 5)
     assert first_span.key?(:data)
     assert first_span[:data].key?(:http)
     assert_equal "GET", first_span[:data][:http][:method]
@@ -158,6 +162,33 @@ class OpenTracerTest < Minitest::Test
     assert_equal [1,2,3,4], span.tags(:tag_array)
     assert_equal "1234", span.tags(:tag_string)
     span.finish
+  end
+
+  def test_start_span_with_custom_start_time
+    clear_all!
+    now = Time.now
+    now_in_ms = ::Instana::Util.time_to_ms(now)
+
+    span = OpenTracing.start_span('my_app_entry', :start_time => now)
+
+    assert span.is_a?(::Instana::Span)
+    assert_equal :my_app_entry, OpenTracing.current_trace.current_span.name
+
+    span.set_tag(:tag_integer, 1234)
+    span.set_tag(:tag_boolean, true)
+    span.set_tag(:tag_array, [1,2,3,4])
+    span.set_tag(:tag_string, "1234")
+
+    assert_equal 1234, span.tags(:tag_integer)
+    assert_equal true, span.tags(:tag_boolean)
+    assert_equal [1,2,3,4], span.tags(:tag_array)
+    assert_equal "1234", span.tags(:tag_string)
+    span.finish
+
+    assert span[:ts].is_a?(Integer)
+    assert_equal now_in_ms, span[:ts]
+    assert span[:d].is_a?(Integer)
+    assert span[:d].between?(0, 5)
   end
 
   def test_span_kind_translation

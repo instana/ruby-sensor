@@ -27,7 +27,7 @@ class TracerTest < Minitest::Test
 
     ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do
       assert_equal true, ::Instana.tracer.tracing?
-      sleep 0.3
+      sleep 0.1
     end
 
     traces = ::Instana.processor.queued_traces
@@ -39,6 +39,9 @@ class TracerTest < Minitest::Test
     first_span = t.spans.first
     assert_equal :rack, first_span[:n]
     assert_equal :ruby, first_span[:ta]
+    assert first_span[:ts].is_a?(Integer)
+    assert first_span[:d].is_a?(Integer)
+    assert first_span[:d].between?(100, 130)
     assert first_span.key?(:data)
     assert_equal 1, first_span[:data][:one]
     assert first_span.key?(:f)
@@ -47,7 +50,7 @@ class TracerTest < Minitest::Test
     assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
   end
 
-  def test_errors_are_properly_propogated
+  def test_errors_are_properly_propagated
     clear_all!
     exception_raised = false
     begin
@@ -69,6 +72,10 @@ class TracerTest < Minitest::Test
     first_span = t.spans.first
     assert_equal :rack, first_span[:n]
     assert_equal :ruby, first_span[:ta]
+    assert first_span[:ts].is_a?(Integer)
+    assert first_span[:ts] > 0
+    assert first_span[:d].is_a?(Integer)
+    assert first_span[:d].between?(0, 5)
     assert first_span.key?(:data)
     assert_equal 1, first_span[:data][:one]
     assert first_span.key?(:f)
