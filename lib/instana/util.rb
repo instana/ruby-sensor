@@ -1,6 +1,8 @@
 module Instana
   module Util
     class << self
+      ID_RANGE = -2**63..2**63-1
+
       # An agnostic approach to method aliasing.
       #
       # @param klass [Object] The class or module that holds the method to be alias'd.
@@ -178,7 +180,7 @@ module Instana
       #
       def generate_id
         # Max value is 9223372036854775807 (signed long in Java)
-        rand(-2**63..2**63-1)
+        rand(ID_RANGE)
       end
 
       # Convert an ID to a value appropriate to pass in a header.
