@@ -158,19 +158,21 @@ module Instana
         process
       end
 
-      # Get the current time in milliseconds
+      # Get the current time in milliseconds from the epoch
       #
       # @return [Integer] the current time in milliseconds
       #
-      def ts_now
-        (Time.now.to_f * 1000).floor
+      def now_in_ms
+        Process.clock_gettime(Process::CLOCK_REALTIME, :millisecond)
       end
+      # Prior method name support.  To be deprecated when appropriate.
+      alias ts_now now_in_ms
 
       # Convert a Time value to milliseconds
       #
       # @param time [Time]
       #
-      def time_to_ms(time = Time.now)
+      def time_to_ms(time)
         (time.to_f * 1000).floor
       end
 
