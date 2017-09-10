@@ -17,7 +17,7 @@ module Instana
     #     :span_id the ID of the parent span (must be an unsigned hex-string)
     #     :level specifies data collection level (optional)
     #
-    def initialize(name, kvs = nil, incoming_context = {}, start_time = Time.now)
+    def initialize(name, kvs = nil, incoming_context = {}, start_time = ::Instana::Util.now_in_ms)
       # The collection of spans that make
       # up this trace.
       @spans = Set.new
@@ -56,7 +56,7 @@ module Instana
     # @param name [String] the name of the span to start
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def new_span(name, kvs = nil, start_time = Time.now, child_of = nil)
+    def new_span(name, kvs = nil, start_time = ::Instana::Util.now_in_ms, child_of = nil)
       return unless @current_span
 
       if child_of && child_of.is_a?(::Instana::Span)
@@ -104,7 +104,7 @@ module Instana
     #
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def end_span(kvs = {}, end_time = Time.now)
+    def end_span(kvs = {}, end_time = ::Instana::Util.now_in_ms)
       @current_span.close(end_time)
       add_info(kvs) if kvs && !kvs.empty?
       @current_span = @current_span.parent unless @current_span.is_root?
@@ -116,7 +116,7 @@ module Instana
     #
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def finish(kvs = {}, end_time = Time.now)
+    def finish(kvs = {}, end_time = ::Instana::Util.now_in_ms)
       end_span(kvs, end_time)
     end
 

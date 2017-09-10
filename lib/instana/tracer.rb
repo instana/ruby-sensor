@@ -135,7 +135,7 @@ module Instana
     # @param name [String] the name of the span to end
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def log_end(name, kvs = {}, end_time = Time.now)
+    def log_end(name, kvs = {}, end_time = ::Instana::Util.now_in_ms)
       return unless tracing?
 
       if ::Instana.debug? || ::Instana.test?
@@ -261,7 +261,7 @@ module Instana
     #
     # @return [Span]
     #
-    def start_span(operation_name, child_of: nil, start_time: Time.now, tags: nil)
+    def start_span(operation_name, child_of: nil, start_time: ::Instana::Util.now_in_ms, tags: nil)
       return unless ::Instana.agent.ready?
 
       if tracing?

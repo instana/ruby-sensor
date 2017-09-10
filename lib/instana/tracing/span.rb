@@ -10,7 +10,7 @@ module Instana
     attr_accessor :parent
     attr_accessor :baggage
 
-    def initialize(name, trace_id, parent_id: nil, start_time: Time.now)
+    def initialize(name, trace_id, parent_id: nil, start_time: ::Instana::Util.now_in_ms)
       @data = {}
       @data[:t] = trace_id                    # Trace ID
       @data[:s] = ::Instana::Util.generate_id # Span ID
@@ -22,7 +22,11 @@ module Instana
       @data[:f] = { :e => ::Instana.agent.report_pid,
                     :h => ::Instana.agent.agent_uuid }
       # Start time
-      @data[:ts] = ::Instana::Util.time_to_ms(start_time)
+      if start_time.is_a?(Time)
+        @data[:ts] = ::Instana::Util.time_to_ms(start_time)
+      else
+        @data[:ts] = start_time
+      end
 
       @baggage = {}
 
@@ -119,12 +123,13 @@ module Instana
     # @param end_time [Time] custom end time, if not now
     # @return [Span]
     #
-    def close(end_time = Time.now)
-      unless end_time.is_a?(Time)
-        ::Instana.logger.debug "span.close: Passed #{end_time.class} instead of Time class"
+    def close(end_time = ::Instana::Util.now_in_ms)
+
+      if end_time.is_a?(Time)
+        end_time = ::Instana::Util.time_to_ms(end_time)
       end
 
-      @data[:d] = (::Instana::Util.time_to_ms(end_time) - @data[:ts])
+      @data[:d] = end_time - @data[:ts]
       self
     end
 
@@ -349,11 +354,7 @@ module Instana
     #
     # @param end_time [Time] custom end time, if not now
     #
-    def finish(end_time = Time.now)
-      unless end_time.is_a?(Time)
-        ::Instana.logger.debug "span.finish: Passed #{end_time.class} instead of Time class"
-      end
-
+    def finish(end_time = ::Instana::Util.now_in_ms)
       if ::Instana.tracer.current_span.id != id
         ::Instana.logger.debug "Closing a span that isn't active. This will result in a broken trace: #{self.inspect}"
       end
