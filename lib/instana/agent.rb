@@ -354,8 +354,10 @@ module Instana
     # @return [Hash] a hash with :agent_host, :agent_port values or empty hash
     #
     def run_discovery
-      # Only run discovery every 3 minutes
-      return unless @last_discover_run && ((Time.now - @last_discover_run) > 120)
+      unless ENV.key?('INSTANA_GEM_TEST')
+        # Only run discovery every 3 minutes
+        return unless @last_discover_run && ((Time.now - @last_discover_run) > 120)
+      end
 
       discovered = {}
       @last_discover_run = Time.now
