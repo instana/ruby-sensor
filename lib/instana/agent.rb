@@ -14,6 +14,7 @@ module Instana
     attr_accessor :process
     attr_accessor :collect_thread
     attr_accessor :thread_spawn_lock
+    attr_accessor :last_discover_run
 
     LOCALHOST = '127.0.0.1'.freeze
     MIME_JSON = 'application/json'.freeze
@@ -353,7 +354,11 @@ module Instana
     # @return [Hash] a hash with :agent_host, :agent_port values or empty hash
     #
     def run_discovery
+      # Only run discovery every 3 minutes
+      return unless @last_discover_run && ((Time.now - @last_discover_run) > 120)
+
       discovered = {}
+      @last_discover_run = Time.now
 
       ::Instana.logger.debug "#{__method__}: Running agent discovery..."
 
