@@ -146,14 +146,16 @@ module Instana
 
       self.current_trace.finish(kvs, end_time)
 
-      if !self.current_trace.has_async? ||
-          (self.current_trace.has_async? && self.current_trace.complete?)
-        Instana.processor.add(self.current_trace)
-      else
-        # This trace still has outstanding/uncompleted asynchronous spans.
-        # Put it in the staging queue until the async span closes out or
-        # 5 minutes has passed.  Whichever comes first.
-        Instana.processor.stage(self.current_trace)
+      if ::Instana.agent.ready?
+        if !self.current_trace.has_async? ||
+            (self.current_trace.has_async? && self.current_trace.complete?)
+          Instana.processor.add(self.current_trace)
+        else
+          # This trace still has outstanding/uncompleted asynchronous spans.
+          # Put it in the staging queue until the async span closes out or
+          # 5 minutes has passed.  Whichever comes first.
+          Instana.processor.stage(self.current_trace)
+        end
       end
       self.current_trace = nil
     end
@@ -262,7 +264,7 @@ module Instana
     # @return [Span]
     #
     def start_span(operation_name, child_of: nil, start_time: ::Instana::Util.now_in_ms, tags: nil)
-      return unless ::Instana.agent.ready?
+      # return unless ::Instana.agent.ready?
 
       if tracing?
         span = self.current_trace.new_span(operation_name, tags, start_time, child_of)
