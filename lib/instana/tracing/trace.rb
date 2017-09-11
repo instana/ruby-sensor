@@ -109,16 +109,7 @@ module Instana
       add_info(kvs) if kvs && !kvs.empty?
       @current_span = @current_span.parent unless @current_span.is_root?
     end
-
-    # Closes out the final span in this trace and runs any finalizer
-    # steps required.
-    # This should be called only when on the root span to end the trace.
-    #
-    # @param kvs [Hash] list of key values to be reported in the span
-    #
-    def finish(kvs = {}, end_time = ::Instana::Util.now_in_ms)
-      end_span(kvs, end_time)
-    end
+    alias finish end_span
 
     ###########################################################################
     # Asynchronous Methods
