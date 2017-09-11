@@ -31,7 +31,8 @@ Rake::TestTask.new(:test) do |t|
   else
     t.test_files = FileList['test/agent/*_test.rb'] +
                    FileList['test/tracing/*_test.rb'] +
-                   FileList['test/profiling/*_test.rb']
+                   FileList['test/profiling/*_test.rb'] +
+                   FileList['test/benchmarks/bench_*.rb']
   end
 end
 
