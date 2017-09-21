@@ -22,6 +22,11 @@ class CustomTracingTest < Minitest::Test
     first_span = t.spans.first
     assert_equal :sdk, first_span[:n]
 
+    assert first_span[:ts].is_a?(Integer)
+    assert first_span[:ts] > 0
+    assert first_span[:d].is_a?(Integer)
+    assert first_span[:d].between?(0, 5)
+
     assert first_span.key?(:data)
     assert first_span[:data].key?(:sdk)
     assert first_span[:data][:sdk].key?(:custom)
@@ -63,6 +68,11 @@ class CustomTracingTest < Minitest::Test
     assert t.valid?
 
     first_span, second_span = t.spans.to_a
+
+    assert first_span[:ts].is_a?(Integer)
+    assert first_span[:ts] > 0
+    assert first_span[:d].is_a?(Integer)
+    assert first_span[:d].between?(0, 5)
 
     assert_equal :rack, first_span[:n]
     assert first_span.key?(:data)
@@ -117,12 +127,22 @@ class CustomTracingTest < Minitest::Test
 
     first_span, second_span = t.spans.to_a
 
+    assert first_span[:ts].is_a?(Integer)
+    assert first_span[:ts] > 0
+    assert first_span[:d].is_a?(Integer)
+    assert first_span[:d].between?(0, 5)
+
     assert_equal :rack, first_span[:n]
     assert first_span.key?(:data)
     assert first_span[:data].key?(:on_trace_start)
     assert_equal 1, first_span[:data][:on_trace_start]
     assert first_span[:data].key?(:on_trace_end)
     assert_equal 1, first_span[:data][:on_trace_end]
+
+    assert second_span[:ts].is_a?(Integer)
+    assert second_span[:ts] > 0
+    assert second_span[:d].is_a?(Integer)
+    assert second_span[:d].between?(0, 5)
 
     assert_equal :sdk, second_span[:n]
     assert second_span.key?(:data)

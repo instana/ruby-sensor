@@ -9,6 +9,7 @@ require "minitest/autorun"
 require "minitest/reporters"
 require "minitest/debugger" if ENV['DEBUG']
 require 'webmock/minitest'
+require "minitest/benchmark"
 
 require "instana/test"
 ::Instana::Test.setup_environment
