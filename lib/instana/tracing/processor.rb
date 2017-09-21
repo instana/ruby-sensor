@@ -18,6 +18,10 @@ module Instana
       # No access to the @staging_queue until this lock
       # is taken.
       @staging_lock = Mutex.new
+
+      # This is the maximum number of spans we send to the host
+      # agent at once.
+      @batch_size = 3000
     end
 
     # Adds a trace to the queue to be processed and
@@ -91,7 +95,12 @@ module Instana
       # Retrieve all spans for queued traces
       spans = queued_spans
 
-      ::Instana.agent.report_spans(spans)
+      # Report spans in batches
+      batch = spans.shift(@batch_size)
+      while !batch.empty? do
+        ::Instana.agent.report_spans(batch)
+        batch = spans.shift(@batch_size)
+      end
     end
 
     # Retrieves all of the traces in @queue and returns
