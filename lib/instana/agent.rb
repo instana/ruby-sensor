@@ -162,6 +162,9 @@ module Instana
         end
         @timers.wait
       end
+    rescue Exception => e
+      ::Instana.logger.warn "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      ::Instana.logger.debug e.backtrace.join("\r\n")
     ensure
       if @state == :announced
         # Pause the timers so they don't fire while we are
@@ -169,7 +172,7 @@ module Instana
         @collect_timer.pause
         @announce_timer.pause
 
-        ::Instana.logger.debug "Agent exiting. Reporting final #{::Instana.processor.queue_count} trace(s)."
+        ::Instana.logger.debug "#{Thread.current}: Agent exiting. Reporting final #{::Instana.processor.queue_count} trace(s)."
         ::Instana.processor.send
       end
     end

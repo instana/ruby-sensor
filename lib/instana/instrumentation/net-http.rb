@@ -35,9 +35,9 @@ if defined?(::Net::HTTP) && ::Instana.config[:nethttp][:enabled]
       # The core call
       response = request_without_instana(*args, &block)
 
-      # Pickup response headers; convert back to base 10 integer
+      # Debug only check: Pickup response headers; convert back to base 10 integer and validate
       if ::Instana.debug? && response.key?('X-Instana-T')
-        if ::Instana.tracer.trace_id != ::Instana.tracer.header_to_id(response.header['X-Instana-T'])
+        if ::Instana.tracer.trace_id != ::Instana::Util.header_to_id(response.header['X-Instana-T'])
           ::Instana.logger.debug "#{Thread.current}: Trace ID mismatch on net/http response! ours: #{::Instana.tracer.trace_id} theirs: #{their_trace_id}"
         end
       end
