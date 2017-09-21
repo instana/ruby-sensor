@@ -30,11 +30,13 @@ module Instana
 
       @baggage = {}
 
-      # For entry spans, add a backtrace fingerprint
-      add_stack(limit: 2) if ENTRY_SPANS.include?(name)
+      if ::Instana.config[:collect_backtraces]
+        # For entry spans, add a backtrace fingerprint
+        add_stack(limit: 2) if ENTRY_SPANS.include?(name)
 
-      # Attach a backtrace to all exit spans
-      add_stack if EXIT_SPANS.include?(name)
+        # Attach a backtrace to all exit spans
+        add_stack if EXIT_SPANS.include?(name)
+      end
 
       # Check for custom tracing
       if REGISTERED_SPANS.include?(name.to_sym)
