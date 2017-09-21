@@ -30,7 +30,7 @@ group :development do
   end
 end
 
-gem 'rails', '4.2.7.1'
+gem 'rails', '4.2.9'
 gem 'sqlite3'
 gem 'sass-rails', '~> 5.0'
 gem 'uglifier', '>= 1.3.0'
@@ -43,7 +43,6 @@ gem 'jbuilder', '~> 2.0'
 gem 'sdoc', '~> 0.4.0', group: :doc
 gem "pg"
 gem "mysql2"
-gem "mysql"
 
 # Include the Instana Ruby gem's base set of gems
 gemspec :path => File.expand_path(File.dirname(__FILE__) + '/../')
