@@ -31,7 +31,12 @@ module Instana
       @config[:eum_api_key] = nil
       @config[:eum_baggage] = {}
 
-      # Instrumentation
+      # In Ruby, backtrace collection is very expensive so it's
+      # (unfortunately) disabled by default.  If you still want
+      # backtraces, it can be enabled with this config option.
+      # ::Instana.config[:collect_backtraces] = true
+      @config[:collect_backtraces] = false
+
       @config[:action_controller]  = { :enabled => true }
       @config[:action_view]        = { :enabled => true }
       @config[:active_record]      = { :enabled => true }

@@ -34,17 +34,34 @@ class TraceTest < Minitest::Test
     end
   end
 
-  def test_entry_span_has_stack_with_limit
+  def test_entry_span_doesnt_have_stack_by_default
+    t = ::Instana::Trace.new(:rack)
+    first_span = t.spans.first
+    assert !first_span.key?(:stack)
+  end
+
+  def test_entry_span_has_stack_by_config
+    ::Instana.config[:collect_backtraces] = true
     t = ::Instana::Trace.new(:rack)
     first_span = t.spans.first
     assert first_span.key?(:stack)
     assert_equal 2, first_span[:stack].count
+    ::Instana.config[:collect_backtraces] = false
   end
 
-  def test_exit_span_has_stack
+  def test_exit_span_doesnt_have_stack_by_default
+    t = ::Instana::Trace.new(:trace_test)
+    t.new_span(:excon)
+    second_span = t.spans.to_a[1]
+    assert !second_span.key?(:stack)
+  end
+
+  def test_exit_span_has_stack_by_config
+    ::Instana.config[:collect_backtraces] = true
     t = ::Instana::Trace.new(:trace_test)
     t.new_span(:excon)
     second_span = t.spans.to_a[1]
     assert second_span.key?(:stack)
+    ::Instana.config[:collect_backtraces] = false
   end
 end
