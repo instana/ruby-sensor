@@ -21,6 +21,7 @@ end
 group :development do
   gem 'ruby-debug',   :platforms => [:mri_18, :jruby]
   gem 'debugger',     :platform  =>  :mri_19
+  gem 'stackprof'
 
   if RUBY_VERSION > '1.8.7'
     gem 'pry'
