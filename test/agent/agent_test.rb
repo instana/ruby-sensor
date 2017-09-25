@@ -1,4 +1,7 @@
 require 'test_helper'
+require 'oj'
+
+Oj.default_options = {:mode => :strict}
 
 class AgentTest < Minitest::Test
   def test_agent_host_detection
@@ -65,7 +68,7 @@ class AgentTest < Minitest::Test
     ::Instana.agent.instance_variable_set(:@discovered, discovery)
 
     url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/com.instana.plugin.ruby.discovery"
-    json = { 'pid' => Process.pid, 'agentUuid' => 'abc' }.to_json
+    json = Oj.dump({ 'pid' => Process.pid, 'agentUuid' => 'abc' })
     stub_request(:put, url).to_return(:body => json, :status => 200)
 
     assert_equal true, ::Instana.agent.announce_sensor
@@ -92,7 +95,7 @@ class AgentTest < Minitest::Test
     ::Instana.agent.instance_variable_set(:@discovered, discovery)
 
     url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/com.instana.plugin.ruby.discovery"
-    json = { 'pid' => Process.pid, 'agentUuid' => 'abc' }.to_json
+    json = Oj.dump({ 'pid' => Process.pid, 'agentUuid' => 'abc' })
     stub_request(:put, url).to_return(:body => json, :status => 200)
     ::Instana.agent.announce_sensor
 
