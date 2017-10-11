@@ -10,6 +10,7 @@ The Instana gem provides Ruby metrics and traces (request, queue & cross-host) f
 [![Code
 Climate](https://codeclimate.com/github/instana/ruby-sensor/badges/gpa.svg)](https://codeclimate.com/github/instana/ruby-sensor)
 [![Gem Version](https://badge.fury.io/rb/instana.svg)](https://badge.fury.io/rb/instana)
+[![OpenTracing Badge](https://img.shields.io/badge/OpenTracing-enabled-blue.svg)](http://opentracing.io)
 
 ## Note
 
