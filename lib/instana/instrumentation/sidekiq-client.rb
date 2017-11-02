@@ -1,4 +1,3 @@
-require 'byebug'
 module Instana
   module Instrumentation
     class SidekiqClient
