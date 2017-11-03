@@ -17,20 +17,14 @@ class RedisTest < Minitest::Test
     clear_all!
     redis_client = create_redis_client
 
-    redis_client.client.instance_eval do
-      def read
-        raise 'Something went wrong'
-      end
-    end
-
     Instana.tracer.start_or_continue_trace(:redis_test) do
       begin
-        redis_client.set('hello', 'world')
+        redis_client.zadd('hello', 'invalid', 'value')
       rescue; end
     end
     redis_client.disconnect!
 
-    assert_redis_trace('SET', with_error: 'Something went wrong')
+    assert_redis_trace('ZADD', with_error: 'ERR value is not a valid float')
   end
 
   def test_pipeline_call
@@ -39,7 +33,8 @@ class RedisTest < Minitest::Test
 
     Instana.tracer.start_or_continue_trace(:redis_test) do
       redis_client.pipelined do
-        exec_sample_pipeline_calls(redis_client)
+        redis_client.set('hello', 'world')
+        redis_client.set('other', 'world')
       end
     end
 
@@ -50,21 +45,16 @@ class RedisTest < Minitest::Test
     clear_all!
     redis_client = create_redis_client
 
-    redis_client.client.instance_eval do
-      def read
-        raise 'Something went wrong'
-      end
-    end
-
     Instana.tracer.start_or_continue_trace(:redis_test) do
       begin
         redis_client.pipelined do
-          exec_sample_pipeline_calls(redis_client)
+          redis_client.set('other', 'world')
+          redis_client.call('invalid')
         end
       rescue; end
     end
 
-    assert_redis_trace('PIPELINE', with_error: 'Something went wrong')
+    assert_redis_trace('PIPELINE', with_error: "ERR unknown command 'invalid'")
   end
 
   def test_multi_call
@@ -73,7 +63,8 @@ class RedisTest < Minitest::Test
 
     Instana.tracer.start_or_continue_trace(:redis_test) do
       redis_client.multi do
-        exec_sample_pipeline_calls(redis_client)
+        redis_client.set('hello', 'world')
+        redis_client.set('other', 'world')
       end
     end
 
@@ -84,33 +75,22 @@ class RedisTest < Minitest::Test
     clear_all!
     redis_client = create_redis_client
 
-    redis_client.client.instance_eval do
-      def read
-        raise 'Something went wrong'
-      end
-    end
-
     Instana.tracer.start_or_continue_trace(:redis_test) do
       begin
         redis_client.multi do
-          exec_sample_pipeline_calls(redis_client)
+          redis_client.set('other', 'world')
+          redis_client.call('invalid')
         end
       rescue; end
     end
 
-    assert_redis_trace('MULTI', with_error: 'Something went wrong')
+    assert_redis_trace('MULTI', with_error: "ERR unknown command 'invalid'")
   end
 
   private
 
   def create_redis_client
     Redis.new(url: ENV['I_REDIS_URL'])
-  end
-
-  def exec_sample_pipeline_calls(redis_client)
-    redis_client.set('hello', 'world')
-    redis_client.set('other', 'world')
-    redis_client.hmset('awesome', 'wonderful', 'world')
   end
 
   def assert_redis_trace(command, with_error: nil)

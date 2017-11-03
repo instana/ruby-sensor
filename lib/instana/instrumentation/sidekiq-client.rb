@@ -10,8 +10,8 @@ module Instana
 
         # Temporary until we move connection collection to redis
         # instrumentation
-        Sidekiq.redis_pool.with do |conn|
-          opts = conn.client.options
+        Sidekiq.redis_pool.with do |client|
+          opts = client.respond_to?(:connection) ? client.connection : client.client.options
           kv_payload[:'sidekiq-client'][:'redis-url'] = "#{opts[:host]}:#{opts[:port]}"
         end
 

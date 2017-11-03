@@ -45,7 +45,7 @@ end
 if defined?(GRPC::RpcDesc) && ::Instana.config[:grpc][:enabled]
   call_types.each do |call_type|
     GRPC::RpcDesc.class_eval <<-RUBY, __FILE__, __LINE__ + 1
-      def handle_#{call_type}_with_instana(active_call, mth)
+      def handle_#{call_type}_with_instana(active_call, mth, *others)
         kvs = { rpc: {} }
         metadata = active_call.metadata
 
@@ -66,7 +66,7 @@ if defined?(GRPC::RpcDesc) && ::Instana.config[:grpc][:enabled]
           :'rpc-server', kvs, incoming_context
         )
 
-        handle_#{call_type}_without_instana(active_call, mth)
+        handle_#{call_type}_without_instana(active_call, mth, *others)
       rescue => e
         kvs[:rpc][:error] = true
         ::Instana.tracer.log_info(kvs)
