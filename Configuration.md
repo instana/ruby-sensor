@@ -48,6 +48,16 @@ Instrumentation can be disabled as:
 ::Instana.config[:rack][:enabled] = false
 ```
 
+## Enable/Disable Backtrace Collection
+
+Because backtraces are somewhat expensive in Ruby, backtrace collection is disabled by default but can be enabled with the following code:
+
+```Ruby
+::Instana.config[:collect_backtraces] = true
+```
+
+This will in-turn enable CodeView in your dashboard to get code level insights.
+
 ## Rack Middleware
 
 This gem will detect and automagically insert the Instana Rack middleware into the middleware stack when a [supported framework](https://instana.atlassian.net/wiki/display/DOCS/Ruby) is present.  We are currently adding support for more frameworks.  If you are using a yet to be instrumented framework, you can insert the Instana Rack middleware with the following:
