@@ -80,6 +80,7 @@ module Instana
     # @param kvs [Hash] list of key values to be reported in the span
     #
     def add_info(kvs, span = nil)
+      return unless @current_span
       span ||= @current_span
 
       # Pass on to the OT span interface which will properly
@@ -94,7 +95,7 @@ module Instana
     def add_error(e, span = nil)
       # Return if we've already logged this exception and it
       # is just propogating up the spans.
-      return if e && e.instance_variable_get(:@instana_logged)
+      return if e && e.instance_variable_get(:@instana_logged) || @current_span.nil?
       span ||= @current_span
       span.add_error(e)
     end
@@ -105,6 +106,8 @@ module Instana
     # @param kvs [Hash] list of key values to be reported in the span
     #
     def end_span(kvs = {}, end_time = ::Instana::Util.now_in_ms)
+      return unless @current_span
+
       @current_span.close(end_time)
       add_info(kvs) if kvs && !kvs.empty?
       @current_span = @current_span.parent unless @current_span.is_root?
