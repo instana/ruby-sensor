@@ -115,6 +115,7 @@ module Instana
     def configure_custom(name)
       @data[:n] = :sdk
       @data[:data] = { :sdk => { :name => name.to_sym } }
+      @data[:data][:sdk][:custom] = { :tags => {}, :logs => {} }
       self
     end
 
@@ -266,7 +267,8 @@ module Instana
     def set_tag(key, value)
       if custom?
         @data[:data][:sdk][:custom] ||= {}
-        @data[:data][:sdk][:custom][key] = value
+        @data[:data][:sdk][:custom][:tags] ||= {}
+        @data[:data][:sdk][:custom][:tags][key] = value
 
         if key.to_sym == :'span.kind'
           case value.to_sym
@@ -333,7 +335,7 @@ module Instana
     #
     def tags(key = nil)
       if custom?
-        tags = @data[:data][:sdk][:custom]
+        tags = @data[:data][:sdk][:custom][:tags]
       else
         tags = @data[:data][key]
       end
