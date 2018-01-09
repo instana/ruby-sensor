@@ -98,7 +98,7 @@ module Instana
         if HTTP_SPANS.include?(@data[:n])
           set_tags(:http => { :error => "#{e.class}: #{e.message}" })
         else
-          set_tags(:log => { :message => e.message, :parameters => e.class.to_s })
+          log(:error, Time.now, { :message => e.message, :parameters => e.class.to_s })
         end
         e.instance_variable_set(:@instana_logged, true)
       end
@@ -349,8 +349,12 @@ module Instana
     # @param timestamp [Time] time of the log
     # @param fields [Hash] Additional information to log
     #
-    def log(event = nil, _timestamp = Time.now, **fields)
-      set_tags(:log => { :message => event, :parameters => fields })
+    def log(event = nil, timestamp = Time.now, **fields)
+      ts = ::Instana::Util.time_to_ms(timestamp).to_s
+      @data[:data][:sdk][:custom][:logs][ts] = fields
+      @data[:data][:sdk][:custom][:logs][ts][:event] = event
+    rescue StandardError => e
+      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
     end
 
     # Finish the {Span}
