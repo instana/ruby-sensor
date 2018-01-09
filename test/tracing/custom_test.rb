@@ -30,8 +30,9 @@ class CustomTracingTest < Minitest::Test
     assert first_span.key?(:data)
     assert first_span[:data].key?(:sdk)
     assert first_span[:data][:sdk].key?(:custom)
+    assert first_span[:data][:sdk][:custom].key?(:tags)
     assert_equal :custom_trace, first_span[:data][:sdk][:name]
-    assert_equal 1, first_span[:data][:sdk][:custom][:one]
+    assert_equal 1, first_span[:data][:sdk][:custom][:tags][:one]
     assert_equal :ruby, first_span[:ta]
 
     assert first_span.key?(:f)
@@ -85,13 +86,14 @@ class CustomTracingTest < Minitest::Test
     assert second_span.key?(:data)
     assert second_span[:data].key?(:sdk)
     assert second_span[:data][:sdk].key?(:custom)
+    assert second_span[:data][:sdk][:custom].key?(:tags)
     assert :custom_span, second_span[:data][:sdk][:name]
     assert :unknown, second_span[:data][:sdk][:type]
     assert [[1, 2, 3], "test_arg", :ok], second_span[:data][:sdk][:arguments]
     assert true, second_span[:data][:sdk][:return]
-    assert_equal 1, second_span[:data][:sdk][:custom][:on_entry_kv]
-    assert_equal 1, second_span[:data][:sdk][:custom][:on_info_kv]
-    assert_equal 1, second_span[:data][:sdk][:custom][:on_exit_kv]
+    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:on_entry_kv]
+    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:on_info_kv]
+    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:on_exit_kv]
   end
 
   def test_custom_tracing_with_error
@@ -148,13 +150,14 @@ class CustomTracingTest < Minitest::Test
     assert second_span.key?(:data)
     assert second_span[:data].key?(:sdk)
     assert second_span[:data][:sdk].key?(:custom)
+    assert second_span[:data][:sdk][:custom].key?(:tags)
     assert :custom_span, second_span[:data][:sdk][:name]
     assert :unknown, second_span[:data][:sdk][:type]
     assert [[1, 2, 3], "test_arg", :ok], second_span[:data][:sdk][:arguments]
     assert true, second_span[:data][:sdk][:return]
-    assert_equal 1, second_span[:data][:sdk][:custom][:on_entry_kv]
-    assert !second_span[:data][:sdk][:custom].key?(:on_info_kv)
-    assert_equal 1, second_span[:data][:sdk][:custom][:on_exit_kv]
+    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:on_entry_kv]
+    assert !second_span[:data][:sdk][:custom][:tags].key?(:on_info_kv)
+    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:on_exit_kv]
 
     # Check the error
     assert_equal true, second_span[:error]

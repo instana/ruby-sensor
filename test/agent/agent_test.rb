@@ -3,6 +3,11 @@ require 'oj'
 
 Oj.default_options = {:mode => :strict}
 
+# Stub out Agent discovery & announce requests
+WebMock.stub_request(:get, "http://127.0.0.1:42699/").
+  with(headers: {'Accept'=>'application/json', 'Content-Type'=>'application/json', 'Host'=>'127.0.0.1:42699', 'User-Agent'=>'Ruby'}).
+  to_return(status: 200, body: "", headers: {})
+
 class AgentTest < Minitest::Test
   def test_agent_host_detection
     url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/"
