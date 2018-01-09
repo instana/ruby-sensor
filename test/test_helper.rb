@@ -57,6 +57,11 @@ end
 
 Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
 
+# Stub out Agent discovery & announce requests
+WebMock.stub_request(:get, "http://127.0.0.1:42699/").
+  with(headers: {'Accept'=>'application/json', 'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3', 'Content-Type'=>'application/json', 'Host'=>'127.0.0.1:42699', 'User-Agent'=>'Ruby'}).
+  to_return(status: 200, body: "", headers: {})
+
 # Used to reset the gem to boot state.  It clears out any queued and/or staged
 # traces and resets the tracer to no active trace.
 #
