@@ -45,8 +45,8 @@ class TracerAsyncTest < Minitest::Test
     # KV checks
     assert_equal 1, first_span[:data][:rack_start_kv]
     assert_equal 1, first_span[:data][:rack_end_kv]
-    assert_equal 1, second_span[:data][:sdk][:custom][:entry_kv]
-    assert_equal 1, second_span[:data][:sdk][:custom][:exit_kv]
+    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:entry_kv]
+    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:exit_kv]
   end
 
   def test_diff_thread_async_tracing
@@ -103,14 +103,14 @@ class TracerAsyncTest < Minitest::Test
     # first span in second trace
     assert_equal :async_thread, first_span.name
     assert first_span.duration
-    assert_equal 1, first_span[:data][:sdk][:custom][:async_start]
-    assert_equal 1, first_span[:data][:sdk][:custom][:async_end]
+    assert_equal 1, first_span[:data][:sdk][:custom][:tags][:async_start]
+    assert_equal 1, first_span[:data][:sdk][:custom][:tags][:async_end]
 
     # second span in second trace
     assert_equal :sleepy_time, second_span.name
     assert second_span.duration
-    assert_equal 1, second_span[:data][:sdk][:custom][:tired]
-    assert_equal 1, second_span[:data][:sdk][:custom][:wake_up]
+    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:tired]
+    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:wake_up]
 
     # Validate linkage
     # first_span is the parent of first_span
@@ -169,8 +169,8 @@ class TracerAsyncTest < Minitest::Test
 
     # second span validation
     assert_equal :my_async_op, second_span.name
-    assert_equal 1, second_span[:data][:sdk][:custom][:async_entry_kv]
-    assert !second_span[:data][:sdk][:custom].key?(:async_exit_kv)
+    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:async_entry_kv]
+    assert !second_span[:data][:sdk][:custom][:tags].key?(:async_exit_kv)
     assert_equal nil, second_span.duration
 
     # first_span is the parent of first_span
@@ -252,12 +252,12 @@ class TracerAsyncTest < Minitest::Test
     # KV checks
     assert_equal 1, first_span[:data][:rack_start_kv]
     assert_equal 1, first_span[:data][:rack_end_kv]
-    assert_equal 1, second_span[:data][:sdk][:custom][:entry_kv]
-    assert_equal 1, second_span[:data][:sdk][:custom][:exit_kv]
-    assert_equal 2, third_span[:data][:sdk][:custom][:entry_kv]
-    assert_equal 2, third_span[:data][:sdk][:custom][:exit_kv]
-    assert_equal 3, fourth_span[:data][:sdk][:custom][:entry_kv]
-    assert_equal 3, fourth_span[:data][:sdk][:custom][:exit_kv]
+    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:entry_kv]
+    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:exit_kv]
+    assert_equal 2, third_span[:data][:sdk][:custom][:tags][:entry_kv]
+    assert_equal 2, third_span[:data][:sdk][:custom][:tags][:exit_kv]
+    assert_equal 3, fourth_span[:data][:sdk][:custom][:tags][:entry_kv]
+    assert_equal 3, fourth_span[:data][:sdk][:custom][:tags][:exit_kv]
   end
 
 

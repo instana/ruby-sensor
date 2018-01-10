@@ -131,9 +131,10 @@ class NetHTTPTest < Minitest::Test
 
     assert_equal :'net-http-error-test', first_span.name
     assert first_span.custom?
-    assert first_span[:data][:sdk][:custom].key?(:log)
-    assert first_span[:data][:sdk][:custom][:log].key?(:message)
-    assert first_span[:data][:sdk][:custom][:log].key?(:parameters)
+    ts_key = first_span[:data][:sdk][:custom][:logs].keys.first
+    assert first_span[:data][:sdk][:custom][:logs].key?(ts_key)
+    assert first_span[:data][:sdk][:custom][:logs][ts_key].key?(:event)
+    assert first_span[:data][:sdk][:custom][:logs][ts_key].key?(:parameters)
 
     WebMock.disable_net_connect!
   end

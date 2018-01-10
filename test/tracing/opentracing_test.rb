@@ -213,7 +213,7 @@ class OpenTracerTest < Minitest::Test
     span[:data][:sdk].delete(:type)
     span.set_tag(:'span.kind', :blah)
     assert_equal false, span[:data][:sdk].key?(:type)
-    assert_equal :blah, span[:data][:sdk][:custom][:'span.kind']
+    assert_equal :blah, span[:data][:sdk][:custom][:tags][:'span.kind']
 
     span.finish
   end
@@ -250,6 +250,9 @@ class OpenTracerTest < Minitest::Test
 
     assert_equal ts_start_ms, span[:ts]
     assert_equal (ts_finish_ms - ts_start_ms), span[:d]
+
+    assert_equal 1234, span[:data][:sdk][:custom][:tags][:start_tag]
+    assert_equal 'tag_value', span[:data][:sdk][:custom][:tags][:another_tag]
   end
 
   def test_nested_spans_using_child_of
