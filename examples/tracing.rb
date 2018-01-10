@@ -1,6 +1,10 @@
-# This file outlines some of the concepts with Instana tracing.
-# Please also see rdoc for latest info:
-# http://www.rubydoc.info/gems/instana/0.9.0.pre.slywolf3/Instana/Tracer
+# This file outlines the Instana Ruby Tracing API.
+#
+# This same tracer also supports OpenTracing.  See `opentracing.rb` for
+# separate documentation.
+
+# This API is also documented on rubydoc:
+# http://www.rubydoc.info/gems/instana/1.7.8/Instana/Tracer
 
 #######################################
 ## Block tracing
@@ -74,4 +78,3 @@ ensure
 end
 
 Instana::Tracer.log_end(:mywebserver)
-
