@@ -8,8 +8,8 @@ require "minitest/spec"
 require "minitest/autorun"
 require "minitest/reporters"
 require "minitest/debugger" if ENV['DEBUG']
-require 'webmock/minitest'
 require "minitest/benchmark"
+require 'webmock/minitest'
 
 require "instana/test"
 ::Instana::Test.setup_environment
@@ -17,10 +17,11 @@ require "instana/test"
 # Boot background webservers to test against.
 require "./test/servers/rackapp_6511"
 
+# Allow localhost calls to the internal rails servers
+::WebMock.disable_net_connect!(allow_localhost: true)
+
 case File.basename(ENV['BUNDLE_GEMFILE'])
 when /rails50|rails42|rails32/
-  # Allow localhost calls to the internal rails servers
-  ::WebMock.disable_net_connect!(allow_localhost: true)
   require './test/servers/rails_3205'
 when /libraries/
   # Configure gRPC
@@ -56,11 +57,6 @@ if defined?(::Redis)
 end
 
 Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
-
-# Stub out Agent discovery & announce requests
-WebMock.stub_request(:get, "http://127.0.0.1:42699/").
-  with(headers: {'Accept'=>'application/json', 'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3', 'Content-Type'=>'application/json', 'Host'=>'127.0.0.1:42699', 'User-Agent'=>'Ruby'}).
-  to_return(status: 200, body: "", headers: {})
 
 # Used to reset the gem to boot state.  It clears out any queued and/or staged
 # traces and resets the tracer to no active trace.
