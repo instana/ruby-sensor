@@ -244,6 +244,10 @@ module Instana
       @data[:n] == :sdk
     end
 
+    def inspect
+      @data.inspect
+    end
+
     #############################################################
     # OpenTracing Compatibility Methods
     #############################################################
@@ -351,8 +355,12 @@ module Instana
     #
     def log(event = nil, timestamp = Time.now, **fields)
       ts = ::Instana::Util.time_to_ms(timestamp).to_s
-      @data[:data][:sdk][:custom][:logs][ts] = fields
-      @data[:data][:sdk][:custom][:logs][ts][:event] = event
+      if custom?
+        @data[:data][:sdk][:custom][:logs][ts] = fields
+        @data[:data][:sdk][:custom][:logs][ts][:event] = event
+      else
+        set_tags(:log => fields)
+      end
     rescue StandardError => e
       Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
     end
