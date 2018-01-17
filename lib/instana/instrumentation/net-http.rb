@@ -5,6 +5,7 @@ if defined?(::Net::HTTP) && ::Instana.config[:nethttp][:enabled]
 
     def request_with_instana(*args, &block)
       if !Instana.tracer.tracing? || !started?
+        do_skip = true
         return request_without_instana(*args, &block)
       end
 
@@ -54,7 +55,7 @@ if defined?(::Net::HTTP) && ::Instana.config[:nethttp][:enabled]
       ::Instana.tracer.log_error(e)
       raise
     ensure
-      ::Instana.tracer.log_exit(:'net-http', kv_payload)
+      ::Instana.tracer.log_exit(:'net-http', kv_payload) unless do_skip
     end
 
     Instana.logger.info "Instrumenting Net::HTTP"
