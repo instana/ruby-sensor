@@ -57,7 +57,7 @@ This Ruby gem provides a simple API for tracing and also supports [OpenTracing](
 
 ## Documentation
 
-You can find more documentation covering supported components and minimum versions in the Instana [documentation portal](https://instana.atlassian.net/wiki/display/DOCS/Ruby).
+You can find more documentation covering supported components and minimum versions in the Instana [documentation portal](https://docs.instana.io/ecosystem/ruby/).
 
 ## Want End User Monitoring?
 
@@ -84,7 +84,7 @@ with the browser instrumentation.
 
 ![Instana EUM example with metadata](https://s3.amazonaws.com/instana/Instana+Gameface+EUM+with+metadata+2016-12-22+at+15.32.01.png)
 
-See also the [End User Monitoring](https://instana.atlassian.net/wiki/display/DOCS/Web+End-User+Monitoring) in the Instana documentation portal.
+See also the [End User Monitoring](https://docs.instana.io/products/website_monitoring/) in the Instana documentation portal.
 
 ## Development
 
