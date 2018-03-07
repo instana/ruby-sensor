@@ -24,7 +24,7 @@ The sensor tries to communicate with the Instana agent via IP 127.0.0.1 and as a
 
 ```Ruby
 # Leverage environment variable
-::Instana.config[:agent_host] = ENV['INSTANA_AGENT_IP']
+::Instana.config[:agent_host] = ENV['INSTANA_AGENT_HOST']
 
 # Custom agent port
 ::Instana.config[:agent_port] = 42699
