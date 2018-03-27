@@ -39,7 +39,7 @@ if defined?(GRPC::ActiveCall) && ::Instana.config[:grpc][:enabled]
       alias #{call_type} #{call_type}_with_instana
     RUBY
   end
-  ::Instana.logger.warn 'Instrumenting GRPC client'
+  ::Instana.logger.info 'Instrumenting GRPC client'
 end
 
 if defined?(GRPC::RpcDesc) && ::Instana.config[:grpc][:enabled]
@@ -80,5 +80,5 @@ if defined?(GRPC::RpcDesc) && ::Instana.config[:grpc][:enabled]
       alias handle_#{call_type} handle_#{call_type}_with_instana
     RUBY
   end
-  ::Instana.logger.warn 'Instrumenting GRPC server'
+  ::Instana.logger.info 'Instrumenting GRPC server'
 end

@@ -43,7 +43,7 @@ end
 if defined?(::Sidekiq) && ::Instana.config[:'sidekiq-worker'][:enabled]
   ::Sidekiq.configure_server do |cfg|
     cfg.server_middleware do |chain|
-      ::Instana.logger.warn "Instrumenting Sidekiq worker"
+      ::Instana.logger.info "Instrumenting Sidekiq worker"
       chain.add ::Instana::Instrumentation::SidekiqWorker
     end
   end
