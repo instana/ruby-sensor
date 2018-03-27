@@ -131,7 +131,7 @@ module Instana
       new_span = Span.new(name, @id, parent_id: @current_span.id)
       new_span.set_tags(kvs) unless kvs.empty?
       new_span.parent = @current_span
-      new_span[:async] = @has_async = true
+      new_span[:deferred] = @has_async = true
 
       # Add the new span to the span collection
       @spans.add(new_span)
