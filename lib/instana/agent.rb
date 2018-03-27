@@ -118,7 +118,7 @@ module Instana
         if @state == :unannounced
           if host_agent_ready? && announce_sensor
             transition_to(:announced)
-            ::Instana.logger.warn "Host agent available. We're in business. (#{@state} pid:#{Process.pid} #{@process[:name]})"
+            ::Instana.logger.info "Host agent available. We're in business. (#{@state} pid:#{Process.pid} #{@process[:name]})"
           end
         end
       end
