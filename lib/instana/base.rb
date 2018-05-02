@@ -46,4 +46,4 @@ end
 
 # Setup the logger as early as possible
 ::Instana.logger = ::Instana::XLogger.new(STDOUT)
-::Instana.logger.unknown "Stan is on the scene.  Starting Instana instrumentation version #{::Instana::VERSION}"
+::Instana.logger.info "Stan is on the scene.  Starting Instana instrumentation version #{::Instana::VERSION}"
