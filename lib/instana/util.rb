@@ -140,7 +140,7 @@ module Instana
         if File.exist?(cmdline_file)
           cmdline = IO.read(cmdline_file).split(?\x00)
         else
-          cmdline = ProcTable.ps(Process.pid).cmdline.split(' ')
+          cmdline = ProcTable.ps(:pid => Process.pid).cmdline.split(' ')
         end
 
         if RUBY_PLATFORM =~ /darwin/i
