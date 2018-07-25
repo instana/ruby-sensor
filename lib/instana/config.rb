@@ -11,7 +11,7 @@ module Instana
       if ENV.key?('INSTANA_AGENT_PORT')
         @config[:agent_port] = ENV['INSTANA_AGENT_PORT']
       else
-        @config[:agent_port] = '127.0.0.1'
+        @config[:agent_port] = 42699
       end
 
       # Global on/off switch for prebuilt environments
