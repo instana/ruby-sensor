@@ -3,8 +3,11 @@ module Instana
 
     def initialize
       @config = {}
-
-      @config[:agent_host] = '127.0.0.1'
+      if ENV.key?('INSTANA_AGENT_HOST')
+        config[:agent_host] = ENV['INSTANA_AGENT_HOST']
+      else
+        config[:agent_host] = '127.0.0.1'
+      end
       @config[:agent_port] = 42699
 
       # Global on/off switch for prebuilt environments
