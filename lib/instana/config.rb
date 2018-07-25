@@ -3,9 +3,16 @@ module Instana
 
     def initialize
       @config = {}
-
-      @config[:agent_host] = '127.0.0.1'
-      @config[:agent_port] = 42699
+      if ENV.key?('INSTANA_AGENT_HOST')
+        @config[:agent_host] = ENV['INSTANA_AGENT_HOST']
+      else
+        @config[:agent_host] = '127.0.0.1'
+      end
+      if ENV.key?('INSTANA_AGENT_PORT')
+        @config[:agent_port] = ENV['INSTANA_AGENT_PORT']
+      else
+        @config[:agent_port] = 42699
+      end
 
       # Global on/off switch for prebuilt environments
       # Setting this to false will disable this gem

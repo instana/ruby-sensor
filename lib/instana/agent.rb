@@ -372,8 +372,8 @@ module Instana
     end
 
     # Runs a discovery process to determine where we can contact the host agent.  This is usually just
-    # localhost but in docker can be found on the default gateway.  This also allows for manual
-    # configuration via ::Instana.config[:agent_host/port].
+    # localhost but in docker can be found on the default gateway. Another option is the INSTANA_AGENT_HOST
+    # environment variable. This also allows for manual configuration via ::Instana.config[:agent_host/port].
     #
     # @return [Hash] a hash with :agent_host, :agent_port values or empty hash
     #
@@ -414,6 +414,7 @@ module Instana
         ::Instana.logger.debug "#{__method__}: Found #{discovered[:agent_host]}:#{discovered[:agent_port]}"
         return discovered
       end
+
       nil
     end
 
