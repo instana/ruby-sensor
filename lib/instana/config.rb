@@ -4,9 +4,9 @@ module Instana
     def initialize
       @config = {}
       if ENV.key?('INSTANA_AGENT_HOST')
-        config[:agent_host] = ENV['INSTANA_AGENT_HOST']
+        @config[:agent_host] = ENV['INSTANA_AGENT_HOST']
       else
-        config[:agent_host] = '127.0.0.1'
+        @config[:agent_host] = '127.0.0.1'
       end
       @config[:agent_port] = 42699
 
