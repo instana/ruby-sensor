@@ -50,20 +50,24 @@ module Instana
         #return unless %w(development, test).include? env
 
         if RUBY_VERSION > '1.8.7'
-          require 'pry-byebug'
+          begin
+            require 'pry-byebug'
 
-          if defined?(PryByebug)
-            Pry.commands.alias_command 'c', 'continue'
-            Pry.commands.alias_command 's', 'step'
-            Pry.commands.alias_command 'n', 'next'
-            Pry.commands.alias_command 'f', 'finish'
+            if defined?(PryByebug)
+              Pry.commands.alias_command 'c', 'continue'
+              Pry.commands.alias_command 's', 'step'
+              Pry.commands.alias_command 'n', 'next'
+              Pry.commands.alias_command 'f', 'finish'
 
-            Pry::Commands.command(/^$/, 'repeat last command') do
-              _pry_.run_command Pry.history.to_a.last
+              Pry::Commands.command(/^$/, 'repeat last command') do
+                _pry_.run_command Pry.history.to_a.last
+              end
             end
-          end
 
-          binding.pry
+            binding.pry
+          rescue LoadError
+            ::Instana.logger.warn("No debugger in bundle.  Couldn't load pry-byebug.")
+          end
         else
           require 'ruby-debug'; debugger
         end
@@ -156,6 +160,23 @@ module Instana
         # will return to us the true host pid in which we use to report data.
         process[:report_pid] = nil
         process
+      end
+
+      # Best effort to determine a name for the instrumented application
+      # on the dashboard.
+      #
+      def get_app_name
+        name = File.basename($0)
+
+        # Framework Detection
+        if defined?(::RailsLts) || defined?(::Rails)
+          name = Rails.application.class.to_s.split('::')[0]
+        end
+
+        return name
+      rescue Exception => e
+        Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+        Instana.logger.debug e.backtrace.join("\r\n")
       end
 
       # Get the current time in milliseconds from the epoch

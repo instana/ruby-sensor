@@ -70,7 +70,7 @@ module Instana
         # Add in process related that could have changed since
         # snapshot was taken.
         p = { :pid => ::Instana.agent.report_pid }
-        p[:name] = ::Instana.agent.process[:name]
+        p[:name] = ::Instana::Util.get_app_name
         p[:exec_args] = ::Instana.agent.process[:arguments]
         payload.merge!(p)
       else
@@ -114,4 +114,3 @@ module Instana
     end
   end
 end
-

@@ -152,8 +152,10 @@ module Instana
     # called from an already initialized background thread.
     #
     def start
-      unless host_agent_ready?
-        ::Instana.logger.warn "Host agent not available.  Will retry periodically. (Set env INSTANA_QUIET=1 to shut these messages off)"
+      if !host_agent_ready?
+        if !ENV.key?("INSTANA_QUIET")
+          ::Instana.logger.warn "Host agent not available.  Will retry periodically. (Set env INSTANA_QUIET=1 to shut these messages off)"
+        end
       end
 
       loop do
