@@ -1,4 +1,4 @@
-require 'oj'
+require 'json'
 require 'net/http'
 require 'socket'
 require 'sys/proctable'
@@ -7,7 +7,7 @@ require 'uri'
 require 'thread'
 include Sys
 
-Oj.default_options = {:mode => :strict}
+# JSON.default_options = {:mode => :strict}
 
 module Instana
   class Agent
@@ -211,14 +211,14 @@ module Instana
 
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH}")
       req = Net::HTTP::Put.new(uri)
-      req.body = Oj.dump(announce_payload)
+      req.body = JSON.dump(announce_payload)
 
       ::Instana.logger.debug "Announce: http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH} - payload: #{req.body}"
 
       response = make_host_agent_request(req)
 
       if response && (response.code.to_i == 200)
-        data = Oj.load(response.body)
+        data = JSON.load(response.body)
         @process[:report_pid] = data['pid']
         @agent_uuid = data['agentUuid']
         true
@@ -249,7 +249,7 @@ module Instana
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{path}")
       req = Net::HTTP::Post.new(uri)
 
-      req.body = Oj.dump(payload)
+      req.body = JSON.dump(payload)
       response = make_host_agent_request(req)
 
       if response
@@ -277,7 +277,7 @@ module Instana
     # @param json_string [String] the requests from the host agent
     #
     def handle_agent_tasks(json_string)
-      tasks = Oj.load(json_string)
+      tasks = JSON.load(json_string)
 
       if tasks.is_a?(Hash)
         process_agent_task(tasks)
@@ -306,7 +306,7 @@ module Instana
       path = "com.instana.plugin.ruby/response.#{@process[:report_pid]}?messageId=#{URI.encode(task['messageId'])}"
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{path}")
       req = Net::HTTP::Post.new(uri)
-      req.body = Oj.dump(payload)
+      req.body = JSON.dump(payload)
       ::Instana.logger.debug "Responding to agent request: #{req.inspect}"
       make_host_agent_request(req)
 
@@ -332,7 +332,7 @@ module Instana
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{path}")
       req = Net::HTTP::Post.new(uri)
 
-      req.body = Oj.dump(spans)
+      req.body = JSON.dump(spans)
       response = make_host_agent_request(req)
 
       if response
