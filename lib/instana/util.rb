@@ -166,11 +166,14 @@ module Instana
       # on the dashboard.
       #
       def get_app_name
-        name = File.basename($0)
+        if ENV.key?('INSTANA_SERVICE_NAME')
+          name = ENV['INSTANA_SERVICE_NAME']
 
-        # Framework Detection
-        if defined?(::RailsLts) || defined?(::Rails)
+        elsif defined?(::RailsLts) || defined?(::Rails)
           name = Rails.application.class.to_s.split('::')[0]
+
+        else
+          name = File.basename($0)
         end
 
         return name

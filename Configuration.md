@@ -18,6 +18,12 @@ Instana.config[:metrics][:enabled] # default true
 Instana.config[:tracing][:enabled] # default true
 ```
 
+If you wish to disable the built-in instrumentation but still permit custom instrumentation, set the following environment variable for your application:
+
+```sh
+export INSTANA_DISABLE_AUTO_INSTR=true
+```
+
 ## Agent Communication
 
 The sensor tries to communicate with the Instana agent via IP 127.0.0.1 and as a fallback via the host's default gateway. Should the agent not be available under either of these IPs, e.g. due to iptables or other networking tricks, you can use the agentHost option to use a custom IP.
@@ -57,6 +63,14 @@ Because backtraces are somewhat expensive in Ruby, backtrace collection is disab
 ```
 
 This will in-turn enable CodeView in your dashboard to get code level insights.
+
+## Setting a Custom Service Name
+
+You can set a custom service name for your application by setting the `INSTANA_SERVICE_NAME` environment variable:
+
+```sh
+export INSTANA_SERVICE_NAME=MrBlueSky
+```
 
 ## Rack Middleware
 
