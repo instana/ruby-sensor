@@ -16,6 +16,7 @@ module Instana
     attr_accessor :process
     attr_accessor :collect_thread
     attr_accessor :thread_spawn_lock
+    attr_accessor :extra_headers
 
     LOCALHOST = '127.0.0.1'.freeze
     MIME_JSON = 'application/json'.freeze
@@ -64,6 +65,9 @@ module Instana
 
       # This will hold info on the discovered agent host
       @discovered = nil
+
+      # The agent may pass down custom headers for this sensor to capture
+      @extra_headers = nil
     end
 
     # Used post fork to re-initialize state and restart communications with
@@ -221,6 +225,10 @@ module Instana
         data = Oj.load(response.body)
         @process[:report_pid] = data['pid']
         @agent_uuid = data['agentUuid']
+
+        if data.key?('extraHeaders')
+          @extra_headers = data['extraHeaders']
+        end
         true
       else
         false
