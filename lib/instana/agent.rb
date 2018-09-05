@@ -46,7 +46,7 @@ module Instana
 
       # In case we're running in Docker, have the default gateway available
       # to check in case we're running in bridged network mode
-      if @is_linux
+      if @is_linux && File.exist?("/sbin/ip")
         @default_gateway = `/sbin/ip route | awk '/default/ { print $3 }'`.chomp
       else
         @default_gateway = nil
