@@ -9,8 +9,8 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Peter Giacomo Lombardo"]
   spec.email         = ["pglombardo@gmail.com"]
 
-  spec.summary       = %q{Ruby sensor for Instana}
-  spec.description   = %q{Provides Ruby sensor instrumentation for Instana.}
+  spec.summary       = %q{Ruby Distributed Tracing & Metrics Sensor for Instana}
+  spec.description   = %q{The Instana gem collects and reports Ruby metrics and distibuted traces to your Instana dashboard.}
   spec.homepage      = "https://www.instana.com/"
 
   spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
