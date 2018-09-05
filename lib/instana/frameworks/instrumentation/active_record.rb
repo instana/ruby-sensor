@@ -23,6 +23,6 @@ if defined?(::ActiveRecord) && ::Instana.config[:active_record][:enabled]
     ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.send(:include, ::Instana::Instrumentation::PostgreSQLAdapter)
 
   else
-    ::Instana.logger.debug "Unsupported ActiveRecord adapter: #{ActiveRecord::Base.connection.adapter_name.downcase}"
+    ::Instana.logger.debug "Unsupported ActiveRecord adapter"
   end
 end
