@@ -2,9 +2,11 @@ module Instana
   class Span
     REGISTERED_SPANS = [ :actioncontroller, :actionview, :activerecord, :excon,
                          :memcache, :'net-http', :rack, :render, :'rpc-client',
-                         :'rpc-server', :'sidekiq-client', :'sidekiq-worker', :redis].freeze
-    ENTRY_SPANS = [ :rack, :'rpc-server', :'sidekiq-worker' ].freeze
-    EXIT_SPANS = [ :activerecord, :excon, :'net-http', :'rpc-client', :'sidekiq-client', :redis ].freeze
+                         :'rpc-server', :'sidekiq-client', :'sidekiq-worker',
+                         :redis, :'resque-client', :'resque-worker' ].freeze
+    ENTRY_SPANS = [ :rack, :'resque-worker', :'rpc-server', :'sidekiq-worker' ].freeze
+    EXIT_SPANS = [ :activerecord, :excon, :'net-http', :'resque-client',
+                   :'rpc-client', :'sidekiq-client', :redis ].freeze
     HTTP_SPANS = [ :rack, :excon, :'net-http' ].freeze
 
     attr_accessor :parent
