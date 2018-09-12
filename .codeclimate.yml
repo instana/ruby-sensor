@@ -1,30 +1,23 @@
----
-engines:
-  duplication:
-    enabled: false
+version: "2"
+checks:
+  complex-logic:
     config:
-      languages:
-      - ruby
-      - javascript
-      - python
-      - php
+      threshold: 12
+  file-lines:
+    config:
+      threshold: 325
+  method-complexity:
+    config:
+      threshold: 12
+  method-lines:
+    config:
+      threshold: 50
+  method-count:
+    config:
+      threshold: 30
+
+plugins:
   fixme:
     enabled: true
   rubocop:
     enabled: true
-    checks:
-      Rubocop/Metrics/CyclomaticComplexity:
-        enabled: false
-      Rubocop/Lint/RescueException:
-        enabled: false
-ratings:
-  paths:
-  - "**.inc"
-  - "**.js"
-  - "**.jsx"
-  - "**.module"
-  - "**.php"
-  - "**.py"
-  - "**.rb"
-exclude_paths:
-- test/
