@@ -9,6 +9,17 @@ module Instana
 
     thread_local :current_trace
 
+    # Support ::Instana::Tracer.xxx call style for the instantiated tracer
+    class << self
+      def method_missing(method, *args, &block)
+        if ::Instana.tracer.respond_to?(method)
+          ::Instana.tracer.send(method, *args, &block)
+        else
+          super
+        end
+      end
+    end
+
     #######################################
     # Tracing blocks API methods
     #######################################
