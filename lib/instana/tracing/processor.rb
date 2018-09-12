@@ -84,7 +84,7 @@ module Instana
       return if @queue.empty? || ENV['INSTANA_GEM_TEST']
 
       size = @queue.size
-      if size > 100
+      if size > 200
         Instana.logger.debug "Trace queue is #{size}"
       end
 

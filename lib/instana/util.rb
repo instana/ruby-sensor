@@ -48,29 +48,22 @@ module Instana
         # Only valid for development or test environments
         #env = ENV['RACK_ENV'] || ENV['RAILS_ENV']
         #return unless %w(development, test).include? env
+        require 'pry-byebug'
 
-        if RUBY_VERSION > '1.8.7'
-          begin
-            require 'pry-byebug'
+        if defined?(PryByebug)
+          Pry.commands.alias_command 'c', 'continue'
+          Pry.commands.alias_command 's', 'step'
+          Pry.commands.alias_command 'n', 'next'
+          Pry.commands.alias_command 'f', 'finish'
 
-            if defined?(PryByebug)
-              Pry.commands.alias_command 'c', 'continue'
-              Pry.commands.alias_command 's', 'step'
-              Pry.commands.alias_command 'n', 'next'
-              Pry.commands.alias_command 'f', 'finish'
-
-              Pry::Commands.command(/^$/, 'repeat last command') do
-                _pry_.run_command Pry.history.to_a.last
-              end
-            end
-
-            binding.pry
-          rescue LoadError
-            ::Instana.logger.warn("No debugger in bundle.  Couldn't load pry-byebug.")
+          Pry::Commands.command(/^$/, 'repeat last command') do
+            _pry_.run_command Pry.history.to_a.last
           end
-        else
-          require 'ruby-debug'; debugger
         end
+
+        binding.pry
+      rescue LoadError
+        ::Instana.logger.warn("No debugger in bundle.  Couldn't load pry-byebug.")
       end
 
       # Retrieves and returns the source code for any ruby

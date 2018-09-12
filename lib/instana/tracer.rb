@@ -242,7 +242,7 @@ module Instana
     # @param span [Span] the span for this Async op (previously returned
     #   from `log_async_entry`)
     #
-    def log_async_exit(name, kvs, span)
+    def log_async_exit(_name, kvs, span)
       # An asynchronous span can end after the current trace has
       # already completed so we make sure that we end the span
       # on the right trace.

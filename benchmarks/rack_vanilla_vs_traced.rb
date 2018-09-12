@@ -12,12 +12,12 @@ require "instana/rack"
 Thread.new do
   app = Rack::Builder.new {
     map "/" do
-      run Proc.new { |env|
+      run Proc.new {
         [200, {"Content-Type" => "application/json"}, ["[\"Stan\",\"is\",\"on\",\"the\",\"scene!\"]"]]
       }
     end
     map "/error" do
-      run Proc.new { |env|
+      run Proc.new {
         [500, {"Content-Type" => "application/json"}, ["[\"Stan\",\"is\",\"on\",\"the\",\"error!\"]"]]
       }
     end
@@ -30,12 +30,12 @@ Thread.new do
   app = Rack::Builder.new {
     use ::Instana::Rack
     map "/" do
-      run Proc.new { |env|
+      run Proc.new {
         [200, {"Content-Type" => "application/json"}, ["[\"Stan\",\"is\",\"on\",\"the\",\"scene!\"]"]]
       }
     end
     map "/error" do
-      run Proc.new { |env|
+      run Proc.new {
         [500, {"Content-Type" => "application/json"}, ["[\"Stan\",\"is\",\"on\",\"the\",\"error!\"]"]]
       }
     end
