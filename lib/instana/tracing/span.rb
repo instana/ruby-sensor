@@ -65,7 +65,7 @@ module Instana
           x = i.split(':')
 
           @data[:stack] << {
-            :f => x[0],
+            :c => x[0],
             :n => x[1],
             :m => x[2]
           }
