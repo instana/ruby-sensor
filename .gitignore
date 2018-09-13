@@ -11,3 +11,5 @@
 .ruby-version
 gemfiles/*.lock
 /test/tmp/*.pid
+.idea
+*.iml
