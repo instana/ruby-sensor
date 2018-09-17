@@ -100,9 +100,21 @@ module Instana
 end
 
 if defined?(::Resque) && RUBY_VERSION >= '1.9.3'
-  Instana.logger.info 'Instrumenting Resque'
 
-  ::Instana::Util.send_include(::Resque,         ::Instana::Instrumentation::ResqueClient)
-  ::Instana::Util.send_include(::Resque::Worker, ::Instana::Instrumentation::ResqueWorker)
-  ::Instana::Util.send_include(::Resque::Job,    ::Instana::Instrumentation::ResqueJob)
+  if ::Instana.config[:'resque-client'][:enabled]
+    ::Instana.logger.info 'Instrumenting Resque Client'
+    ::Instana::Util.send_include(::Resque,         ::Instana::Instrumentation::ResqueClient)
+  end
+
+  if ::Instana.config[:'resque-worker'][:enabled]
+    ::Instana.logger.info 'Instrumenting Resque Worker'
+
+    ::Instana::Util.send_include(::Resque::Worker, ::Instana::Instrumentation::ResqueWorker)
+    ::Instana::Util.send_include(::Resque::Job,    ::Instana::Instrumentation::ResqueJob)
+
+    ::Resque.after_fork do |job|
+      ::Instana.logger.debug("After fork hook for Resque Job")
+      ::Instana.agent.after_fork
+    end
+  end
 end

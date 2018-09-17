@@ -52,7 +52,8 @@ module Instana
       @config[:grpc]               = { :enabled => true }
       @config[:nethttp]            = { :enabled => true }
       @config[:redis]              = { :enabled => true }
-      @config[:resque]             = { :enabled => true }
+      @config[:'resque-client']    = { :enabled => true }
+      @config[:'resque-worker']    = { :enabled => true }
       @config[:'rest-client']      = { :enabled => true }
       @config[:'sidekiq-client']   = { :enabled => true }
       @config[:'sidekiq-worker']   = { :enabled => true }
