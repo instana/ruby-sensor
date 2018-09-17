@@ -1,6 +1,7 @@
 require 'test_helper'
 require_relative "../jobs/resque_job_1"
 require_relative "../jobs/resque_job_2"
+require 'resque'
 
 ::Resque.redis = 'mazzo:6379'
 
@@ -18,7 +19,14 @@ class ResqueClientTest < Minitest::Test
     end
 
     traces = Instana.processor.queued_traces
-    assert_equal 2, traces.count
+    assert_equal 1, traces.count
+
+    spans = traces[0].spans.to_a
+    assert_equal 3, spans.count
+
+    assert_equal :'resque-client_test', spans[0][:data][:sdk][:name]
+    assert_equal :"resque-client", spans[1][:n]
+    assert_equal :redis, spans[2][:n]
   end
 
   def test_dequeue
@@ -27,6 +35,13 @@ class ResqueClientTest < Minitest::Test
     end
 
     traces = Instana.processor.queued_traces
-    assert_equal 2, traces.count, "trace count"
+    assert_equal 1, traces.count
+
+    spans = traces[0].spans.to_a
+    assert_equal 3, spans.count
+
+    assert_equal :'resque-client_test', spans[0][:data][:sdk][:name]
+    assert_equal :"resque-client", spans[1][:n]
+    assert_equal :redis, spans[2][:n]
   end
 end
