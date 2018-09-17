@@ -49,12 +49,13 @@ module Instana
       @config[:active_record]      = { :enabled => true }
       @config[:dalli]              = { :enabled => true }
       @config[:excon]              = { :enabled => true }
-      @config[:nethttp]            = { :enabled => true }
-      @config[:'rest-client']      = { :enabled => true }
       @config[:grpc]               = { :enabled => true }
+      @config[:nethttp]            = { :enabled => true }
+      @config[:redis]              = { :enabled => true }
+      @config[:resque]             = { :enabled => true }
+      @config[:'rest-client']      = { :enabled => true }
       @config[:'sidekiq-client']   = { :enabled => true }
       @config[:'sidekiq-worker']   = { :enabled => true }
-      @config[:redis]              = { :enabled => true }
     end
 
     def [](key)
