@@ -20,7 +20,7 @@ module Instana
       end
 
       if ::Instana.agent.extra_headers
-        for custom_header in agent.extra_headers
+        for custom_header in ::Instana.agent.extra_headers
           # Headers are available in this format: HTTP_X_CAPTURE_THIS
           rack_header = ('HTTP_' + custom_header.upcase).gsub('-', '_')
           if env.key?(rack_header)
