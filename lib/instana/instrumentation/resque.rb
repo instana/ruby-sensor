@@ -78,7 +78,7 @@ module Instana
           Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" if Instana::Config[:verbose]
         end
 
-        Instana::tracer.start_or_continue_trace(:'resque-worker', nil, kvs) do
+        Instana.tracer.start_or_continue_trace(:'resque-worker', nil, kvs) do
           perform_without_instana(job)
         end
       end
@@ -91,7 +91,7 @@ module Instana
 
       def fail_with_instana(exception)
         if Instana.tracer.tracing?
-          Instana::tracer.log_error(:resque, exception)
+          Instana.tracer.log_error(:resque, exception)
         end
         fail_without_instana(exception)
       end
@@ -112,9 +112,14 @@ if defined?(::Resque) && RUBY_VERSION >= '1.9.3'
     ::Instana::Util.send_include(::Resque::Worker, ::Instana::Instrumentation::ResqueWorker)
     ::Instana::Util.send_include(::Resque::Job,    ::Instana::Instrumentation::ResqueJob)
 
-    ::Resque.after_fork do |job|
-      ::Instana.logger.debug("After fork hook for Resque Job")
-      ::Instana.agent.after_fork
+    ::Resque.before_fork do |job|
+      ::Instana.agent.before_resque_fork
     end
+    ::Resque.after_fork do |job|
+      ::Instana.agent.after_resque_fork
+    end
+
+    # Set this so we assure that any remaining collected traces are reported at_exit
+    ENV['RUN_AT_EXIT_HOOKS'] = "1"
   end
 end

@@ -5,12 +5,21 @@ require 'sys/proctable'
 require 'timers'
 require 'uri'
 require 'thread'
+
+require 'instana/agent/helpers'
+require 'instana/agent/hooks'
+require 'instana/agent/tasks'
+
 include Sys
 
 Oj.default_options = {:mode => :strict}
 
 module Instana
   class Agent
+    include AgentHelpers
+    include AgentHooks
+    include AgentTasks
+
     attr_accessor :state
     attr_accessor :agent_uuid
     attr_accessor :process
@@ -70,21 +79,6 @@ module Instana
       @extra_headers = nil
     end
 
-    # Used post fork to re-initialize state and restart communications with
-    # the host agent.
-    #
-    def after_fork
-      ::Instana.logger.debug "after_fork hook called. Falling back to unannounced state and spawning a new background agent thread."
-
-      # Reseed the random number generator for this
-      # new thread.
-      srand
-
-      transition_to(:unannounced)
-      setup
-      spawn_background_thread
-    end
-
     # Spawns the background thread and calls start.  This method is separated
     # out for those who wish to control which thread the background agent will
     # run in.
@@ -120,7 +114,7 @@ module Instana
       # In case of failure, we try again in 30 seconds.
       @announce_timer = @timers.every(30) do
         if @state == :unannounced
-          if host_agent_ready? && announce_sensor
+          if host_agent_available? && announce_sensor
             transition_to(:announced)
             ::Instana.logger.info "Host agent available. We're in business. (#{@state} pid:#{Process.pid} #{@process[:name]})"
           end
@@ -156,7 +150,7 @@ module Instana
     # called from an already initialized background thread.
     #
     def start
-      if !host_agent_ready?
+      if !host_agent_available?
         if !ENV.key?("INSTANA_QUIET")
           ::Instana.logger.warn "Host agent not available.  Will retry periodically. (Set env INSTANA_QUIET=1 to shut these messages off)"
         end
@@ -279,50 +273,6 @@ module Instana
       Instana.logger.debug e.backtrace.join("\r\n")
     end
 
-    # When request(s) are received by the host agent, it is sent here
-    # for handling & processing.
-    #
-    # @param json_string [String] the requests from the host agent
-    #
-    def handle_agent_tasks(json_string)
-      tasks = Oj.load(json_string)
-
-      if tasks.is_a?(Hash)
-        process_agent_task(tasks)
-      elsif tasks.is_a?(Array)
-        tasks.each do |t|
-          process_agent_task(t)
-        end
-      end
-    end
-
-    # Process a task sent from the host agent.
-    #
-    # @param task [String] the request json from the host agent
-    #
-    def process_agent_task(task)
-      if task.key?("action")
-        if task["action"] == "ruby.source"
-          payload = ::Instana::Util.get_rb_source(task["args"]["file"])
-        else
-          payload = { :error => "Unrecognized action: #{task["action"]}. An newer Instana gem may be required for this. Current version: #{::Instana::VERSION}" }
-        end
-      else
-        payload = { :error => "Instana Ruby: No action specified in request." }
-      end
-
-      path = "com.instana.plugin.ruby/response.#{@process[:report_pid]}?messageId=#{URI.encode(task['messageId'])}"
-      uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{path}")
-      req = Net::HTTP::Post.new(uri)
-      req.body = Oj.dump(payload)
-      ::Instana.logger.debug "Responding to agent request: #{req.inspect}"
-      make_host_agent_request(req)
-
-    rescue StandardError => e
-      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-      Instana.logger.debug e.backtrace.join("\r\n")
-    end
-
     # Accept and report spans to the host agent.
     #
     # @param traces [Array] An array of [Span]
@@ -360,7 +310,7 @@ module Instana
     # first check localhost and if not, then attempt on the default gateway
     # for docker in bridged mode.
     #
-    def host_agent_ready?
+    def host_agent_available?
       @discovered ||= run_discovery
 
       if @discovered
@@ -428,31 +378,6 @@ module Instana
       nil
     end
 
-    # Returns the PID that we are reporting to
-    #
-    def report_pid
-      @process[:report_pid]
-    end
-
-    # Indicates if the agent is ready to send metrics
-    # and/or data.
-    #
-    def ready?
-      # In test, we're always ready :-)
-      return true if ENV['INSTANA_GEM_TEST']
-
-      if forked?
-        ::Instana.logger.debug "Instana: detected fork.  Calling after_fork"
-        after_fork
-      end
-
-      @state == :announced
-    rescue => e
-      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-      Instana.logger.debug e.backtrace.join("\r\n") unless ::Instana.test?
-      return false
-    end
-
     private
 
     # Handles any/all steps required in the transtion
@@ -510,38 +435,6 @@ module Instana
       Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
       Instana.logger.debug e.backtrace.join("\r\n") unless ::Instana.test?
       return nil
-    end
-
-    # Indicates whether we are running in a pid namespace (such as
-    # Docker).
-    #
-    def pid_namespace?
-      return false unless @is_linux
-      Process.pid != get_real_pid
-    end
-
-    # Attempts to determine the true process ID by querying the
-    # /proc/<pid>/sched file.  This works on linux currently.
-    #
-    def get_real_pid
-      raise RuntimeError.new("Unsupported platform: get_real_pid") unless @is_linux
-
-      sched_file = "/proc/#{Process.pid}/sched"
-      pid = Process.pid
-
-      if File.exist?(sched_file)
-        v = File.open(sched_file, &:readline)
-        pid = v.match(/\d+/).to_s.to_i
-      end
-      pid
-    end
-
-    # Determine whether the pid has changed since Agent start.
-    #
-    # @ return [Boolean] true or false to indicate if forked
-    #
-    def forked?
-      @process[:pid] != Process.pid
     end
   end
 end
