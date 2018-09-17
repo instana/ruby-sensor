@@ -118,7 +118,7 @@ module Instana
       # The announce timer
       # We attempt to announce this ruby sensor to the host agent.
       # In case of failure, we try again in 30 seconds.
-      @announce_timer = @timers.now_and_every(30) do
+      @announce_timer = @timers.every(30) do
         if @state == :unannounced
           if host_agent_ready? && announce_sensor
             transition_to(:announced)
