@@ -15,7 +15,6 @@ module Instana
 
         begin
           kvs[:job] = klass.to_s
-          kvs[:args] = args.to_json
           kvs[:queue] = klass.instance_variable_get(:@queue)
         rescue => e
           Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
