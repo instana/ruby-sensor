@@ -3,7 +3,11 @@ require_relative "../jobs/resque_job_1"
 require_relative "../jobs/resque_job_2"
 require 'resque'
 
-::Resque.redis = 'mazzo:6379'
+if ENV.key?('REDIS_URL')
+  ::Resque.redis = ENV['REDIS_URL']
+else
+  ::Resque.redis = 'localhost:6379'
+end
 
 class ResqueClientTest < Minitest::Test
   def setup
@@ -16,6 +20,22 @@ class ResqueClientTest < Minitest::Test
   def test_enqueue
     ::Instana.tracer.start_or_continue_trace('resque-client_test') do
       ::Resque.enqueue(ResqueWorkerJob1)
+    end
+
+    traces = Instana.processor.queued_traces
+    assert_equal 1, traces.count
+
+    spans = traces[0].spans.to_a
+    assert_equal 3, spans.count
+
+    assert_equal :'resque-client_test', spans[0][:data][:sdk][:name]
+    assert_equal :"resque-client", spans[1][:n]
+    assert_equal :redis, spans[2][:n]
+  end
+
+  def test_enqueue_to
+    ::Instana.tracer.start_or_continue_trace('resque-client_test') do
+      ::Resque.enqueue_to(:critical, ResqueWorkerJob1)
     end
 
     traces = Instana.processor.queued_traces
