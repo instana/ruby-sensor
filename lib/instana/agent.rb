@@ -340,7 +340,7 @@ module Instana
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{path}")
       req = Net::HTTP::Post.new(uri)
 
-      req.body = Oj.dump(spans)
+      req.body = Oj.dump(spans, :omit_nil => true)
       response = make_host_agent_request(req)
 
       if response
