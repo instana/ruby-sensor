@@ -160,16 +160,19 @@ module Instana
       #
       def get_app_name
         if ENV.key?('INSTANA_SERVICE_NAME')
-          name = ENV['INSTANA_SERVICE_NAME']
-
-        elsif defined?(::RailsLts) || defined?(::Rails)
-          name = Rails.application.class.to_s.split('::')[0]
-
-        else
-          name = File.basename($0)
+          return ENV['INSTANA_SERVICE_NAME']
         end
 
-        return name
+
+        if defined?(::Resque) && ($0 =~ /resque-#{Resque::Version}/)
+          return "Resque Worker"
+        end
+
+        if defined?(::RailsLts) || defined?(::Rails)
+          return Rails.application.class.to_s.split('::')[0]
+        end
+
+        return File.basename($0)
       rescue Exception => e
         Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
         Instana.logger.debug e.backtrace.join("\r\n")

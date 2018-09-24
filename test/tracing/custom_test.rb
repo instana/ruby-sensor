@@ -10,7 +10,7 @@ class CustomTracingTest < Minitest::Test
     assert_equal true, ::Instana.tracer.tracing?
     ::Instana.tracer.log_info({:info_logged => 1})
     # End tracing
-    ::Instana.tracer.log_end(:rack, {:close_one => 1})
+    ::Instana.tracer.log_end(:custom_trace, {:close_one => 1})
     assert_equal false, ::Instana.tracer.tracing?
 
     traces = ::Instana.processor.queued_traces

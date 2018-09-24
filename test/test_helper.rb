@@ -14,11 +14,15 @@ require 'webmock/minitest'
 require "instana/test"
 ::Instana::Test.setup_environment
 
+# Webmock: Whitelist local IPs
+whitelist = ['127.0.0.1', 'localhost', '172.17.0.1', '172.0.12.100']
+allowed_sites = lambda{|uri|
+  whitelist.include?(uri.host)
+}
+::WebMock.disable_net_connect!(allow: allowed_sites)
+
 # Boot background webservers to test against.
 require "./test/servers/rackapp_6511"
-
-# Allow localhost calls to the internal rails servers
-::WebMock.disable_net_connect!(allow_localhost: true)
 
 case File.basename(ENV['BUNDLE_GEMFILE'])
 when /rails50|rails42|rails32/
