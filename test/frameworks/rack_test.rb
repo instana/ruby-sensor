@@ -47,6 +47,24 @@ class RackTest < Minitest::Test
     refute_nil first_span[:stack].first[:f].match(/instana\/instrumentation\/rack.rb/)
   end
 
+  def test_basic_get_with_custom_service_name
+    ENV['INSTANA_SERVICE_NAME'] = 'WalterBishop'
+
+    clear_all!
+    get '/mrlobster'
+    assert last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+
+    # Span validation
+    assert_equal 1, spans.count
+
+    first_span = spans.first
+    assert_equal 'WalterBishop', first_span[:data][:service]
+
+    ENV.delete('INSTANA_SERVICE_NAME')
+  end
+
   def test_basic_post
     clear_all!
     post '/mrlobster'
