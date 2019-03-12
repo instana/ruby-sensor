@@ -19,6 +19,10 @@ module Instana
         kvs[:http][:host] = env['SERVER_NAME']
       end
 
+      if ENV.key?('INSTANA_SERVICE_NAME')
+        kvs[:service] = ENV['INSTANA_SERVICE_NAME']
+      end
+
       if ::Instana.agent.extra_headers
         for custom_header in ::Instana.agent.extra_headers
           # Headers are available in this format: HTTP_X_CAPTURE_THIS

@@ -68,15 +68,19 @@ module Instana
 
       def perform_with_instana(job)
         kvs = {}
+        kvs[:'resque-worker'] = {}
 
         begin
-          kvs[:job] = job.payload['class'].to_s
-          kvs[:queue] = job.queue
+          if ENV.key?('INSTANA_SERVICE_NAME')
+            kvs[:service] = ENV['INSTANA_SERVICE_NAME']
+          end
+          kvs[:'resque-worker'][:job] = job.payload['class'].to_s
+          kvs[:'resque-worker'][:queue] = job.queue
         rescue => e
           ::Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" if Instana::Config[:verbose]
         end
 
-        Instana.tracer.start_or_continue_trace(:'resque-worker', { :'resque-worker' => kvs }) do
+        Instana.tracer.start_or_continue_trace(:'resque-worker', kvs) do
           perform_without_instana(job)
         end
       end

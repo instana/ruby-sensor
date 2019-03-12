@@ -6,12 +6,13 @@ cache:
     - vendor/bundle
 
 rvm:
-  - 2.4.3
-  - 2.1.10
+  - 2.5
+  - 2.4
 
 before_install:
-  - gem update --system
-  - gem update bundler
+  # Re: https://docs.travis-ci.com/user/languages/ruby/#dependency-management
+  - gem uninstall -v '>= 2' -i $(rvm gemdir)@global -ax bundler || true
+  - gem install bundler -v '< 2'
   - gem --version
 
 before_script:
@@ -30,16 +31,12 @@ gemfile:
   - gemfiles/libraries.gemfile
   - gemfiles/rails50.gemfile
   - gemfiles/rails42.gemfile
-  - gemfiles/rails32.gemfile
 
 matrix:
   exclude:
     # Rails 5.0+ requires Ruby 2.2.2 or higher
     - rvm: 2.1.10
       gemfile: gemfiles/rails50.gemfile
-    # Rails 3.2 doesn't work on Ruby 2.4.1
-    - rvm: 2.4.3
-      gemfile: gemfiles/rails32.gemfile
 
 notifications:
   slack:
