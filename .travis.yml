@@ -12,7 +12,8 @@ rvm:
 before_install:
   # Re: https://docs.travis-ci.com/user/languages/ruby/#dependency-management
   - gem uninstall -v '>= 2' -i $(rvm gemdir)@global -ax bundler || true
-  - gem install bundler -v '< 2'  - gem --version
+  - gem install bundler -v '< 2'
+  - gem --version
 
 before_script:
   - psql -c 'create database travis_ci_test;' -U postgres
