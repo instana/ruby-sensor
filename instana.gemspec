@@ -32,12 +32,12 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency('pry', '>= 0.10.0')
   spec.add_development_dependency('pry-byebug', '>= 3.0.0')
 
-  spec.add_runtime_dependency('sys-proctable', '>= 1.2.0')
+  spec.add_runtime_dependency('sys-proctable', '>= 0.9.2')
   spec.add_runtime_dependency('get_process_mem', '>= 0.2.1')
   spec.add_runtime_dependency('timers', '>= 4.0.0')
-  spec.add_runtime_dependency('oj', '~> 3.3')
+  spec.add_runtime_dependency('oj', '>=3.0.11')
 
   # Indirect dependency
   # https://github.com/instana/ruby-sensor/issues/10
-  spec.add_runtime_dependency('ffi', '>= 1.8.1')
+  spec.add_runtime_dependency('ffi', '>=1.0.11')
 end

@@ -137,7 +137,19 @@ module Instana
         if File.exist?(cmdline_file)
           cmdline = IO.read(cmdline_file).split(?\x00)
         else
-          cmdline = ProcTable.ps(:pid => Process.pid).cmdline.split(' ')
+          # Attempt to support older versions of sys-proctable and ffi.
+          #
+          # Alternatively we could use Sys::ProcTable::VERSION here but the
+          # consistency across historical versions is unknown.  Alternative
+          # to the alternative, would be Ruby metaprogramming using the `arity`
+          # and `parameters` methods.
+          # e.g ProcTable.method(:ps).arity/parameters
+          if Gem.loaded_specs.key?("sys-proctable") &&
+            (Gem.loaded_specs["sys-proctable"].version >= Gem::Version.new("1.2.0"))
+            cmdline = ProcTable.ps(:pid => Process.pid).cmdline.split(' ')
+          else
+            cmdline = ProcTable.ps(Process.pid).cmdline.split(' ')
+          end
         end
 
         if RUBY_PLATFORM =~ /darwin/i
