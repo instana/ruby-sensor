@@ -12,9 +12,9 @@ require 'instana/agent/tasks'
 
 include Sys
 
-Oj.default_options = {:mode => :strict}
-
 module Instana
+  OJ_OPTIONS = {:mode => :strict}
+
   class Agent
     include AgentHelpers
     include AgentHooks
@@ -209,14 +209,14 @@ module Instana
 
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH}")
       req = Net::HTTP::Put.new(uri)
-      req.body = Oj.dump(announce_payload)
+      req.body = Oj.dump(announce_payload, OJ_OPTIONS)
 
       ::Instana.logger.debug "Announce: http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH} - payload: #{req.body}"
 
       response = make_host_agent_request(req)
 
       if response && (response.code.to_i == 200)
-        data = Oj.load(response.body)
+        data = Oj.load(response.body, OJ_OPTIONS)
         @process[:report_pid] = data['pid']
         @agent_uuid = data['agentUuid']
 
@@ -251,7 +251,7 @@ module Instana
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{path}")
       req = Net::HTTP::Post.new(uri)
 
-      req.body = Oj.dump(payload)
+      req.body = Oj.dump(payload, OJ_OPTIONS)
       response = make_host_agent_request(req)
 
       if response
@@ -290,7 +290,9 @@ module Instana
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{path}")
       req = Net::HTTP::Post.new(uri)
 
-      req.body = Oj.dump(spans, :omit_nil => true)
+      opts = OJ_OPTIONS.merge({omit_nil: true})
+
+      req.body = Oj.dump(spans, opts)
       response = make_host_agent_request(req)
 
       if response

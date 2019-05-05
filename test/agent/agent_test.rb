@@ -1,8 +1,6 @@
 require 'test_helper'
 require 'oj'
 
-Oj.default_options = {:mode => :strict}
-
 class AgentTest < Minitest::Test
   def test_agent_host_detection
     url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/"
