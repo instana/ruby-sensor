@@ -8,7 +8,7 @@ module Instana
       super(*args)
       if ENV.key?('INSTANA_GEM_TEST')
         self.level = Logger::DEBUG
-      elsif ENV.key?('INSTANA_GEM_DEV') || ENV.key?('INSTANA_DEV')
+      elsif ENV.key?('INSTANA_GEM_DEV') || ENV.key?('INSTANA_DEBUG')
         self.level = Logger::DEBUG
       elsif ENV.key?('INSTANA_QUIET')
         self.level = Logger::FATAL
