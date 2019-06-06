@@ -278,10 +278,12 @@ module Instana
 
         if key.to_sym == :'span.kind'
           case value.to_sym
-          when :server || :consumer
-            @data[:data][:sdk][:type] = :entry
-          when :client || :producer
-            @data[:data][:sdk][:type] = :exit
+          when :server, :consumer
+            @data[:data][:sdk][:type] = @data[:k] = :entry
+          when :client, :producer
+            @data[:data][:sdk][:type] = @data[:k] = :exit
+          else
+            @data[:data][:sdk][:type] = @data[:k] = :intermediate
           end
         end
       else

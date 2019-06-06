@@ -200,19 +200,24 @@ class OpenTracerTest < Minitest::Test
 
     span.set_tag(:'span.kind', :server)
     assert_equal :entry, span[:data][:sdk][:type]
+    assert_equal :entry, span[:k]
 
     span.set_tag(:'span.kind', :consumer)
     assert_equal :entry, span[:data][:sdk][:type]
+    assert_equal :entry, span[:k]
 
     span.set_tag(:'span.kind', :client)
     assert_equal :exit, span[:data][:sdk][:type]
+    assert_equal :exit, span[:k]
 
     span.set_tag(:'span.kind', :producer)
     assert_equal :exit, span[:data][:sdk][:type]
+    assert_equal :exit, span[:k]
 
     span[:data][:sdk].delete(:type)
     span.set_tag(:'span.kind', :blah)
-    assert_equal false, span[:data][:sdk].key?(:type)
+    assert_equal :intermediate, span[:data][:sdk][:type]
+    assert_equal :intermediate, span[:k]
     assert_equal :blah, span[:data][:sdk][:custom][:tags][:'span.kind']
 
     span.finish
