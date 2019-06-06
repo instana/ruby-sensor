@@ -111,12 +111,16 @@ module Instana
     # Configure this span to be a custom span per the
     # SDK generic span type.
     #
+    # Default to an intermediate kind span.  Can be overridden by
+    # setting a span.kind tag.
+    #
     # @param name [String] name of the span
     # @param kvs [Hash] list of key values to be reported in the span
     #
     def configure_custom(name)
       @data[:n] = :sdk
-      @data[:data] = { :sdk => { :name => name.to_sym } }
+      @data[:k] = :intermediate
+      @data[:data] = { :sdk => { :name => name.to_sym, :type => :intermediate } }
       @data[:data][:sdk][:custom] = { :tags => {}, :logs => {} }
       self
     end
@@ -278,10 +282,12 @@ module Instana
 
         if key.to_sym == :'span.kind'
           case value.to_sym
-          when :server || :consumer
-            @data[:data][:sdk][:type] = :entry
-          when :client || :producer
-            @data[:data][:sdk][:type] = :exit
+          when :server, :consumer
+            @data[:data][:sdk][:type] = @data[:k] = :entry
+          when :client, :producer
+            @data[:data][:sdk][:type] = @data[:k] = :exit
+          else
+            @data[:data][:sdk][:type] = @data[:k] = :intermediate
           end
         end
       else
