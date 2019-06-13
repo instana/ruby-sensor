@@ -3,7 +3,7 @@ module Instana
 end
 
 
-if !ENV.key?('INSTANA_DISABLE_AUTO_INSTR')
+if !ENV.key?('INSTANA_DISABLE_AUTO_INSTR') || ENV['INSTANA_DISABLE_AUTO_INSTR'] === 'false'
   #
   # Load all of the files in the specified subdirectories
   #
