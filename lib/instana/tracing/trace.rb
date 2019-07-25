@@ -32,9 +32,6 @@ module Instana
       # traces that have asynchronous spans that never close out.
       @started_at = Time.now
 
-      # Indicates if this trace has any asynchronous spans within it
-      @has_async = false
-
       # This is a new trace so open the first span with the proper
       # root span IDs.
       @current_span = Span.new(name, @id, start_time: start_time)
@@ -134,7 +131,6 @@ module Instana
       new_span = Span.new(name, @id, parent_id: @current_span.id)
       new_span.set_tags(kvs) unless kvs.empty?
       new_span.parent = @current_span
-      new_span[:deferred] = @has_async = true
 
       # Add the new span to the span collection
       @spans.add(new_span)
@@ -203,12 +199,6 @@ module Instana
       true
     end
 
-    # Indicates whether this trace has any asynchronous spans.
-    #
-    def has_async?
-      @has_async
-    end
-
     # Searches the set of spans and indicates if there
     # is an error logged in one of them.
     #
@@ -250,21 +240,6 @@ module Instana
     #
     def current_span_name?(name)
       @current_span.name == name
-    end
-
-    # For traces that have asynchronous spans, this method indicates
-    # whether we have hit the timeout on waiting for those async
-    # spans to close out.
-    #
-    # @return [Boolean]
-    #
-    def discard?
-      # If this trace has async spans that have not closed
-      # out in 5 minutes, then it's discarded.
-      if has_async? && (Time.now.to_i - @started_at.to_i) > 601
-        return true
-      end
-      false
     end
 
     private

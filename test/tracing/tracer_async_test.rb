@@ -184,11 +184,6 @@ class TracerAsyncTest < Minitest::Test
     assert third_span.custom?
     assert fourth_span.custom?
 
-    assert !first_span[:deferred]
-    assert second_span[:deferred]
-    assert third_span[:deferred]
-    assert fourth_span[:deferred]
-
     # KV checks
     assert_equal 1, first_span[:data][:rack_start_kv]
     assert_equal 1, first_span[:data][:rack_end_kv]
