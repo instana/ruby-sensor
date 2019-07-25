@@ -156,7 +156,7 @@ module Instana
         end
       end
 
-      loop do
+      while true
         if @state == :unannounced
           @collect_timer.pause
           @announce_timer.resume
