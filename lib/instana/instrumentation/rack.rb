@@ -24,13 +24,13 @@ module Instana
       end
 
       if ::Instana.agent.extra_headers
-        for custom_header in ::Instana.agent.extra_headers
+        ::Instana.agent.extra_headers.each { |custom_header|
           # Headers are available in this format: HTTP_X_CAPTURE_THIS
           rack_header = ('HTTP_' + custom_header.upcase).gsub('-', '_')
           if env.key?(rack_header)
             kvs["http.#{custom_header}"] = env[rack_header]
           end
-        end
+        }
       end
 
       # Check incoming context
