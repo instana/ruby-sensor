@@ -42,7 +42,7 @@ module AgentHelpers
   #
   def ready?
     # In test, we're always ready :-)
-    return true if ENV['INSTANA_GEM_TEST']
+    return true if ENV['INSTANA_TEST']
 
     if !@is_resque_worker && forked?
       ::Instana.logger.debug "Instana: detected fork. (this pid: #{Process.pid}/#{Process.ppid})  Calling after_fork"
@@ -52,7 +52,7 @@ module AgentHelpers
     @state == :announced
   rescue => e
     Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-    Instana.logger.debug e.backtrace.join("\r\n") unless ::Instana.test?
+    Instana.logger.debug e.backtrace.join("\r\n") unless ENV.key?('INSTANA_TEST')
     return false
   end
 end

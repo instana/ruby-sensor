@@ -77,7 +77,7 @@ module Instana
         payload = enforce_deltas(payload, @last_values)
       end
 
-      if ENV['INSTANA_GEM_TEST']
+      if ENV['INSTANA_TEST']
         true
       else
         # Report all the collected goodies

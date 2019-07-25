@@ -199,7 +199,7 @@ module Instana
       announce_payload[:name] = @process[:name]
       announce_payload[:args] = @process[:arguments]
 
-      if @is_linux && !::Instana.test?
+      if @is_linux && !ENV.key?('INSTANA_TEST')
         # We create an open socket to the host agent in case we are running in a container
         # and the real pid needs to be detected.
         socket = TCPSocket.new @discovered[:agent_host], @discovered[:agent_port]
@@ -329,7 +329,7 @@ module Instana
       false
     rescue => e
       Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-      Instana.logger.debug e.backtrace.join("\r\n") unless ::Instana.test?
+      Instana.logger.debug e.backtrace.join("\r\n") unless ENV.key?('INSTANA_TEST')
       return false
     end
 
@@ -435,7 +435,7 @@ module Instana
       return nil
     rescue => e
       Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-      Instana.logger.debug e.backtrace.join("\r\n") unless ::Instana.test?
+      Instana.logger.debug e.backtrace.join("\r\n") unless ENV.key?('INSTANA_TEST')
       return nil
     end
   end
