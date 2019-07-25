@@ -37,7 +37,7 @@ module Instana
     #
     def start_or_continue_trace(name, kvs = {}, incoming_context = {}, &block)
       log_start_or_continue(name, kvs, incoming_context)
-      block.call
+      yield
     rescue Exception => e
       log_error(e)
       raise
@@ -58,8 +58,7 @@ module Instana
     #
     def trace(name, kvs = {}, &block)
       log_entry(name, kvs)
-      result = block.call
-      result
+      yield
     rescue Exception => e
       log_error(e)
       raise
