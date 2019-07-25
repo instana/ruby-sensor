@@ -7,6 +7,9 @@ module Instana
     # @return [Set] the collection of spans for this trace
     attr_reader :spans
 
+    # The currently active span
+    attr_reader :current_span
+
     # Initializes a new instance of Trace
     #
     # @param name [String] the name of the span to start
@@ -221,14 +224,6 @@ module Instana
         end
       end
       false
-    end
-
-    # Get the current span.
-    #
-    # @return [Span]
-    #
-    def current_span
-      @current_span
     end
 
     # Get the ID of the current span for this trace.
