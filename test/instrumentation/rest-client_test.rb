@@ -24,7 +24,7 @@ class RestClientTest < Minitest::Test
     http_trace = traces[1]
 
     # RestClient trace validation
-    assert_equal 3, http_trace.spans.count
+    assert_equal 3, http_trace.spans.length
     spans = http_trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -48,7 +48,7 @@ class RestClientTest < Minitest::Test
     assert_equal "200", third_span[:data][:http][:status]
 
     # Rack server trace validation
-    assert_equal 1, rs_trace.spans.count
+    assert_equal 1, rs_trace.spans.length
     rs_span = rs_trace.spans.to_a[0]
 
     # Rack server trace should have the same trace ID

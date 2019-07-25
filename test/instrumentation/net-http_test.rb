@@ -29,7 +29,7 @@ class NetHTTPTest < Minitest::Test
     http_trace = traces[1]
 
     # Net::HTTP trace validation
-    assert_equal 2, http_trace.spans.count
+    assert_equal 2, http_trace.spans.length
     spans = http_trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -49,7 +49,7 @@ class NetHTTPTest < Minitest::Test
     assert !second_span.key?(:stack)
 
     # Rack server trace validation
-    assert_equal 1, rs_trace.spans.count
+    assert_equal 1, rs_trace.spans.length
     rs_span = rs_trace.spans.to_a[0]
 
     # Rack server trace should have the same trace ID
@@ -77,7 +77,7 @@ class NetHTTPTest < Minitest::Test
     http_trace = traces[1]
 
     # Net::HTTP trace validation
-    assert_equal 2, http_trace.spans.count
+    assert_equal 2, http_trace.spans.length
     spans = http_trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -97,7 +97,7 @@ class NetHTTPTest < Minitest::Test
     assert !second_span.key?(:stack)
 
     # Rack server trace validation
-    assert_equal 1, rs_trace.spans.count
+    assert_equal 1, rs_trace.spans.length
     rs_span = rs_trace.spans.to_a[0]
 
     # Rack server trace should have the same trace ID
@@ -122,7 +122,7 @@ class NetHTTPTest < Minitest::Test
     end
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     t = traces[0]
     assert_equal 1, t.spans.count
     assert t.has_error?
@@ -150,10 +150,10 @@ class NetHTTPTest < Minitest::Test
     end
 
     traces = Instana.processor.queued_traces
-    assert_equal 2, traces.count
+    assert_equal 2, traces.length
 
     request_trace = traces[1]
-    assert_equal 2, request_trace.spans.count
+    assert_equal 2, request_trace.spans.length
     assert request_trace.has_error?
     http_span = request_trace.spans.to_a[1]
 

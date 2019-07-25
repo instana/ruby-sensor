@@ -31,7 +31,7 @@ class TracerTest < Minitest::Test
     end
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     t = traces.first
     assert_equal 1, t.spans.size
     assert t.valid?
@@ -64,7 +64,7 @@ class TracerTest < Minitest::Test
     assert exception_raised
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     t = traces.first
     assert_equal 1, t.spans.size
     assert t.valid?
@@ -95,7 +95,7 @@ class TracerTest < Minitest::Test
     end
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     t = traces.first
     assert_equal 2, t.spans.size
     assert t.valid?
@@ -114,7 +114,7 @@ class TracerTest < Minitest::Test
     assert_equal false, ::Instana.tracer.tracing?
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     t = traces.first
     assert_equal 1, t.spans.size
     assert t.valid?
@@ -143,7 +143,7 @@ class TracerTest < Minitest::Test
     assert_equal false, ::Instana.tracer.tracing?
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
 
     t = traces.first
     assert_equal 2, t.spans.size
@@ -174,7 +174,7 @@ class TracerTest < Minitest::Test
     assert exception_raised
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
 
     t = traces.first
     assert_equal 1, t.spans.size
@@ -190,7 +190,7 @@ class TracerTest < Minitest::Test
     ::Instana.tracer.log_end(:test_trace, {:close_one => 1})
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
 
     t = traces.first
     assert_equal 1, t.spans.size
@@ -205,7 +205,7 @@ class TracerTest < Minitest::Test
     end
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     t = traces.first
     assert_equal 1, t.spans.size
     assert t.valid?

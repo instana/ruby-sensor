@@ -26,7 +26,7 @@ class ResqueClientTest < Minitest::Test
     end
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
 
     spans = traces[0].spans.to_a
     assert_equal 3, spans.count
@@ -47,7 +47,7 @@ class ResqueClientTest < Minitest::Test
     end
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
 
     spans = traces[0].spans.to_a
     assert_equal 3, spans.count
@@ -66,7 +66,7 @@ class ResqueClientTest < Minitest::Test
     end
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
 
     spans = traces[0].spans.to_a
     assert_equal 3, spans.count
@@ -84,7 +84,7 @@ class ResqueClientTest < Minitest::Test
     @worker.work(0)
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
 
     spans = traces[0].spans.to_a
     assert_equal 3, spans.count
@@ -111,7 +111,7 @@ class ResqueClientTest < Minitest::Test
     @worker.work(0)
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
 
     spans = traces[0].spans.to_a
     resque_span = spans[0]

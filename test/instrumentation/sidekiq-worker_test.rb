@@ -148,7 +148,7 @@ class SidekiqServerTest < Minitest::Test
   end
 
   def assert_successful_worker_trace(worker_trace)
-    assert_equal 1, worker_trace.spans.count
+    assert_equal 1, worker_trace.spans.length
     span = worker_trace.spans.first
 
     assert_equal :'sidekiq-worker', span[:n]
@@ -159,7 +159,7 @@ class SidekiqServerTest < Minitest::Test
   end
 
   def assert_failed_worker_trace(worker_trace)
-    assert_equal 1, worker_trace.spans.count
+    assert_equal 1, worker_trace.spans.length
     span = worker_trace.spans.first
 
     assert_equal :'sidekiq-worker', span[:n]
@@ -173,7 +173,7 @@ class SidekiqServerTest < Minitest::Test
   end
 
   def assert_client_trace(client_trace, job)
-    assert_equal 2, client_trace.spans.count
+    assert_equal 2, client_trace.spans.length
     first_span, second_span = client_trace.spans.to_a
 
     assert_equal :sdk, first_span[:n]

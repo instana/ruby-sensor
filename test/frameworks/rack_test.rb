@@ -157,7 +157,7 @@ class RackTest < Minitest::Test
     get '/mrlobster?blah=2&wilma=1&betty=2;fred=3'
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
 
     trace = traces[0]
     refute_nil trace.spans.first.key?(:data)

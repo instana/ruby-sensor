@@ -26,7 +26,7 @@ class TracerAsyncTest < Minitest::Test
     ::Instana.tracer.log_end(:rack, {:rack_end_kv => 1})
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     t = traces.first
     assert_equal 2, t.spans.size
     spans = t.spans.to_a
@@ -80,7 +80,7 @@ class TracerAsyncTest < Minitest::Test
     sleep 1
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 2, traces.count
+    assert_equal 2, traces.length
     first_trace, second_trace = traces
 
     # Both traces should have the same ID
@@ -222,7 +222,7 @@ class TracerAsyncTest < Minitest::Test
     # Begin trace validation
     traces = ::Instana.processor.queued_traces
 
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
     assert_equal 4, trace.spans.size
     first_span, second_span, third_span, fourth_span = trace.spans.to_a
