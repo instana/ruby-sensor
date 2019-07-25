@@ -145,5 +145,5 @@ The gem can be configured to use your application logger instead:
 
 #### Environment Variable
 
-Setting `INSTANA_GEM_DEV` to a non nil value will enable extra logging output generally useful
+Setting `INSTANA_DEBUG` to a non nil value will enable extra logging output generally useful
 for development.

@@ -11,7 +11,7 @@ supported components can be found in the [documentation](https://docs.instana.io
 # Logging & Environment Variables
 
 By default, the gem will log informational messages on boot that will indicate if any problems were encountered.  If you
-set the `INSTANA_GEM_DEV` environment variable, it will increase the amount of logging output.
+set the `INSTANA_DEBUG` environment variable, it will increase the amount of logging output.
 
 ![instana console output](https://s3.amazonaws.com/instana/Instana+Ruby+boot+console+logging+output.png)
 

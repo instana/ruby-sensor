@@ -19,6 +19,8 @@ class RackTest < Minitest::Test
 
   def test_basic_get
     clear_all!
+    ::Instana.config[:collect_backtraces] = true
+
     get '/mrlobster'
     assert last_response.ok?
 
@@ -44,7 +46,7 @@ class RackTest < Minitest::Test
     # Backtrace fingerprint validation
     assert first_span.key?(:stack)
     assert_equal 2, first_span[:stack].count
-    refute_nil first_span[:stack].first[:f].match(/instana\/instrumentation\/rack.rb/)
+    refute_nil first_span[:stack].first[:c].match(/instana\/instrumentation\/rack.rb/)
   end
 
   def test_basic_get_with_custom_service_name

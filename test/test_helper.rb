@@ -1,5 +1,5 @@
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
-ENV['INSTANA_GEM_TEST'] = 'true'
+ENV['INSTANA_TEST'] = 'true'
 require "rubygems"
 require "bundler/setup"
 Bundler.require(:default, :test)
