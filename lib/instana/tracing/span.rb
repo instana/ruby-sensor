@@ -11,6 +11,7 @@ module Instana
 
     attr_accessor :parent
     attr_accessor :baggage
+    attr_accessor :is_root
 
     def initialize(name, trace_id, parent_id: nil, start_time: ::Instana::Util.now_in_ms)
       @data = {}
@@ -19,6 +20,9 @@ module Instana
       @data[:p] = parent_id if parent_id      # Parent ID
       @data[:ta] = :ruby                      # Agent
       @data[:data] = {}
+
+      # Mark this span as root if the trace_id is the same as span_id
+      @is_root = (@data[:s] == @data[:t])
 
       # Entity Source
       @data[:f] = { :e => ::Instana.agent.report_pid,
@@ -211,15 +215,6 @@ module Instana
       @data[:d]
     end
 
-    # Indicates whether this span in the root span
-    # in the Trace
-    #
-    # @return [Boolean]
-    #
-    def is_root?
-      @data[:s] == @data[:t]
-    end
-
     # Hash accessor to the internal @data hash
     #
     def [](key)
@@ -382,7 +377,7 @@ module Instana
         ::Instana.logger.debug "Closing a span that isn't active. This will result in a broken trace: #{self.inspect}"
       end
 
-      if is_root?
+      if @is_root
         # This is the root span for the trace.  Call log_end to close
         # out and queue the trace
         ::Instana.tracer.log_end(name, {}, end_time)

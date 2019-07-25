@@ -110,7 +110,7 @@ module Instana
 
       @current_span.close(end_time)
       add_info(kvs) if kvs && !kvs.empty?
-      @current_span = @current_span.parent unless @current_span.is_root?
+      @current_span = @current_span.parent unless @current_span.is_root
     end
     alias finish end_span
 

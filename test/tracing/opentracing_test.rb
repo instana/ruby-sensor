@@ -286,7 +286,7 @@ class OpenTracerTest < Minitest::Test
     assert_equal trace.id, third_span[:t]
 
     # Linkage
-    assert first_span.is_root?
+    assert first_span.is_root
     assert_equal first_span[:s], second_span[:p]
     assert_equal second_span[:s], third_span[:p]
   end
@@ -316,7 +316,7 @@ class OpenTracerTest < Minitest::Test
     assert_equal trace.id, third_span[:t]
 
     # Linkage
-    assert first_span.is_root?
+    assert first_span.is_root
     assert_equal first_span[:s], second_span[:p]
     assert_equal second_span[:s], third_span[:p]
   end
@@ -347,7 +347,7 @@ class OpenTracerTest < Minitest::Test
     assert_equal trace.id, third_span[:t]
 
     # Linkage
-    assert first_span.is_root?
+    assert first_span.is_root
     assert_equal first_span[:s], second_span[:p]
     assert_equal second_span[:s], third_span[:p]
 
