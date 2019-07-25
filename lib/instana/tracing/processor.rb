@@ -2,22 +2,11 @@ require 'thread'
 
 module Instana
   class Processor
-
     def initialize
       # The main queue before being reported to the
       # host agent.  Traces in this queue are complete
       # and ready to be sent.
       @queue = Queue.new
-
-      # The staging queue that holds traces that have completed
-      # but still have outstanding async spans.
-      # Traces that have been in this queue for more than
-      # 5 minutes are discarded.
-      @staging_queue = Set.new
-
-      # No access to the @staging_queue until this lock
-      # is taken.
-      @staging_lock = Mutex.new
 
       # This is the maximum number of spans we send to the host
       # agent at once.
@@ -27,7 +16,7 @@ module Instana
     # Adds a trace to the queue to be processed and
     # sent to the host agent
     #
-    # @param [Trace] the trace to be added to the queue
+    # @param [Trace] - the trace to be added to the queue
     def add(trace)
       # Do a quick checkup on our background thread.
       if ::Instana.agent.collect_thread.nil? || !::Instana.agent.collect_thread.alive?
@@ -38,42 +27,10 @@ module Instana
       @queue.push(trace)
     end
 
-    # Adds a trace to the staging queue.
-    #
-    # @param [Trace] the trace to be added to the queue
-    def stage(trace)
-      ::Instana.logger.debug("Staging incomplete trace id: #{trace.id}")
-      @staging_queue.add(trace)
-    end
-
-    # This will run through the staged traces (if any) to find
-    # completed or timed out incompleted traces.  Completed traces will
-    # be added to the main @queue.  Timed out traces will be discarded
-    #
-    def process_staged
-      @staging_lock.synchronize {
-        if @staging_queue.size > 0
-          @staging_queue.delete_if do |t|
-            if t.complete?
-              ::Instana.logger.debug("Moving staged complete trace to main queue: #{t.id}")
-              add(t)
-              true
-            elsif t.discard?
-              ::Instana.logger.debug("Discarding trace with uncompleted async spans over 5 mins old. id: #{t.id}")
-              true
-            else
-              false
-            end
-          end
-        end
-      }
-    end
-
     ##
     # send
     #
-    # Sends all traces in @queue to the host
-    # agent
+    # Sends all traces in @queue to the host agent
     #
     # FIXME: Add limits checking here in regards to:
     #   - Max HTTP Post size
@@ -82,15 +39,6 @@ module Instana
     #
     def send
       return if @queue.empty? || ENV.key?('INSTANA_TEST')
-
-      size = @queue.size
-      if size > 200
-        Instana.logger.debug "Trace queue is #{size}"
-      end
-
-      # Scan for any staged but incomplete traces that have now
-      # completed.
-      process_staged
 
       # Retrieve all spans for queued traces
       spans = queued_spans
@@ -142,43 +90,6 @@ module Instana
       traces
     end
 
-    # Retrieves a all staged traces from the staging queue.  Staged traces
-    # are traces that have completed but may have outstanding
-    # asynchronous spans.
-    #
-    # @return [Array]
-    #
-    def staged_traces
-      traces = nil
-      @staging_lock.synchronize {
-        traces = @staging_queue.to_a
-        @staging_queue.clear
-      }
-      traces
-    end
-
-    # Retrieves a single staged trace from the staging queue.  Staged traces
-    # are traces that have completed but may have outstanding
-    # asynchronous spans.
-    #
-    # @param trace_id [Integer] the Trace ID to be searched for
-    #
-    def staged_trace(trace_id)
-      candidate = nil
-      @staging_lock.synchronize {
-        @staging_queue.each do |trace|
-          if trace.id == trace_id
-            candidate = trace
-            break
-          end
-        end
-      }
-      unless candidate
-        ::Instana.logger.debug("Couldn't find staged trace with trace_id: #{trace_id}")
-      end
-      candidate
-    end
-
     # Get the number traces currently in the queue
     #
     # @return [Integer] the queue size
@@ -187,15 +98,7 @@ module Instana
       @queue.size
     end
 
-    # Get the number traces currently in the staging queue
-    #
-    # @return [Integer] the queue size
-    #
-    def staged_count
-      @staging_queue.size
-    end
-
-    # Removes all traces from the @queue and @staging_queue.  Used in the
+    # Removes all traces from the @queue.  Used in the
     # test suite to reset state.
     #
     def clear!
@@ -203,7 +106,6 @@ module Instana
         # Non-blocking pop; ignore exception
         @queue.pop(true) rescue nil
       end
-      @staging_queue.clear
     end
   end
 end

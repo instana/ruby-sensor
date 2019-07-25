@@ -133,7 +133,6 @@ module Instana
     # @return [Span]
     #
     def close(end_time = ::Instana::Util.now_in_ms)
-
       if end_time.is_a?(Time)
         end_time = ::Instana::Util.time_to_ms(end_time)
       end
