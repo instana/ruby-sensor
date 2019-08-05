@@ -1,3 +1,6 @@
+# Override the two methods of OJ used by this gem to work in JRuby
+require 'oj'
+
 require "instana/base"
 require "instana/config"
 require "instana/agent"

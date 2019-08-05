@@ -19,22 +19,22 @@ group :development, :test do
 end
 
 group :development do
-  gem 'ruby-debug',   :platforms => [:mri_18, :jruby]
-  gem 'debugger',     :platform  =>  :mri_19
-  gem 'stackprof'
+  # gem 'ruby-debug',   :platforms => [:mri_18, :jruby]
+  # gem 'debugger',     :platform  =>  :mri_19
+  # gem 'stackprof'
 
-  if RUBY_VERSION > '1.8.7'
-    gem 'pry'
+  # if RUBY_VERSION > '1.8.7'
+  #   gem 'pry'
 
-    if RUBY_VERSION < '2.2'
-      gem 'byebug', '< 9.1.0'
-      gem 'pry-byebug'
-    else
-      gem 'pry-byebug'
-    end
-  else
-    gem 'pry', '0.9.12.4'
-  end
+  #   if RUBY_VERSION < '2.2'
+  #     gem 'byebug', '< 9.1.0'
+  #     gem 'pry-byebug'
+  #   else
+  #     gem 'pry-byebug'
+  #   end
+  # else
+  #   gem 'pry', '0.9.12.4'
+  # end
 end
 
 # instana.gemspec
