@@ -423,11 +423,12 @@ module Instana
 
       if @state == :unannounced
         @httpclient = Net::HTTP.new(req.uri.hostname, req.uri.port)
-        # @httpclient.open_timeout = 1
-        # @httpclient.read_timeout = 1
+        @httpclient.open_timeout = 1
+        @httpclient.read_timeout = 1
       end
 
-      response = @httpclient.request_without_instana(req)
+      ::Instana.logger.debug "Trying request: #{req} Body: #{req.body}"
+      response = @httpclient.request(req)
       ::Instana.logger.debug "#{req.method}->#{req.uri} body:(#{req.body}) Response:#{response} body:(#{response.body})"
 
       response
