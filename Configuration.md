@@ -74,7 +74,7 @@ export INSTANA_SERVICE_NAME=MrBlueSky
 
 ## Rack Middleware
 
-This gem will detect and automagically insert the Instana Rack middleware into the middleware stack when a [supported framework](https://instana.atlassian.net/wiki/display/DOCS/Ruby) is present.  We are currently adding support for more frameworks.  If you are using a yet to be instrumented framework, you can insert the Instana Rack middleware with the following:
+This gem will detect and automagically insert the Instana Rack middleware into the middleware stack when a [supported framework](https://docs.instana.io/ecosystem/ruby/) is present.  We are currently adding support for more frameworks.  If you are using a yet to be instrumented framework, you can insert the Instana Rack middleware with the following:
 
 ```Ruby
 require "instana/rack"
