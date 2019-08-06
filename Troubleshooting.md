@@ -6,7 +6,7 @@ goes wrong, you can use the following steps and tips to potentially diagnose any
 # Supported Components
 
 Make sure that the component that you want to get visibility into has been added to the support matrix.  A list of all
-supported components can be found in the [documentation](https://instana.atlassian.net/wiki/display/DOCS/Ruby).
+supported components can be found in the [documentation](https://docs.instana.io/ecosystem/ruby/).
 
 # Logging & Environment Variables
 
