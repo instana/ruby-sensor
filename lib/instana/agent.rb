@@ -427,7 +427,7 @@ module Instana
         # @httpclient.read_timeout = 1
       end
 
-      response = @httpclient.request(req)
+      response = @httpclient.request_without_instana(req)
       ::Instana.logger.debug "#{req.method}->#{req.uri} body:(#{req.body}) Response:#{response} body:(#{response.body})"
 
       response
