@@ -4,7 +4,7 @@ module Instana
     attr_accessor :last_report_log
 
     def initialize
-      @collectors = []
+      @collectors = Concurrent::Array.new
 
       # Snapshot data is collected once per process but resent
       # every 10 minutes along side process metrics.

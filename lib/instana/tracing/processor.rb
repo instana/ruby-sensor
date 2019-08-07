@@ -13,7 +13,7 @@ module Instana
       # but still have outstanding async spans.
       # Traces that have been in this queue for more than
       # 5 minutes are discarded.
-      @staging_queue = Set.new
+      @staging_queue = Concurrent::Set.new
 
       # No access to the @staging_queue until this lock
       # is taken.
