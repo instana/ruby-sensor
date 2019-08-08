@@ -13,7 +13,7 @@ require "instana/instrumentation"
 ::Instana.agent.setup
 
 # Register the metric collectors
-require 'instana/collectors/gc'
+# require 'instana/collectors/gc'
 require 'instana/collectors/memory'
 require 'instana/collectors/thread'
 
