@@ -30,7 +30,6 @@ gemfile:
   - Gemfile
   - gemfiles/libraries.gemfile
   - gemfiles/rails50.gemfile
-  - gemfiles/rails42.gemfile
 
 matrix:
   exclude:
