@@ -25,6 +25,7 @@ services:
   - memcached
   - redis
   - mysql
+  - postgresql
 
 gemfile:
   - Gemfile
