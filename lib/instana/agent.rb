@@ -50,7 +50,7 @@ module Instana
       @thread_spawn_lock = Mutex.new
 
       # Detect platform flags
-      @is_linux = RbConfig::CONFIG['host_os'] == 'linux'
+      @is_linux = RbConfig::CONFIG['host_os'] == 'linux'.freeze
       @is_osx = (RUBY_PLATFORM =~ /darwin/i) ? true : false
 
       # In case we're running in Docker, have the default gateway available
