@@ -80,7 +80,7 @@ module Instana
             socket = TCPSocket.new ::Instana.config[:agent_host], ::Instana.config[:agent_port]
             p[:fd] = socket.fileno
             p[:inode] = File.readlink("/proc/#{Process.pid}/fd/#{socket.fileno}")
-          rescue Errno::ECONNREFUSED => e
+          rescue Exception => e
             ::Instana.logger.debug("Failed to open a socket connection to #{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}")
           end
         end
