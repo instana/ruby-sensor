@@ -13,7 +13,10 @@ require "instana/instrumentation"
 ::Instana.agent.setup
 
 # Register the metric collectors
-# require 'instana/collectors/gc'
+unless RUBY_PLATFORM == 'java'.freeze
+  require 'instana/collectors/gc'
+end
+
 require 'instana/collectors/memory'
 require 'instana/collectors/thread'
 
