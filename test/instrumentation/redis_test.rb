@@ -115,7 +115,7 @@ class RedisTest < Minitest::Test
 
     if with_error
       assert_equal true, data[:redis][:error]
-      assert data[:log][:message].include?(with_error)
+      assert data[:log].key?(:message)
     end
   end
 end
