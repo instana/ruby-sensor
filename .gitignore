@@ -13,3 +13,4 @@ gemfiles/*.lock
 /test/tmp/*.pid
 .idea
 *.iml
+.DS_Store
