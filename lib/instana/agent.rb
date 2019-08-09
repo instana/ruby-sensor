@@ -422,14 +422,13 @@ module Instana
       req['Content-Type'] = MIME_JSON
 
       if @state == :unannounced
-        @mutex = Mutex.new
         @httpclient = Net::HTTP.new(req.uri.hostname, req.uri.port)
         @httpclient.open_timeout = 1
         @httpclient.read_timeout = 1
       end
 
-      response = @mutex.synchronize { @httpclient.request(req) }
-      ::Instana.logger.debug "#{req.method}->#{req.uri} body:(#{req.body}) Response:#{response} body:(#{response.body})"
+      response = @httpclient.request(req)
+      # ::Instana.logger.debug "#{req.method}->#{req.uri} body:(#{req.body}) Response:#{response} body:(#{response.body})"
 
       response
     rescue Errno::ECONNREFUSED
