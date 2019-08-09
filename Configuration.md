@@ -108,7 +108,7 @@ end
 
 ### Caveat
 
-In the case of forking webservers such as Unicorn or Puma in clustered mode, the agent detects the pid change and re-spawns the background thread.  If you are managing the background thread yourself with the steps above _and_ you are using a forking webserver (or anything else that may fork the original process), you should also do the following.
+In the case of forking web servers such as Unicorn or Puma in clustered mode, the agent detects the pid change and re-spawns the background thread.  If you are managing the background thread yourself with the steps above _and_ you are using a forking webserver (or anything else that may fork the original process), you should also do the following.
 
 When a fork is detected, the agent handles the re-initialization and then calls `::Agent.instana.spawn_background_thread`.  This by default uses the standard `Thread.new`.  If you wish to control this, you should override this method by re-defining that method.  For example:
 
@@ -145,5 +145,5 @@ The gem can be configured to use your application logger instead:
 
 #### Environment Variable
 
-Setting `INSTANA_GEM_DEV` to a non nil value will enable extra logging output generally useful
+Setting `INSTANA_DEBUG` to a non nil value will enable extra logging output generally useful
 for development.

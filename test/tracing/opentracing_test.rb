@@ -80,13 +80,13 @@ class OpenTracerTest < Minitest::Test
     assert last_response.ok?
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
 
     trace = traces[0]
     assert trace.valid?
 
     # Span validation
-    assert_equal 3, trace.spans.count
+    assert_equal 3, trace.spans.length
     first_span, second_span, third_span = trace.spans.to_a
 
     assert_equal :rack, first_span.name
@@ -130,13 +130,13 @@ class OpenTracerTest < Minitest::Test
     assert last_response.ok?
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
 
     trace = traces[0]
     assert trace.valid?
 
     # Span validation
-    assert_equal 3, trace.spans.count
+    assert_equal 3, trace.spans.length
     first_span = trace.spans.to_a.first
 
     # Make sure context was picked up and continued in the resulting
@@ -272,12 +272,12 @@ class OpenTracerTest < Minitest::Test
 
     traces = ::Instana.processor.queued_traces
 
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
 
     trace = traces.first
     first_span, second_span, third_span = trace.spans.to_a
 
-    assert_equal 3, trace.spans.count
+    assert_equal 3, trace.spans.length
     assert trace.valid?
 
     # IDs
@@ -303,10 +303,10 @@ class OpenTracerTest < Minitest::Test
 
     traces = ::Instana.processor.queued_traces
 
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
     assert trace.valid?
-    assert_equal 3, trace.spans.count
+    assert_equal 3, trace.spans.length
 
     first_span, second_span, third_span = trace.spans.to_a
 
@@ -334,10 +334,10 @@ class OpenTracerTest < Minitest::Test
 
     traces = ::Instana.processor.queued_traces
 
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
     assert trace.valid?
-    assert_equal 3, trace.spans.count
+    assert_equal 3, trace.spans.length
 
     first_span, second_span, third_span = trace.spans.to_a
 
@@ -377,10 +377,10 @@ class OpenTracerTest < Minitest::Test
 
     traces = ::Instana.processor.queued_traces
 
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
     assert trace.valid?
-    assert_equal 3, trace.spans.count
+    assert_equal 3, trace.spans.length
 
     assert_equal nil, entry_span_context.baggage[:my_bag]
     assert_equal 1, ac_span_context.baggage[:my_bag]
@@ -411,10 +411,10 @@ class OpenTracerTest < Minitest::Test
 
     traces = ::Instana.processor.queued_traces
 
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
     assert trace.valid?
-    assert_equal 3, trace.spans.count
+    assert_equal 3, trace.spans.length
 
     # Context
     assert_equal true, entry_span_context.baggage.empty?

@@ -25,11 +25,11 @@ class DalliTest < Minitest::Test
     assert_equal :boom, result
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
 
     # Excon validation
-    assert_equal 2, trace.spans.count
+    assert_equal 2, trace.spans.length
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -61,11 +61,11 @@ class DalliTest < Minitest::Test
     assert result.is_a?(Integer)
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
 
     # Excon validation
-    assert_equal 2, trace.spans.count
+    assert_equal 2, trace.spans.length
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -98,11 +98,11 @@ class DalliTest < Minitest::Test
     assert result.is_a?(Integer)
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
 
     # Excon validation
-    assert_equal 2, trace.spans.count
+    assert_equal 2, trace.spans.length
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -135,11 +135,11 @@ class DalliTest < Minitest::Test
     assert_equal true, result
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
 
     # Excon validation
-    assert_equal 2, trace.spans.count
+    assert_equal 2, trace.spans.length
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -172,11 +172,11 @@ class DalliTest < Minitest::Test
     assert_equal 1, result
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
 
     # Excon validation
-    assert_equal 2, trace.spans.count
+    assert_equal 2, trace.spans.length
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -209,11 +209,11 @@ class DalliTest < Minitest::Test
     assert_equal 0, result
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
 
     # Excon validation
-    assert_equal 2, trace.spans.count
+    assert_equal 2, trace.spans.length
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -245,11 +245,11 @@ class DalliTest < Minitest::Test
     end
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
 
     # Excon validation
-    assert_equal 2, trace.spans.count
+    assert_equal 2, trace.spans.length
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]

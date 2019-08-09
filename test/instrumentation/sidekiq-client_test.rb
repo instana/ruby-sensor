@@ -68,7 +68,7 @@ class SidekiqClientTest < Minitest::Test
     assert_equal 1, ::Instana.processor.queue_count
     client_trace = Instana.processor.queued_traces.first
 
-    assert_equal 2, client_trace.spans.count
+    assert_equal 2, client_trace.spans.length
     spans = client_trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -89,7 +89,7 @@ class SidekiqClientTest < Minitest::Test
     assert_equal 1, ::Instana.processor.queue_count
     client_trace = Instana.processor.queued_traces.first
 
-    assert_equal 2, client_trace.spans.count
+    assert_equal 2, client_trace.spans.length
     spans = client_trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]

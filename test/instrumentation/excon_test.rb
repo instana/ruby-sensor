@@ -23,12 +23,12 @@ class ExconTest < Minitest::Test
     end
 
     traces = Instana.processor.queued_traces
-    assert_equal 2, traces.count
+    assert_equal 2, traces.length
     rs_trace = traces[0]
     http_trace = traces[1]
 
     # Excon validation
-    assert_equal 2, http_trace.spans.count
+    assert_equal 2, http_trace.spans.length
     spans = http_trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -51,7 +51,7 @@ class ExconTest < Minitest::Test
     assert !second_span.key?(:stack)
 
     # Rack server trace validation
-    assert_equal 1, rs_trace.spans.count
+    assert_equal 1, rs_trace.spans.length
     rs_span = rs_trace.spans.to_a[0]
 
     # Rack server trace should have the same trace ID
@@ -78,11 +78,11 @@ class ExconTest < Minitest::Test
     end
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     http_trace = traces.first
 
     # Excon validation
-    assert_equal 2, http_trace.spans.count
+    assert_equal 2, http_trace.spans.length
     spans = http_trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -126,11 +126,11 @@ class ExconTest < Minitest::Test
     end
 
     traces = Instana.processor.queued_traces
-    assert_equal 4, traces.count
+    assert_equal 4, traces.length
     http_trace = traces[3]
 
     # Excon validation
-    assert_equal 4, http_trace.spans.count
+    assert_equal 4, http_trace.spans.length
     spans = http_trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]

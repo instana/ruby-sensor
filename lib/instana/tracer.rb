@@ -37,7 +37,7 @@ module Instana
     #
     def start_or_continue_trace(name, kvs = {}, incoming_context = {}, &block)
       log_start_or_continue(name, kvs, incoming_context)
-      block.call
+      yield
     rescue Exception => e
       log_error(e)
       raise
@@ -58,8 +58,7 @@ module Instana
     #
     def trace(name, kvs = {}, &block)
       log_entry(name, kvs)
-      result = block.call
-      result
+      yield
     rescue Exception => e
       log_error(e)
       raise
@@ -128,7 +127,7 @@ module Instana
     def log_exit(name, kvs = {})
       return unless tracing?
 
-      if ::Instana.debug? || ::Instana.test?
+      if ENV.key?('INSTANA_DEBUG') || ENV.key?('INSTANA_TEST')
         unless current_span_name?(name)
           ::Instana.logger.debug "Span mismatch: Attempt to exit #{name} span but #{current_span.name} is active."
         end
@@ -149,7 +148,7 @@ module Instana
     def log_end(name, kvs = {}, end_time = ::Instana::Util.now_in_ms)
       return unless tracing?
 
-      if ::Instana.debug? || ::Instana.test?
+      if ENV.key?('INSTANA_DEBUG') || ENV.key?('INSTANA_TEST')
         unless current_span_name?(name)
           ::Instana.logger.debug "Span mismatch: Attempt to end #{name} span but #{current_span.name} is active."
         end

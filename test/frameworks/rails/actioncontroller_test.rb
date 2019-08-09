@@ -13,10 +13,10 @@ class ActionControllerTest < Minitest::Test
     Net::HTTP.get(URI.parse('http://localhost:3205/test/world'))
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
 
-    assert_equal 3, trace.spans.count
+    assert_equal 3, trace.spans.length
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -34,10 +34,10 @@ class ActionControllerTest < Minitest::Test
     Net::HTTP.get(URI.parse('http://localhost:3205/test/error'))
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
 
-    assert_equal 2, trace.spans.count
+    assert_equal 2, trace.spans.length
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -62,10 +62,10 @@ class ActionControllerTest < Minitest::Test
     Net::HTTP.get(URI.parse('http://localhost:3205/api/world'))
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
 
-    assert_equal 3, trace.spans.count
+    assert_equal 3, trace.spans.length
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -86,10 +86,10 @@ class ActionControllerTest < Minitest::Test
     Net::HTTP.get(URI.parse('http://localhost:3205/api/error'))
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
 
-    assert_equal 2, trace.spans.count
+    assert_equal 2, trace.spans.length
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -111,10 +111,10 @@ class ActionControllerTest < Minitest::Test
     Net::HTTP.get(URI.parse('http://localhost:3205/test/404'))
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
 
-    assert_equal 1, trace.spans.count
+    assert_equal 1, trace.spans.length
     spans = trace.spans.to_a
     first_span = spans[0]
 

@@ -14,7 +14,7 @@ class CustomTracingTest < Minitest::Test
     assert_equal false, ::Instana.tracer.tracing?
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     t = traces.first
     assert_equal 1, t.spans.size
     assert t.valid?
@@ -63,7 +63,7 @@ class CustomTracingTest < Minitest::Test
     assert_equal false, ::Instana.tracer.tracing?
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     t = traces.first
     assert_equal 2, t.spans.size
     assert t.valid?
@@ -122,7 +122,7 @@ class CustomTracingTest < Minitest::Test
     assert_equal false, ::Instana.tracer.tracing?
 
     traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     t = traces.first
     assert_equal 2, t.spans.size
     assert t.valid?

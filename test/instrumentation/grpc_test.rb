@@ -24,7 +24,7 @@ class GrpcTest < Minitest::Test
   end
 
   def assert_client_trace(client_trace, call: '', call_type: '', error: nil)
-    assert_equal 2, client_trace.spans.count
+    assert_equal 2, client_trace.spans.length
     spans = client_trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
@@ -50,7 +50,7 @@ class GrpcTest < Minitest::Test
   end
 
   def assert_server_trace(server_trace, call: '', call_type: '', error: nil)
-    assert_equal 1, server_trace.spans.count
+    assert_equal 1, server_trace.spans.length
     span = server_trace.spans.to_a.first
 
     # Span name validation

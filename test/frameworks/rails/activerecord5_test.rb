@@ -16,10 +16,10 @@ class ActiveRecordTest < Minitest::Test
     Net::HTTP.get(URI.parse('http://localhost:3205/test/db'))
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
 
-    assert_equal 6, trace.spans.count
+    assert_equal 6, trace.spans.length
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[2]
@@ -56,10 +56,10 @@ class ActiveRecordTest < Minitest::Test
     Net::HTTP.get(URI.parse('http://localhost:3205/test/db'))
 
     traces = Instana.processor.queued_traces
-    assert_equal 1, traces.count
+    assert_equal 1, traces.length
     trace = traces.first
 
-    assert_equal 6, trace.spans.count
+    assert_equal 6, trace.spans.length
     spans = trace.spans.to_a
     first_span = spans[0]
     second_span = spans[2]

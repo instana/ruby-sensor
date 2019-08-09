@@ -25,22 +25,6 @@ module Instana
       @processor = ::Instana::Processor.new
       @collector = ::Instana::Collector.new
     end
-
-    # Indicates whether we are running in a development environment.
-    #
-    # @return Boolean
-    #
-    def debug?
-      ENV.key?('INSTANA_GEM_DEV')
-    end
-
-    # Indicates whether we are running in the test environment.
-    #
-    # @return Boolean
-    #
-    def test?
-      ENV.key?('INSTANA_GEM_TEST')
-    end
   end
 end
 
