@@ -49,7 +49,7 @@ gem 'excon'
 
 # Memcache
 gem 'dalli'
-gem 'redis', '< 4.0.0'
+gem 'redis'
 
 # Background Job queuing and processing
 if RUBY_VERSION < '2.2'
