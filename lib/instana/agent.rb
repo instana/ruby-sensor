@@ -202,7 +202,6 @@ module Instana
       if @is_linux && !::Instana.test?
         # We create an open socket to the host agent in case we are running in a container
         # and the real pid needs to be detected.
-        ::Instana.logger.debug("Sharing the file descriptor and INode in Linux")
         socket = TCPSocket.new @discovered[:agent_host], @discovered[:agent_port]
         announce_payload[:fd] = socket.fileno
         announce_payload[:inode] = File.readlink("/proc/#{Process.pid}/fd/#{socket.fileno}")
@@ -422,7 +421,6 @@ module Instana
       req['Accept'] = MIME_JSON
       req['Content-Type'] = MIME_JSON
 
-      ::Instana.logger.debug "Trying request: #{req} Body: #{req.body}"      
       if @state == :unannounced
         @mutex = Mutex.new
         @httpclient = Net::HTTP.new(req.uri.hostname, req.uri.port)
@@ -430,7 +428,6 @@ module Instana
         @httpclient.read_timeout = 2
       end
 
-      ::Instana.logger.debug "Client: #{@httpclient}"
       response = @mutex.synchronize { @httpclient.request(req) }
       ::Instana.logger.debug "#{req.method}->#{req.uri} body:(#{req.body}) Response:#{response} body:(#{response.body})"
 

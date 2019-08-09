@@ -76,7 +76,6 @@ module Instana
           begin
             # We create an open socket to the host agent in case we are running in a container
             # and the real pid needs to be detected.
-            ::Instana.logger.debug("Sharing the file descriptor and INode in Linux")
             socket = TCPSocket.new ::Instana.config[:agent_host], ::Instana.config[:agent_port]
             p[:fd] = socket.fileno
             p[:inode] = File.readlink("/proc/#{Process.pid}/fd/#{socket.fileno}")
