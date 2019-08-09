@@ -424,13 +424,14 @@ module Instana
 
       ::Instana.logger.debug "Trying request: #{req} Body: #{req.body}"      
       if @state == :unannounced
+        @mutex = Mutex.new
         @httpclient = Net::HTTP.new(req.uri.hostname, req.uri.port)
-        @httpclient.open_timeout = 1
-        @httpclient.read_timeout = 1
+        @httpclient.open_timeout = 2
+        @httpclient.read_timeout = 2
       end
 
       ::Instana.logger.debug "Client: #{@httpclient}"
-      response = @httpclient.request(req)
+      response = @mutex.synchronize { @httpclient.request(req) }
       ::Instana.logger.debug "#{req.method}->#{req.uri} body:(#{req.body}) Response:#{response} body:(#{response.body})"
 
       response
