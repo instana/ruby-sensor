@@ -11,7 +11,7 @@ module Instana
       #
       # @return [Boolean]
       #
-      def has_rails_handler?
+      def has_rails_handler?(exception)
         found = false
         rescue_handlers.detect do |klass_name, _handler|
           # Rescue handlers can be specified as strings or constant names
@@ -21,7 +21,7 @@ module Instana
         end
         found
       rescue => e
-        ::Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+        ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
         return false
       end
 
@@ -72,7 +72,7 @@ module Instana
 
         super(*args)
       rescue Exception => e
-        ::Instana.tracer.log_error(e) unless has_rails_handler?
+        ::Instana.tracer.log_error(e) unless has_rails_handler?(e)
         raise
       ensure
         ::Instana.tracer.log_exit(:actioncontroller)
@@ -92,7 +92,7 @@ module Instana
 
         super(*args, &blk)
       rescue Exception => e
-        ::Instana.tracer.log_error(e) unless has_rails_handler?
+        ::Instana.tracer.log_error(e) unless has_rails_handler?(e)
         raise
       ensure
         ::Instana.tracer.log_exit(:actionview)
@@ -124,7 +124,7 @@ module Instana
 
         process_action_without_instana(*args)
       rescue Exception => e
-        ::Instana.tracer.log_error(e) unless has_rails_handler?
+        ::Instana.tracer.log_error(e) unless has_rails_handler?(e)
         raise
       ensure
         ::Instana.tracer.log_exit(:actioncontroller)
@@ -141,7 +141,7 @@ module Instana
         ::Instana.tracer.log_entry(:actionview, :actionview => { :name => name })
         render_without_instana(*args, &blk)
       rescue Exception => e
-        ::Instana.tracer.log_error(e) unless has_rails_handler?
+        ::Instana.tracer.log_error(e) unless has_rails_handler?(e)
         raise
       ensure
         ::Instana.tracer.log_exit(:actionview)
