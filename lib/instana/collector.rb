@@ -70,6 +70,17 @@ module Instana
         # Add in process related that could have changed since
         # snapshot was taken.
         p = { :pid => ::Instana.agent.report_pid }
+        @is_linux = RbConfig::CONFIG['host_os'] == 'linux'
+
+        if @is_linux && !::Instana.test?
+          # We create an open socket to the host agent in case we are running in a container
+          # and the real pid needs to be detected.
+          ::Instana.logger.debug("Sharing the file descriptor and INode in Linux")
+          socket = TCPSocket.new @discovered[:agent_host], @discovered[:agent_port]
+          p[:fd] = socket.fileno
+          p[:inode] = File.readlink("/proc/#{Process.pid}/fd/#{socket.fileno}")
+        end
+
         p[:name] = ::Instana::Util.get_app_name
         p[:exec_args] = ::Instana.agent.process[:arguments]
         payload.merge!(p)
@@ -85,6 +96,8 @@ module Instana
           @last_snapshot = Time.now
         end
       end
+    ensure
+      socket.close if socket && !socket.closed?
     end
 
     # Take two hashes and enforce delta reporting.
