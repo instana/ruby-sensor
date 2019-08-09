@@ -233,7 +233,7 @@ module Instana
       Instana.logger.debug e.backtrace.join("\r\n")
       return false
     ensure
-      socket.close if socket
+      socket.close if socket && !socket.closed?
     end
 
     # Method to report metrics data to the host agent.

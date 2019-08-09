@@ -160,11 +160,25 @@ module Instana
           process[:arguments] = cmdline
         end
 
+        @is_linux = RbConfig::CONFIG['host_os'] == 'linux'
+ 
         process[:pid] = Process.pid
         # This is usually Process.pid but in the case of containers, the host agent
         # will return to us the true host pid in which we use to report data.
         process[:report_pid] = nil
+
+        if @is_linux && !::Instana.test?
+          # We create an open socket to the host agent in case we are running in a container
+          # and the real pid needs to be detected.
+          ::Instana.logger.debug("Sharing the file descriptor and INode in Linux")
+          socket = TCPSocket.new @discovered[:agent_host], @discovered[:agent_port]
+          process[:fd] = socket.fileno
+          process[:inode] = File.readlink("/proc/#{Process.pid}/fd/#{socket.fileno}")
+        end
+
         process
+      ensure
+        socket.close if socket && !socket.closed?
       end
 
       # Best effort to determine a name for the instrumented application
