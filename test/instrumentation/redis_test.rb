@@ -54,7 +54,7 @@ class RedisTest < Minitest::Test
       rescue; end
     end
 
-    assert_redis_trace('PIPELINE', with_error: "EERR unknown command `invalid`, with args beginning with:")
+    assert_redis_trace('PIPELINE', with_error: "ERR unknown command 'invalid'")
   end
 
   def test_multi_call
@@ -84,7 +84,7 @@ class RedisTest < Minitest::Test
       rescue; end
     end
 
-    assert_redis_trace('MULTI', with_error: "ERR unknown command `invalid`, with args beginning with:")
+    assert_redis_trace('MULTI', with_error: "ERR unknown command 'invalid'")
   end
 
   private
@@ -115,7 +115,7 @@ class RedisTest < Minitest::Test
 
     if with_error
       assert_equal true, data[:redis][:error]
-      assert_equal with_error, data[:log][:message]
+      assert data[:log][:message].include?(with_error)
     end
   end
 end
