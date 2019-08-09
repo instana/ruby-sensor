@@ -424,8 +424,8 @@ module Instana
       if @state == :unannounced
         @mutex = Mutex.new
         @httpclient = Net::HTTP.new(req.uri.hostname, req.uri.port)
-        @httpclient.open_timeout = 2
-        @httpclient.read_timeout = 2
+        @httpclient.open_timeout = 1
+        @httpclient.read_timeout = 1
       end
 
       response = @mutex.synchronize { @httpclient.request(req) }

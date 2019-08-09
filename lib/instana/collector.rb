@@ -4,7 +4,7 @@ module Instana
     attr_accessor :last_report_log
 
     def initialize
-      @collectors = Concurrent::Array.new
+      @collectors = []
 
       # Snapshot data is collected once per process but resent
       # every 10 minutes along side process metrics.
@@ -70,20 +70,6 @@ module Instana
         # Add in process related that could have changed since
         # snapshot was taken.
         p = { :pid => ::Instana.agent.report_pid }
-        @is_linux = RbConfig::CONFIG['host_os'] == 'linux'
-
-        if @is_linux && !::Instana.test?
-          begin
-            # We create an open socket to the host agent in case we are running in a container
-            # and the real pid needs to be detected.
-            socket = TCPSocket.new ::Instana.config[:agent_host], ::Instana.config[:agent_port]
-            p[:fd] = socket.fileno
-            p[:inode] = File.readlink("/proc/#{Process.pid}/fd/#{socket.fileno}")
-          rescue Exception => e
-            ::Instana.logger.debug("Failed to open a socket connection to #{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}")
-          end
-        end
-
         p[:name] = ::Instana::Util.get_app_name
         p[:exec_args] = ::Instana.agent.process[:arguments]
         payload.merge!(p)
@@ -99,8 +85,6 @@ module Instana
           @last_snapshot = Time.now
         end
       end
-    ensure
-      socket.close if socket && !socket.closed?
     end
 
     # Take two hashes and enforce delta reporting.
