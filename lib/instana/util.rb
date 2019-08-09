@@ -119,8 +119,8 @@ module Instana
 
         data
       rescue => e
-        ::Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-        ::Instana.logger.debug e.backtrace.join("\r\n")
+        ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
+        ::Instana.logger.debug { e.backtrace.join("\r\n") }
         return data
       end
 
@@ -187,7 +187,7 @@ module Instana
         return File.basename($0)
       rescue Exception => e
         Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-        Instana.logger.debug e.backtrace.join("\r\n")
+        Instana.logger.debug { e.backtrace.join("\r\n") }
       end
 
       # Get the current time in milliseconds from the epoch
@@ -231,7 +231,7 @@ module Instana
         [id.to_i].pack('q>').unpack('H*')[0].gsub(/^0+/, '')
       rescue => e
         Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-        Instana.logger.debug e.backtrace.join("\r\n")
+        Instana.logger.debug { e.backtrace.join("\r\n") }
       end
 
       # Convert a received header value into a valid ID
@@ -254,7 +254,7 @@ module Instana
         [header_id].pack("H*").unpack("q>")[0]
       rescue => e
         Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-        Instana.logger.debug e.backtrace.join("\r\n")
+        Instana.logger.debug { e.backtrace.join("\r\n") }
       end
     end
   end

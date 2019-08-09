@@ -18,7 +18,7 @@ module Instana
         @this_count
       rescue => e
         ::Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-        ::Instana.logger.debug e.backtrace.join("\r\n")
+        ::Instana.logger.debug { e.backtrace.join("\r\n") }
       end
     end
   end

@@ -17,7 +17,7 @@ module Instana
           kvs[:job] = klass.to_s
           kvs[:queue] = klass.instance_variable_get(:@queue)
         rescue => e
-          Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+          Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
         end
 
         { :'resque-client' => kvs }
@@ -77,7 +77,7 @@ module Instana
           kvs[:'resque-worker'][:job] = job.payload['class'].to_s
           kvs[:'resque-worker'][:queue] = job.queue
         rescue => e
-          ::Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" if Instana::Config[:verbose]
+          ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" } if Instana::Config[:verbose]
         end
 
         Instana.tracer.start_or_continue_trace(:'resque-worker', kvs) do
@@ -97,7 +97,7 @@ module Instana
           ::Instana.tracer.log_error(exception)
         end
       rescue Exception => e
-        ::Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" if Instana::Config[:verbose]
+        ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" } if Instana::Config[:verbose]
       ensure
         fail_without_instana(exception)
       end

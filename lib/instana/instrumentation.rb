@@ -14,7 +14,7 @@ if !ENV.key?('INSTANA_DISABLE_AUTO_INSTR') || ENV['INSTANA_DISABLE_AUTO_INSTR'] 
         require f
       rescue => e
         Instana.logger.error "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-        Instana.logger.debug e.backtrace.join("\r\n")
+        Instana.logger.debug { e.backtrace.join("\r\n") }
       end
     end
   end
