@@ -42,7 +42,7 @@ module AgentHelpers
   #
   def ready?
     # In test, we're always ready :-)
-    return true if ENV['INSTANA_TEST']
+    return true if ENV.key?('INSTANA_TEST')
 
     if !@is_resque_worker && forked?
       ::Instana.logger.debug "Instana: detected fork. (this pid: #{Process.pid}/#{Process.ppid})  Calling after_fork"
