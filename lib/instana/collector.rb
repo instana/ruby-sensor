@@ -73,12 +73,16 @@ module Instana
         @is_linux = RbConfig::CONFIG['host_os'] == 'linux'
 
         if @is_linux && !::Instana.test?
-          # We create an open socket to the host agent in case we are running in a container
-          # and the real pid needs to be detected.
-          ::Instana.logger.debug("Sharing the file descriptor and INode in Linux")
-          socket = TCPSocket.new ::Instana.config[:agent_host], ::Instana.config[:agent_port]
-          p[:fd] = socket.fileno
-          p[:inode] = File.readlink("/proc/#{Process.pid}/fd/#{socket.fileno}")
+          begin
+            # We create an open socket to the host agent in case we are running in a container
+            # and the real pid needs to be detected.
+            ::Instana.logger.debug("Sharing the file descriptor and INode in Linux")
+            socket = TCPSocket.new ::Instana.config[:agent_host], ::Instana.config[:agent_port]
+            p[:fd] = socket.fileno
+            p[:inode] = File.readlink("/proc/#{Process.pid}/fd/#{socket.fileno}")
+          rescue Errno::ECONNREFUSED => e
+            ::Instana.logger.debug("Failed to open a socket connection to #{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}")
+          end
         end
 
         p[:name] = ::Instana::Util.get_app_name
