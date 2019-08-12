@@ -159,7 +159,7 @@ module Instana
           process[:name] = cmdline.shift
           process[:arguments] = cmdline
         end
- 
+
         process[:pid] = Process.pid
         # This is usually Process.pid but in the case of containers, the host agent
         # will return to us the true host pid in which we use to report data.

@@ -1,4 +1,3 @@
-require 'oj'
 require 'net/http'
 require 'socket'
 require 'sys/proctable'

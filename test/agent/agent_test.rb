@@ -1,5 +1,5 @@
 require 'test_helper'
-require 'oj'
+require './lib/oj_check'
 
 class AgentTest < Minitest::Test
   def test_agent_host_detection
