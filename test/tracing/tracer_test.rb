@@ -35,7 +35,6 @@ class TracerTest < Minitest::Test
 
     first_span = spans.first
     assert_equal :rack, first_span[:n]
-    assert_equal :ruby, first_span[:ta]
     assert first_span[:ts].is_a?(Integer)
     assert first_span[:d].is_a?(Integer)
     assert first_span[:d].between?(100, 130)
@@ -65,7 +64,6 @@ class TracerTest < Minitest::Test
 
     first_span = spans.first
     assert_equal :rack, first_span[:n]
-    assert_equal :ruby, first_span[:ta]
     assert first_span[:ts].is_a?(Integer)
     assert first_span[:ts] > 0
     assert first_span[:d].is_a?(Integer)
@@ -150,7 +148,6 @@ class TracerTest < Minitest::Test
 
     first_span = spans[0]
     assert_equal :rack, first_span[:n]
-    assert_equal :ruby, first_span[:ta]
     assert first_span.key?(:data)
     assert_equal first_span[:data][:one], 1
     assert_equal first_span[:data][:info_logged], 1

@@ -30,7 +30,6 @@ class CustomTracingTest < Minitest::Test
     assert first_span[:data][:sdk][:custom].key?(:tags)
     assert_equal :custom_trace, first_span[:data][:sdk][:name]
     assert_equal 1, first_span[:data][:sdk][:custom][:tags][:one]
-    assert_equal :ruby, first_span[:ta]
 
     assert first_span.key?(:f)
     assert first_span[:f].key?(:e)
