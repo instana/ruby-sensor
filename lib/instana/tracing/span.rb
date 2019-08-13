@@ -20,9 +20,7 @@ module Instana
       @data[:p] = parent_id if parent_id      # Parent ID
       @data[:ta] = :ruby                      # Agent
       @data[:data] = {}
-
-      # Mark this span as root if the trace_id is the same as span_id
-      @is_root = (@data[:s] == @data[:t])
+      is_root = false
 
       # Entity Source
       @data[:f] = { :e => ::Instana.agent.report_pid,
@@ -123,7 +121,7 @@ module Instana
     #
     def configure_custom(name)
       @data[:n] = :sdk
-      @data[:k] = :intermediate
+      @data[:k] = 3
       @data[:data] = { :sdk => { :name => name.to_sym, :type => :intermediate } }
       @data[:data][:sdk][:custom] = { :tags => {}, :logs => {} }
       self
@@ -277,11 +275,14 @@ module Instana
         if key.to_sym == :'span.kind'
           case value.to_sym
           when :server, :consumer
-            @data[:data][:sdk][:type] = @data[:k] = :entry
+            @data[:data][:sdk][:type] = :entry
+            @data[:k] = 1
           when :client, :producer
-            @data[:data][:sdk][:type] = @data[:k] = :exit
+            @data[:data][:sdk][:type] = :exit
+            @data[:k] = 2
           else
-            @data[:data][:sdk][:type] = @data[:k] = :intermediate
+            @data[:data][:sdk][:type] = :intermediate
+            @data[:k] = 3
           end
         end
       else
@@ -364,7 +365,7 @@ module Instana
         set_tags(:log => fields)
       end
     rescue StandardError => e
-      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
+      Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
     end
 
     # Finish the {Span}
@@ -373,16 +374,16 @@ module Instana
     # @param end_time [Time] custom end time, if not now
     #
     def finish(end_time = ::Instana::Util.now_in_ms)
-      if ::Instana.tracer.current_span.id != id
-        ::Instana.logger.debug "Closing a span that isn't active. This will result in a broken trace: #{self.inspect}"
+      if ENV['INSTANA_DEBUG'] && (::Instana.tracer.current_span.id != id)
+        ::Instana.logger.debug "Closing a span that isn't active. This may result in a broken trace: #{self.inspect}"
       end
 
-      if @is_root
+      close(end_time)
+
+      if is_root
         # This is the root span for the trace.  Call log_end to close
         # out and queue the trace
         ::Instana.tracer.log_end(name, {}, end_time)
-      else
-        ::Instana.tracer.current_trace.end_span({}, end_time)
       end
       self
     end
