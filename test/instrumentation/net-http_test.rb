@@ -22,24 +22,19 @@ class NetHTTPTest < Minitest::Test
       end
     end
 
-    assert_equal 2, ::Instana.processor.queue_count
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
-    traces = Instana.processor.queued_traces
-    rs_trace = traces[0]
-    http_trace = traces[1]
-
-    # Net::HTTP trace validation
-    assert_equal 2, http_trace.spans.length
-    spans = http_trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    rs_span = spans[0]
+    first_span = spans[1]
+    second_span = spans[2]
 
     # Span name validation
     assert_equal :sdk, first_span[:n]
     assert_equal :'net-http', second_span[:n]
 
     # first_span is the parent of second_span
-    assert_equal first_span.id, second_span[:p]
+    assert_equal first_span[:s], second_span[:p]
 
     # data keys/values
     refute_nil second_span.key?(:data)
@@ -48,14 +43,12 @@ class NetHTTPTest < Minitest::Test
     assert_equal "200", second_span[:data][:http][:status]
     assert !second_span.key?(:stack)
 
-    # Rack server trace validation
-    assert_equal 1, rs_trace.spans.length
-    rs_span = rs_trace.spans.to_a[0]
-
     # Rack server trace should have the same trace ID
-    assert_equal http_trace.id, rs_span[:t].to_i
+    assert_equal rs_span[:t], first_span[:t]
+    assert_equal first_span[:t], second_span[:t]
+
     # Rack server trace should have net-http has parent span
-    assert_equal second_span.id, rs_span[:p].to_i
+    assert_equal second_span[:s], rs_span[:p]
 
     WebMock.disable_net_connect!
   end
@@ -70,24 +63,20 @@ class NetHTTPTest < Minitest::Test
       response = http.request(Net::HTTP::Post.new("/"))
     end
 
-    assert_equal 2, ::Instana.processor.queue_count
 
-    traces = Instana.processor.queued_traces
-    rs_trace = traces[0]
-    http_trace = traces[1]
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
-    # Net::HTTP trace validation
-    assert_equal 2, http_trace.spans.length
-    spans = http_trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    rs_span = spans[0]
+    first_span = spans[1]
+    second_span = spans[2]
 
     # Span name validation
     assert_equal :sdk, first_span[:n]
     assert_equal :'net-http', second_span[:n]
 
     # first_span is the parent of second_span
-    assert_equal first_span.id, second_span[:p]
+    assert_equal first_span[:s], second_span[:p]
 
     # data keys/values
     refute_nil second_span.key?(:data)
@@ -96,14 +85,12 @@ class NetHTTPTest < Minitest::Test
     assert_equal "200", second_span[:data][:http][:status]
     assert !second_span.key?(:stack)
 
-    # Rack server trace validation
-    assert_equal 1, rs_trace.spans.length
-    rs_span = rs_trace.spans.to_a[0]
-
     # Rack server trace should have the same trace ID
-    assert_equal http_trace.id, rs_span[:t].to_i
+    assert_equal rs_span[:t], first_span[:t]
+    assert_equal first_span[:t], second_span[:t]
+
     # Rack server trace should have net-http has parent span
-    assert_equal second_span.id, rs_span[:p].to_i
+    assert_equal second_span[:s], rs_span[:p]
 
     WebMock.disable_net_connect!
   end
@@ -121,16 +108,15 @@ class NetHTTPTest < Minitest::Test
       nil
     end
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    t = traces[0]
-    assert_equal 1, t.spans.count
-    assert t.has_error?
-    spans = t.spans.to_a
-    first_span = spans[0]
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
 
-    assert_equal :'net-http-error-test', first_span.name
-    assert first_span.custom?
+    first_span = spans.first
+
+    assert_equal :sdk, first_span[:n]
+    assert_equal :'net-http-error-test', first_span[:data][:sdk][:name]
+    assert_equal true, first_span[:error]
+    assert_equal 1, first_span[:ec]
     ts_key = first_span[:data][:sdk][:custom][:logs].keys.first
     assert first_span[:data][:sdk][:custom][:logs].key?(ts_key)
     assert first_span[:data][:sdk][:custom][:logs][ts_key].key?(:event)
@@ -149,20 +135,26 @@ class NetHTTPTest < Minitest::Test
       response = http.request(Net::HTTP::Get.new("/error"))
     end
 
-    traces = Instana.processor.queued_traces
-    assert_equal 2, traces.length
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
-    request_trace = traces[1]
-    assert_equal 2, request_trace.spans.length
-    assert request_trace.has_error?
-    http_span = request_trace.spans.to_a[1]
+    rack_span = spans[0]
+    sdk_span = spans[1]
+    http_span = spans[2]
+
+    assert_equal :sdk, sdk_span[:n]
+    assert_equal :'net-http-error-test', sdk_span[:data][:sdk][:name]
+    assert_equal nil, sdk_span[:error]
+    assert_equal nil, sdk_span[:ec]
 
     refute_nil http_span.key?(:data)
     refute_nil http_span[:data].key?(:http)
     assert_equal "http://127.0.0.1:6511/error", http_span[:data][:http][:url]
     assert_equal "500", http_span[:data][:http][:status]
-    assert_equal :'net-http', http_span.name
+    assert_equal :'net-http', http_span[:n]
     assert !http_span.key?(:stack)
+    assert_equal true, http_span[:error]
+    assert_equal 1, http_span[:ec]
 
     WebMock.disable_net_connect!
   end

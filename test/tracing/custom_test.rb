@@ -13,13 +13,10 @@ class CustomTracingTest < Minitest::Test
     ::Instana.tracer.log_end(:custom_trace, {:close_one => 1})
     assert_equal false, ::Instana.tracer.tracing?
 
-    traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    t = traces.first
-    assert_equal 1, t.spans.size
-    assert t.valid?
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
 
-    first_span = t.spans.first
+    first_span = spans.first
     assert_equal :sdk, first_span[:n]
 
     assert first_span[:ts].is_a?(Integer)
@@ -62,13 +59,10 @@ class CustomTracingTest < Minitest::Test
     ::Instana.tracer.log_end(:rack, {:on_trace_end => 1})
     assert_equal false, ::Instana.tracer.tracing?
 
-    traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    t = traces.first
-    assert_equal 2, t.spans.size
-    assert t.valid?
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
 
-    first_span, second_span = t.spans.to_a
+    first_span, second_span = spans.to_a
 
     assert first_span[:ts].is_a?(Integer)
     assert first_span[:ts] > 0
@@ -121,13 +115,10 @@ class CustomTracingTest < Minitest::Test
     ::Instana.tracer.log_end(:rack, {:on_trace_end => 1})
     assert_equal false, ::Instana.tracer.tracing?
 
-    traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    t = traces.first
-    assert_equal 2, t.spans.size
-    assert t.valid?
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
 
-    first_span, second_span = t.spans.to_a
+    first_span, second_span = spans.to_a
 
     assert first_span[:ts].is_a?(Integer)
     assert first_span[:ts] > 0

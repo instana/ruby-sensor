@@ -30,8 +30,9 @@ class SidekiqServerTest < Minitest::Test
     enable_redis_instrumentation
     sleep 1
 
-    assert_equal 1, ::Instana.processor.queue_count
-    assert_successful_worker_trace(::Instana.processor.queued_traces.first)
+    spans = Instana.processor.queued_spans
+    worker_span = find_spans_by_name(spans, :'sidekiq-worker').first
+    assert_successful_worker_span(worker_span)
 
     $sidekiq_mode = :client
   end
@@ -59,8 +60,10 @@ class SidekiqServerTest < Minitest::Test
     enable_redis_instrumentation
 
     sleep 1
-    assert_equal 1, ::Instana.processor.queue_count
-    assert_failed_worker_trace(::Instana.processor.queued_traces.first)
+
+    spans = Instana.processor.queued_spans
+    worker_span = find_spans_by_name(spans, :'sidekiq-worker').first
+    assert_failed_worker_span(worker_span)
 
     $sidekiq_mode = :client
   end
@@ -80,15 +83,20 @@ class SidekiqServerTest < Minitest::Test
       enable_redis_instrumentation
     end
     sleep 1
-    assert_equal 2, ::Instana.processor.queue_count
-    client_trace, worker_trace = differentiate_trace(
-      Instana.processor.queued_traces.to_a
-    )
-    assert_client_trace(client_trace, ::SidekiqJobOne)
-    assert_successful_worker_trace(worker_trace)
+    spans = Instana.processor.queued_spans
+
+    sdk_span = find_sdk_spans_by_name(spans, :sidekiqtests).first
+    validate_sdk_span(sdk_span)
+
+    client_span = find_spans_by_name(spans, :'sidekiq-client').first
+    assert_client_span(client_span, ::SidekiqJobOne)
+
+    worker_span = find_spans_by_name(spans, :'sidekiq-worker').first
+    assert_successful_worker_span(worker_span)
 
     # Worker trace and client trace are in the same trace
-    assert_equal client_trace.spans.first['t'], worker_trace.spans.first['t']
+    assert_equal worker_span[:t], client_span[:t]
+    assert_equal worker_span[:p], client_span[:s]
 
     $sidekiq_mode = :client
   end
@@ -108,15 +116,21 @@ class SidekiqServerTest < Minitest::Test
       enable_redis_instrumentation
     end
     sleep 1
-    assert_equal 2, ::Instana.processor.queue_count
-    client_trace, worker_trace = differentiate_trace(
-      Instana.processor.queued_traces.to_a
-    )
-    assert_client_trace(client_trace, ::SidekiqJobTwo)
-    assert_failed_worker_trace(worker_trace)
+
+    spans = Instana.processor.queued_spans
+
+    sdk_span = find_sdk_spans_by_name(spans, :sidekiqtests).first
+    validate_sdk_span(sdk_span)
+
+    client_span = find_spans_by_name(spans, :'sidekiq-client').first
+    assert_client_span(client_span, ::SidekiqJobTwo)
+
+    worker_span = find_spans_by_name(spans, :'sidekiq-worker').first
+    assert_failed_worker_span(worker_span)
 
     # Worker trace and client trace are in the same trace
-    assert_equal client_trace.spans.first['t'], worker_trace.spans.first['t']
+    assert_equal worker_span[:t], client_span[:t]
+    assert_equal worker_span[:p], client_span[:s]
 
     $sidekiq_mode = :client
   end
@@ -132,57 +146,28 @@ class SidekiqServerTest < Minitest::Test
     end
   end
 
-  def differentiate_trace(traces)
-    trying_client = traces[0]
-    trying_server = traces[1]
+  def assert_successful_worker_span(worker_span)
+    assert_equal :'sidekiq-worker', worker_span[:n]
 
-    try_successfully = trying_client.spans.any? do |span|
-      span.name == :'sidekiq-client'
-    end
-
-    if try_successfully
-      [trying_client, trying_server]
-    else
-      [trying_server, trying_client]
-    end
+    assert_equal 'important', worker_span[:data][:'sidekiq-worker'][:queue]
+    assert_equal 'SidekiqJobOne', worker_span[:data][:'sidekiq-worker'][:job]
+    assert_equal false, worker_span[:data][:'sidekiq-worker'][:job_id].nil?
   end
 
-  def assert_successful_worker_trace(worker_trace)
-    assert_equal 1, worker_trace.spans.length
-    span = worker_trace.spans.first
+  def assert_failed_worker_span(worker_span)
+    assert_equal :'sidekiq-worker', worker_span[:n]
 
-    assert_equal :'sidekiq-worker', span[:n]
+    assert_equal 'important', worker_span[:data][:'sidekiq-worker'][:queue]
+    assert_equal 'SidekiqJobTwo', worker_span[:data][:'sidekiq-worker'][:job]
+    assert_equal false, worker_span[:data][:'sidekiq-worker'][:job_id].nil?
 
-    assert_equal 'important', span[:data][:'sidekiq-worker'][:queue]
-    assert_equal 'SidekiqJobOne', span[:data][:'sidekiq-worker'][:job]
-    assert_equal false, span[:data][:'sidekiq-worker'][:job_id].nil?
+    assert_equal true, worker_span[:data][:'sidekiq-worker'][:error]
+    assert_equal 'Fail to execute the job', worker_span[:data][:log][:message]
   end
 
-  def assert_failed_worker_trace(worker_trace)
-    assert_equal 1, worker_trace.spans.length
-    span = worker_trace.spans.first
-
-    assert_equal :'sidekiq-worker', span[:n]
-
-    assert_equal 'important', span[:data][:'sidekiq-worker'][:queue]
-    assert_equal 'SidekiqJobTwo', span[:data][:'sidekiq-worker'][:job]
-    assert_equal false, span[:data][:'sidekiq-worker'][:job_id].nil?
-
-    assert_equal true, span[:data][:'sidekiq-worker'][:error]
-    assert_equal 'Fail to execute the job', span[:data][:log][:message]
-  end
-
-  def assert_client_trace(client_trace, job)
-    assert_equal 2, client_trace.spans.length
-    first_span, second_span = client_trace.spans.to_a
-
-    assert_equal :sdk, first_span[:n]
-    assert_equal :sidekiqtests, first_span[:data][:sdk][:name]
-
-    assert_equal first_span.id, second_span[:p]
-
-    assert_equal :'sidekiq-client', second_span[:n]
-    assert_equal 'important', second_span[:data][:'sidekiq-client'][:queue]
-    assert_equal job.name, second_span[:data][:'sidekiq-client'][:job]
+  def assert_client_span(client_span, job)
+    assert_equal :'sidekiq-client', client_span[:n]
+    assert_equal 'important', client_span[:data][:'sidekiq-client'][:queue]
+    assert_equal job.name, client_span[:data][:'sidekiq-client'][:job]
   end
 end

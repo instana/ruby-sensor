@@ -5,39 +5,8 @@ class GrpcTest < Minitest::Test
     PingPongService::Stub.new('127.0.0.1:50051', :this_channel_is_insecure)
   end
 
-  # The order of traces are non-deterministic, could not predict
-  # which trace is server or client. This method is to choose the
-  # right trace based on span's name
-  def differentiate_trace(traces)
-    trying_client = traces[0]
-    trying_server = traces[1]
-
-    try_successfully = trying_client.spans.any? do |span|
-      span.name == :'rpc-client'
-    end
-
-    if try_successfully
-      [trying_client, trying_server]
-    else
-      [trying_server, trying_client]
-    end
-  end
-
-  def assert_client_trace(client_trace, call: '', call_type: '', error: nil)
-    assert_equal 2, client_trace.spans.length
-    spans = client_trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
-
-    # Span name validation
-    assert_equal :sdk, first_span[:n]
-    assert_equal :rpctests, first_span[:data][:sdk][:name]
-    assert_equal :'rpc-client', second_span[:n]
-
-    # first_span is the parent of second_span
-    assert_equal first_span.id, second_span[:p]
-
-    data = second_span[:data]
+  def assert_client_span(client_span, call: '', call_type: '', error: nil)
+    data = client_span[:data]
     assert_equal '127.0.0.1:50051', data[:rpc][:host]
     assert_equal :grpc, data[:rpc][:flavor]
     assert_equal call, data[:rpc][:call]
@@ -49,14 +18,11 @@ class GrpcTest < Minitest::Test
     end
   end
 
-  def assert_server_trace(server_trace, call: '', call_type: '', error: nil)
-    assert_equal 1, server_trace.spans.length
-    span = server_trace.spans.to_a.first
-
+  def assert_server_span(server_span, call: '', call_type: '', error: nil)
     # Span name validation
-    assert_equal :'rpc-server', span[:n]
+    assert_equal :'rpc-server', server_span[:n]
 
-    data = span[:data]
+    data = server_span[:data]
     assert_equal :grpc, data[:rpc][:flavor]
     assert_equal call, data[:rpc][:call]
     assert_equal call_type, data[:rpc][:call_type]
@@ -83,22 +49,31 @@ class GrpcTest < Minitest::Test
     # Pause for a split second to allow traces to be queued
     sleep 0.2
 
-    assert_equal 2, ::Instana.processor.queue_count
-    client_trace, server_trace = differentiate_trace(
-      Instana.processor.queued_traces
+    spans = ::Instana.processor.queued_spans
+    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    client_span = find_spans_by_name(spans, :'rpc-client').first
+    server_span = find_spans_by_name(spans, :'rpc-server').first
+
+    validate_sdk_span(sdk_span)
+
+    assert_client_span(
+        client_span,
+        call: '/PingPongService/Ping',
+        call_type: :request_response
     )
 
-    assert_client_trace(
-      client_trace,
-      call: '/PingPongService/Ping',
-      call_type: :request_response
+    assert_server_span(
+        server_span,
+        call: '/PingPongService/Ping',
+        call_type: :request_response
     )
 
-    assert_server_trace(
-      server_trace,
-      call: '/PingPongService/Ping',
-      call_type: :request_response
-    )
+    trace_id = sdk_span[:t]
+    assert_equal trace_id, client_span[:t]
+    assert_equal trace_id, server_span[:t]
+
+    assert_equal server_span[:p], client_span[:s]
+    assert_equal client_span[:p], sdk_span[:s]
   end
 
   def test_client_streamer
@@ -119,22 +94,31 @@ class GrpcTest < Minitest::Test
     # Pause for a split second to allow traces to be queued
     sleep 0.2
 
-    assert_equal 2, ::Instana.processor.queue_count
-    client_trace, server_trace = differentiate_trace(
-      Instana.processor.queued_traces
+    spans = ::Instana.processor.queued_spans
+    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    client_span = find_spans_by_name(spans, :'rpc-client').first
+    server_span = find_spans_by_name(spans, :'rpc-server').first
+
+    validate_sdk_span(sdk_span)
+
+    assert_client_span(
+        client_span,
+        call: '/PingPongService/PingWithClientStream',
+        call_type: :client_streamer
     )
 
-    assert_client_trace(
-      client_trace,
-      call: '/PingPongService/PingWithClientStream',
-      call_type: :client_streamer
+    assert_server_span(
+        server_span,
+        call: '/PingPongService/PingWithClientStream',
+        call_type: :client_streamer
     )
 
-    assert_server_trace(
-      server_trace,
-      call: '/PingPongService/PingWithClientStream',
-      call_type: :client_streamer
-    )
+    trace_id = sdk_span[:t]
+    assert_equal trace_id, client_span[:t]
+    assert_equal trace_id, server_span[:t]
+
+    assert_equal server_span[:p], client_span[:s]
+    assert_equal client_span[:p], sdk_span[:s]
   end
 
   def test_server_streamer
@@ -151,22 +135,31 @@ class GrpcTest < Minitest::Test
     # Pause for a split second to allow traces to be queued
     sleep 0.2
 
-    assert_equal 2, ::Instana.processor.queue_count
-    client_trace, server_trace = differentiate_trace(
-      Instana.processor.queued_traces
+    spans = ::Instana.processor.queued_spans
+    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    client_span = find_spans_by_name(spans, :'rpc-client').first
+    server_span = find_spans_by_name(spans, :'rpc-server').first
+
+    validate_sdk_span(sdk_span)
+
+    assert_client_span(
+        client_span,
+        call: '/PingPongService/PingWithServerStream',
+        call_type: :server_streamer
     )
 
-    assert_client_trace(
-      client_trace,
-      call: '/PingPongService/PingWithServerStream',
-      call_type: :server_streamer
+    assert_server_span(
+        server_span,
+        call: '/PingPongService/PingWithServerStream',
+        call_type: :server_streamer
     )
 
-    assert_server_trace(
-      server_trace,
-      call: '/PingPongService/PingWithServerStream',
-      call_type: :server_streamer
-    )
+    trace_id = sdk_span[:t]
+    assert_equal trace_id, client_span[:t]
+    assert_equal trace_id, server_span[:t]
+
+    assert_equal server_span[:p], client_span[:s]
+    assert_equal client_span[:p], sdk_span[:s]
   end
 
   def test_bidi_streamer
@@ -187,22 +180,31 @@ class GrpcTest < Minitest::Test
     # Pause for a split second to allow traces to be queued
     sleep 0.2
 
-    assert_equal 2, ::Instana.processor.queue_count
-    client_trace, server_trace = differentiate_trace(
-      Instana.processor.queued_traces
+    spans = ::Instana.processor.queued_spans
+    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    client_span = find_spans_by_name(spans, :'rpc-client').first
+    server_span = find_spans_by_name(spans, :'rpc-server').first
+
+    validate_sdk_span(sdk_span)
+
+    assert_client_span(
+        client_span,
+        call: '/PingPongService/PingWithBidiStream',
+        call_type: :bidi_streamer
     )
 
-    assert_client_trace(
-      client_trace,
-      call: '/PingPongService/PingWithBidiStream',
-      call_type: :bidi_streamer
+    assert_server_span(
+        server_span,
+        call: '/PingPongService/PingWithBidiStream',
+        call_type: :bidi_streamer
     )
 
-    assert_server_trace(
-      server_trace,
-      call: '/PingPongService/PingWithBidiStream',
-      call_type: :bidi_streamer
-    )
+    trace_id = sdk_span[:t]
+    assert_equal trace_id, client_span[:t]
+    assert_equal trace_id, server_span[:t]
+
+    assert_equal server_span[:p], client_span[:s]
+    assert_equal client_span[:p], sdk_span[:s]
   end
 
   def test_request_response_failure
@@ -217,23 +219,32 @@ class GrpcTest < Minitest::Test
     # Pause for a split second to allow traces to be queued
     sleep 0.2
 
-    assert_equal 2, ::Instana.processor.queue_count
-    client_trace, server_trace = differentiate_trace(
-      Instana.processor.queued_traces
+    spans = ::Instana.processor.queued_spans
+    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    client_span = find_spans_by_name(spans, :'rpc-client').first
+    server_span = find_spans_by_name(spans, :'rpc-server').first
+
+    validate_sdk_span(sdk_span)
+    
+    assert_client_span(
+        client_span,
+        call: '/PingPongService/FailToPing',
+        call_type: :request_response,
+        error: 'Unexpected failed'
+    )
+    assert_server_span(
+        server_span,
+        call: '/PingPongService/FailToPing',
+        call_type: :request_response,
+        error: 'Unexpected failed'
     )
 
-    assert_client_trace(
-      client_trace,
-      call: '/PingPongService/FailToPing',
-      call_type: :request_response,
-      error: 'Unexpected failed'
-    )
-    assert_server_trace(
-      server_trace,
-      call: '/PingPongService/FailToPing',
-      call_type: :request_response,
-      error: 'Unexpected failed'
-    )
+    trace_id = sdk_span[:t]
+    assert_equal trace_id, client_span[:t]
+    assert_equal trace_id, server_span[:t]
+
+    assert_equal server_span[:p], client_span[:s]
+    assert_equal client_span[:p], sdk_span[:s]
   end
 
   def test_client_streamer_failure
@@ -252,24 +263,33 @@ class GrpcTest < Minitest::Test
     # Pause for a split second to allow traces to be queued
     sleep 0.2
 
-    assert_equal 2, ::Instana.processor.queue_count
-    client_trace, server_trace = differentiate_trace(
-      Instana.processor.queued_traces
-    )
+    spans = ::Instana.processor.queued_spans
+    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    client_span = find_spans_by_name(spans, :'rpc-client').first
+    server_span = find_spans_by_name(spans, :'rpc-server').first
 
-    assert_client_trace(
-      client_trace,
+    validate_sdk_span(sdk_span)
+
+    assert_client_span(
+      client_span,
       call: '/PingPongService/FailToPingWithClientStream',
       call_type: :client_streamer,
       error: 'Unexpected failed'
     )
 
-    assert_server_trace(
-      server_trace,
+    assert_server_span(
+      server_span,
       call: '/PingPongService/FailToPingWithClientStream',
       call_type: :client_streamer,
       error: 'Unexpected failed'
     )
+
+    trace_id = sdk_span[:t]
+    assert_equal trace_id, client_span[:t]
+    assert_equal trace_id, server_span[:t]
+
+    assert_equal server_span[:p], client_span[:s]
+    assert_equal client_span[:p], sdk_span[:s]
   end
 
   def test_server_streamer_failure
@@ -286,23 +306,32 @@ class GrpcTest < Minitest::Test
     # Pause for a split second to allow traces to be queued
     sleep 0.2
 
-    assert_equal 2, ::Instana.processor.queue_count
-    client_trace, server_trace = differentiate_trace(
-      Instana.processor.queued_traces
-    )
+    spans = ::Instana.processor.queued_spans
+    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    client_span = find_spans_by_name(spans, :'rpc-client').first
+    server_span = find_spans_by_name(spans, :'rpc-server').first
 
-    assert_client_trace(
-      client_trace,
+    validate_sdk_span(sdk_span)
+
+    assert_client_span(
+      client_span,
       call: '/PingPongService/FailToPingWithServerStream',
       call_type: :server_streamer
     )
 
-    assert_server_trace(
-      server_trace,
+    assert_server_span(
+      server_span,
       call: '/PingPongService/FailToPingWithServerStream',
       call_type: :server_streamer,
       error: 'Unexpected failed'
     )
+
+    trace_id = sdk_span[:t]
+    assert_equal trace_id, client_span[:t]
+    assert_equal trace_id, server_span[:t]
+
+    assert_equal server_span[:p], client_span[:s]
+    assert_equal client_span[:p], sdk_span[:s]
   end
 
   def test_bidi_streamer_failure
@@ -318,22 +347,31 @@ class GrpcTest < Minitest::Test
     # Pause for a split second to allow traces to be queued
     sleep 0.2
 
-    assert_equal 2, ::Instana.processor.queue_count
-    client_trace, server_trace = differentiate_trace(
-      Instana.processor.queued_traces
-    )
+    spans = ::Instana.processor.queued_spans
+    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    client_span = find_spans_by_name(spans, :'rpc-client').first
+    server_span = find_spans_by_name(spans, :'rpc-server').first
 
-    assert_client_trace(
-      client_trace,
+    validate_sdk_span(sdk_span)
+
+    assert_client_span(
+      client_span,
       call: '/PingPongService/FailToPingWithBidiStream',
       call_type: :bidi_streamer
     )
 
-    assert_server_trace(
-      server_trace,
+    assert_server_span(
+      server_span,
       call: '/PingPongService/FailToPingWithBidiStream',
       call_type: :bidi_streamer,
       error: 'Unexpected failed'
     )
+
+    trace_id = sdk_span[:t]
+    assert_equal trace_id, client_span[:t]
+    assert_equal trace_id, server_span[:t]
+
+    assert_equal server_span[:p], client_span[:s]
+    assert_equal client_span[:p], sdk_span[:s]
   end
 end

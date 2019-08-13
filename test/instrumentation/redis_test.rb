@@ -94,14 +94,12 @@ class RedisTest < Minitest::Test
   end
 
   def assert_redis_trace(command, with_error: nil)
-    assert_equal 1, ::Instana.processor.queue_count
-    trace = ::Instana.processor.queued_traces.first
-
-    assert_equal 2, trace.spans.length
-    first_span, second_span = trace.spans.to_a
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
+    first_span, second_span = spans.to_a
 
     # first_span is the parent of second_span
-    assert_equal first_span.id, second_span[:p]
+    assert_equal first_span[:s], second_span[:p]
     assert_equal :sdk, first_span[:n]
     assert_equal :redis, second_span[:n]
 

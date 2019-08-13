@@ -4,7 +4,7 @@ module Instana
   class Processor
     def initialize
       # The main queue before being reported to the
-      # host agent.  Traces in this queue are complete
+      # host agent.  Spans in this queue are complete
       # and ready to be sent.
       @queue = Queue.new
 
@@ -13,18 +13,26 @@ module Instana
       @batch_size = 3000
     end
 
-    # Adds a trace to the queue to be processed and
-    # sent to the host agent
+    # Adds a Set of spans to the queue
     #
-    # @param [Trace] - the trace to be added to the queue
-    def add(trace)
+    # @param [spans] - the trace to be added to the queue
+    def add_spans(spans)
       # Do a quick checkup on our background thread.
       if ::Instana.agent.collect_thread.nil? || !::Instana.agent.collect_thread.alive?
         ::Instana.agent.spawn_background_thread
       end
+      spans.each { |span| @queue.push(span)}
+    end
 
-      # ::Instana.logger.debug("Queuing completed trace id: #{trace.id}")
-      @queue.push(trace)
+    # Adds a span to the span queue
+    #
+    # @param [Trace] - the trace to be added to the queue
+    def add_span(spans)
+      # Do a quick checkup on our background thread.
+      if ::Instana.agent.collect_thread.nil? || !::Instana.agent.collect_thread.alive?
+        ::Instana.agent.spawn_background_thread
+      end
+      @queue.push(span)
     end
 
     ##
@@ -65,37 +73,12 @@ module Instana
       spans = []
       until @queue.empty? do
         # Non-blocking pop; ignore exception
-        trace = @queue.pop(true) rescue nil
-        trace.spans.each do |s|
-          spans << s.raw
+        span = @queue.pop(true) rescue nil
+        if span
+          spans << span.raw
         end
       end
       spans
-    end
-
-    # Retrieves all of the traces that are in @queue.
-    # Note that traces retrieved with this method are removed
-    # entirely from the queue.
-    #
-    # @return [Array] An array of [Trace] or empty
-    #
-    def queued_traces
-      return [] if @queue.empty?
-
-      traces = []
-      until @queue.empty? do
-        # Non-blocking pop; ignore exception
-        traces << @queue.pop(true) rescue nil
-      end
-      traces
-    end
-
-    # Get the number traces currently in the queue
-    #
-    # @return [Integer] the queue size
-    #
-    def queue_count
-      @queue.size
     end
 
     # Removes all traces from the @queue.  Used in the

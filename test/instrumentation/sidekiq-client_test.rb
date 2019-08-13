@@ -65,18 +65,14 @@ class SidekiqClientTest < Minitest::Test
   end
 
   def assert_normal_trace_recorded(job)
-    assert_equal 1, ::Instana.processor.queue_count
-    client_trace = Instana.processor.queued_traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
 
-    assert_equal 2, client_trace.spans.length
-    spans = client_trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
 
-    assert_equal :sdk, first_span[:n]
-    assert_equal :sidekiqtests, first_span[:data][:sdk][:name]
-
-    assert_equal first_span.id, second_span[:p]
+    assert_equal first_span[:s], second_span[:p]
+    validate_sdk_span(first_span, {:name => :sidekiqtests, :type => :intermediate})
 
     assert_equal :'sidekiq-client', second_span[:n]
     assert_equal 'some_random_queue', second_span[:data][:'sidekiq-client'][:queue]
@@ -86,18 +82,14 @@ class SidekiqClientTest < Minitest::Test
   end
 
   def assert_failure_trace_recorded
-    assert_equal 1, ::Instana.processor.queue_count
-    client_trace = Instana.processor.queued_traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
 
-    assert_equal 2, client_trace.spans.length
-    spans = client_trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
 
-    assert_equal :sdk, first_span[:n]
-    assert_equal :sidekiqtests, first_span[:data][:sdk][:name]
-
-    assert_equal first_span.id, second_span[:p]
+    assert_equal first_span[:s], second_span[:p]
+    validate_sdk_span(first_span, {:name => :sidekiqtests, :type => :intermediate})
 
     assert_equal :'sidekiq-client', second_span[:n]
     assert_equal true, second_span[:error]

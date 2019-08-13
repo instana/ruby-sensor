@@ -23,7 +23,5 @@ end
 Minitest.after_run do
   ::Instana.logger.info "Killing Sidekiq worker"
   sidekiq_thread[:worker].stop
-  sleep 2
+  sleep 1
 end
-
-sleep 5

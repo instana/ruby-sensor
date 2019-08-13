@@ -22,24 +22,19 @@ class ExconTest < Minitest::Test
       connection.get(:path => '/?basic_get')
     end
 
-    traces = Instana.processor.queued_traces
-    assert_equal 2, traces.length
-    rs_trace = traces[0]
-    http_trace = traces[1]
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
-    # Excon validation
-    assert_equal 2, http_trace.spans.length
-    spans = http_trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    rs_span = spans[0]
+    first_span = spans[1]
+    second_span = spans[2]
+
+    validate_sdk_span(first_span, {:name => :'excon-test', :type => :intermediate})
 
     # Span name validation
     assert_equal :sdk, first_span[:n]
     assert_equal :"excon-test", first_span[:data][:sdk][:name]
     assert_equal :excon, second_span[:n]
-
-    # first_span is the parent of second_span
-    assert_equal first_span.id, second_span[:p]
 
     # data keys/values
     refute_nil second_span.key?(:data)
@@ -50,13 +45,11 @@ class ExconTest < Minitest::Test
     # excon backtrace not included by default check
     assert !second_span.key?(:stack)
 
-    # Rack server trace validation
-    assert_equal 1, rs_trace.spans.length
-    rs_span = rs_trace.spans.to_a[0]
+    assert_equal first_span[:t], second_span[:t]
+    assert_equal rs_span[:t], second_span[:t]
 
-    # Rack server trace should have the same trace ID
-    assert_equal http_trace.id, rs_span[:t].to_i
-    assert_equal rs_span[:p].to_i, second_span[:s]
+    assert_equal rs_span[:p], second_span[:s]
+    assert_equal second_span[:p], first_span[:s]
   end
 
   def test_basic_get_with_error
@@ -77,25 +70,18 @@ class ExconTest < Minitest::Test
     rescue
     end
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    http_trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
 
-    # Excon validation
-    assert_equal 2, http_trace.spans.length
-    spans = http_trace.spans.to_a
     first_span = spans[0]
     second_span = spans[1]
 
-    # Span name validation
-    assert_equal :sdk, first_span[:n]
-    assert_equal :"excon-test", first_span[:data][:sdk][:name]
-    assert_equal :excon, second_span[:n]
+    validate_sdk_span(first_span, {:name => :'excon-test', :type => :intermediate})
 
     # first_span is the parent of second_span
-    assert_equal first_span.id, second_span[:p]
+    assert_equal first_span[:s], second_span[:p]
 
-    # data keys/values
+    assert_equal :excon, second_span[:n]
     refute_nil second_span.key?(:data)
     refute_nil second_span[:data].key?(:http)
     assert_equal "http://127.0.0.1:6500/", second_span[:data][:http][:url]
@@ -106,7 +92,7 @@ class ExconTest < Minitest::Test
 
     # error validation
     assert_equal true, second_span[:error]
-    #assert_equal 1, second_span[:ec]
+    assert_equal 1, second_span[:ec]
   end
 
   def test_pipelined_requests
@@ -125,13 +111,11 @@ class ExconTest < Minitest::Test
       connection.requests([request, request, request])
     end
 
-    traces = Instana.processor.queued_traces
-    assert_equal 4, traces.length
-    http_trace = traces[3]
+    spans = ::Instana.processor.queued_spans
+    assert_equal 4, spans.length
 
-    # Excon validation
-    assert_equal 4, http_trace.spans.length
-    spans = http_trace.spans.to_a
+    validate_sdk_span(first_span, {:name => :'excon-test', :type => :intermediate})
+
     first_span = spans[0]
     second_span = spans[1]
     third_span = spans[2]
@@ -145,9 +129,9 @@ class ExconTest < Minitest::Test
     assert_equal :excon, fourth_span[:n]
 
     # first_span is the parent of second/third/fourth_span
-    assert_equal first_span.id, second_span[:p]
-    assert_equal first_span.id, third_span[:p]
-    assert_equal first_span.id, fourth_span[:p]
+    assert_equal first_span[:s], second_span[:p]
+    assert_equal first_span[:s], third_span[:p]
+    assert_equal first_span[:s], fourth_span[:p]
 
     # data keys/values
     refute_nil second_span.key?(:data)

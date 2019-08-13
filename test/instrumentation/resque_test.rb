@@ -5,6 +5,8 @@ require 'resque'
 
 if ENV.key?('REDIS_URL')
   ::Resque.redis = ENV['REDIS_URL']
+elsif ENV.key?('I_REDIS_URL')
+  ::Resque.redis = ENV['I_REDIS_URL']
 else
   ::Resque.redis = 'localhost:6379'
 end
@@ -25,11 +27,8 @@ class ResqueClientTest < Minitest::Test
       ::Resque.enqueue(FastJob)
     end
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-
-    spans = traces[0].spans.to_a
-    assert_equal 3, spans.count
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
     assert_equal :'resque-client_test', spans[0][:data][:sdk][:name]
 
@@ -46,11 +45,8 @@ class ResqueClientTest < Minitest::Test
       ::Resque.enqueue_to(:critical, FastJob)
     end
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-
-    spans = traces[0].spans.to_a
-    assert_equal 3, spans.count
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
     assert_equal :'resque-client_test', spans[0][:data][:sdk][:name]
     assert_equal :"resque-client", spans[1][:n]
@@ -65,11 +61,8 @@ class ResqueClientTest < Minitest::Test
       ::Resque.dequeue(FastJob, { :generate => :farfalla })
     end
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-
-    spans = traces[0].spans.to_a
-    assert_equal 3, spans.count
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
     assert_equal :'resque-client_test', spans[0][:data][:sdk][:name]
     assert_equal :"resque-client", spans[1][:n]
@@ -83,11 +76,8 @@ class ResqueClientTest < Minitest::Test
     Resque::Job.create(:critical, FastJob)
     @worker.work(0)
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-
-    spans = traces[0].spans.to_a
-    assert_equal 3, spans.count
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
     resque_span = spans[0]
     redis1_span = spans[1]
@@ -110,12 +100,12 @@ class ResqueClientTest < Minitest::Test
     Resque::Job.create(:critical, ErrorJob)
     @worker.work(0)
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
+    spans = ::Instana.processor.queued_spans
+    assert_equal 5, spans.length
 
-    spans = traces[0].spans.to_a
     resque_span = spans[0]
-    assert_equal 5, spans.count
+    ::Instana::Util.pry!
+
 
     assert_equal :'resque-worker', resque_span[:n]
     assert_equal true, resque_span.key?(:error)
