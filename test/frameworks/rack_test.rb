@@ -31,7 +31,6 @@ class RackTest < Minitest::Test
 
     first_span = spans.first
     assert_equal :rack, first_span[:n]
-    assert_equal :ruby, first_span[:ta]
     assert first_span.key?(:data)
     assert first_span[:data].key?(:http)
     assert_equal "GET", first_span[:data][:http][:method]
@@ -78,7 +77,6 @@ class RackTest < Minitest::Test
     assert_equal 1, spans.count
     first_span = spans.first
     assert_equal :rack, first_span[:n]
-    assert_equal :ruby, first_span[:ta]
     assert first_span.key?(:data)
     assert first_span[:data].key?(:http)
     assert_equal "POST", first_span[:data][:http][:method]
@@ -101,7 +99,6 @@ class RackTest < Minitest::Test
     assert_equal 1, spans.count
     first_span = spans.first
     assert_equal :rack, first_span[:n]
-    assert_equal :ruby, first_span[:ta]
     assert first_span.key?(:data)
     assert first_span[:data].key?(:http)
     assert_equal "PUT", first_span[:data][:http][:method]
@@ -127,7 +124,6 @@ class RackTest < Minitest::Test
     assert_equal 1, spans.count
     first_span = spans.first
     assert_equal :rack, first_span[:n]
-    assert_equal :ruby, first_span[:ta]
     assert first_span.key?(:data)
     assert first_span[:data].key?(:http)
     assert_equal "GET", first_span[:data][:http][:method]

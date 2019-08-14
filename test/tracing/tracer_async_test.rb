@@ -14,13 +14,13 @@ class TracerAsyncTest < Minitest::Test
     refute_nil span.context
 
     # Current span should still be rack
-    assert_equal :rack, ::Instana.tracer.current_trace.current_span_name
+    assert_equal :rack, ::Instana.tracer.current_span.name
 
     # End an asynchronous span
     ::Instana.tracer.log_async_exit(:my_async_op, { :exit_kv => 1 }, span)
 
     # Current span should still be rack
-    assert_equal :rack, ::Instana.tracer.current_trace.current_span_name
+    assert_equal :rack, ::Instana.tracer.current_span.name
 
     # End tracing
     ::Instana.tracer.log_end(:rack, {:rack_end_kv => 1})
@@ -28,23 +28,23 @@ class TracerAsyncTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
-    first_span = spans[0]
-    second_span = spans[1]
+    rack_span = find_first_span_by_name(spans, :rack)
+    async_span = find_first_span_by_name(spans, :my_async_op)
 
     # Both spans have a duration
-    assert first_span[:d]
-    assert second_span[:d]
+    assert rack_span[:d]
+    assert async_span[:d]
 
     # first_span is the parent of first_span
-    assert_equal first_span[:s], second_span[:p]
+    assert_equal rack_span[:s], async_span[:p]
     # same trace id
-    assert_equal first_span[:t], second_span[:t]
+    assert_equal rack_span[:t], async_span[:t]
 
     # KV checks
-    assert_equal 1, first_span[:data][:rack_start_kv]
-    assert_equal 1, first_span[:data][:rack_end_kv]
-    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:entry_kv]
-    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:exit_kv]
+    assert_equal 1, rack_span[:data][:rack_start_kv]
+    assert_equal 1, rack_span[:data][:rack_end_kv]
+    assert_equal 1, async_span[:data][:sdk][:custom][:tags][:entry_kv]
+    assert_equal 1, async_span[:data][:sdk][:custom][:tags][:exit_kv]
   end
 
   def test_diff_thread_async_tracing
@@ -58,7 +58,7 @@ class TracerAsyncTest < Minitest::Test
     refute_nil t_context.span_id
 
     Thread.new do
-      ::Instana.tracer.log_start_or_continue(:async_thread, { :async_start => 1 }, t_context.to_hash)
+      ::Instana.tracer.log_start_or_continue(:async_thread, { :async_start => 1 }, t_context)
       ::Instana.tracer.log_entry(:sleepy_time, { :tired => 1 })
       # Sleep beyond the end of this root trace
       sleep 0.5
@@ -67,7 +67,7 @@ class TracerAsyncTest < Minitest::Test
     end
 
     # Current span should still be rack
-    assert_equal :rack, ::Instana.tracer.current_trace.current_span_name
+    assert_equal :rack, ::Instana.tracer.current_span.name
 
     # End tracing
     ::Instana.tracer.log_end(:rack, {:rack_end_kv => 1})
@@ -80,38 +80,40 @@ class TracerAsyncTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 3, spans.length
 
-    first_span, second_span, third_span = spans
+    rack_span = find_first_span_by_name(spans, :rack)
+    async_span1 = find_first_span_by_name(spans, :async_thread)
+    async_span2 = find_first_span_by_name(spans, :sleepy_time)
 
     # Validate the first original thread span
-    assert_equal :rack, first_span[:n]
-    assert first_span[:d]
-    assert_equal 1, first_span[:data][:rack_start_kv]
-    assert_equal 1, first_span[:data][:rack_end_kv]
+    assert_equal :rack, rack_span[:n]
+    assert rack_span[:d]
+    assert_equal 1, rack_span[:data][:rack_start_kv]
+    assert_equal 1, rack_span[:data][:rack_end_kv]
 
     # first span in second trace
-    assert_equal :sdk, second_span[:n]
-    assert_equal :async_thread, second_span[:data][:sdk][:name]
-    assert second_span[:d]
-    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:async_start]
-    assert_equal 1, second_span[:data][:sdk][:custom][:tags][:async_end]
+    assert_equal :sdk, async_span1[:n]
+    assert_equal :async_thread, async_span1[:data][:sdk][:name]
+    assert async_span1[:d]
+    assert_equal 1, async_span1[:data][:sdk][:custom][:tags][:async_start]
+    assert_equal 1, async_span1[:data][:sdk][:custom][:tags][:async_end]
 
     # second span in second trace
-    assert_equal :sdk, third_span[:n]
-    assert_equal :sleepy_time, third_span[:data][:sdk][:name]
-    assert third_span[:d]
-    assert_equal 1, third_span[:data][:sdk][:custom][:tags][:tired]
-    assert_equal 1, third_span[:data][:sdk][:custom][:tags][:wake_up]
+    assert_equal :sdk, async_span2[:n]
+    assert_equal :sleepy_time, async_span2[:data][:sdk][:name]
+    assert async_span2[:d]
+    assert_equal 1, async_span2[:data][:sdk][:custom][:tags][:tired]
+    assert_equal 1, async_span2[:data][:sdk][:custom][:tags][:wake_up]
 
     # Validate linkage
     # All spans have the same trace ID
-    assert first_span[:t]==second_span[:t] && second_span[:t]==third_span[:t]
+    assert rack_span[:t]==async_span1[:t] && async_span1[:t]==async_span2[:t]
 
-    assert_equal third_span[:p], second_span[:s]
-    assert_equal second_span[:p], first_span[:s]
+    assert_equal async_span2[:p], async_span1[:s]
+    assert_equal async_span1[:p], rack_span[:s]
 
-    assert first_span[:t]  == first_span[:s]
-    assert second_span[:t] != second_span[:s]
-    assert third_span[:t]  != third_span[:s]
+    assert rack_span[:t]  == rack_span[:s]
+    assert async_span1[:t] != async_span1[:s]
+    assert async_span2[:t] != async_span2[:s]
   end
 
   def test_out_of_order_async_tracing
@@ -121,12 +123,12 @@ class TracerAsyncTest < Minitest::Test
     ::Instana.tracer.log_start_or_continue(:rack, {:rack_start_kv => 1})
 
     # Start three asynchronous spans
-    span1 = ::Instana.tracer.log_async_entry(:my_async_op, { :entry_kv => 1})
-    span2 = ::Instana.tracer.log_async_entry(:my_async_op, { :entry_kv => 2})
-    span3 = ::Instana.tracer.log_async_entry(:my_async_op, { :entry_kv => 3})
+    span1 = ::Instana.tracer.log_async_entry(:my_async_op1, { :entry_kv => 1})
+    span2 = ::Instana.tracer.log_async_entry(:my_async_op2, { :entry_kv => 2})
+    span3 = ::Instana.tracer.log_async_entry(:my_async_op3, { :entry_kv => 3})
 
     # Current span should still be rack
-    assert_equal :rack, ::Instana.tracer.current_trace.current_span_name
+    assert_equal :rack, ::Instana.tracer.current_span.name
 
     # Log info to the async spans (out of order)
     span2.set_tags({ :info_kv => 2 })
@@ -144,7 +146,7 @@ class TracerAsyncTest < Minitest::Test
     span2.close
 
     # Current span should still be rack
-    assert_equal :rack, ::Instana.tracer.current_trace.current_span_name
+    assert_equal :rack, ::Instana.tracer.current_span.name
 
     # End tracing
     ::Instana.tracer.log_end(:rack, {:rack_end_kv => 1})
@@ -156,7 +158,11 @@ class TracerAsyncTest < Minitest::Test
 
     spans = ::Instana.processor.queued_spans
     assert_equal 4, spans.length
-    first_span, second_span, third_span, fourth_span = spans
+
+    first_span  = find_first_span_by_name(spans, :rack)
+    second_span = find_first_span_by_name(spans, :my_async_op1)
+    third_span  = find_first_span_by_name(spans, :my_async_op2)
+    fourth_span = find_first_span_by_name(spans, :my_async_op3)
 
     # Assure all spans have completed
     assert first_span.key?(:d)

@@ -61,7 +61,8 @@ class CustomTracingTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
-    first_span, second_span = spans.to_a
+    first_span = find_first_span_by_name(spans, :rack)
+    second_span = find_first_span_by_name(spans, :custom_span)
 
     assert first_span[:ts].is_a?(Integer)
     assert first_span[:ts] > 0
@@ -117,7 +118,8 @@ class CustomTracingTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
-    first_span, second_span = spans.to_a
+    first_span = find_first_span_by_name(spans, :rack)
+    second_span = find_first_span_by_name(spans, :custom_span)
 
     assert first_span[:ts].is_a?(Integer)
     assert first_span[:ts] > 0

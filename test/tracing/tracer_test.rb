@@ -90,8 +90,8 @@ class TracerTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
-    rack_span = spans[0]
-    sdk_span = spans[1]
+    rack_span = find_first_span_by_name(spans, :rack)
+    sdk_span = find_first_span_by_name(spans, :sub_block)
 
     assert_equal rack_span[:n], :rack
     assert_equal rack_span[:p], nil
@@ -146,19 +146,20 @@ class TracerTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
-    first_span = spans[0]
-    assert_equal :rack, first_span[:n]
-    assert first_span.key?(:data)
-    assert_equal first_span[:data][:one], 1
-    assert_equal first_span[:data][:info_logged], 1
-    assert_equal first_span[:data][:close_one], 1
+    rack_span = find_first_span_by_name(spans, :rack)
+    sdk_span = find_first_span_by_name(spans, :sub_task)
 
-    assert first_span.key?(:f)
-    assert first_span[:f].key?(:e)
-    assert first_span[:f].key?(:h)
-    assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
+    assert_equal :rack, rack_span[:n]
+    assert rack_span.key?(:data)
+    assert_equal rack_span[:data][:one], 1
+    assert_equal rack_span[:data][:info_logged], 1
+    assert_equal rack_span[:data][:close_one], 1
 
-    sdk_span = spans[1]
+    assert rack_span.key?(:f)
+    assert rack_span[:f].key?(:e)
+    assert rack_span[:f].key?(:h)
+    assert_equal ::Instana.agent.agent_uuid, rack_span[:f][:h]
+
     assert_equal sdk_span[:n], :sdk
     assert_equal sdk_span[:data][:sdk][:name], :sub_task
     assert_equal sdk_span[:data][:sdk][:type], :intermediate

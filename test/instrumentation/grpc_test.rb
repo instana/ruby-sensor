@@ -50,7 +50,7 @@ class GrpcTest < Minitest::Test
     sleep 0.2
 
     spans = ::Instana.processor.queued_spans
-    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    sdk_span = find_spans_by_name(spans, :rpctests).first
     client_span = find_spans_by_name(spans, :'rpc-client').first
     server_span = find_spans_by_name(spans, :'rpc-server').first
 
@@ -95,7 +95,7 @@ class GrpcTest < Minitest::Test
     sleep 0.2
 
     spans = ::Instana.processor.queued_spans
-    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    sdk_span = find_spans_by_name(spans, :rpctests).first
     client_span = find_spans_by_name(spans, :'rpc-client').first
     server_span = find_spans_by_name(spans, :'rpc-server').first
 
@@ -136,7 +136,7 @@ class GrpcTest < Minitest::Test
     sleep 0.2
 
     spans = ::Instana.processor.queued_spans
-    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    sdk_span = find_spans_by_name(spans, :rpctests).first
     client_span = find_spans_by_name(spans, :'rpc-client').first
     server_span = find_spans_by_name(spans, :'rpc-server').first
 
@@ -181,7 +181,7 @@ class GrpcTest < Minitest::Test
     sleep 0.2
 
     spans = ::Instana.processor.queued_spans
-    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    sdk_span = find_spans_by_name(spans, :rpctests).first
     client_span = find_spans_by_name(spans, :'rpc-client').first
     server_span = find_spans_by_name(spans, :'rpc-server').first
 
@@ -220,7 +220,7 @@ class GrpcTest < Minitest::Test
     sleep 0.2
 
     spans = ::Instana.processor.queued_spans
-    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    sdk_span = find_spans_by_name(spans, :rpctests).first
     client_span = find_spans_by_name(spans, :'rpc-client').first
     server_span = find_spans_by_name(spans, :'rpc-server').first
 
@@ -264,7 +264,7 @@ class GrpcTest < Minitest::Test
     sleep 0.2
 
     spans = ::Instana.processor.queued_spans
-    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    sdk_span = find_spans_by_name(spans, :rpctests).first
     client_span = find_spans_by_name(spans, :'rpc-client').first
     server_span = find_spans_by_name(spans, :'rpc-server').first
 
@@ -307,7 +307,7 @@ class GrpcTest < Minitest::Test
     sleep 0.2
 
     spans = ::Instana.processor.queued_spans
-    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    sdk_span = find_spans_by_name(spans, :rpctests).first
     client_span = find_spans_by_name(spans, :'rpc-client').first
     server_span = find_spans_by_name(spans, :'rpc-server').first
 
@@ -348,7 +348,7 @@ class GrpcTest < Minitest::Test
     sleep 0.2
 
     spans = ::Instana.processor.queued_spans
-    sdk_span = find_sdk_spans_by_name(spans, :rpctests).first
+    sdk_span = find_spans_by_name(spans, :rpctests).first
     client_span = find_spans_by_name(spans, :'rpc-client').first
     server_span = find_spans_by_name(spans, :'rpc-server').first
 

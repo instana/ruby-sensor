@@ -85,7 +85,7 @@ class SidekiqServerTest < Minitest::Test
     sleep 1
     spans = Instana.processor.queued_spans
 
-    sdk_span = find_sdk_spans_by_name(spans, :sidekiqtests).first
+    sdk_span = find_spans_by_name(spans, :sidekiqtests).first
     validate_sdk_span(sdk_span)
 
     client_span = find_spans_by_name(spans, :'sidekiq-client').first
@@ -119,7 +119,7 @@ class SidekiqServerTest < Minitest::Test
 
     spans = Instana.processor.queued_spans
 
-    sdk_span = find_sdk_spans_by_name(spans, :sidekiqtests).first
+    sdk_span = find_spans_by_name(spans, :sidekiqtests).first
     validate_sdk_span(sdk_span)
 
     client_span = find_spans_by_name(spans, :'sidekiq-client').first
