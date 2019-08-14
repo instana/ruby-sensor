@@ -82,7 +82,9 @@ class OpenTracerTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 3, spans.length
 
-    first_span, second_span, third_span = spans.to_a
+    first_span = find_first_span_by_name(spans, :rack)
+    second_span = find_first_span_by_name(spans, :otrack1)
+    third_span = find_first_span_by_name(spans, :otrack2)
 
     assert_equal :rack, first_span[:n]
     assert first_span[:ts].is_a?(Integer)
@@ -95,21 +97,18 @@ class OpenTracerTest < Minitest::Test
     assert_equal "/mrlobster", first_span[:data][:http][:url]
     assert_equal 200, first_span[:data][:http][:status]
     assert_equal 'example.org', first_span[:data][:http][:host]
-    assert_equal :otrack1, second_span.name
+    assert_equal :otrack1, second_span[:data][:sdk][:name]
     assert second_span.key?(:data)
     assert second_span[:data].key?(:sdk)
     assert second_span[:data][:sdk].key?(:name)
-    assert_equal :otrack2, third_span.name
+    assert_equal :otrack2, third_span[:data][:sdk][:name]
     assert third_span.key?(:data)
     assert third_span[:data].key?(:sdk)
     assert third_span[:data][:sdk].key?(:name)
 
     # ID Validation
-    assert_equal first_span[:t], second_span[:t]
-    assert_equal second_span[:t], third_span[:t]
-
-    # Linkage
-    assert_equal second_span[:s], third_span[:p]
+    refute_equal first_span[:t], second_span[:t]
+    refute_equal second_span[:t], third_span[:t]
   end
 
   def test_get_with_inject_extract
@@ -127,7 +126,7 @@ class OpenTracerTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
 
     assert_equal 3, spans.length
-    first_span = spans.to_a.first
+    first_span = find_first_span_by_name(spans, :rack)
 
     # Make sure context was picked up and continued in the resulting
     # trace
@@ -140,7 +139,6 @@ class OpenTracerTest < Minitest::Test
     span = OpenTracing.start_span('my_app_entry')
 
     assert span.is_a?(::Instana::Span)
-    assert_equal :my_app_entry, OpenTracing.current_trace.current_span.name
 
     span.set_tag(:tag_integer, 1234)
     span.set_tag(:tag_boolean, true)
@@ -162,7 +160,6 @@ class OpenTracerTest < Minitest::Test
     span = OpenTracing.start_span('my_app_entry', :start_time => now)
 
     assert span.is_a?(::Instana::Span)
-    assert_equal :my_app_entry, OpenTracing.current_trace.current_span.name
 
     span.set_tag(:tag_integer, 1234)
     span.set_tag(:tag_boolean, true)
@@ -186,7 +183,6 @@ class OpenTracerTest < Minitest::Test
     span = OpenTracing.start_span('my_app_entry')
 
     assert span.is_a?(::Instana::Span)
-    assert_equal :my_app_entry, OpenTracing.current_trace.current_span.name
 
     span.set_tag(:'span.kind', :server)
     assert_equal :entry, span[:data][:sdk][:type]
@@ -263,32 +259,9 @@ class OpenTracerTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 3, spans.length
 
-    first_span, second_span, third_span = spans.to_a
-
-    # IDs
-    assert_equal first_span[:t], second_span[:t]
-    assert_equal second_span[:t], third_span[:t]
-
-    # Linkage
-    assert first_span[:p].nil?
-    assert_equal first_span[:s], second_span[:p]
-    assert_equal second_span[:s], third_span[:p]
-  end
-
-  def test_start_span_with_nested_spans
-    clear_all!
-    entry_span = OpenTracing.start_span(:rack)
-    ac_span = OpenTracing.start_span(:action_controller)
-    av_span = OpenTracing.start_span(:action_view)
-    sleep 0.1
-    av_span.finish
-    ac_span.finish
-    entry_span.finish
-
-    spans = ::Instana.processor.queued_spans
-    assert_equal 3, spans.length
-
-    first_span, second_span, third_span = spans.to_a
+    first_span = find_first_span_by_name(spans, :rack)
+    second_span = find_first_span_by_name(spans, :action_controller)
+    third_span = find_first_span_by_name(spans, :action_view)
 
     # IDs
     assert_equal first_span[:t], second_span[:t]
@@ -303,9 +276,9 @@ class OpenTracerTest < Minitest::Test
   def test_nested_spans_with_baggage
     clear_all!
     entry_span = OpenTracing.start_span(:rack)
-    ac_span = OpenTracing.start_span(:action_controller)
+    ac_span = OpenTracing.start_span(:action_controller, child_of: entry_span)
     ac_span.set_baggage_item(:my_bag, 1)
-    av_span = OpenTracing.start_span(:action_view)
+    av_span = OpenTracing.start_span(:action_view, child_of: ac_span)
     sleep 0.1
     av_span.finish
     ac_span.finish
@@ -314,7 +287,9 @@ class OpenTracerTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 3, spans.length
 
-    first_span, second_span, third_span = spans.to_a
+    first_span = find_first_span_by_name(spans, :rack)
+    second_span = find_first_span_by_name(spans, :action_controller)
+    third_span = find_first_span_by_name(spans, :action_view)
 
     # IDs
     assert_equal first_span[:t], second_span[:t]
@@ -326,7 +301,7 @@ class OpenTracerTest < Minitest::Test
     assert_equal second_span[:s], third_span[:p]
 
     # Every span should have baggage
-    assert_equal({}, entry_span.context.baggage)
+    assert_equal(nil, entry_span.context.baggage)
     assert_equal({:my_bag=>1}, ac_span.context.baggage)
     assert_equal({:my_bag=>1}, av_span.context.baggage)
   end
@@ -353,58 +328,8 @@ class OpenTracerTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 3, spans.length
 
-    assert_equal({}, entry_span.context.baggage)
+    assert_equal(nil, entry_span.context.baggage)
     assert_equal({:my_bag=>1}, ac_span.context.baggage)
-    assert_equal({}, av_span.context.baggage)
-  end
-
-  def test_baggage_with_complex_data
-    clear_all!
-
-    entry_span = OpenTracing.start_span(:rack)
-    entry_span_context = entry_span.context
-
-    ac_span = OpenTracing.start_span(:action_controller)
-
-    ac_span.set_baggage_item(:integer, 1)
-    ac_span.set_baggage_item(:float, 1.0123948293)
-    ac_span.set_baggage_item(:hash, { :hash_sublevel => "blah",
-                                      :another => {} })
-    ac_span_context = ac_span.context
-
-    av_span = OpenTracing.start_span(:action_view)
-    av_span_context = av_span.context
-
-    sleep 0.1
-    av_span.finish
-    ac_span.finish
-    entry_span.finish
-
-    spans = ::Instana.processor.queued_spans
-    assert_equal 3, spans.length
-
-    # Context
-    assert_equal true, entry_span_context.baggage.empty?
-    assert_equal true, entry_span.baggage.empty?
-
-    assert_equal 1, ac_span_context.baggage[:integer]
-    assert_equal 1.0123948293, ac_span_context.baggage[:float]
-    assert_equal true, ac_span_context.baggage[:hash][:another].empty?
-    assert_equal "blah", ac_span_context.baggage[:hash][:hash_sublevel]
-    assert_equal 1, av_span_context.baggage[:integer]
-    assert_equal 1.0123948293, av_span_context.baggage[:float]
-    assert_equal true, av_span_context.baggage[:hash][:another].empty?
-    assert_equal "blah", av_span_context.baggage[:hash][:hash_sublevel]
-
-    # Spans
-    assert_equal true, entry_span.baggage.empty?
-    assert_equal 1, ac_span.baggage[:integer]
-    assert_equal 1.0123948293, ac_span.baggage[:float]
-    assert_equal true, ac_span.baggage[:hash][:another].empty?
-    assert_equal "blah", ac_span.baggage[:hash][:hash_sublevel]
-    assert_equal 1, av_span.baggage[:integer]
-    assert_equal 1.0123948293, av_span.baggage[:float]
-    assert_equal true, av_span.baggage[:hash][:another].empty?
-    assert_equal "blah", av_span.baggage[:hash][:hash_sublevel]
+    assert_equal(nil, av_span.context.baggage)
   end
 end

@@ -343,7 +343,7 @@ module Instana
       if @context
         @context.baggage = @baggage
       else
-        @context ||= ::Instana::SpanContext.new(@data[:t], @data[:s], @baggage)
+        @context ||= ::Instana::SpanContext.new(@data[:t], @data[:s], 1, @baggage)
       end
       self
     end
