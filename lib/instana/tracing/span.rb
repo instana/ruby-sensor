@@ -12,15 +12,33 @@ module Instana
     attr_accessor :parent
     attr_accessor :baggage
     attr_accessor :is_root
+    attr_accessor :context
 
-    def initialize(name, trace_id, parent_id: nil, start_time: ::Instana::Util.now_in_ms)
+    def initialize(name, parent_ctx: nil, start_time: ::Instana::Util.now_in_ms)
       @data = {}
-      @data[:t] = trace_id                    # Trace ID
-      @data[:s] = ::Instana::Util.generate_id # Span ID
-      @data[:p] = parent_id if parent_id      # Parent ID
-      @data[:ta] = :ruby                      # Agent
+
+      if parent_ctx == nil
+        # No parent specified so we're starting a new Trace - this will be the root span
+        id = ::Instana::Util.generate_id
+        @data[:t] = id                    # Trace ID
+        @data[:s] = id                    # Span ID
+        is_root = true
+      else
+        if parent_ctx.is_a?(::Instana::Span)
+          @parent = parent_ctx
+          parent_context = parent_ctx.context
+        elsif parent_ctx.is_a?(::Instana::SpanContext)
+          parent_context = parent_ctx
+        end
+
+        @data[:t] = parent_context.trace_id       # Trace ID
+        @data[:s] = ::Instana::Util.generate_id # Span ID
+        @data[:p] = parent_context.span_id        # Parent ID
+        @baggage = parent_ctx.baggage.dup
+        is_root = false
+      end
+
       @data[:data] = {}
-      is_root = false
 
       # Entity Source
       @data[:f] = { :e => ::Instana.agent.report_pid,
@@ -31,8 +49,6 @@ module Instana
       else
         @data[:ts] = start_time
       end
-
-      @baggage = {}
 
       if ::Instana.config[:collect_backtraces]
         # For entry spans, add a backtrace fingerprint
@@ -140,6 +156,10 @@ module Instana
       end
 
       @data[:d] = end_time - @data[:ts]
+
+      # Add this span to the queue for reporting
+      ::Instana.processor.add_span(self)
+
       self
     end
 
@@ -152,7 +172,7 @@ module Instana
     # @return [Instana::SpanContext]
     #
     def context
-      @context ||= ::Instana::SpanContext.new(@data[:t], @data[:s], @baggage)
+      @context ||= ::Instana::SpanContext.new(@data[:t], @data[:s], 1, @baggage)
     end
 
     # Retrieve the ID for this span
@@ -374,17 +394,7 @@ module Instana
     # @param end_time [Time] custom end time, if not now
     #
     def finish(end_time = ::Instana::Util.now_in_ms)
-      if ENV['INSTANA_DEBUG'] && (::Instana.tracer.current_span.id != id)
-        ::Instana.logger.debug "Closing a span that isn't active. This may result in a broken trace: #{self.inspect}"
-      end
-
       close(end_time)
-
-      if is_root
-        # This is the root span for the trace.  Call log_end to close
-        # out and queue the trace
-        ::Instana.tracer.log_end(name, {}, end_time)
-      end
       self
     end
   end

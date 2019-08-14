@@ -27,7 +27,7 @@ module Instana
     # Adds a span to the span queue
     #
     # @param [Trace] - the trace to be added to the queue
-    def add_span(spans)
+    def add_span(span)
       # Do a quick checkup on our background thread.
       if ::Instana.agent.collect_thread.nil? || !::Instana.agent.collect_thread.alive?
         ::Instana.agent.spawn_background_thread
