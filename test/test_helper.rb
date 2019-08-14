@@ -102,24 +102,35 @@ def validate_sdk_span(json_span, sdk_hash = {}, errored = false, ec = 1)
   end
 end
 
-def find_sdk_spans_by_name(spans, name)
+def find_spans_by_name(spans, name)
   result = []
   for span in spans
     if span[:n] == :sdk
       if span[:data][:sdk][:name] == name
         result << span
       end
-    end
-  end
-  return result
-end
-
-def find_spans_by_name(spans, name)
-  result = []
-  for span in spans
-    if span[:n] == name
+    elsif span[:n] == name
       result << span
     end
   end
-  return result
+  if result.empty?
+    raise Exception.new("No SDK spans (#{name}) could be found")
+  else
+    return result
+  end
+end
+
+def find_first_span_by_name(spans, name)
+  for span in spans
+    if span[:n] == :sdk
+      if span[:data][:sdk][:name] == name
+        return span
+      end
+    else
+      if span[:n] == name
+        return span
+      end
+    end
+  end
+  raise Exception.new("Span (#{name}) not found")
 end
