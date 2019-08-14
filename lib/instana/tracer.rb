@@ -7,7 +7,7 @@ module Instana
   class Tracer
     extend ::Instana::ThreadLocal
 
-    thread_local :current_trace
+    thread_local :current_span
 
     # Support ::Instana::Tracer.xxx call style for the instantiated tracer
     class << self
@@ -35,7 +35,7 @@ module Instana
     #     :span_id the ID of the parent span (must be an unsigned hex-string)
     #     :level specifies data collection level (optional)
     #
-    def start_or_continue_trace(name, kvs = {}, incoming_context = {}, &block)
+    def start_or_continue_trace(name, kvs = {}, incoming_context = nil, &block)
       log_start_or_continue(name, kvs, incoming_context)
       yield
     rescue Exception => e
@@ -75,16 +75,34 @@ module Instana
     #
     # @param name [String] the name of the span to start
     # @param kvs [Hash] list of key values to be reported in the span
-    # @param incoming_context [Hash] specifies the incoming context.  At a
+    # @param incoming_context [SpanContext or Hash] specifies the incoming context.  At a
     #   minimum, it should specify :trace_id and :span_id from the following:
     #     :trace_id the trace ID (must be an unsigned hex-string)
     #     :span_id the ID of the parent span (must be an unsigned hex-string)
     #     :level specifies data collection level (optional)
     #
-    def log_start_or_continue(name, kvs = {}, incoming_context = {})
+    def log_start_or_continue(name, kvs = {}, incoming_context = nil)
       return if !::Instana.agent.ready? || !::Instana.config[:tracing][:enabled]
       ::Instana.logger.debug "#{__method__} passed a block.  Use `start_or_continue` instead!" if block_given?
-      self.current_trace = ::Instana::Trace.new(name, kvs, incoming_context)
+
+      # Handle the potential variations on `incoming_context`
+      if incoming_context
+        if incoming_context.is_a?(Hash)
+          if !incoming_context.empty?
+            parent_context = SpanContext.new(incoming_context[:trace_id], incoming_context[:span_id])
+          end
+        else
+          parent_context = incoming_context
+        end
+      end
+
+      if parent_context
+        self.current_span = Span.new(name, parent_ctx: parent_context)
+      else
+        self.current_span = Span.new(name)
+      end
+      self.current_span.set_tags(kvs) unless kvs.empty?
+      self.current_span
     end
 
     # Will establish a new span as a child of the current span
@@ -93,9 +111,16 @@ module Instana
     # @param name [String] the name of the span to create
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def log_entry(name, kvs = {})
-      return unless tracing?
-      self.current_trace.new_span(name, kvs)
+    def log_entry(name, kvs = nil, start_time = ::Instana::Util.now_in_ms, child_of = nil)
+      return unless self.current_span || child_of
+
+      if child_of && (child_of.is_a?(::Instana::Span) || child_of.is_a?(::Instana::SpanContext))
+        new_span = Span.new(name, parent_ctx: child_of, start_time: start_time)
+      else
+        new_span = Span.new(name, parent_ctx: self.current_span, start_time: start_time)
+      end
+      new_span.set_tags(kvs) if kvs
+      self.current_span = new_span
     end
 
     # Add info to the current span
@@ -103,8 +128,8 @@ module Instana
     # @param kvs [Hash] list of key values to be reported in the span
     #
     def log_info(kvs)
-      return unless tracing?
-      self.current_trace.add_info(kvs)
+      return unless self.current_span
+      self.current_span.set_tags(kvs)
     end
 
     # Add an error to the current span
@@ -112,8 +137,8 @@ module Instana
     # @param e [Exception] Add exception to the current span
     #
     def log_error(e)
-      return unless tracing?
-      self.current_trace.add_error(e)
+      return unless self.current_span
+      self.current_span.add_error(e)
     end
 
     # Closes out the current span
@@ -125,15 +150,22 @@ module Instana
     # @param kvs [Hash] list of key values to be reported in the span
     #
     def log_exit(name, kvs = {})
-      return unless tracing?
+      return unless self.current_span
 
       if ENV.key?('INSTANA_DEBUG') || ENV.key?('INSTANA_TEST')
-        unless current_span_name?(name)
-          ::Instana.logger.debug "Span mismatch: Attempt to exit #{name} span but #{current_span.name} is active."
+        unless self.current_span.name == name
+          ::Instana.logger.debug "Span mismatch: Attempt to exit #{name} span but #{self.current_span.name} is active."
         end
       end
 
-      self.current_trace.end_span(kvs)
+      self.current_span.set_tags(kvs)
+      self.current_span.close
+
+      if self.current_span.parent
+        self.current_span = self.current_span.parent
+      else
+        self.current_span = nil
+      end
     end
 
     # Closes out the current span in the current trace
@@ -146,20 +178,17 @@ module Instana
     # @param kvs [Hash] list of key values to be reported in the span
     #
     def log_end(name, kvs = {}, end_time = ::Instana::Util.now_in_ms)
-      return unless tracing?
+      return unless self.current_span
 
       if ENV.key?('INSTANA_DEBUG') || ENV.key?('INSTANA_TEST')
-        unless current_span_name?(name)
-          ::Instana.logger.debug "Span mismatch: Attempt to end #{name} span but #{current_span.name} is active."
+        unless self.current_span.name == name
+          ::Instana.logger.debug "Span mismatch: Attempt to end #{name} span but #{self.current_span.name} is active."
         end
       end
 
-      self.current_trace.finish(kvs, end_time)
-
-      if ::Instana.agent.ready?
-        Instana.processor.add(self.current_trace)
-      end
-      self.current_trace = nil
+      self.current_span.set_tags(kvs)
+      self.current_span.close(end_time)
+      self.current_span = nil
     end
 
     ###########################################################################
@@ -176,8 +205,11 @@ module Instana
     #   :span_id => 12345
     #
     def log_async_entry(name, kvs)
-      return unless tracing?
-      self.current_trace.new_async_span(name, kvs)
+      return unless self.current_span
+
+      new_span = Span.new(name, parent_ctx: self.current_span)
+      new_span.set_tags(kvs) unless kvs.empty?
+      new_span
     end
 
     # Add info to an asynchronous span
@@ -223,16 +255,13 @@ module Instana
     # @return [Span]
     #
     def start_span(operation_name, child_of: nil, start_time: ::Instana::Util.now_in_ms, tags: nil)
-      # return unless ::Instana.agent.ready?
-
-      if tracing?
-        span = self.current_trace.new_span(operation_name, tags, start_time, child_of)
+      if child_of && (child_of.is_a?(::Instana::Span) || child_of.is_a?(::Instana::SpanContext))
+        new_span = Span.new(operation_name, parent_ctx: child_of, start_time: start_time)
       else
-        self.current_trace = ::Instana::Trace.new(operation_name, tags, nil, start_time)
-        span = self.current_trace.current_span
+        new_span = Span.new(operation_name, start_time: start_time)
       end
-      span.set_tags(tags)
-      span
+      new_span.set_tags(tags) if tags
+      new_span
     end
 
     # Inject a span into the given carrier
@@ -287,7 +316,7 @@ module Instana
       # The non-nil value of this instance variable
       # indicates if we are currently tracing
       # in this thread or not.
-      self.current_trace ? true : false
+      self.current_span ? true : false
     end
 
     # Indicates if we're tracing and the current span name matches
@@ -298,8 +327,8 @@ module Instana
     # @return [Boolean]
     #
     def tracing_span?(name)
-      if self.current_trace
-        return self.current_trace.current_span.name == name
+      if self.current_span
+        return self.current_span.name == name
       end
       false
     end
@@ -309,8 +338,8 @@ module Instana
     # @return [SpanContext] or nil if not tracing
     #
     def context
-      return nil unless tracing?
-      self.current_trace.current_span.context
+      return unless self.current_span
+      self.current_span.context
     end
 
     # Take the current trace_id and convert it to a header compatible
@@ -319,7 +348,11 @@ module Instana
     # @return [String] a hexadecimal representation of the current trace ID
     #
     def trace_id_header
-      ::Instana::Util.id_to_header(trace_id)
+      if self.current_span
+        self.current_span.context.trace_id_header
+      else
+        ""
+      end
     end
 
     # Take the current span_id and convert it to a header compatible
@@ -328,39 +361,33 @@ module Instana
     # @return [String] a hexadecimal representation of the current span ID
     #
     def span_id_header
-      ::Instana::Util.id_to_header(span_id)
+      if self.current_span
+        self.current_span.context.span_id_header
+      else
+        ""
+      end
     end
 
     # Returns the trace ID for the active trace (if there is one),
     # otherwise nil.
     #
     def trace_id
-      self.current_trace ? self.current_trace.id : nil
+      self.current_span ? self.current_span.id : nil
+      ::Instana.logger.debug("tracer.trace_id will deprecated in a future version.")
     end
 
     # Returns the current [Span] ID for the active trace (if there is one),
     # otherwise nil.
     #
     def span_id
-      self.current_trace  ? current_trace.current_span_id : nil
-    end
-
-    # Helper method to retrieve the currently active span for the active trace.
-    #
-    def current_span
-      self.current_trace ? self.current_trace.current_span : nil
-    end
-
-    # Indicates if the name of the current span matches <candidate>
-    #
-    def current_span_name?(candidate)
-      self.current_trace &&  self.current_trace.current_span.name == candidate.to_sym
+      self.current_span  ? self.current_span.span_id : nil
+      ::Instana.logger.debug("tracer.span_id will deprecated in a future version.")
     end
 
     # Used in the test suite, this resets the tracer to non-tracing state.
     #
     def clear!
-      self.current_trace = nil
+      self.current_span = nil
     end
   end
 end
