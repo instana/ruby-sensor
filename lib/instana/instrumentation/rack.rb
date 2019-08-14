@@ -57,8 +57,8 @@ module Instana
 
         # Save the IDs before the trace ends so we can place
         # them in the response headers in the ensure block
-        trace_id = ::Instana.tracer.trace_id
-        span_id = ::Instana.tracer.span_id
+        trace_id = ::Instana.tracer.current_span.trace_id
+        span_id = ::Instana.tracer.current_span.id
       end
 
       [status, headers, response]
