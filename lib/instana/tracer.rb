@@ -1,5 +1,4 @@
 require "instana/thread_local"
-require "instana/tracing/trace"
 require "instana/tracing/span"
 require "instana/tracing/span_context"
 
