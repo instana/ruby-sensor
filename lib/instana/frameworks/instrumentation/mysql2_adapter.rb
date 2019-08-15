@@ -67,7 +67,7 @@ module Instana
 
       def exec_query_with_instana(sql, name = 'SQL', binds = [], *args)
         if !::Instana.tracer.tracing? || ignore_payload?(name, sql) ||
-            ::Instana.tracer.current_span_name?(:activerecord)
+            ::Instana.tracer.current_span[:n] == :activerecord
           return exec_query_without_instana(sql, name, binds, *args)
         end
 

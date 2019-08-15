@@ -12,14 +12,11 @@ class ActionControllerTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/world'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
-    assert_equal 3, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
     assert_equal :rack, first_span.name
 
@@ -33,14 +30,11 @@ class ActionControllerTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/error'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
-    assert_equal 2, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
     assert_equal :rack, first_span.name
 
@@ -61,14 +55,11 @@ class ActionControllerTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/api/world'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
-    assert_equal 3, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
     assert_equal :rack, first_span.name
 
@@ -85,14 +76,11 @@ class ActionControllerTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/api/error'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
-    assert_equal 2, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
     assert_equal :rack, first_span.name
 
@@ -110,12 +98,9 @@ class ActionControllerTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/404'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
-    assert_equal 1, trace.spans.length
-    spans = trace.spans.to_a
     first_span = spans[0]
 
     assert_equal :rack, first_span.name
