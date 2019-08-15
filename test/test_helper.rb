@@ -134,3 +134,12 @@ def find_first_span_by_name(spans, name)
   end
   raise Exception.new("Span (#{name}) not found")
 end
+
+def find_span_by_id(spans, id)
+  for span in spans
+    if span[:s] == id
+      return span
+    end
+  end
+  raise Exception.new("Span with id (#{id}) not found")
+end

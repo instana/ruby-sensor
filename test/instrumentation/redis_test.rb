@@ -96,7 +96,7 @@ class RedisTest < Minitest::Test
   def assert_redis_trace(command, with_error: nil)
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
-    first_span, second_span = spans.to_a
+    first_span, second_span = spans.to_a.reverse
 
     # first_span is the parent of second_span
     assert_equal first_span[:s], second_span[:p]

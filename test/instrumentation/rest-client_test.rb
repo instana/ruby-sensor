@@ -20,10 +20,10 @@ class RestClientTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 4, spans.length
 
-    rack_span = spans[0]
-    sdk_span = spans[1]
-    rest_span = spans[2]
-    net_span = spans[3]
+    rack_span = find_first_span_by_name(spans, :rack)
+    sdk_span = find_first_span_by_name(spans, :'restclient-test')
+    rest_span = find_first_span_by_name(spans, :'rest-client')
+    net_span = find_first_span_by_name(spans, :'net-http')
 
     validate_sdk_span(sdk_span, {:name => :'restclient-test', :type => :intermediate})
     validate_sdk_span(rest_span, {:name => :'rest-client', :type => :intermediate})

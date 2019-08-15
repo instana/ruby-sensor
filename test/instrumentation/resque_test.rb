@@ -30,14 +30,18 @@ class ResqueClientTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 3, spans.length
 
-    assert_equal :'resque-client_test', spans[0][:data][:sdk][:name]
+    sdk_span = find_first_span_by_name(spans, :'resque-client_test')
+    resque_span = find_first_span_by_name(spans, :'resque-client')
+    redis_span = find_first_span_by_name(spans, :redis)
 
-    assert_equal :"resque-client", spans[1][:n]
-    assert_equal "FastJob", spans[1][:data][:'resque-client'][:job]
-    assert_equal :critical, spans[1][:data][:'resque-client'][:queue]
-    assert_equal false, spans[1][:data][:'resque-client'].key?(:error)
+    assert_equal :'resque-client_test', sdk_span[:data][:sdk][:name]
 
-    assert_equal :redis, spans[2][:n]
+    assert_equal :"resque-client", resque_span[:n]
+    assert_equal "FastJob", resque_span[:data][:'resque-client'][:job]
+    assert_equal :critical, resque_span[:data][:'resque-client'][:queue]
+    assert_equal false, resque_span[:data][:'resque-client'].key?(:error)
+
+    assert_equal :redis, redis_span[:n]
   end
 
   def test_enqueue_to
@@ -48,12 +52,16 @@ class ResqueClientTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 3, spans.length
 
-    assert_equal :'resque-client_test', spans[0][:data][:sdk][:name]
-    assert_equal :"resque-client", spans[1][:n]
-    assert_equal "FastJob", spans[1][:data][:'resque-client'][:job]
-    assert_equal :critical, spans[1][:data][:'resque-client'][:queue]
-    assert_equal false, spans[1][:data][:'resque-client'].key?(:error)
-    assert_equal :redis, spans[2][:n]
+    sdk_span = find_first_span_by_name(spans, :'resque-client_test')
+    resque_span = find_first_span_by_name(spans, :'resque-client')
+    redis_span = find_first_span_by_name(spans, :redis)
+
+    assert_equal :'resque-client_test', sdk_span[:data][:sdk][:name]
+    assert_equal :"resque-client", resque_span[:n]
+    assert_equal "FastJob", resque_span[:data][:'resque-client'][:job]
+    assert_equal :critical, resque_span[:data][:'resque-client'][:queue]
+    assert_equal false, resque_span[:data][:'resque-client'].key?(:error)
+    assert_equal :redis, redis_span[:n]
   end
 
   def test_dequeue
@@ -64,12 +72,16 @@ class ResqueClientTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 3, spans.length
 
-    assert_equal :'resque-client_test', spans[0][:data][:sdk][:name]
+    sdk_span = find_first_span_by_name(spans, :'resque-client_test')
+    resque_span = find_first_span_by_name(spans, :'resque-client')
+    redis_span = find_first_span_by_name(spans, :redis)
+
+    assert_equal :'resque-client_test', sdk_span[:data][:sdk][:name]
     assert_equal :"resque-client", spans[1][:n]
-    assert_equal "FastJob", spans[1][:data][:'resque-client'][:job]
-    assert_equal :critical, spans[1][:data][:'resque-client'][:queue]
-    assert_equal false, spans[1][:data][:'resque-client'].key?(:error)
-    assert_equal :redis, spans[2][:n]
+    assert_equal "FastJob", resque_span[:data][:'resque-client'][:job]
+    assert_equal :critical, resque_span[:data][:'resque-client'][:queue]
+    assert_equal false, resque_span[:data][:'resque-client'].key?(:error)
+    assert_equal :redis, redis_span[:n]
   end
 
   def test_worker_job
@@ -79,9 +91,9 @@ class ResqueClientTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 3, spans.length
 
-    resque_span = spans[0]
+    resque_span = spans[2]
     redis1_span = spans[1]
-    redis2_span = spans[2]
+    redis2_span = spans[0]
 
     assert_equal :'resque-worker', resque_span[:n]
     assert_equal false, resque_span.key?(:error)
@@ -103,9 +115,7 @@ class ResqueClientTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 5, spans.length
 
-    resque_span = spans[0]
-    ::Instana::Util.pry!
-
+    resque_span = find_first_span_by_name(spans, :'resque-worker')
 
     assert_equal :'resque-worker', resque_span[:n]
     assert_equal true, resque_span.key?(:error)

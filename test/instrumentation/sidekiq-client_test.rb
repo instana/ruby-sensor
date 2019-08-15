@@ -68,8 +68,8 @@ class SidekiqClientTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
     assert_equal first_span[:s], second_span[:p]
     validate_sdk_span(first_span, {:name => :sidekiqtests, :type => :intermediate})
@@ -85,8 +85,8 @@ class SidekiqClientTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
     assert_equal first_span[:s], second_span[:p]
     validate_sdk_span(first_span, {:name => :sidekiqtests, :type => :intermediate})

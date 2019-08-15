@@ -27,8 +27,8 @@ class DalliTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
     validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
 
@@ -60,8 +60,8 @@ class DalliTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
     validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
 
@@ -94,8 +94,8 @@ class DalliTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
     validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
 
@@ -128,8 +128,8 @@ class DalliTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
     validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
 
@@ -162,8 +162,8 @@ class DalliTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
     validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
 
@@ -196,8 +196,8 @@ class DalliTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
     validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
 
@@ -229,8 +229,8 @@ class DalliTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
     validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
 

@@ -6,11 +6,11 @@ class ErrorJob
 
   def self.perform
     if ENV.key?('REDIS_URL')
-      redis = ENV['REDIS_URL']
+      redis = Redis.new(:url => ENV['REDIS_URL'])
     elsif ENV.key?('I_REDIS_URL')
-      redis = ENV['I_REDIS_URL']
+      redis = Redis.new(:url => ENV['I_REDIS_URL'])
     else
-      redis = 'localhost:6379'
+      redis = Redis.new(:url => 'localhost:6379')
     end
 
     dt = Time.now

@@ -25,31 +25,26 @@ class ExconTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 3, spans.length
 
-    rs_span = spans[0]
-    first_span = spans[1]
-    second_span = spans[2]
+    sdk_span = find_first_span_by_name(spans, :'excon-test')
+    excon_span = find_first_span_by_name(spans, :excon)
+    rack_span = find_first_span_by_name(spans, :rack)
 
-    validate_sdk_span(first_span, {:name => :'excon-test', :type => :intermediate})
-
-    # Span name validation
-    assert_equal :sdk, first_span[:n]
-    assert_equal :"excon-test", first_span[:data][:sdk][:name]
-    assert_equal :excon, second_span[:n]
+    validate_sdk_span(sdk_span, {:name => :'excon-test', :type => :intermediate})
 
     # data keys/values
-    refute_nil second_span.key?(:data)
-    refute_nil second_span[:data].key?(:http)
-    assert_equal "http://127.0.0.1:6511/", second_span[:data][:http][:url]
-    assert_equal 200, second_span[:data][:http][:status]
+    refute_nil excon_span.key?(:data)
+    refute_nil excon_span[:data].key?(:http)
+    assert_equal "http://127.0.0.1:6511/", excon_span[:data][:http][:url]
+    assert_equal 200, excon_span[:data][:http][:status]
 
     # excon backtrace not included by default check
-    assert !second_span.key?(:stack)
+    assert !excon_span.key?(:stack)
 
-    assert_equal first_span[:t], second_span[:t]
-    assert_equal rs_span[:t], second_span[:t]
+    assert_equal sdk_span[:t], excon_span[:t]
+    assert_equal rack_span[:t], excon_span[:t]
 
-    assert_equal rs_span[:p], second_span[:s]
-    assert_equal second_span[:p], first_span[:s]
+    assert_equal rack_span[:p], excon_span[:s]
+    assert_equal excon_span[:p], sdk_span[:s]
   end
 
   def test_basic_get_with_error
@@ -60,39 +55,37 @@ class ExconTest < Minitest::Test
     Excon.defaults[:middlewares].delete ::WebMock::HttpLibAdapters::ExconAdapter
     Excon.defaults[:middlewares].delete ::Excon::Middleware::Mock
 
-    url = "http://127.0.0.1:6500"
+    url = "http://127.0.0.1:6511"
 
     begin
       connection = Excon.new(url)
       Instana.tracer.start_or_continue_trace('excon-test') do
-        connection.get(:path => '/?basic_get')
+        connection.get(:path => '/error')
       end
     rescue
     end
 
     spans = ::Instana.processor.queued_spans
-    assert_equal 2, spans.length
+    assert_equal 3, spans.length
 
-    first_span = spans[0]
-    second_span = spans[1]
+    rack_span = find_first_span_by_name(spans, :rack)
+    excon_span = find_first_span_by_name(spans, :excon)
+    sdk_span = find_first_span_by_name(spans, :'excon-test')
 
-    validate_sdk_span(first_span, {:name => :'excon-test', :type => :intermediate})
+    validate_sdk_span(sdk_span, {:name => :'excon-test', :type => :intermediate})
 
-    # first_span is the parent of second_span
-    assert_equal first_span[:s], second_span[:p]
+    assert_equal sdk_span[:s], excon_span[:p]
+    assert_equal excon_span[:s], rack_span[:p]
 
-    assert_equal :excon, second_span[:n]
-    refute_nil second_span.key?(:data)
-    refute_nil second_span[:data].key?(:http)
-    assert_equal "http://127.0.0.1:6500/", second_span[:data][:http][:url]
-    assert_equal nil, second_span[:data][:http][:status]
-
-    # excon span should include an error backtrace
-    assert second_span.key?(:stack)
+    assert_equal :excon, excon_span[:n]
+    refute_nil excon_span.key?(:data)
+    refute_nil excon_span[:data].key?(:http)
+    assert_equal "http://127.0.0.1:6511/error", excon_span[:data][:http][:url]
+    assert_equal 500, excon_span[:data][:http][:status]
 
     # error validation
-    assert_equal true, second_span[:error]
-    assert_equal 1, second_span[:ec]
+    assert_equal true, excon_span[:error]
+    assert_equal 1, excon_span[:ec]
   end
 
   def test_pipelined_requests
@@ -112,44 +105,43 @@ class ExconTest < Minitest::Test
     end
 
     spans = ::Instana.processor.queued_spans
-    assert_equal 4, spans.length
+    assert_equal 7, spans.length
 
-    validate_sdk_span(first_span, {:name => :'excon-test', :type => :intermediate})
+    rack_spans = find_spans_by_name(spans, :rack)
+    excon_spans = find_spans_by_name(spans, :excon)
+    sdk_span = find_first_span_by_name(spans, :'excon-test')
 
-    first_span = spans[0]
-    second_span = spans[1]
-    third_span = spans[2]
-    fourth_span = spans[3]
+    validate_sdk_span(sdk_span, {:name => :'excon-test', :type => :intermediate})
 
-    # Span name validation
-    assert_equal :sdk, first_span[:n]
-    assert_equal :"excon-test", first_span[:data][:sdk][:name]
-    assert_equal :excon, second_span[:n]
-    assert_equal :excon, third_span[:n]
-    assert_equal :excon, fourth_span[:n]
+    assert_equal 3, rack_spans.length
+    assert_equal 3, excon_spans.length
 
-    # first_span is the parent of second/third/fourth_span
-    assert_equal first_span[:s], second_span[:p]
-    assert_equal first_span[:s], third_span[:p]
-    assert_equal first_span[:s], fourth_span[:p]
+    # ::Instana::Util.pry!
 
-    # data keys/values
-    refute_nil second_span.key?(:data)
-    refute_nil second_span[:data].key?(:http)
-    assert_equal "http://127.0.0.1:6511/", second_span[:data][:http][:url]
-    assert_equal 200, second_span[:data][:http][:status]
-    assert !second_span.key?(:stack)
+    for rack_span in rack_spans
+      # data keys/values
+      refute_nil rack_span.key?(:data)
+      refute_nil rack_span[:data].key?(:http)
+      assert_equal "/", rack_span[:data][:http][:url]
+      assert_equal 200, rack_span[:data][:http][:status]
+      assert !rack_span.key?(:stack)
 
-    refute_nil third_span.key?(:data)
-    refute_nil third_span[:data].key?(:http)
-    assert_equal "http://127.0.0.1:6511/", third_span[:data][:http][:url]
-    assert_equal 200, third_span[:data][:http][:status]
-    assert !third_span.key?(:stack)
+      # Make sure a parent is specified and that we have it
+      refute_nil rack_span[:p]
+      excon_span = find_span_by_id(spans, rack_span[:p])
+      assert_equal :excon, excon_span[:n]
 
-    refute_nil fourth_span.key?(:data)
-    refute_nil fourth_span[:data].key?(:http)
-    assert_equal "http://127.0.0.1:6511/", fourth_span[:data][:http][:url]
-    assert_equal 200, fourth_span[:data][:http][:status]
-    assert !fourth_span.key?(:stack)
+      refute_nil excon_span.key?(:data)
+      refute_nil excon_span[:data].key?(:http)
+      assert_equal "http://127.0.0.1:6511/", excon_span[:data][:http][:url]
+      assert_equal 200, excon_span[:data][:http][:status]
+      assert !excon_span.key?(:stack)
+
+      # walk up the line
+      refute_nil excon_span[:p]
+      grandparent_span = find_span_by_id(spans, excon_span[:p])
+      assert_nil grandparent_span[:p]
+      assert_equal :sdk, grandparent_span[:n]
+    end
   end
 end
