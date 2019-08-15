@@ -16,7 +16,7 @@ module Instana
         ERB.new(EUM_SNIPPET).result
       rescue => e
         Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-        Instana.logger.debug e.backtrace.join("\r\n")
+        Instana.logger.debug { e.backtrace.join("\r\n") }
         return nil
       end
 
@@ -32,7 +32,7 @@ module Instana
         ERB.new(EUM_TEST_SNIPPET).result
       rescue => e
         Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-        Instana.logger.debug e.backtrace.join("\r\n")
+        Instana.logger.debug { e.backtrace.join("\r\n") }
         return nil
       end
     end

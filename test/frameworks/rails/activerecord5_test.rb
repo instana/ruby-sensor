@@ -26,10 +26,10 @@ class ActiveRecordTest < Minitest::Test
     third_span = spans[3]
     fourth_span = spans[4]
 
-    assert_equal :rack, first_span.name
-    assert_equal :activerecord, second_span.name
-    assert_equal :activerecord, third_span.name
-    assert_equal :activerecord, fourth_span.name
+    assert_equal :rack, first_span[:n]
+    assert_equal :activerecord, second_span[:n]
+    assert_equal :activerecord, third_span[:n]
+    assert_equal :activerecord, fourth_span[:n]
 
     assert_equal "INSERT INTO \"blocks\" (\"name\", \"color\", \"created_at\", \"updated_at\") VALUES ($?, $?, $?, $?) RETURNING \"id\"", second_span[:data][:activerecord][:sql]
     assert_equal "SELECT  \"blocks\".* FROM \"blocks\" WHERE \"blocks\".\"name\" = $? ORDER BY \"blocks\".\"id\" ASC LIMIT $?", third_span[:data][:activerecord][:sql]
@@ -55,21 +55,18 @@ class ActiveRecordTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/db'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 6, spans.length
 
-    assert_equal 6, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[2]
-    third_span = spans[3]
-    fourth_span = spans[4]
+    first_span = spans[5]
+    second_span = spans[0]
+    third_span = spans[1]
+    fourth_span = spans[2]
 
-    assert_equal :rack, first_span.name
-    assert_equal :activerecord, second_span.name
-    assert_equal :activerecord, third_span.name
-    assert_equal :activerecord, fourth_span.name
+    assert_equal :rack, first_span[:n]
+    assert_equal :activerecord, second_span[:n]
+    assert_equal :activerecord, third_span[:n]
+    assert_equal :activerecord, fourth_span[:n]
 
     assert_equal "INSERT INTO `blocks` (`name`, `color`, `created_at`, `updated_at`) VALUES (?, ?, ?, ?)", second_span[:data][:activerecord][:sql]
     assert_equal "SELECT  `blocks`.* FROM `blocks` WHERE `blocks`.`name` = ? ORDER BY `blocks`.`id` ASC LIMIT ?", third_span[:data][:activerecord][:sql]

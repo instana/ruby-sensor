@@ -13,13 +13,14 @@ if defined?(::Excon) && ::Instana.config[:excon][:enabled]
           if datum[:pipeline] == true
             # Pass the context along in the datum so we get back on response
             # and can close out the async span
-            datum[:instana_context] = ::Instana.tracer.log_async_entry(:excon, payload)
+            datum[:instana_span] = ::Instana.tracer.log_async_entry(:excon, payload)
+            t_context = datum[:instana_span].context
           else
             ::Instana.tracer.log_entry(:excon, payload)
+            t_context = ::Instana.tracer.context
           end
 
           # Set request headers; encode IDs as hexadecimal strings
-          t_context = ::Instana.tracer.context
           datum[:headers]['X-Instana-T'] = t_context.trace_id_header
           datum[:headers]['X-Instana-S'] = t_context.span_id_header
 
@@ -30,7 +31,7 @@ if defined?(::Excon) && ::Instana.config[:excon][:enabled]
           return @stack.error_call(datum) unless ::Instana.tracer.tracing?
 
           if datum[:pipeline] == true
-            ::Instana.tracer.log_async_error(datum[:error], datum[:instana_context])
+            ::Instana.tracer.log_async_error(datum[:error], datum[:instana_span])
           else
             ::Instana.tracer.log_error(datum[:error])
           end
@@ -38,6 +39,8 @@ if defined?(::Excon) && ::Instana.config[:excon][:enabled]
         end
 
         def response_call(datum)
+          # FIXME: Will connect exceptions call a response?
+          #
           return @stack.response_call(datum) unless ::Instana.tracer.tracing?
 
           result =  @stack.response_call(datum)
@@ -54,8 +57,8 @@ if defined?(::Excon) && ::Instana.config[:excon][:enabled]
           end
 
           if datum[:pipeline] == true
-            # Pickup context of this async span from datum[:instana_id]
-            ::Instana.tracer.log_async_exit(:excon, { :http => {:status => status } }, datum[:instana_context])
+            # Pickup context of this async span from datum[:instana_span]
+            ::Instana.tracer.log_async_exit(:excon, { :http => {:status => status } }, datum[:instana_span])
           else
             ::Instana.tracer.log_exit(:excon, { :http => {:status => status } })
           end

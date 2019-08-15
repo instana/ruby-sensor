@@ -12,20 +12,13 @@ class ActionControllerTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/world'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
-    assert_equal 3, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    ac_span = find_first_span_by_name(spans, :actioncontroller)
 
-    assert_equal :rack, first_span.name
-
-    assert_equal :actioncontroller, second_span.name
-    assert_equal "TestController", second_span[:data][:actioncontroller][:controller]
-    assert_equal "world", second_span[:data][:actioncontroller][:action]
+    assert_equal "TestController", ac_span[:data][:actioncontroller][:controller]
+    assert_equal "world", ac_span[:data][:actioncontroller][:action]
   end
 
   def test_controller_error
@@ -33,24 +26,17 @@ class ActionControllerTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/error'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
 
-    assert_equal 2, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    ac_span = find_first_span_by_name(spans, :actioncontroller)
 
-    assert_equal :rack, first_span.name
-
-    assert_equal :actioncontroller, second_span.name
-    assert_equal "TestController", second_span[:data][:actioncontroller][:controller]
-    assert_equal "error", second_span[:data][:actioncontroller][:action]
-    assert second_span.key?(:error)
-    assert second_span.key?(:stack)
-    assert_equal "Warning: This is a simulated Error", second_span[:data][:log][:message]
-    assert_equal "Exception", second_span[:data][:log][:parameters]
+    assert_equal "TestController", ac_span[:data][:actioncontroller][:controller]
+    assert_equal "error", ac_span[:data][:actioncontroller][:action]
+    assert ac_span.key?(:error)
+    assert ac_span.key?(:stack)
+    assert_equal "Warning: This is a simulated Error", ac_span[:data][:log][:message]
+    assert_equal "Exception", ac_span[:data][:log][:parameters]
   end
 
   def test_api_controller_reporting
@@ -61,20 +47,14 @@ class ActionControllerTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/api/world'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
-    assert_equal 3, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    ac_span = find_first_span_by_name(spans, :actioncontroller)
 
-    assert_equal :rack, first_span.name
-
-    assert_equal :actioncontroller, second_span.name
-    assert_equal "SocketController", second_span[:data][:actioncontroller][:controller]
-    assert_equal "world", second_span[:data][:actioncontroller][:action]
+    assert_equal :actioncontroller, ac_span[:n]
+    assert_equal "SocketController", ac_span[:data][:actioncontroller][:controller]
+    assert_equal "world", ac_span[:data][:actioncontroller][:action]
   end
 
   def test_api_controller_error
@@ -85,24 +65,17 @@ class ActionControllerTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/api/error'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
 
-    assert_equal 2, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    ac_span = find_first_span_by_name(spans, :actioncontroller)
 
-    assert_equal :rack, first_span.name
-
-    assert_equal :actioncontroller, second_span.name
-    assert_equal "SocketController", second_span[:data][:actioncontroller][:controller]
-    assert_equal "error", second_span[:data][:actioncontroller][:action]
-    assert second_span.key?(:error)
-    assert second_span.key?(:stack)
-    assert_equal "Warning: This is a simulated Socket API Error", second_span[:data][:log][:message]
-    assert_equal "Exception", second_span[:data][:log][:parameters]
+    assert_equal "SocketController", ac_span[:data][:actioncontroller][:controller]
+    assert_equal "error", ac_span[:data][:actioncontroller][:action]
+    assert ac_span.key?(:error)
+    assert ac_span.key?(:stack)
+    assert_equal "Warning: This is a simulated Socket API Error", ac_span[:data][:log][:message]
+    assert_equal "Exception", ac_span[:data][:log][:parameters]
   end
 
   def test_404
@@ -110,14 +83,11 @@ class ActionControllerTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/404'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
 
-    assert_equal 1, trace.spans.length
-    spans = trace.spans.to_a
     first_span = spans[0]
 
-    assert_equal :rack, first_span.name
+    assert_equal :rack, first_span[:n]
   end
 end

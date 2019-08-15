@@ -5,6 +5,8 @@ require 'resque'
 
 if ENV.key?('REDIS_URL')
   ::Resque.redis = ENV['REDIS_URL']
+elsif ENV.key?('I_REDIS_URL')
+  ::Resque.redis = ENV['I_REDIS_URL']
 else
   ::Resque.redis = 'localhost:6379'
 end
@@ -25,20 +27,21 @@ class ResqueClientTest < Minitest::Test
       ::Resque.enqueue(FastJob)
     end
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
-    spans = traces[0].spans.to_a
-    assert_equal 3, spans.count
+    sdk_span = find_first_span_by_name(spans, :'resque-client_test')
+    resque_span = find_first_span_by_name(spans, :'resque-client')
+    redis_span = find_first_span_by_name(spans, :redis)
 
-    assert_equal :'resque-client_test', spans[0][:data][:sdk][:name]
+    assert_equal :'resque-client_test', sdk_span[:data][:sdk][:name]
 
-    assert_equal :"resque-client", spans[1][:n]
-    assert_equal "FastJob", spans[1][:data][:'resque-client'][:job]
-    assert_equal :critical, spans[1][:data][:'resque-client'][:queue]
-    assert_equal false, spans[1][:data][:'resque-client'].key?(:error)
+    assert_equal :"resque-client", resque_span[:n]
+    assert_equal "FastJob", resque_span[:data][:'resque-client'][:job]
+    assert_equal :critical, resque_span[:data][:'resque-client'][:queue]
+    assert_equal false, resque_span[:data][:'resque-client'].key?(:error)
 
-    assert_equal :redis, spans[2][:n]
+    assert_equal :redis, redis_span[:n]
   end
 
   def test_enqueue_to
@@ -46,18 +49,19 @@ class ResqueClientTest < Minitest::Test
       ::Resque.enqueue_to(:critical, FastJob)
     end
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
-    spans = traces[0].spans.to_a
-    assert_equal 3, spans.count
+    sdk_span = find_first_span_by_name(spans, :'resque-client_test')
+    resque_span = find_first_span_by_name(spans, :'resque-client')
+    redis_span = find_first_span_by_name(spans, :redis)
 
-    assert_equal :'resque-client_test', spans[0][:data][:sdk][:name]
-    assert_equal :"resque-client", spans[1][:n]
-    assert_equal "FastJob", spans[1][:data][:'resque-client'][:job]
-    assert_equal :critical, spans[1][:data][:'resque-client'][:queue]
-    assert_equal false, spans[1][:data][:'resque-client'].key?(:error)
-    assert_equal :redis, spans[2][:n]
+    assert_equal :'resque-client_test', sdk_span[:data][:sdk][:name]
+    assert_equal :"resque-client", resque_span[:n]
+    assert_equal "FastJob", resque_span[:data][:'resque-client'][:job]
+    assert_equal :critical, resque_span[:data][:'resque-client'][:queue]
+    assert_equal false, resque_span[:data][:'resque-client'].key?(:error)
+    assert_equal :redis, redis_span[:n]
   end
 
   def test_dequeue
@@ -65,33 +69,31 @@ class ResqueClientTest < Minitest::Test
       ::Resque.dequeue(FastJob, { :generate => :farfalla })
     end
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
-    spans = traces[0].spans.to_a
-    assert_equal 3, spans.count
+    sdk_span = find_first_span_by_name(spans, :'resque-client_test')
+    resque_span = find_first_span_by_name(spans, :'resque-client')
+    redis_span = find_first_span_by_name(spans, :redis)
 
-    assert_equal :'resque-client_test', spans[0][:data][:sdk][:name]
+    assert_equal :'resque-client_test', sdk_span[:data][:sdk][:name]
     assert_equal :"resque-client", spans[1][:n]
-    assert_equal "FastJob", spans[1][:data][:'resque-client'][:job]
-    assert_equal :critical, spans[1][:data][:'resque-client'][:queue]
-    assert_equal false, spans[1][:data][:'resque-client'].key?(:error)
-    assert_equal :redis, spans[2][:n]
+    assert_equal "FastJob", resque_span[:data][:'resque-client'][:job]
+    assert_equal :critical, resque_span[:data][:'resque-client'][:queue]
+    assert_equal false, resque_span[:data][:'resque-client'].key?(:error)
+    assert_equal :redis, redis_span[:n]
   end
 
   def test_worker_job
     Resque::Job.create(:critical, FastJob)
     @worker.work(0)
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
 
-    spans = traces[0].spans.to_a
-    assert_equal 3, spans.count
-
-    resque_span = spans[0]
+    resque_span = spans[2]
     redis1_span = spans[1]
-    redis2_span = spans[2]
+    redis2_span = spans[0]
 
     assert_equal :'resque-worker', resque_span[:n]
     assert_equal false, resque_span.key?(:error)
@@ -110,12 +112,10 @@ class ResqueClientTest < Minitest::Test
     Resque::Job.create(:critical, ErrorJob)
     @worker.work(0)
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
+    spans = ::Instana.processor.queued_spans
+    assert_equal 5, spans.length
 
-    spans = traces[0].spans.to_a
-    resque_span = spans[0]
-    assert_equal 5, spans.count
+    resque_span = find_first_span_by_name(spans, :'resque-worker')
 
     assert_equal :'resque-worker', resque_span[:n]
     assert_equal true, resque_span.key?(:error)

@@ -51,8 +51,8 @@ module AgentHelpers
 
     @state == :announced
   rescue => e
-    Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-    Instana.logger.debug e.backtrace.join("\r\n") unless ENV.key?('INSTANA_TEST')
+    Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
+    Instana.logger.debug { e.backtrace.join("\r\n") } unless ENV.key?('INSTANA_TEST')
     return false
   end
 end

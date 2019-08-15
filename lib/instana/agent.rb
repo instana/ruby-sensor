@@ -167,8 +167,8 @@ module Instana
         @timers.wait
       end
     rescue Exception => e
-      ::Instana.logger.warn "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-      ::Instana.logger.debug e.backtrace.join("\r\n")
+      ::Instana.logger.warn { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
+      ::Instana.logger.debug { e.backtrace.join("\r\n") }
     ensure
       if @state == :announced
         # Pause the timers so they don't fire while we are
@@ -176,7 +176,7 @@ module Instana
         @collect_timer.pause
         @announce_timer.pause
 
-        ::Instana.logger.debug "#{Thread.current}: Agent exiting. Reporting final #{::Instana.processor.queue_count} trace(s)."
+        ::Instana.logger.debug { "#{Thread.current}: Agent exiting. Reporting final #{::Instana.processor.queue_count} trace(s)." }
         ::Instana.processor.send
       end
     end
@@ -211,7 +211,7 @@ module Instana
       req = Net::HTTP::Put.new(uri)
       req.body = Oj.dump(announce_payload, OJ_OPTIONS)
 
-      ::Instana.logger.debug "Announce: http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH} - payload: #{req.body}"
+      ::Instana.logger.debug { "Announce: http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH} - payload: #{req.body}" }
 
       response = make_host_agent_request(req)
 
@@ -228,8 +228,8 @@ module Instana
         false
       end
     rescue => e
-      Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-      Instana.logger.debug e.backtrace.join("\r\n")
+      Instana.logger.info { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
+      Instana.logger.debug { e.backtrace.join("\r\n") }
       return false
     ensure
       socket.close if socket
@@ -269,8 +269,8 @@ module Instana
       end
       false
     rescue => e
-      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-      Instana.logger.debug e.backtrace.join("\r\n")
+      Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
+      Instana.logger.debug { e.backtrace.join("\r\n") }
     end
 
     # Accept and report spans to the host agent.
@@ -304,8 +304,8 @@ module Instana
       end
       false
     rescue => e
-      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-      Instana.logger.debug e.backtrace.join("\r\n")
+      Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
+      Instana.logger.debug { e.backtrace.join("\r\n") }
     end
 
     # Check that the host agent is available and can be contacted.  This will
@@ -328,8 +328,8 @@ module Instana
       end
       false
     rescue => e
-      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-      Instana.logger.debug e.backtrace.join("\r\n") unless ENV.key?('INSTANA_TEST')
+      Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
+      Instana.logger.debug { e.backtrace.join("\r\n") } unless ENV.key?('INSTANA_TEST')
       return false
     end
 
@@ -342,20 +342,20 @@ module Instana
     def run_discovery
       discovered = {}
 
-      ::Instana.logger.debug "#{__method__}: Running agent discovery..."
+      ::Instana.logger.debug { "#{__method__}: Running agent discovery..." }
 
       # Try default location or manually configured (if so)
       uri = URI.parse("http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/")
       req = Net::HTTP::Get.new(uri)
 
-      ::Instana.logger.debug "#{__method__}: Trying #{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}"
+      ::Instana.logger.debug { "#{__method__}: Trying #{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}" }
 
       response = make_host_agent_request(req)
 
       if response && (response.code.to_i == 200)
         discovered[:agent_host] = ::Instana.config[:agent_host]
         discovered[:agent_port] = ::Instana.config[:agent_port]
-        ::Instana.logger.debug "#{__method__}: Found #{discovered[:agent_host]}:#{discovered[:agent_port]}"
+        ::Instana.logger.debug { "#{__method__}: Found #{discovered[:agent_host]}:#{discovered[:agent_port]}" }
         return discovered
       end
 
@@ -366,14 +366,14 @@ module Instana
       uri = URI.parse("http://#{@default_gateway}:#{::Instana.config[:agent_port]}/")
       req = Net::HTTP::Get.new(uri)
 
-      ::Instana.logger.debug "#{__method__}: Trying default gateway #{@default_gateway}:#{::Instana.config[:agent_port]}"
+      ::Instana.logger.debug { "#{__method__}: Trying default gateway #{@default_gateway}:#{::Instana.config[:agent_port]}" }
 
       response = make_host_agent_request(req)
 
       if response && (response.code.to_i == 200)
         discovered[:agent_host] = @default_gateway
         discovered[:agent_port] = ::Instana.config[:agent_port]
-        ::Instana.logger.debug "#{__method__}: Found #{discovered[:agent_host]}:#{discovered[:agent_port]}"
+        ::Instana.logger.debug { "#{__method__}: Found #{discovered[:agent_host]}:#{discovered[:agent_port]}" }
         return discovered
       end
 
@@ -434,8 +434,8 @@ module Instana
     rescue Errno::ECONNREFUSED
       return nil
     rescue => e
-      Instana.logger.debug "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-      Instana.logger.debug e.backtrace.join("\r\n") unless ENV.key?('INSTANA_TEST')
+      Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
+      Instana.logger.debug { e.backtrace.join("\r\n") } unless ENV.key?('INSTANA_TEST')
       return nil
     end
   end

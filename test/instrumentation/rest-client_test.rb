@@ -17,44 +17,38 @@ class RestClientTest < Minitest::Test
       RestClient.get url
     end
 
-    assert_equal 2, ::Instana.processor.queue_count
+    spans = ::Instana.processor.queued_spans
+    assert_equal 4, spans.length
 
-    traces = Instana.processor.queued_traces
-    rs_trace = traces[0]
-    http_trace = traces[1]
+    rack_span = find_first_span_by_name(spans, :rack)
+    sdk_span = find_first_span_by_name(spans, :'restclient-test')
+    rest_span = find_first_span_by_name(spans, :'rest-client')
+    net_span = find_first_span_by_name(spans, :'net-http')
 
-    # RestClient trace validation
-    assert_equal 3, http_trace.spans.length
-    spans = http_trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
-    third_span = spans[2]
+    validate_sdk_span(sdk_span, {:name => :'restclient-test', :type => :intermediate})
+    validate_sdk_span(rest_span, {:name => :'rest-client', :type => :intermediate})
 
     # Span name validation
-    assert first_span.custom?
-    assert_equal :"restclient-test", first_span.name
-    assert_equal :"rest-client", second_span.name
-    assert_equal :"net-http", third_span.name
+    assert_equal :rack, rack_span[:n]
+    assert_equal :sdk, sdk_span[:n]
+    assert_equal :sdk, rest_span[:n]
+    assert_equal :"net-http", net_span[:n]
 
-    # first_span is the parent of second_span
-    assert_equal first_span.id, second_span[:p]
-    # second_span is parent of third_span
-    assert_equal second_span.id, third_span[:p]
+    # Trace IDs and relationships
+    trace_id = sdk_span[:t]
+    assert_equal trace_id, rest_span[:t]
+    assert_equal trace_id, net_span[:t]
+    assert_equal trace_id, rack_span[:t]
+
+    assert_equal sdk_span[:s], rest_span[:p]
+    assert_equal rest_span[:s], net_span[:p]
+    assert_equal net_span[:s], rack_span[:p]
 
     # data keys/values
-    refute_nil third_span.key?(:data)
-    refute_nil third_span[:data].key?(:http)
-    assert_equal "http://127.0.0.1:6511/", third_span[:data][:http][:url]
-    assert_equal "200", third_span[:data][:http][:status]
-
-    # Rack server trace validation
-    assert_equal 1, rs_trace.spans.length
-    rs_span = rs_trace.spans.to_a[0]
-
-    # Rack server trace should have the same trace ID
-    assert_equal http_trace.id, rs_span[:t].to_i
-    # Rack server trace should have net-http has parent span
-    assert_equal third_span.id, rs_span[:p].to_i
+    refute_nil net_span.key?(:data)
+    refute_nil net_span[:data].key?(:http)
+    assert_equal "http://127.0.0.1:6511/", net_span[:data][:http][:url]
+    assert_equal "200", net_span[:data][:http][:status]
 
     WebMock.disable_net_connect!
   end

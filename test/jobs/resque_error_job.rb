@@ -5,7 +5,13 @@ class ErrorJob
   @queue = :critical
 
   def self.perform
-    redis = Redis.new(url: ENV['REDIS_URL'])
+    if ENV.key?('REDIS_URL')
+      redis = Redis.new(:url => ENV['REDIS_URL'])
+    elsif ENV.key?('I_REDIS_URL')
+      redis = Redis.new(:url => ENV['I_REDIS_URL'])
+    else
+      redis = Redis.new(:url => 'localhost:6379')
+    end
 
     dt = Time.now
     redis.set('ts', dt)

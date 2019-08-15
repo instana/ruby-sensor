@@ -31,7 +31,6 @@ class RackTest < Minitest::Test
 
     first_span = spans.first
     assert_equal :rack, first_span[:n]
-    assert_equal :ruby, first_span[:ta]
     assert first_span.key?(:data)
     assert first_span[:data].key?(:http)
     assert_equal "GET", first_span[:data][:http][:method]
@@ -78,7 +77,6 @@ class RackTest < Minitest::Test
     assert_equal 1, spans.count
     first_span = spans.first
     assert_equal :rack, first_span[:n]
-    assert_equal :ruby, first_span[:ta]
     assert first_span.key?(:data)
     assert first_span[:data].key?(:http)
     assert_equal "POST", first_span[:data][:http][:method]
@@ -101,7 +99,6 @@ class RackTest < Minitest::Test
     assert_equal 1, spans.count
     first_span = spans.first
     assert_equal :rack, first_span[:n]
-    assert_equal :ruby, first_span[:ta]
     assert first_span.key?(:data)
     assert first_span[:data].key?(:http)
     assert_equal "PUT", first_span[:data][:http][:method]
@@ -127,7 +124,6 @@ class RackTest < Minitest::Test
     assert_equal 1, spans.count
     first_span = spans.first
     assert_equal :rack, first_span[:n]
-    assert_equal :ruby, first_span[:ta]
     assert first_span.key?(:data)
     assert first_span[:data].key?(:http)
     assert_equal "GET", first_span[:data][:http][:method]
@@ -158,14 +154,13 @@ class RackTest < Minitest::Test
     clear_all!
     get '/mrlobster?blah=2&wilma=1&betty=2;fred=3'
 
-    traces = ::Instana.processor.queued_traces
-    assert_equal 1, traces.length
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
 
-    trace = traces[0]
-    refute_nil trace.spans.first.key?(:data)
-    refute_nil trace.spans.first[:data].key?(:http)
-    refute_nil trace.spans.first[:data][:http].key?(:url)
-    assert_equal '/mrlobster', trace.spans.first[:data][:http][:url]
+    refute_nil spans.first.key?(:data)
+    refute_nil spans.first[:data].key?(:http)
+    refute_nil spans.first[:data][:http].key?(:url)
+    assert_equal '/mrlobster', spans.first[:data][:http][:url]
 
     assert last_response.ok?
   end

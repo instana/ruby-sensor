@@ -24,18 +24,15 @@ class DalliTest < Minitest::Test
 
     assert_equal :boom, result
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
 
-    # Excon validation
-    assert_equal 2, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
-    assert_equal :dalli_test, first_span.name
-    assert_equal :memcache, second_span.name
+    validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
+
+    assert_equal :memcache, second_span[:n]
     assert_equal false, second_span.key?(:error)
     assert second_span[:p] == first_span[:s]
     assert first_span[:t] == first_span[:s]
@@ -60,18 +57,15 @@ class DalliTest < Minitest::Test
 
     assert result.is_a?(Integer)
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
 
-    # Excon validation
-    assert_equal 2, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
-    assert_equal :dalli_test, first_span.name
-    assert_equal :memcache, second_span.name
+    validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
+
+    assert_equal :memcache, second_span[:n]
     assert_equal false, second_span.key?(:error)
     assert second_span[:p] == first_span[:s]
     assert first_span[:t] == first_span[:s]
@@ -97,18 +91,15 @@ class DalliTest < Minitest::Test
 
     assert result.is_a?(Integer)
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
 
-    # Excon validation
-    assert_equal 2, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
-    assert_equal :dalli_test, first_span.name
-    assert_equal :memcache, second_span.name
+    validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
+
+    assert_equal :memcache, second_span[:n]
     assert_equal false, second_span.key?(:error)
     assert second_span[:p] == first_span[:s]
     assert first_span[:t] == first_span[:s]
@@ -134,18 +125,15 @@ class DalliTest < Minitest::Test
 
     assert_equal true, result
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
 
-    # Excon validation
-    assert_equal 2, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
-    assert_equal :dalli_test, first_span.name
-    assert_equal :memcache, second_span.name
+    validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
+
+    assert_equal :memcache, second_span[:n]
     assert_equal false, second_span.key?(:error)
     assert second_span[:p] == first_span[:s]
     assert first_span[:t] == first_span[:s]
@@ -171,18 +159,15 @@ class DalliTest < Minitest::Test
 
     assert_equal 1, result
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
 
-    # Excon validation
-    assert_equal 2, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
-    assert_equal :dalli_test, first_span.name
-    assert_equal :memcache, second_span.name
+    validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
+
+    assert_equal :memcache, second_span[:n]
     assert_equal false, second_span.key?(:error)
     assert second_span[:p] == first_span[:s]
     assert first_span[:t] == first_span[:s]
@@ -208,18 +193,15 @@ class DalliTest < Minitest::Test
 
     assert_equal 0, result
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
 
-    # Excon validation
-    assert_equal 2, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
-    assert_equal :dalli_test, first_span.name
-    assert_equal :memcache, second_span.name
+    validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
+
+    assert_equal :memcache, second_span[:n]
     assert_equal false, second_span.key?(:error)
     assert second_span[:p] == first_span[:s]
     assert first_span[:t] == first_span[:s]
@@ -244,18 +226,15 @@ class DalliTest < Minitest::Test
       @dc.get_multi(:one, :two, :three, :four)
     end
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
 
-    # Excon validation
-    assert_equal 2, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[1]
+    first_span = spans[1]
+    second_span = spans[0]
 
-    assert_equal :dalli_test, first_span.name
-    assert_equal :memcache, second_span.name
+    validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
+
+    assert_equal :memcache, second_span[:n]
     assert_equal false, second_span.key?(:error)
     assert second_span[:p] == first_span[:s]
     assert first_span[:t] == first_span[:s]
