@@ -17,10 +17,6 @@ module Instana
     #
     # @param [spans] - the trace to be added to the queue
     def add_spans(spans)
-      # Do a quick checkup on our background thread.
-      if ::Instana.agent.collect_thread.nil? || !::Instana.agent.collect_thread.alive?
-        ::Instana.agent.spawn_background_thread
-      end
       spans.each { |span| @queue.push(span)}
     end
 
@@ -28,9 +24,11 @@ module Instana
     #
     # @param [Trace] - the trace to be added to the queue
     def add_span(span)
-      # Do a quick checkup on our background thread.
-      if ::Instana.agent.collect_thread.nil? || !::Instana.agent.collect_thread.alive?
-        ::Instana.agent.spawn_background_thread
+      # Occasionally, do a checkup on our background thread.
+      if rand(10) > 8
+        if ::Instana.agent.collect_thread.nil? || !::Instana.agent.collect_thread.alive?
+          ::Instana.agent.spawn_background_thread
+        end
       end
       @queue.push(span)
     end
