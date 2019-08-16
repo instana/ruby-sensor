@@ -2,13 +2,15 @@ begin
   require 'oj'
 rescue LoadError => e
   # OJ is not available in JRuby
-  class Oj
-    def Oj.dump(*args)
-      args.first.to_json
-    end
+  module Instana
+    class Oj
+      def self.dump(*args)
+        args.first.to_json
+      end
 
-    def Oj.load(*args)
-      JSON.parse args.first
+      def self.load(*args)
+        JSON.parse args.first
+      end
     end
   end
 end

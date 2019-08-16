@@ -2,6 +2,7 @@ require 'test_helper'
 require './lib/oj_check'
 
 class AgentTest < Minitest::Test
+
   def test_agent_host_detection
     url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/"
     stub_request(:get, url)
@@ -136,5 +137,13 @@ class AgentTest < Minitest::Test
     docker_url = "http://#{::Instana.agent.instance_variable_get(:@default_gateway)}:#{::Instana.config[:agent_port]}/"
     stub_request(:get, docker_url).to_timeout
     assert_equal false, ::Instana.agent.host_agent_available?
+  end
+
+  def AgentTest.const_missing(const)
+    if const == :Oj
+      ::Instana::Oj
+    else
+      super
+    end
   end
 end
