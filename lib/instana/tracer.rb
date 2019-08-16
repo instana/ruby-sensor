@@ -82,13 +82,13 @@ module Instana
     #
     def log_start_or_continue(name, kvs = {}, incoming_context = nil)
       return if !::Instana.agent.ready? || !::Instana.config[:tracing][:enabled]
-      ::Instana.logger.debug "#{__method__} passed a block.  Use `start_or_continue` instead!" if block_given?
+      ::Instana.logger.debug { "#{__method__} passed a block.  Use `start_or_continue` instead!" } if block_given?
 
       # Handle the potential variations on `incoming_context`
       if incoming_context
         if incoming_context.is_a?(Hash)
           if !incoming_context.empty?
-            parent_context = SpanContext.new(incoming_context[:trace_id], incoming_context[:span_id])
+            parent_context = SpanContext.new(incoming_context[:trace_id], incoming_context[:span_id], incoming_context[:level])
           end
         else
           parent_context = incoming_context

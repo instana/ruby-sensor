@@ -176,7 +176,7 @@ module Instana
         @collect_timer.pause
         @announce_timer.pause
 
-        ::Instana.logger.debug { "#{Thread.current}: Agent exiting. Reporting final #{::Instana.processor.queue_count} trace(s)." }
+        ::Instana.logger.debug { "#{Thread.current}: Agent exiting. Reporting final spans (if any)." }
         ::Instana.processor.send
       end
     end
