@@ -42,14 +42,26 @@ module Instana
             name = "Default"
           end
         end
-        name ||= opts[:template]
-        name ||= opts[:file]
-        name = "Nothing" if opts[:nothing]
-        name = "Plaintext" if opts[:plain]
-        name = "JSON" if opts[:json]
-        name = "XML" if opts[:xml]
-        name = "Raw" if opts[:body]
-        name = "Javascript" if opts[:js]
+
+        return name if name
+
+        if opts.key?(:template)
+          name ||= opts[:template]
+        elsif opts.key?(:file)
+          name ||= opts[:file]
+        elsif opts.key?(:nothing)
+          name = "Nothing"
+        elsif opts.key?(:plain)
+          name = "Plaintext"
+        elsif opts.key?(:json)
+          name = "JSON"
+        elsif opts.key?(:xml)
+          name = "XML"
+        elsif opts.key?(:body)
+          name = "Raw"
+        elsif opts.key?(:js)
+          name = "Javascript"
+        end
         name
       end
     end
