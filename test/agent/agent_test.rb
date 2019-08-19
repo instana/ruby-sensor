@@ -3,7 +3,7 @@ require './lib/oj_check'
 
 class AgentTest < Minitest::Test
 
-  Oj = ::Instana::Oj
+  Oj = ::Instana::Oj unless defined?(Oj)
 
   def test_agent_host_detection
     url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/"
