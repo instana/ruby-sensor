@@ -1,4 +1,3 @@
-require 'oj'
 require 'net/http'
 require 'socket'
 require 'sys/proctable'
@@ -50,7 +49,7 @@ module Instana
       @thread_spawn_lock = Mutex.new
 
       # Detect platform flags
-      @is_linux = (RUBY_PLATFORM =~ /linux/i) ? true : false
+      @is_linux = (RbConfig::CONFIG['host_os'] =~ /linux/i) ? true : false
       @is_osx = (RUBY_PLATFORM =~ /darwin/i) ? true : false
 
       # In case we're running in Docker, have the default gateway available
@@ -232,7 +231,7 @@ module Instana
       Instana.logger.debug { e.backtrace.join("\r\n") }
       return false
     ensure
-      socket.close if socket
+      socket.close if socket && !socket.closed?
     end
 
     # Method to report metrics data to the host agent.
