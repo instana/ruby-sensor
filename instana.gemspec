@@ -20,6 +20,7 @@ Gem::Specification.new do |spec|
   spec.test_files    = Dir.glob("{test}/**/*.rb")
 
   spec.required_ruby_version = '>= 2.1'
+  spec.platform      = defined?(JRUBY_VERSION) ? 'java' : Gem::Platform::RUBY
 
   spec.licenses      = ['MIT']
 
