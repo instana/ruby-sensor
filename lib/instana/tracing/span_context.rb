@@ -11,7 +11,7 @@ module Instana
     # @param level [Integer] default 1
     # @param baggage [Hash] baggage applied to this trace
     #
-    def initialize(tid, sid, level = 1, baggage = nil)
+    def initialize(tid, sid, level = 1, baggage = {})
       @trace_id = tid
       @span_id = sid
       @level = level

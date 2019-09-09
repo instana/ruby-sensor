@@ -34,7 +34,13 @@ module Instana
         @data[:t] = parent_context.trace_id       # Trace ID
         @data[:s] = ::Instana::Util.generate_id # Span ID
         @data[:p] = parent_context.span_id        # Parent ID
-        @baggage = parent_ctx.baggage.dup
+
+        if parent_context.baggage
+          @baggage = parent_ctx.baggage.dup
+        else
+          @baggage = nil
+        end
+
         is_root = false
       end
 
@@ -355,6 +361,7 @@ module Instana
     # @return Value of the baggage item
     #
     def get_baggage_item(key)
+      return nil if @baggage.nil?
       @baggage[key]
     end
 
