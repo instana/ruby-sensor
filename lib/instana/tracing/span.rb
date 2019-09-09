@@ -38,7 +38,7 @@ module Instana
         if parent_context.baggage
           @baggage = parent_ctx.baggage.dup
         else
-          @baggage = {}
+          @baggage = nil
         end
 
         is_root = false
@@ -361,6 +361,7 @@ module Instana
     # @return Value of the baggage item
     #
     def get_baggage_item(key)
+      return nil if @baggage.nil?
       @baggage[key]
     end
 
