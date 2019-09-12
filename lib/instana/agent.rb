@@ -29,6 +29,8 @@ module Instana
     LOCALHOST = '127.0.0.1'.freeze
     MIME_JSON = 'application/json'.freeze
     DISCOVERY_PATH = 'com.instana.plugin.ruby.discovery'.freeze
+    METRICS_PATH = "com.instana.plugin.ruby.%s"
+    TRACES_PATH = "com.instana.plugin.ruby/traces.%s"
 
     def initialize
       # Supported two states (unannounced & announced)
@@ -44,6 +46,7 @@ module Instana
       # Two timers, one for each state (unannounced & announced)
       @timers = ::Timers::Group.new
       @announce_timer = nil
+      @pending_timer = nil
       @collect_timer = nil
 
       @thread_spawn_lock = Mutex.new
@@ -111,12 +114,28 @@ module Instana
       # The announce timer
       # We attempt to announce this ruby sensor to the host agent.
       # In case of failure, we try again in 30 seconds.
-      @announce_timer = @timers.every(30) do
+      @announce_timer = @timers.now_and_every(30) do
         if @state == :unannounced
           if host_agent_available? && announce_sensor
             transition_to(:announced)
-            ::Instana.logger.info "Host agent available. We're in business. (#{@state} pid:#{Process.pid} #{@process[:name]})"
+            ::Instana.logger.debug "Announce successful.  Waiting on ready. (#{@state} pid:#{Process.pid} #{@process[:name]})"
           end
+        end
+      end
+
+      # The pending timer
+      # Handles the time between successful announce and when the host agent METRICS_PATH and TRACES_PATH
+      # no longer return 404s and are truly ready to accept data.
+      @pending_timer = @timers.now_and_every(1) do
+        path = sprintf(METRICS_PATH, @process[:report_pid])
+        uri = URI.parse("http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/#{path}")
+        req = Net::HTTP::Post.new(uri)
+        req.body = Oj.dump({}, OJ_OPTIONS)
+
+        response = make_host_agent_request(req)
+        if response && (response.code.to_i == 200)
+          transition_to(:ready)
+          ::Instana.logger.info "Host agent available. We're in business. (#{@state} pid:#{Process.pid} #{@process[:name]})"
         end
       end
 
@@ -129,7 +148,7 @@ module Instana
         # then we just skip.
         unless (Time.now - @last_collect_run) < ::Instana.config[:collector][:interval]
           @last_collect_run = Time.now
-          if @state == :announced
+          if @state == :ready
             if !::Instana.collector.collect_and_report
               # If report has been failing for more than 1 minute,
               # fall back to unannounced state
@@ -157,10 +176,16 @@ module Instana
 
       while true
         if @state == :unannounced
-          @collect_timer.pause
           @announce_timer.resume
-        else
+          @pending_timer.pause
+          @collect_timer.pause
+        elsif @state == :announced
           @announce_timer.pause
+          @pending_timer.resume
+          @collect_timer.pause
+        elsif @state == :ready
+          @announce_timer.pause
+          @pending_timer.pause
           @collect_timer.resume
         end
         @timers.wait
@@ -169,11 +194,12 @@ module Instana
       ::Instana.logger.warn { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
       ::Instana.logger.debug { e.backtrace.join("\r\n") }
     ensure
-      if @state == :announced
+      if @state == :ready
         # Pause the timers so they don't fire while we are
         # reporting traces
-        @collect_timer.pause
         @announce_timer.pause
+        @pending_timer.pause
+        @collect_timer.pause
 
         ::Instana.logger.debug { "#{Thread.current}: Agent exiting. Reporting final spans (if any)." }
         ::Instana.processor.send
@@ -246,7 +272,7 @@ module Instana
         return false
       end
 
-      path = "com.instana.plugin.ruby.#{@process[:report_pid]}"
+      path = sprintf(METRICS_PATH, @process[:report_pid])
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{path}")
       req = Net::HTTP::Post.new(uri)
 
@@ -274,7 +300,7 @@ module Instana
 
     # Accept and report spans to the host agent.
     #
-    # @param traces [Array] An array of [Span]
+    # @param spans [Array] An array of [Span]
     # @return [Boolean]
     #
     def report_spans(spans)
@@ -285,7 +311,7 @@ module Instana
         return false
       end
 
-      path = "com.instana.plugin.ruby/traces.#{@process[:report_pid]}"
+      path = sprintf(TRACES_PATH, @process[:report_pid])
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{path}")
       req = Net::HTTP::Post.new(uri)
 
@@ -315,15 +341,7 @@ module Instana
       @discovered ||= run_discovery
 
       if @discovered
-        # Try default location or manually configured (if so)
-        uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/")
-        req = Net::HTTP::Get.new(uri)
-
-        response = make_host_agent_request(req)
-
-        if response && (response.code.to_i == 200)
-          return true
-        end
+        return true
       end
       false
     rescue => e
@@ -390,22 +408,26 @@ module Instana
     def transition_to(state)
       ::Instana.logger.debug("Transitioning to #{state}")
       case state
+      when :ready
+        # announced
+        @state = :ready
+
+        # Reset the entity timer
+        @entity_last_seen = Time.now
       when :announced
         # announce successful; set state
         @state = :announced
 
         # Reset the entity timer
         @entity_last_seen = Time.now
-
       when :unannounced
         @state = :unannounced
         # Reset our HTTP client
         @httpclient = nil
-
       else
         ::Instana.logger.debug "Uknown agent state: #{state}"
       end
-      ::Instana.collector.reset_timer!
+      ::Instana.collector.reset_snapshot_timer!
       true
     end
 

@@ -28,11 +28,8 @@ module Instana
       # Enable/disable tracing (default: enabled)
       @config[:tracing] = { :enabled => true }
 
-      if ENV.key?('INSTANA_DEBUG')
-        @config[:collector] = { :enabled => true, :interval => 3 }
-      else
-        @config[:collector] = { :enabled => true, :interval => 1 }
-      end
+      # Collector interval
+      @config[:collector] = { :enabled => true, :interval => 1 }
 
       # EUM Related
       @config[:eum_api_key] = nil
