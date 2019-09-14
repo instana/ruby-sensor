@@ -4,10 +4,10 @@ require 'rack'
 require 'rack/builder'
 require 'rack/handler/puma'
 require 'net/http'
-require "benchmark"
 require "cgi"
 Bundler.require(:default)
 require "instana/rack"
+require 'ruby-prof'
 
 Thread.new do
   app = Rack::Builder.new {
@@ -51,35 +51,42 @@ puts ""
 puts "Waiting on successful announce to host agent..."
 puts ""
 
+#RubyProf.measure_mode = RubyProf::WALL_TIME
+#RubyProf.measure_mode = RubyProf::PROCESS_TIME
+RubyProf.measure_mode = RubyProf::ALLOCATIONS
+#RubyProf.measure_mode = RubyProf::MEMORY
+
 while !::Instana.agent.ready? do
   sleep 2
 end
 
-puts "Starting benchmarks"
-Benchmark.bm do |x|
+puts "Starting 10k Traces..."
 
-  uri = URI.parse("http://127.0.0.1:7011/")
-  ::Net::HTTP.start(uri.host, uri.port) do |hc|
-    x.report("vanilla") {
-      1_000.times {
-        req = Net::HTTP::Get.new(uri.request_uri)
-        hc.request(req)
-      }
-    }
-  end
+# uri = URI.parse("http://127.0.0.1:7011/")
+# ::Net::HTTP.start(uri.host, uri.port) do |hc|
+#   x.report("vanilla") {
+#     10_000.times {
+#       req = Net::HTTP::Get.new(uri.request_uri)
+#       hc.request(req)
+#     }
+#   }
+# end
 
-  uri = URI.parse("http://127.0.0.1:7012/")
-  ::Net::HTTP.start(uri.host, uri.port) do |hc|
-    x.report("traced ") {
-      1_000.times {
+uri = URI.parse("http://127.0.0.1:7012/")
+result = RubyProf.profile do
+  1.times {
+    ::Instana.tracer.start_or_continue_trace(:job, {:kind => :entry}) do
+      ::Net::HTTP.start(uri.host, uri.port) do |hc|
         ::Instana.tracer.start_or_continue_trace(:rack_call) do
           req = Net::HTTP::Get.new(uri.request_uri)
           hc.request(req)
         end
-      }
-    }
-  end
+      end
+    end
+  }
 end
 
+puts "Done - displaying results..."
 
-sleep 10
+printer = RubyProf::FlatPrinter.new(result)
+printer.print(STDOUT, {})
