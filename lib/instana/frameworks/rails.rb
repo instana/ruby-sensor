@@ -8,7 +8,7 @@ if defined?(::Rails)
       ::Instana.logger = ::Rails.logger if ::Rails.logger
 
       if ::Instana.config[:tracing][:enabled]
-        ::Instana.logger.info "Instrumenting Rack"
+        ::Instana.logger.debug "Instrumenting Rack"
         ::Rails.configuration.middleware.insert 0, ::Instana::Rack
       else
         ::Instana.logger.info "Rack: Tracing disabled via config.  Not enabling middleware."
@@ -22,7 +22,7 @@ if defined?(::Rails)
           ::Instana.logger = ::Rails.logger if ::Rails.logger
 
           if ::Instana.config[:tracing][:enabled]
-            ::Instana.logger.info "Instrumenting Rack"
+            ::Instana.logger.debug "Instrumenting Rack"
             app.config.middleware.insert 0, ::Instana::Rack
           else
             ::Instana.logger.info "Rack: Tracing disabled via config.  Not enabling middleware."

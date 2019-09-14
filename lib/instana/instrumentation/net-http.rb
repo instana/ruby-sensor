@@ -58,7 +58,7 @@ if defined?(::Net::HTTP) && ::Instana.config[:nethttp][:enabled]
       ::Instana.tracer.log_exit(:'net-http', kv_payload) unless do_skip
     end
 
-    Instana.logger.info "Instrumenting Net::HTTP"
+    ::Instana.logger.debug "Instrumenting Net::HTTP"
 
     alias request_without_instana request
     alias request request_with_instana

@@ -30,7 +30,7 @@ group :development do
       gem 'byebug', '< 9.1.0', :platform  =>  [:mri_19, :mri_20]
       gem 'pry-byebug', :platform  =>  [:mri_19, :mri_20]
     else
-      gem 'pry-byebug', :platform  =>  [:mri_19, :mri_20]
+      gem 'pry-byebug', :platform  =>  :ruby
     end
   else
     gem 'pry', '0.9.12.4'

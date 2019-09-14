@@ -44,7 +44,7 @@ if defined?(::Redis) && ::Instana.config[:redis][:enabled]
       ::Instana.tracer.log_exit(:redis, {})
     end
 
-    ::Instana.logger.info "Instrumenting Redis"
+    ::Instana.logger.debug "Instrumenting Redis"
 
     alias call_without_instana call
     alias call call_with_instana

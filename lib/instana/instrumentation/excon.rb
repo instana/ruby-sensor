@@ -68,7 +68,7 @@ if defined?(::Excon) && ::Instana.config[:excon][:enabled]
     end
   end
 
-  ::Instana.logger.info "Instrumenting Excon"
+  ::Instana.logger.debug "Instrumenting Excon"
   ::Excon.defaults[:middlewares].unshift(::Instana::Instrumentation::Excon)
 end
 

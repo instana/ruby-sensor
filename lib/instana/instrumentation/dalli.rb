@@ -72,7 +72,7 @@ module Instana
 end
 
 if defined?(::Dalli) && ::Instana.config[:dalli][:enabled]
-  ::Instana.logger.info "Instrumenting Dalli"
+  ::Instana.logger.debug "Instrumenting Dalli"
   ::Dalli::Client.send(:include, ::Instana::Instrumentation::Dalli)
   ::Dalli::Server.send(:include, ::Instana::Instrumentation::DalliServer)
 end

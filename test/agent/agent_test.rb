@@ -5,6 +5,11 @@ class AgentTest < Minitest::Test
 
   Oj = ::Instana::Oj unless defined?(Oj)
 
+  def teardown
+    WebMock.reset!
+    ::Instana.agent.instance_variable_set(:@discovered, nil)
+  end
+
   def test_agent_host_detection
     url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/"
     stub_request(:get, url)
@@ -28,6 +33,7 @@ class AgentTest < Minitest::Test
     docker_url = "http://#{::Instana.agent.instance_variable_get(:@default_gateway)}:#{::Instana.config[:agent_port]}/"
     stub_request(:get, url).to_raise(Errno::ECONNREFUSED)
     stub_request(:get, docker_url).to_raise(Errno::ECONNREFUSED)
+
     discovered = ::Instana.agent.run_discovery
 
     assert_equal nil, discovered
@@ -134,10 +140,9 @@ class AgentTest < Minitest::Test
     discovery[:agent_port] = ::Instana.config[:agent_port]
     ::Instana.agent.instance_variable_set(:@discovered, discovery)
 
-    localhost_url = "http://#{::Instana::Agent::LOCALHOST}:#{::Instana.config[:agent_port]}/"
-    stub_request(:get, localhost_url).to_timeout
-    docker_url = "http://#{::Instana.agent.instance_variable_get(:@default_gateway)}:#{::Instana.config[:agent_port]}/"
-    stub_request(:get, docker_url).to_timeout
-    assert_equal false, ::Instana.agent.host_agent_available?
+    localhost_url = "http://#{::Instana::Agent::LOCALHOST}:#{::Instana.config[:agent_port]}/com.instana.plugin.ruby.discovery"
+    stub_request(:any, localhost_url).to_timeout
+
+    assert_equal false, ::Instana.agent.announce_sensor
   end
 end

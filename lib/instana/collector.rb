@@ -21,7 +21,7 @@ module Instana
 
     # Register an individual collector.
     #
-    # @param [Object] the class of the collector to register
+    # @param [Object] klass of the collector to register
     #
     def register(klass)
       ::Instana.logger.debug "Adding #{klass} to collectors..."
@@ -30,9 +30,9 @@ module Instana
 
     # Resets the timer on when to send process snapshot data.
     #
-    def reset_timer!
+    def reset_snapshot_timer!
       # Set last snapshot to 10 minutes ago
-      # so we send a snapshot on first report
+      # so that we send a snapshot on first report
       @last_snapshot = Time.now - 601
     end
 
