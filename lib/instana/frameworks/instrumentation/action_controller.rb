@@ -163,7 +163,7 @@ module Instana
 end
 
 if defined?(::ActionController) && ::Instana.config[:action_controller][:enabled] && ::ActionPack::VERSION::MAJOR >= 2
-  ::Instana.logger.info "Instrumenting ActionController"
+  ::Instana.logger.debug "Instrumenting ActionController"
   if ActionPack::VERSION::MAJOR >= 5
     ::ActionController::Base.send(:prepend, ::Instana::Instrumentation::ActionController)
   else
@@ -178,6 +178,6 @@ end
 # We allow ActionController::API instrumentation in version of Ruby on Rails 3 and higher.
 #
 if defined?(::ActionController::API) && ::Instana.config[:action_controller][:enabled] && ::ActionPack::VERSION::MAJOR >= 3
-  ::Instana.logger.info "Instrumenting ActionController API"
+  ::Instana.logger.debug "Instrumenting ActionController API"
   ::ActionController::API.send(:prepend, ::Instana::Instrumentation::ActionController)
 end

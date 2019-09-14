@@ -38,6 +38,6 @@ module Instana
 end
 
 if defined?(::ActionView) && ::Instana.config[:action_view][:enabled] && ::ActionPack::VERSION::STRING >= '3.1'
-  ::Instana.logger.info "Instrumenting ActionView"
+  ::Instana.logger.debug "Instrumenting ActionView"
   ::ActionView::PartialRenderer.send(:include, ::Instana::Instrumentation::ActionViewRenderer)
 end
