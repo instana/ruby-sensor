@@ -170,7 +170,7 @@ module Instana
     def start
       if !host_agent_available?
         if !ENV.key?("INSTANA_QUIET")
-          ::Instana.logger.warn "Host agent not available.  Will retry periodically. (Set env INSTANA_QUIET=1 to shut these messages off)"
+          ::Instana.logger.info "Instana host agent not available.  Will retry periodically. (Set env INSTANA_QUIET=1 to shut these messages off)"
         end
       end
 
