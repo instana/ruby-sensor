@@ -105,6 +105,38 @@ class TracerTest < Minitest::Test
     assert_equal sdk_span[:data][:sdk][:custom][:tags][:sub_two], 2
   end
 
+  def test_custom_complex_trace_block
+    clear_all!
+    ::Instana.tracer.start_or_continue_trace(:root_span, {:one => 1}) do
+      sleep 0.2
+      ::Instana.tracer.trace(:sub_span, {:sub_two => 2}) do
+        sleep 0.2
+      end
+    end
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
+
+    root_span = find_first_span_by_name(spans, :root_span)
+    sub_span = find_first_span_by_name(spans, :sub_span)
+
+    assert_equal root_span[:n], :sdk
+    assert_equal root_span[:data][:sdk][:name], :root_span
+    assert_equal root_span[:data][:sdk][:type], :entry
+    assert_equal root_span[:k], 1
+    assert_equal root_span[:p], nil
+    assert_equal root_span[:t], root_span[:s]
+    assert_equal root_span[:data][:sdk][:custom][:tags][:one], 1
+
+    assert_equal sub_span[:n], :sdk
+    assert_equal sub_span[:data][:sdk][:name], :sub_span
+    assert_equal sub_span[:data][:sdk][:type], :intermediate
+    assert_equal sub_span[:k], 3
+    assert_equal sub_span[:p], root_span[:s]
+    assert_equal sub_span[:t], root_span[:t]
+    assert_equal sub_span[:data][:sdk][:custom][:tags][:sub_two], 2
+  end
+
   def test_basic_low_level_tracing
     clear_all!
 
@@ -189,8 +221,8 @@ class TracerTest < Minitest::Test
 
     assert_equal sdk_span[:n], :sdk
     assert_equal sdk_span[:data][:sdk][:name], :test_trace
-    assert_equal sdk_span[:data][:sdk][:type], :intermediate
-    assert_equal sdk_span[:k], 3
+    assert_equal sdk_span[:data][:sdk][:type], :entry
+    assert_equal sdk_span[:k], 1
     assert_equal sdk_span[:data][:sdk][:custom][:tags][:one], 1
     assert_equal sdk_span[:error], true
     assert_equal sdk_span[:ec], 1
@@ -211,8 +243,8 @@ class TracerTest < Minitest::Test
 
     assert_equal sdk_span[:n], :sdk
     assert_equal sdk_span[:data][:sdk][:name], :test_trace
-    assert_equal sdk_span[:data][:sdk][:type], :intermediate
-    assert_equal sdk_span[:k], 3
+    assert_equal sdk_span[:data][:sdk][:type], :entry
+    assert_equal sdk_span[:k], 1
     assert_equal sdk_span[:data][:sdk][:custom][:tags][:one], 1
     assert_equal sdk_span[:data][:sdk][:custom][:tags][:info_logged], 1
     assert_equal sdk_span[:data][:sdk][:custom][:tags][:close_one], 1

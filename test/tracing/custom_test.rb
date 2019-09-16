@@ -31,6 +31,10 @@ class CustomTracingTest < Minitest::Test
     assert_equal :custom_trace, first_span[:data][:sdk][:name]
     assert_equal 1, first_span[:data][:sdk][:custom][:tags][:one]
 
+    # Custom tracing root spans should default to entry type
+    assert_equal 1, first_span[:k]
+    assert_equal :entry, first_span[:data][:sdk][:type]
+
     assert first_span.key?(:f)
     assert first_span[:f].key?(:e)
     assert first_span[:f].key?(:h)
