@@ -5,6 +5,8 @@ module AgentHooks
   def after_fork
     ::Instana.logger.debug "after_fork hook called. Falling back to unannounced state and spawning a new background agent thread."
 
+    @timers.cancel
+
     # Reseed the random number generator for this
     # new thread.
     srand
@@ -22,6 +24,8 @@ module AgentHooks
 
   def after_resque_fork
     ::Instana.logger.debug "after_resque_fork hook called. pid/ppid: #{Process.pid}/#{Process.ppid}"
+
+    @timers.cancel
 
     # Reseed the random number generator for this
     # new thread.
