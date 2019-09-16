@@ -30,7 +30,7 @@ class DalliTest < Minitest::Test
     first_span = spans[1]
     second_span = spans[0]
 
-    validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
+    validate_sdk_span(first_span, {:name => :dalli_test, :type => :entry})
 
     assert_equal :memcache, second_span[:n]
     assert_equal false, second_span.key?(:error)
@@ -63,7 +63,7 @@ class DalliTest < Minitest::Test
     first_span = spans[1]
     second_span = spans[0]
 
-    validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
+    validate_sdk_span(first_span, {:name => :dalli_test, :type => :entry})
 
     assert_equal :memcache, second_span[:n]
     assert_equal false, second_span.key?(:error)
@@ -97,7 +97,7 @@ class DalliTest < Minitest::Test
     first_span = spans[1]
     second_span = spans[0]
 
-    validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
+    validate_sdk_span(first_span, {:name => :dalli_test, :type => :entry})
 
     assert_equal :memcache, second_span[:n]
     assert_equal false, second_span.key?(:error)
@@ -131,7 +131,7 @@ class DalliTest < Minitest::Test
     first_span = spans[1]
     second_span = spans[0]
 
-    validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
+    validate_sdk_span(first_span, {:name => :dalli_test, :type => :entry})
 
     assert_equal :memcache, second_span[:n]
     assert_equal false, second_span.key?(:error)
@@ -165,7 +165,7 @@ class DalliTest < Minitest::Test
     first_span = spans[1]
     second_span = spans[0]
 
-    validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
+    validate_sdk_span(first_span, {:name => :dalli_test, :type => :entry})
 
     assert_equal :memcache, second_span[:n]
     assert_equal false, second_span.key?(:error)
@@ -199,7 +199,7 @@ class DalliTest < Minitest::Test
     first_span = spans[1]
     second_span = spans[0]
 
-    validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
+    validate_sdk_span(first_span, {:name => :dalli_test, :type => :entry})
 
     assert_equal :memcache, second_span[:n]
     assert_equal false, second_span.key?(:error)
@@ -232,7 +232,7 @@ class DalliTest < Minitest::Test
     first_span = spans[1]
     second_span = spans[0]
 
-    validate_sdk_span(first_span, {:name => :dalli_test, :type => :intermediate})
+    validate_sdk_span(first_span, {:name => :dalli_test, :type => :entry})
 
     assert_equal :memcache, second_span[:n]
     assert_equal false, second_span.key?(:error)

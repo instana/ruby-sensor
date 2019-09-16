@@ -26,6 +26,8 @@ module Instana
     attr_accessor :thread_spawn_lock
     attr_accessor :extra_headers
 
+    attr_accessor :testmode
+
     LOCALHOST = '127.0.0.1'.freeze
     MIME_JSON = 'application/json'.freeze
     DISCOVERY_PATH = 'com.instana.plugin.ruby.discovery'.freeze
@@ -33,6 +35,8 @@ module Instana
     TRACES_PATH = "com.instana.plugin.ruby/traces.%s"
 
     def initialize
+      @testmode = ENV.key?('INSTANA_TEST')
+
       # Supported two states (unannounced & announced)
       @state = :unannounced
 
@@ -224,7 +228,7 @@ module Instana
       announce_payload[:name] = @process[:name]
       announce_payload[:args] = @process[:arguments]
 
-      if @is_linux && !ENV.key?('INSTANA_TEST')
+      if @is_linux && !@testmode
         # We create an open socket to the host agent in case we are running in a container
         # and the real pid needs to be detected.
         socket = TCPSocket.new @discovered[:agent_host], @discovered[:agent_port]
@@ -267,8 +271,8 @@ module Instana
     # @return [Boolean] true on success, false otherwise
     #
     def report_metrics(payload)
-      unless @discovered
-        ::Instana.logger.debug("#{__method__} called but discovery hasn't run yet!")
+      if @state != :ready && !@testmode
+        ::Instana.logger.debug "report_metrics called but agent not in ready state."
         return false
       end
 
@@ -304,10 +308,8 @@ module Instana
     # @return [Boolean]
     #
     def report_spans(spans)
-      return unless @state == :announced
-
-      unless @discovered
-        ::Instana.logger.debug("#{__method__} called but discovery hasn't run yet!")
+      if @state != :ready && !@testmode
+        ::Instana.logger.debug "report_spans called but agent not in ready state."
         return false
       end
 
@@ -346,7 +348,7 @@ module Instana
       false
     rescue => e
       Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
-      Instana.logger.debug { e.backtrace.join("\r\n") } unless ENV.key?('INSTANA_TEST')
+      Instana.logger.debug { e.backtrace.join("\r\n") } unless @testmode
       return false
     end
 
@@ -456,7 +458,7 @@ module Instana
       return nil
     rescue => e
       Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
-      Instana.logger.debug { e.backtrace.join("\r\n") } unless ENV.key?('INSTANA_TEST')
+      Instana.logger.debug { e.backtrace.join("\r\n") } unless @testmode
       return nil
     end
   end

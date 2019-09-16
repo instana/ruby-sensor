@@ -108,12 +108,12 @@ end
 if defined?(::Resque) && RUBY_VERSION >= '1.9.3'
 
   if ::Instana.config[:'resque-client'][:enabled]
-    ::Instana.logger.info 'Instrumenting Resque Client'
+    ::Instana.logger.debug 'Instrumenting Resque Client'
     ::Instana::Util.send_include(::Resque,         ::Instana::Instrumentation::ResqueClient)
   end
 
   if ::Instana.config[:'resque-worker'][:enabled]
-    ::Instana.logger.info 'Instrumenting Resque Worker'
+    ::Instana.logger.debug 'Instrumenting Resque Worker'
 
     ::Instana::Util.send_include(::Resque::Worker, ::Instana::Instrumentation::ResqueWorker)
     ::Instana::Util.send_include(::Resque::Job,    ::Instana::Instrumentation::ResqueJob)

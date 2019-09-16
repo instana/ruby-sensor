@@ -29,7 +29,7 @@ class ExconTest < Minitest::Test
     excon_span = find_first_span_by_name(spans, :excon)
     rack_span = find_first_span_by_name(spans, :rack)
 
-    validate_sdk_span(sdk_span, {:name => :'excon-test', :type => :intermediate})
+    validate_sdk_span(sdk_span, {:name => :'excon-test', :type => :entry})
 
     # data keys/values
     refute_nil excon_span.key?(:data)
@@ -72,7 +72,7 @@ class ExconTest < Minitest::Test
     excon_span = find_first_span_by_name(spans, :excon)
     sdk_span = find_first_span_by_name(spans, :'excon-test')
 
-    validate_sdk_span(sdk_span, {:name => :'excon-test', :type => :intermediate})
+    validate_sdk_span(sdk_span, {:name => :'excon-test', :type => :entry})
 
     assert_equal sdk_span[:s], excon_span[:p]
     assert_equal excon_span[:s], rack_span[:p]
@@ -111,7 +111,7 @@ class ExconTest < Minitest::Test
     excon_spans = find_spans_by_name(spans, :excon)
     sdk_span = find_first_span_by_name(spans, :'excon-test')
 
-    validate_sdk_span(sdk_span, {:name => :'excon-test', :type => :intermediate})
+    validate_sdk_span(sdk_span, {:name => :'excon-test', :type => :entry})
 
     assert_equal 3, rack_spans.length
     assert_equal 3, excon_spans.length

@@ -22,7 +22,7 @@ module Instana
         id = ::Instana::Util.generate_id
         @data[:t] = id                    # Trace ID
         @data[:s] = id                    # Span ID
-        is_root = true
+        @is_root = true
       else
         if parent_ctx.is_a?(::Instana::Span)
           @parent = parent_ctx
@@ -41,7 +41,7 @@ module Instana
           @baggage = nil
         end
 
-        is_root = false
+        @is_root = false
       end
 
       @data[:data] = {}
@@ -143,9 +143,17 @@ module Instana
     #
     def configure_custom(name)
       @data[:n] = :sdk
-      @data[:k] = 3
-      @data[:data] = { :sdk => { :name => name.to_sym, :type => :intermediate } }
+      @data[:data] = { :sdk => { :name => name.to_sym } }
       @data[:data][:sdk][:custom] = { :tags => {}, :logs => {} }
+
+      if @is_root
+        # For custom root spans (via SDK or opentracing), default to entry type
+        @data[:k] = 1
+        @data[:data][:sdk][:type] = :entry
+      else
+        @data[:k] = 3
+        @data[:data][:sdk][:type] = :intermediate
+      end
       self
     end
 
@@ -300,10 +308,10 @@ module Instana
 
         if key.to_sym == :'span.kind'
           case value.to_sym
-          when :server, :consumer
+          when :entry, :server, :consumer
             @data[:data][:sdk][:type] = :entry
             @data[:k] = 1
-          when :client, :producer
+          when :exit, :client, :producer
             @data[:data][:sdk][:type] = :exit
             @data[:k] = 2
           else
