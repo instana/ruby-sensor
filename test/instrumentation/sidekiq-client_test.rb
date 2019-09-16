@@ -72,7 +72,7 @@ class SidekiqClientTest < Minitest::Test
     second_span = spans[0]
 
     assert_equal first_span[:s], second_span[:p]
-    validate_sdk_span(first_span, {:name => :sidekiqtests, :type => :intermediate})
+    validate_sdk_span(first_span, {:name => :sidekiqtests, :type => :entry})
 
     assert_equal :'sidekiq-client', second_span[:n]
     assert_equal 'some_random_queue', second_span[:data][:'sidekiq-client'][:queue]
@@ -89,7 +89,7 @@ class SidekiqClientTest < Minitest::Test
     second_span = spans[0]
 
     assert_equal first_span[:s], second_span[:p]
-    validate_sdk_span(first_span, {:name => :sidekiqtests, :type => :intermediate})
+    validate_sdk_span(first_span, {:name => :sidekiqtests, :type => :entry})
 
     assert_equal :'sidekiq-client', second_span[:n]
     assert_equal true, second_span[:error]

@@ -25,7 +25,7 @@ class RestClientTest < Minitest::Test
     rest_span = find_first_span_by_name(spans, :'rest-client')
     net_span = find_first_span_by_name(spans, :'net-http')
 
-    validate_sdk_span(sdk_span, {:name => :'restclient-test', :type => :intermediate})
+    validate_sdk_span(sdk_span, {:name => :'restclient-test', :type => :entry})
     validate_sdk_span(rest_span, {:name => :'rest-client', :type => :intermediate})
 
     # Span name validation
