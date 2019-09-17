@@ -36,13 +36,6 @@ if defined?(::Net::HTTP) && ::Instana.config[:nethttp][:enabled]
       # The core call
       response = request_without_instana(*args, &block)
 
-      # Debug only check: Pickup response headers; convert back to base 10 integer and validate
-      if ENV.key?('INSTANA_DEBUG') && response.key?('X-Instana-T')
-        if ::Instana.tracer.trace_id != ::Instana::Util.header_to_id(response.header['X-Instana-T'])
-          ::Instana.logger.debug "#{Thread.current}: Trace ID mismatch on net/http response! ours: #{::Instana.tracer.trace_id} theirs: #{their_trace_id}"
-        end
-      end
-
       kv_payload[:http][:status] = response.code
       if response.code.to_i.between?(500, 511)
         # Because of the 5xx response, we flag this span as errored but

@@ -114,6 +114,10 @@ module Instana
 
     # Sets up periodic timers and starts the agent in a background thread.
     #
+    # There are three possible states for the agent:
+    #   - :unannounced
+    #   - :announced
+    #   - :ready
     def setup
       # The announce timer
       # We attempt to announce this ruby sensor to the host agent.
@@ -199,8 +203,7 @@ module Instana
       ::Instana.logger.debug { e.backtrace.join("\r\n") }
     ensure
       if @state == :ready
-        # Pause the timers so they don't fire while we are
-        # reporting traces
+        # Pause the timers so they don't fire while we are reporting traces
         @announce_timer.pause
         @pending_timer.pause
         @collect_timer.pause
