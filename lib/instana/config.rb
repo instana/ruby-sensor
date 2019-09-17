@@ -4,11 +4,13 @@ module Instana
     def initialize
       @config = {}
       if ENV.key?('INSTANA_AGENT_HOST')
+        ::Instana.logger.debug "Using custom agent host location specified in INSTANA_AGENT_HOST (#{ENV['INSTANA_AGENT_HOST']})"
         @config[:agent_host] = ENV['INSTANA_AGENT_HOST']
       else
         @config[:agent_host] = '127.0.0.1'
       end
       if ENV.key?('INSTANA_AGENT_PORT')
+        ::Instana.logger.debug "Using custom agent port specified in INSTANA_AGENT_PORT (#{ENV['INSTANA_AGENT_PORT']})"
         @config[:agent_port] = ENV['INSTANA_AGENT_PORT']
       else
         @config[:agent_port] = 42699
