@@ -59,32 +59,11 @@ This Ruby gem provides a simple API for tracing and also supports [OpenTracing](
 
 You can find more documentation covering supported components and minimum versions in the Instana [documentation portal](https://docs.instana.io/ecosystem/ruby/).
 
-## Want End User Monitoring?
+# Want End User Monitoring (EUM)?
 
-Instana provides deep end user monitoring that links server side traces with browser events.  
+Instana provides deep end user monitoring that links server side traces with browser events to give you a complete view from server to browser.
 
-For Ruby templates and views, get your EUM API key from your Instana dashboard and you can call `::Instana::Helpers.eum_snippet('example_api_key_string')` from within your layout file.  This will output
-a small javascript snippet of code to instrument browser events.  It's based on [Weasel](https://github.com/instana/weasel).  Check it out.
-
-As an example for Haml, you could do the following:
-
-```ruby
-%html{ :lang => "en", :xmlns => "http://www.w3.org/1999/xhtml" }
-  %head
-    - if user_signed_in?
-      = raw ::Instana::Helpers.eum_snippet('example_api_key_string', :username => current_user.username)
-    - else
-      = raw ::Instana::Helpers.eum_snippet('example_api_key_string')
-  %body
-```
-Make sure to use the `raw` helper so the javascript isn't interpolated with escape strings.
-
-The optional second argument to `::Instana::Helpers.eum_snippet` is a hash of metadata key/values that will be reported along
-with the browser instrumentation.
-
-![Instana EUM example with metadata](https://s3.amazonaws.com/instana/Instana+Gameface+EUM+with+metadata+2016-12-22+at+15.32.01.png)
-
-See also the [End User Monitoring](https://docs.instana.io/products/website_monitoring/) in the Instana documentation portal.
+See the [End User Monitoring](/products/website_monitoring/#configuration) page for more information.
 
 ## Development
 
