@@ -27,6 +27,7 @@ Rake::TestTask.new(:test) do |t|
     when /libraries/
       t.test_files = FileList['test/instrumentation/*_test.rb',
                               'test/frameworks/cuba_test.rb',
+                              'test/frameworks/rack_test.rb',
                               'test/frameworks/roda_test.rb',
                               'test/frameworks/sinatra_test.rb']
     else

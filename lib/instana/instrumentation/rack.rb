@@ -28,8 +28,12 @@ module Instana
           # Headers are available in this format: HTTP_X_CAPTURE_THIS
           rack_header = 'HTTP_' + custom_header.upcase
           rack_header.tr!('-', '_')
+
           if env.key?(rack_header)
-            kvs["http.#{custom_header}"] = env[rack_header]
+            unless kvs[:http].key?(:header)
+              kvs[:http][:header] = {}
+            end
+            kvs[:http][:header][custom_header.to_sym] = env[rack_header]
           end
         }
       end
