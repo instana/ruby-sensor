@@ -316,6 +316,8 @@ module Instana
         return false
       end
 
+      ::Instana.logger.debug "Reporting #{spans.length} spans"
+
       path = sprintf(TRACES_PATH, @process[:report_pid])
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{path}")
       req = Net::HTTP::Post.new(uri)

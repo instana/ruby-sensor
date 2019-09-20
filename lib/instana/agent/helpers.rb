@@ -52,7 +52,7 @@ module AgentHelpers
       end
     end
 
-    @state == :ready
+    @state == :ready || @state == :announced
   rescue => e
     Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
     Instana.logger.debug { e.backtrace.join("\r\n") } unless ENV.key?('INSTANA_TEST')
