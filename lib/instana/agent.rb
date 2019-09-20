@@ -119,11 +119,15 @@ module Instana
     #   - :announced
     #   - :ready
     def setup
+      if ENV.key?('INSTANA_DISABLE')
+        ::Instana.logger.debug "Instana gem disabled via environment variable.  Going to sit in a corner..."
+      end
+
       # The announce timer
       # We attempt to announce this ruby sensor to the host agent.
       # In case of failure, we try again in 30 seconds.
       @announce_timer = @timers.now_and_every(30) do
-        if @state == :unannounced
+        if @state == :unannounced && !ENV.key?('INSTANA_DISABLE')
           if host_agent_available? && announce_sensor
             transition_to(:announced)
             ::Instana.logger.debug "Announce successful.  Waiting on ready. (#{@state} pid:#{Process.pid} #{@process[:name]})"
@@ -176,7 +180,7 @@ module Instana
     # called from an already initialized background thread.
     #
     def start
-      if !host_agent_available?
+      if !ENV.key?('INSTANA_DISABLE') && !host_agent_available?
         if !ENV.key?("INSTANA_QUIET")
           ::Instana.logger.info "Instana host agent not available.  Will retry periodically. (Set env INSTANA_QUIET=1 to shut these messages off)"
         end
