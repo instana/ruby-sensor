@@ -37,7 +37,7 @@ Gem::Specification.new do |spec|
 
   spec.add_runtime_dependency('sys-proctable', '>= 1.2.2')
   spec.add_runtime_dependency('get_process_mem', '>= 0.2.1')
-  spec.add_runtime_dependency('timers', '>= 4.0.0')
+  spec.add_runtime_dependency('timers', '>= 4.0.4')
   spec.add_runtime_dependency('oj', '>=3.0.11') unless RUBY_PLATFORM =~ /java/i
 
   # Indirect dependency
