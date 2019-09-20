@@ -164,4 +164,32 @@ class RackTest < Minitest::Test
 
     assert last_response.ok?
   end
+
+  def test_custom_headers_capture
+    clear_all!
+    ::Instana.config[:collect_backtraces] = true
+    ::Instana.agent.extra_headers = %w(X-Capture-This X-Capture-That)
+
+    get '/mrlobster', {}, { "HTTP_X_CAPTURE_THIS" => "ThereYouGo" }
+    assert last_response.ok?
+    assert_equal "ThereYouGo", last_request.env["HTTP_X_CAPTURE_THIS"]
+
+    spans = ::Instana.processor.queued_spans
+
+    # Span validation
+    assert_equal 1, spans.count
+    first_span = spans.first
+
+    assert first_span[:data][:http].key?(:header)
+    assert first_span[:data][:http][:header].key?(:"X-Capture-This")
+    assert !first_span[:data][:http][:header].key?(:"X-Capture-That")
+    assert_equal "ThereYouGo", first_span[:data][:http][:header][:"X-Capture-This"]
+
+    # Backtrace fingerprint validation
+    assert first_span.key?(:stack)
+    assert_equal 2, first_span[:stack].count
+    refute_nil first_span[:stack].first[:c].match(/instana\/instrumentation\/rack.rb/)
+
+    ::Instana.agent.extra_headers = nil
+  end
 end
