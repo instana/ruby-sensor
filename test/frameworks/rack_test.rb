@@ -46,6 +46,9 @@ class RackTest < Minitest::Test
     assert first_span.key?(:stack)
     assert_equal 2, first_span[:stack].count
     refute_nil first_span[:stack].first[:c].match(/instana\/instrumentation\/rack.rb/)
+
+    # Restore to default
+    ::Instana.config[:collect_backtraces] = false
   end
 
   def test_basic_get_with_custom_service_name
@@ -190,6 +193,8 @@ class RackTest < Minitest::Test
     assert_equal 2, first_span[:stack].count
     refute_nil first_span[:stack].first[:c].match(/instana\/instrumentation\/rack.rb/)
 
+    # Restore to default
+    ::Instana.config[:collect_backtraces] = false
     ::Instana.agent.extra_headers = nil
   end
 end
