@@ -16,9 +16,8 @@ module Instana
         @config[:agent_port] = 42699
       end
 
-      # Global on/off switch for prebuilt environments
-      # Setting this to false will disable this gem
-      # from doing anything.
+      # This option has been DEPRECATED. Use the INSTANA_DISABLE environment variable instead.
+      # https://docs.instana.io/ecosystem/ruby/configuration/
       @config[:enabled] = true
 
       # Enable/disable metrics globally or individually (default: all enabled)
