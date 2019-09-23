@@ -120,7 +120,7 @@ module Instana
     #   - :ready
     def setup
       if ENV.key?('INSTANA_DISABLE')
-        ::Instana.logger.debug "Instana gem disabled via environment variable (INSTANA_DISABLE).  Going to sit in a corner..."
+        ::Instana.logger.info "Instana gem disabled via environment variable (INSTANA_DISABLE).  Going to sit in a corner..."
       end
 
       # The announce timer
