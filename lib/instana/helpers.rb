@@ -7,6 +7,8 @@ module Instana
 
       # Returns a processed javascript snippet to be placed within the HEAD tag of an HTML page.
       #
+      # DEPRECATED: This method will be removed in a future version.
+      #
       def eum_snippet(api_key, kvs = {})
         return nil if !::Instana.tracer.tracing?
 
@@ -22,6 +24,8 @@ module Instana
 
       # Returns a processed javascript snippet to be placed within the HEAD tag of an HTML page.
       # This one is used for testing only
+      #
+      # DEPRECATED: This method will be removed in a future version.
       #
       def eum_test_snippet(api_key, kvs = {})
         return nil if !::Instana.tracer.tracing?
