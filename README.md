@@ -67,9 +67,9 @@ See the [End User Monitoring](/products/website_monitoring/#configuration) page 
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bundle exec rake console` for an interactive prompt that will allow you to experiment.
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `lib/instana/version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 
 ## Contributing
 
@@ -77,5 +77,5 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/instan
 
 ## More
 
-Want to instrument other languages?  See our [Nodejs instrumentation](https://github.com/instana/nodejs-sensor), [Go instrumentation](https://github.com/instana/golang-sensor) or [many other supported technologies](https://www.instana.com/supported-technologies/).
+Want to instrument other languages?  See our [Node.js](https://github.com/instana/nodejs-sensor), [Go](https://github.com/instana/golang-sensor), [Python](https://github.com/instana/python-sensor) repositories or [many other supported technologies](https://www.instana.com/supported-technologies/).
 
