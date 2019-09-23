@@ -250,4 +250,40 @@ class DalliTest < Minitest::Test
     assert second_span[:data][:memcache].key?(:hits)
     assert_equal 2, second_span[:data][:memcache][:hits]
   end
+
+  def test_get_error_logging
+    clear_all!
+
+    # Invalid/broken client not connected to a server
+    broken_dc = Dalli::Client.new('128.0.0.100:11222', :namespace => "instana_test", :expires_in => 1)
+
+    result = nil
+    begin
+      ::Instana.tracer.start_or_continue_trace(:dalli_test) do
+        result = broken_dc.get(:instana)
+      end
+    rescue
+    end
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
+
+    first_span = spans[1]
+    second_span = spans[0]
+
+    validate_sdk_span(first_span, {:name => :dalli_test, :type => :entry})
+
+    assert_equal :memcache, second_span[:n]
+    assert_equal true, second_span.key?(:error)
+    assert second_span[:p] == first_span[:s]
+    assert first_span[:t] == first_span[:s]
+    assert second_span[:data].key?(:memcache)
+    assert second_span[:data][:memcache].key?(:command)
+    assert_equal :get, second_span[:data][:memcache][:command]
+    assert second_span[:data][:memcache].key?(:key)
+    assert_equal :instana, second_span[:data][:memcache][:key]
+    assert second_span[:data][:memcache].key?(:namespace)
+    assert_equal 'instana_test', second_span[:data][:memcache][:namespace]
+    assert second_span[:data][:memcache].key?(:error)
+  end
 end
