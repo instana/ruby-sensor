@@ -45,15 +45,15 @@ Or install it yourself as:
 
 ## Usage
 
-The instana gem is a zero configuration tool that will automatically collect key metrics from your Ruby processes.  Just install and go.
+The instana gem is a zero configuration tool that will automatically collect key metrics and distributed traces from your Ruby processes.  Just install and go.
 
 ## Configuration
 
-Although the gem has no configuration required for out of the box metrics and tracing, components can be configured if needed.  See [Configuration.md](https://github.com/instana/ruby-sensor/blob/master/Configuration.md).
+Although the gem has no configuration required for out of the box metrics and tracing, components can be configured if needed.  See our [Configuration](https://docs.instana.io/ecosystem/ruby/configuration/) page.
 
 ## Tracing
 
-This Ruby gem provides a simple API for tracing and also supports [OpenTracing](http://opentracing.io/).  See [Tracing.md](https://github.com/instana/ruby-sensor/blob/master/Tracing.md) for details.
+This Ruby gem provides a simple API for tracing and also supports [OpenTracing](http://opentracing.io/).  See the [Ruby Tracing SDK](https://docs.instana.io/ecosystem/ruby/tracing-sdk/) and [OpenTracing](https://docs.instana.io/ecosystem/ruby/opentracing/) pages for details.
 
 ## Documentation
 
