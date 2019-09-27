@@ -48,7 +48,7 @@ module Instana
       @config[:dalli]              = { :enabled => true }
       @config[:excon]              = { :enabled => true }
       @config[:grpc]               = { :enabled => true }
-      @config[:nethttp]            = { :enabled => true }
+      @config[:nethttp]            = { :enabled => true, :name_ec2_instance_metadata => defined?(Aws), :ec2_instance_metadata_host => '169.254.170.2' }
       @config[:redis]              = { :enabled => true }
       @config[:'resque-client']    = { :enabled => true }
       @config[:'resque-worker']    = { :enabled => true }

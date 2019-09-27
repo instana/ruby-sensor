@@ -33,6 +33,13 @@ if defined?(::Net::HTTP) && ::Instana.config[:nethttp][:enabled]
         end
       end
 
+      if ::Instana.config[:nethttp][:name_ec2_instance_metadata]
+        if (request.uri || @address) == ::Instana.config[:nethttp][:ec2_instance_metadata_host]
+          kv_payload[:service] = {}
+          kv_payload[:service][:name] = 'ec2_instance_metadata'
+        end
+      end
+
       # The core call
       response = request_without_instana(*args, &block)
 

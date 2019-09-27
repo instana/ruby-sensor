@@ -157,4 +157,25 @@ class NetHTTPTest < Minitest::Test
 
     WebMock.disable_net_connect!
   end
+
+  def test_request_with_aws_metadata_service
+    clear_all!
+    WebMock.allow_net_connect!
+
+    ::Instana.config[:nethttp][:name_ec2_instance_metadata] = true
+    ::Instana.config[:nethttp][:ec2_instance_metadata_host] = '127.0.0.1'
+
+    response = nil
+    Instana.tracer.start_or_continue_trace('net-http-aws-test') do
+      http = Net::HTTP.new("127.0.0.1", 6511)
+      response = http.request(Net::HTTP::Get.new("/"))
+    end
+
+    spans = ::Instana.processor.queued_spans
+    http_span = find_first_span_by_name(spans, :'net-http')
+
+    assert_equal 'ec2_instance_metadata', http_span[:data][:service][:name]
+
+    WebMock.disable_net_connect!
+  end
 end
