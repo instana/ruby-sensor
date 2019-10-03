@@ -9,47 +9,147 @@ class ActiveRecordPgTest < Minitest::Test
   end
 
   def test_postgresql
-    # Make one call to warm up the Rails stack and allow it to load
-    # relations
-    Net::HTTP.get(URI.parse('http://localhost:3205/test/db'))
-
     skip unless ::Instana::Test.postgresql?
 
     clear_all!
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/db'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = Instana.processor.queued_spans
+    assert_equal 6, spans.length
+    rack_span = find_first_span_by_name(spans, :rack)
 
-    assert_equal 6, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[2]
-    third_span = spans[3]
-    fourth_span = spans[4]
+    ar_spans = find_spans_by_name(spans, :activerecord)
+    assert_equal 3, ar_spans.length
 
-    assert_equal :rack, first_span.name
-    assert_equal :activerecord, second_span.name
-    assert_equal :activerecord, third_span.name
-    assert_equal :activerecord, fourth_span.name
+    ar_spans.each do |span|
+      assert_equal "postgresql", span[:data][:activerecord][:adapter]
+      assert span[:data][:activerecord].key?(:host)
+      assert span[:data][:activerecord].key?(:username)
+    end
 
-    assert_equal "INSERT INTO \"blocks\" (\"name\", \"color\", \"created_at\", \"updated_at\") VALUES ($?, $?, $?, $?) RETURNING \"id\"", second_span[:data][:activerecord][:sql]
-    assert_equal "SELECT  \"blocks\".* FROM \"blocks\" WHERE \"blocks\".\"name\" = $?  ORDER BY \"blocks\".\"id\" ASC LIMIT ?", third_span[:data][:activerecord][:sql]
-    assert_equal "DELETE FROM \"blocks\" WHERE \"blocks\".\"id\" = $?", fourth_span[:data][:activerecord][:sql]
 
-    assert_equal "postgresql", second_span[:data][:activerecord][:adapter]
-    assert_equal "postgresql", third_span[:data][:activerecord][:adapter]
-    assert_equal "postgresql", fourth_span[:data][:activerecord][:adapter]
+    found = false
+    if ::Rails::VERSION::MAJOR < 4
+      sql = "INSERT INTO \"blocks\" (\"color\", \"created_at\", \"name\", \"updated_at\") VALUES ($?, $?, $?, $?) RETURNING \"id\""
+    else
+      sql = "INSERT INTO \"blocks\" (\"name\", \"color\", \"created_at\", \"updated_at\") VALUES ($?, $?, $?, $?) RETURNING \"id\""
+    end
+    ar_spans.each do |span|
+      if span[:data][:activerecord][:sql] ==
+        found = true
+      end
+    end
+    assert found
 
-    assert_equal ENV['TRAVIS_PSQL_HOST'], second_span[:data][:activerecord][:host]
-    assert_equal ENV['TRAVIS_PSQL_HOST'], third_span[:data][:activerecord][:host]
-    assert_equal ENV['TRAVIS_PSQL_HOST'], fourth_span[:data][:activerecord][:host]
+    found = false
+    if ::Rails::VERSION::MAJOR >= 5
+      sql = "SELECT  \"blocks\".* FROM \"blocks\" WHERE \"blocks\".\"name\" = $? ORDER BY \"blocks\".\"id\" ASC LIMIT $?"
+    elsif ::Rails::VERSION::MAJOR == 4
+      sql = "SELECT  \"blocks\".* FROM \"blocks\" WHERE \"blocks\".\"name\" = $?  ORDER BY \"blocks\".\"id\" ASC LIMIT ?"
+    else
+      sql = "SELECT  \"blocks\".* FROM \"blocks\"  WHERE \"blocks\".\"name\" = ? LIMIT ?"
+    end
+    ar_spans.each do |span|
+      if span[:data][:activerecord][:sql] == sql
+        found = true
+      end
+    end
+    assert found
 
-    assert_equal "postgres", second_span[:data][:activerecord][:username]
-    assert_equal "postgres", third_span[:data][:activerecord][:username]
-    assert_equal "postgres", fourth_span[:data][:activerecord][:username]
+    found = false
+    if ::Rails::VERSION::MAJOR == 3
+      sql = "DELETE FROM \"blocks\" WHERE \"blocks\".\"id\" = ?"
+    else
+      sql = "DELETE FROM \"blocks\" WHERE \"blocks\".\"id\" = $?"
+    end
+    ar_spans.each do |span|
+      if span[:data][:activerecord][:sql] == sql
+        found = true
+      end
+    end
+    assert found
+  end
+
+  def test_postgresql_lock_table
+    skip unless ::Instana::Test.postgresql?
+
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/db_lock_table'))
+
+    spans = Instana.processor.queued_spans
+    assert_equal 5, spans.length
+
+    rack_span = find_first_span_by_name(spans, :rack)
+    ac_span = find_first_span_by_name(spans, :actioncontroller)
+    av_span = find_first_span_by_name(spans, :actionview)
+
+    ar_spans = find_spans_by_name(spans, :activerecord)
+    assert_equal 2, ar_spans.length
+
+    ar_spans.each do |ar_span|
+      assert_equal "postgresql", ar_span[:data][:activerecord][:adapter]
+      assert_equal "postgres", ar_span[:data][:activerecord][:username]
+    end
+
+    found = false
+    ar_spans.each do |span|
+      if span[:data][:activerecord][:sql] == "LOCK blocks IN ACCESS EXCLUSIVE MODE"
+        found = true
+      end
+    end
+    assert found
+
+    found = false
+    ar_spans.each do |span|
+      if span[:data][:activerecord][:sql] == "SELECT ?"
+        found = true
+      end
+    end
+    assert found
+  end
+
+  def test_postgresql_raw_execute
+    skip unless ::Instana::Test.postgresql?
+
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/db_raw_execute'))
+
+    spans = Instana.processor.queued_spans
+
+    assert_equal 4, spans.length
+    rack_span = find_first_span_by_name(spans, :rack)
+    ac_span = find_first_span_by_name(spans, :actioncontroller)
+    av_span = find_first_span_by_name(spans, :actionview)
+    ar_span = find_first_span_by_name(spans, :activerecord)
+
+    assert_equal "SELECT ?", ar_span[:data][:activerecord][:sql]
+    assert_equal "postgresql", ar_span[:data][:activerecord][:adapter]
+    assert_equal "postgres", ar_span[:data][:activerecord][:username]
+  end
+
+  def test_postgresql_raw_execute_error
+    skip unless ::Instana::Test.postgresql?
+
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/db_raw_execute_error'))
+
+    spans = Instana.processor.queued_spans
+
+    assert_equal 3, spans.length
+    rack_span = find_first_span_by_name(spans, :rack)
+    ac_span = find_first_span_by_name(spans, :actioncontroller)
+    ar_span = find_first_span_by_name(spans, :activerecord)
+
+    assert ar_span.key?(:stack)
+    assert ar_span[:data][:activerecord].key?(:error)
+    assert ar_span[:data][:activerecord][:error].include?("syntax error")
+    assert_equal "This is not real SQL but an intended error", ar_span[:data][:activerecord][:sql]
+    assert_equal "postgresql", ar_span[:data][:activerecord][:adapter]
+    assert_equal "postgres", ar_span[:data][:activerecord][:username]
   end
 
   def test_mysql2
