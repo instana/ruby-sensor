@@ -1,7 +1,7 @@
 require 'test_helper'
 require 'active_record'
 
-class ActiveRecordPgTest < Minitest::Test
+class ActiveRecordTest < Minitest::Test
   def test_config_defaults
     assert ::Instana.config[:active_record].is_a?(Hash)
     assert ::Instana.config[:active_record].key?(:enabled)
@@ -159,37 +159,34 @@ class ActiveRecordPgTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/db'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
+    spans = Instana.processor.queued_spans
+    assert_equal 6, spans.length
+    rack_span = find_first_span_by_name(spans, :rack)
 
-    assert_equal 6, trace.spans.length
-    spans = trace.spans.to_a
-    first_span = spans[0]
-    second_span = spans[2]
-    third_span = spans[3]
-    fourth_span = spans[4]
+    ar_spans = find_spans_by_name(spans, :activerecord)
+    assert_equal 3, ar_spans.length
 
-    assert_equal :rack, first_span.name
-    assert_equal :activerecord, second_span.name
-    assert_equal :activerecord, third_span.name
-    assert_equal :activerecord, fourth_span.name
+    ar_spans.each do |span|
+      assert_equal "mysql2", span[:data][:activerecord][:adapter]
+      assert span[:data][:activerecord].key?(:host)
+      assert span[:data][:activerecord].key?(:username)
+    end
 
-    assert_equal "INSERT INTO `blocks` (`name`, `color`, `created_at`, `updated_at`) VALUES (?, ?, ?, ?)", second_span[:data][:activerecord][:sql]
-    assert_equal "SELECT  `blocks`.* FROM `blocks` WHERE `blocks`.`name` = ?  ORDER BY `blocks`.`id` ASC LIMIT ?", third_span[:data][:activerecord][:sql]
-    assert_equal "DELETE FROM `blocks` WHERE `blocks`.`id` = ?", fourth_span[:data][:activerecord][:sql]
+    queries = [
+        "INSERT INTO `blocks` (`name`, `color`, `created_at`, `updated_at`) VALUES (?, ?, ?, ?)",
+        "SELECT  `blocks`.* FROM `blocks` WHERE `blocks`.`name` = ?  ORDER BY `blocks`.`id` ASC LIMIT ?",
+        "DELETE FROM `blocks` WHERE `blocks`.`id` = ?"
+    ]
 
-    assert_equal "mysql2", second_span[:data][:activerecord][:adapter]
-    assert_equal "mysql2", third_span[:data][:activerecord][:adapter]
-    assert_equal "mysql2", fourth_span[:data][:activerecord][:adapter]
-
-    assert_equal ENV['TRAVIS_MYSQL_HOST'], second_span[:data][:activerecord][:host]
-    assert_equal ENV['TRAVIS_MYSQL_HOST'], third_span[:data][:activerecord][:host]
-    assert_equal ENV['TRAVIS_MYSQL_HOST'], fourth_span[:data][:activerecord][:host]
-
-    assert_equal ENV['TRAVIS_MYSQL_USER'], second_span[:data][:activerecord][:username]
-    assert_equal ENV['TRAVIS_MYSQL_USER'], third_span[:data][:activerecord][:username]
-    assert_equal ENV['TRAVIS_MYSQL_USER'], fourth_span[:data][:activerecord][:username]
+    queries.each do |sql|
+      found = false
+      ar_spans.each do |span|
+        if span[:data][:activerecord][:sql] = sql
+          found = true
+        end
+      end
+      assert found
+    end
   end
 
   def test_mysql
@@ -199,21 +196,17 @@ class ActiveRecordPgTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/db'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
-
-    assert_equal 6, trace.spans.length
-    spans = trace.spans.to_a
+    spans = Instana.processor.queued_spans
+    assert_equal 6, spans.length
     first_span = spans[0]
     second_span = spans[2]
     third_span = spans[3]
     fourth_span = spans[4]
 
-    assert_equal :rack, first_span.name
-    assert_equal :activerecord, second_span.name
-    assert_equal :activerecord, third_span.name
-    assert_equal :activerecord, fourth_span.name
+    assert_equal :rack, first_span[:n]
+    assert_equal :activerecord, second_span[:n]
+    assert_equal :activerecord, third_span[:n]
+    assert_equal :activerecord, fourth_span[:n]
 
     assert_equal "INSERT INTO `blocks` (`name`, `color`, `created_at`, `updated_at`) VALUES (?, ?, ?, ?)", second_span[:data][:activerecord][:sql]
     assert_equal "SELECT  `blocks`.* FROM `blocks` WHERE `blocks`.`name` = ?  ORDER BY `blocks`.`id` ASC LIMIT ?", third_span[:data][:activerecord][:sql]
