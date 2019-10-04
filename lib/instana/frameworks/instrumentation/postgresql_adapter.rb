@@ -29,7 +29,13 @@ module Instana
       #
       def collect(sql)
         payload = { :activerecord => {} }
-        payload[:activerecord][:sql] = sql.gsub(@@sanitize_regexp, '?')
+
+        if ::Instana.config[:sanitize_sql]
+          payload[:activerecord][:sql] = sql.gsub(@@sanitize_regexp, '?')
+        else
+          payload[:activerecord][:sql] = sql
+        end
+
         payload[:activerecord][:adapter] = @config[:adapter]
         payload[:activerecord][:host] = @config[:host]
         payload[:activerecord][:db] = @config[:database]
