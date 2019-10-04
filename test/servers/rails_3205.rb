@@ -22,18 +22,21 @@ end
 
 class RailsTestApp < Rails::Application
   routes.append do
-    get "/test/world"              => "test#world"
-    get "/test/db"                 => "test#db"
-    get "/test/error"              => "test#error"
-    get "/test/render_view"        => "test#render_view"
-    get "/test/render_partial"     => "test#render_partial"
-    get "/test/render_collection"  => "test#render_collection"
-    get "/test/render_file"        => "test#render_file"
-    get "/test/render_nothing"     => "test#render_nothing"
-    get "/test/render_json"        => "test#render_json"
-    get "/test/render_xml"         => "test#render_xml"
-    get "/test/render_rawbody"     => "test#render_rawbody"
-    get "/test/render_js"          => "test#render_js"
+    get "/test/world"                 => "test#world"
+    get "/test/db"                    => "test#db"
+    get "/test/db_lock_table"         => "test#db_lock_table"
+    get "/test/db_raw_execute"        => "test#db_raw_execute"
+    get "/test/db_raw_execute_error"  => "test#db_raw_execute_error"
+    get "/test/error"                 => "test#error"
+    get "/test/render_view"           => "test#render_view"
+    get "/test/render_partial"        => "test#render_partial"
+    get "/test/render_collection"     => "test#render_collection"
+    get "/test/render_file"           => "test#render_file"
+    get "/test/render_nothing"        => "test#render_nothing"
+    get "/test/render_json"           => "test#render_json"
+    get "/test/render_xml"            => "test#render_xml"
+    get "/test/render_rawbody"        => "test#render_rawbody"
+    get "/test/render_js"             => "test#render_js"
     get "/test/render_alternate_layout"        => "test#render_alternate_layout"
     get "/test/render_partial_that_errors"     => "test#render_partial_that_errors"
 
@@ -74,6 +77,39 @@ class TestController < ActionController::Base
     white_block.save
     found = Block.where(:name => 'Part #28349').first
     found.delete
+
+    if ::Rails::VERSION::MAJOR > 4
+      render :plain => "Hello test db!"
+    else
+      render :text => "Hello test db!"
+    end
+  end
+
+  def db_raw_execute
+    ActiveRecord::Base.connection.execute("SELECT 1")
+
+    if ::Rails::VERSION::MAJOR > 4
+      render :plain => "Hello test db!"
+    else
+      render :text => "Hello test db!"
+    end
+  end
+
+  def db_raw_execute_error
+    ActiveRecord::Base.connection.execute("This is not real SQL but an intended error")
+
+    if ::Rails::VERSION::MAJOR > 4
+      render :plain => "Hello test db!"
+    else
+      render :text => "Hello test db!"
+    end
+  end
+
+  def db_lock_table
+    ActiveRecord::Base.transaction do
+      ActiveRecord::Base.connection.execute('LOCK blocks IN ACCESS EXCLUSIVE MODE')
+      ActiveRecord::Base.connection.execute("SELECT 1")
+    end
 
     if ::Rails::VERSION::MAJOR > 4
       render :plain => "Hello test db!"

@@ -2,6 +2,7 @@ module Instana
   module Instrumentation
     module PostgreSQLAdapter
       IGNORED_PAYLOADS = %w(SCHEMA EXPLAIN CACHE).freeze
+      IGNORED_SQL = %w(BEGIN COMMIT)
       EXPLAINED_SQLS = /\A\s*(with|select|update|delete|insert)\b/i
 
       # This module supports instrumenting ActiveRecord with the postgresql adapter.  Only
@@ -14,6 +15,8 @@ module Instana
           # ActiveRecord 3.1 and up
           Instana::Util.method_alias(klass, :exec_query)
           Instana::Util.method_alias(klass, :exec_delete)
+          Instana::Util.method_alias(klass, :execute)
+
 
           @@sanitize_regexp = Regexp.new('(\'[\s\S][^\']*\'|\d*\.\d+|\d+|NULL)', Regexp::IGNORECASE)
         end
@@ -42,7 +45,7 @@ module Instana
       # @return [Boolean]
       #
       def ignore_payload?(name, sql)
-        IGNORED_PAYLOADS.include?(name) || sql !~ EXPLAINED_SQLS
+        IGNORED_PAYLOADS.include?(name) || IGNORED_SQL.include?(sql)
       end
 
       def exec_query_with_instana(sql, name = 'SQL', binds = [], *args)
@@ -64,6 +67,17 @@ module Instana
         kv_payload = collect(sql)
         ::Instana.tracer.trace(:activerecord, kv_payload) do
           exec_delete_without_instana(sql, name, binds)
+        end
+      end
+
+      def execute_with_instana(sql, name = nil)
+        if !::Instana.tracer.tracing? || ignore_payload?(name, sql)
+          return execute_without_instana(sql, name)
+        end
+
+        kv_payload = collect(sql)
+        ::Instana.tracer.trace(:activerecord, kv_payload) do
+          execute_without_instana(sql, name)
         end
       end
     end

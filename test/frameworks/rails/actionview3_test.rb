@@ -12,12 +12,8 @@ class ActionViewTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/render_view'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
-
-    assert_equal 3, trace.spans.length
-    spans = trace.spans.to_a
+    spans = Instana.processor.queued_spans
+    assert_equal 3, spans.length
     first_span = spans[0]
     second_span = spans[1]
     third_span = spans[2]
@@ -32,12 +28,8 @@ class ActionViewTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/render_nothing'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
-
-    assert_equal 3, trace.spans.length
-    spans = trace.spans.to_a
+    spans = Instana.processor.queued_spans
+    assert_equal 3, spans.length
     first_span = spans[0]
     second_span = spans[1]
     third_span = spans[2]
@@ -53,12 +45,8 @@ class ActionViewTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/render_file'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
-
-    assert_equal 3, trace.spans.length
-    spans = trace.spans.to_a
+    spans = Instana.processor.queued_spans
+    assert_equal 3, spans.length
     first_span = spans[0]
     second_span = spans[1]
     third_span = spans[2]
@@ -74,12 +62,8 @@ class ActionViewTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/render_json'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
-
-    assert_equal 3, trace.spans.length
-    spans = trace.spans.to_a
+    spans = Instana.processor.queued_spans
+    assert_equal 3, spans.length
     first_span = spans[0]
     second_span = spans[1]
     third_span = spans[2]
@@ -95,12 +79,7 @@ class ActionViewTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/render_xml'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
-
-    assert_equal 3, trace.spans.length
-    spans = trace.spans.to_a
+    assert_equal 3, spans.length
     first_span = spans[0]
     second_span = spans[1]
     third_span = spans[2]
@@ -116,12 +95,8 @@ class ActionViewTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/render_rawbody'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
-
-    assert_equal 3, trace.spans.length
-    spans = trace.spans.to_a
+    spans = Instana.processor.queued_spans
+    assert_equal 3, spans.length
     first_span = spans[0]
     second_span = spans[1]
     third_span = spans[2]
@@ -137,12 +112,8 @@ class ActionViewTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/render_js'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
-
-    assert_equal 3, trace.spans.length
-    spans = trace.spans.to_a
+    spans = Instana.processor.queued_spans
+    assert_equal 3, spans.length
     first_span = spans[0]
     second_span = spans[1]
     third_span = spans[2]
@@ -158,12 +129,8 @@ class ActionViewTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/render_alternate_layout'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
-
-    assert_equal 3, trace.spans.length
-    spans = trace.spans.to_a
+    spans = Instana.processor.queued_spans
+    assert_equal 3, spans.length
     first_span = spans[0]
     second_span = spans[1]
     third_span = spans[2]
@@ -179,12 +146,8 @@ class ActionViewTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/render_partial'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
-
-    assert_equal 4, trace.spans.length
-    spans = trace.spans.to_a
+    spans = Instana.processor.queued_spans
+    assert_equal 4, spans.length
     first_span = spans[0]
     second_span = spans[1]
     third_span = spans[2]
@@ -203,12 +166,8 @@ class ActionViewTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/render_partial_that_errors'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
-
-    assert_equal 4, trace.spans.length
-    spans = trace.spans.to_a
+    spans = Instana.processor.queued_spans
+    assert_equal 4, spans.length
     first_span = spans[0]
     second_span = spans[1]
     third_span = spans[2]
@@ -231,12 +190,8 @@ class ActionViewTest < Minitest::Test
 
     Net::HTTP.get(URI.parse('http://localhost:3205/test/render_collection'))
 
-    traces = Instana.processor.queued_traces
-    assert_equal 1, traces.length
-    trace = traces.first
-
-    assert_equal 5, trace.spans.length
-    spans = trace.spans.to_a
+    spans = Instana.processor.queued_spans
+    assert_equal 5, spans.length
     first_span = spans[0]
     second_span = spans[1]
     third_span = spans[2]

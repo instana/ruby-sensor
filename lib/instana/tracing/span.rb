@@ -123,6 +123,8 @@ module Instana
 
         if HTTP_SPANS.include?(@data[:n])
           set_tags(:http => { :error => "#{e.class}: #{e.message}" })
+        elsif @data[:n] == :activerecord
+          @data[:data][:activerecord][:error] = e.message
         else
           log(:error, Time.now, { :message => e.message, :parameters => e.class.to_s })
         end
