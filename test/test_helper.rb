@@ -143,3 +143,22 @@ def find_span_by_id(spans, id)
   end
   raise Exception.new("Span with id (#{id}) not found")
 end
+
+# Finds the first span in +spans+ for which +block+ returns true
+#
+#     ar_span = find_first_span_by_qualifier(ar_spans) do |span|
+#       span[:data][:activerecord][:sql] == sql
+#     end
+#
+# This helper will raise an exception if no span evaluates to true against he provided block.
+#
+# +spans+: +Array+ of spans to search
+# +block+: The Ruby block to evaluate against each span
+def find_first_span_by_qualifier(spans, &block)
+  spans.each do |span|
+    if block.call(span)
+      return span
+    end
+  end
+  raise Exception.new("Span with qualifier not found")
+end
