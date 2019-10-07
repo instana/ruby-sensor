@@ -17,7 +17,6 @@ module Instana
           Instana::Util.method_alias(klass, :exec_delete)
           Instana::Util.method_alias(klass, :execute)
 
-
           @@sanitize_regexp = Regexp.new('(\'[\s\S][^\']*\'|\d*\.\d+|\d+|NULL)', Regexp::IGNORECASE)
         end
       end
@@ -27,20 +26,33 @@ module Instana
       # @param sql [String]
       # @return [Hash] Hash of collected KVs
       #
-      def collect(sql)
+      def collect(sql, binds = nil)
         payload = { :activerecord => {} }
-
-        if ::Instana.config[:sanitize_sql]
-          payload[:activerecord][:sql] = sql.gsub(@@sanitize_regexp, '?')
-        else
-          payload[:activerecord][:sql] = sql
-        end
 
         payload[:activerecord][:adapter] = @config[:adapter]
         payload[:activerecord][:host] = @config[:host]
         payload[:activerecord][:db] = @config[:database]
         payload[:activerecord][:username] = @config[:username]
+
+        if ::Instana.config[:sanitize_sql]
+          payload[:activerecord][:sql] = sql.gsub(@@sanitize_regexp, '?')
+        else
+          # No sanitization so raw SQL and collect up binds
+          payload[:activerecord][:sql] = sql
+
+          # FIXME: Only works on Rails 5 as the bind format varied in previous versions of Rails
+          if binds.is_a?(Array)
+            raw_binds = []
+            binds.each { |x| raw_binds << x.value_before_type_cast }
+            payload[:activerecord][:binds] = raw_binds
+          end
+        end
+
         payload
+      rescue Exception => e
+        ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
+      ensure
+        return payload
       end
 
       # In the spirit of ::ActiveRecord::ExplainSubscriber.ignore_payload?  There are
@@ -59,7 +71,7 @@ module Instana
           return exec_query_without_instana(sql, name, binds, *args)
         end
 
-        kv_payload = collect(sql)
+        kv_payload = collect(sql, binds)
         ::Instana.tracer.trace(:activerecord, kv_payload) do
           exec_query_without_instana(sql, name, binds, *args)
         end
@@ -70,7 +82,7 @@ module Instana
           return exec_delete_without_instana(sql, name, binds)
         end
 
-        kv_payload = collect(sql)
+        kv_payload = collect(sql, binds)
         ::Instana.tracer.trace(:activerecord, kv_payload) do
           exec_delete_without_instana(sql, name, binds)
         end

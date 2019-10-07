@@ -2,7 +2,14 @@ require 'test_helper'
 require 'active_record'
 
 class ActiveRecordTest < Minitest::Test
+
+  def teardown
+    # Make sure defaults are back in place
+    ::Instana.config[:sanitize_sql] = true
+  end
+
   def test_config_defaults
+    assert ::Instana.config[:sanitize_sql] == true
     assert ::Instana.config[:active_record].is_a?(Hash)
     assert ::Instana.config[:active_record].key?(:enabled)
     assert_equal true, ::Instana.config[:active_record][:enabled]
@@ -28,19 +35,14 @@ class ActiveRecordTest < Minitest::Test
       assert span[:data][:activerecord].key?(:username)
     end
 
-
-    found = false
     if ::Rails::VERSION::MAJOR < 4
       sql = "INSERT INTO \"blocks\" (\"color\", \"created_at\", \"name\", \"updated_at\") VALUES ($?, $?, $?, $?) RETURNING \"id\""
     else
       sql = "INSERT INTO \"blocks\" (\"name\", \"color\", \"created_at\", \"updated_at\") VALUES ($?, $?, $?, $?) RETURNING \"id\""
     end
-    ar_spans.each do |span|
-      if span[:data][:activerecord][:sql] ==
-        found = true
-      end
+    ar_span = find_first_span_by_qualifier(ar_spans) do |span|
+      span[:data][:activerecord][:sql] == sql
     end
-    assert found
 
     found = false
     if ::Rails::VERSION::MAJOR >= 5
@@ -50,12 +52,9 @@ class ActiveRecordTest < Minitest::Test
     else
       sql = "SELECT  \"blocks\".* FROM \"blocks\"  WHERE \"blocks\".\"name\" = ? LIMIT ?"
     end
-    ar_spans.each do |span|
-      if span[:data][:activerecord][:sql] == sql
-        found = true
-      end
+    ar_span = find_first_span_by_qualifier(ar_spans) do |span|
+      span[:data][:activerecord][:sql] == sql
     end
-    assert found
 
     found = false
     if ::Rails::VERSION::MAJOR == 3
@@ -63,12 +62,73 @@ class ActiveRecordTest < Minitest::Test
     else
       sql = "DELETE FROM \"blocks\" WHERE \"blocks\".\"id\" = $?"
     end
-    ar_spans.each do |span|
-      if span[:data][:activerecord][:sql] == sql
-        found = true
-      end
+    ar_span = find_first_span_by_qualifier(ar_spans) do |span|
+      span[:data][:activerecord][:sql] == sql
     end
-    assert found
+  end
+
+  def test_postgresql_without_sanitize
+    skip unless ::Instana::Test.postgresql?
+
+    # Shut SQL sanitization off
+    ::Instana.config[:sanitize_sql] = false
+    # Pause so the thread can syncronize values
+    sleep 1
+
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/db'))
+
+    spans = Instana.processor.queued_spans
+    assert_equal 6, spans.length
+    rack_span = find_first_span_by_name(spans, :rack)
+
+    ar_spans = find_spans_by_name(spans, :activerecord)
+    assert_equal 3, ar_spans.length
+
+    ar_spans.each do |span|
+      assert_equal "postgresql", span[:data][:activerecord][:adapter]
+      assert span[:data][:activerecord].key?(:host)
+      assert span[:data][:activerecord].key?(:username)
+    end
+
+    if ::Rails::VERSION::MAJOR < 4
+      sql = "INSERT INTO \"blocks\" (\"color\", \"created_at\", \"name\", \"updated_at\") VALUES ($1, $2, $3, $4) RETURNING \"id\""
+    else
+      sql = "INSERT INTO \"blocks\" (\"name\", \"color\", \"created_at\", \"updated_at\") VALUES ($1, $2, $3, $4) RETURNING \"id\""
+    end
+    ar_span = find_first_span_by_qualifier(ar_spans) do |span|
+      span[:data][:activerecord][:sql] == sql
+    end
+    assert ar_span[:data][:activerecord].key?(:binds)
+    assert ar_span[:data][:activerecord][:binds].is_a?(Array)
+    assert_equal 4, ar_span[:data][:activerecord][:binds].length
+
+    if ::Rails::VERSION::MAJOR >= 5
+      sql = "SELECT  \"blocks\".* FROM \"blocks\" WHERE \"blocks\".\"name\" = $1 ORDER BY \"blocks\".\"id\" ASC LIMIT $2"
+    elsif ::Rails::VERSION::MAJOR == 4
+      sql = "SELECT  \"blocks\".* FROM \"blocks\" WHERE \"blocks\".\"name\" = $?  ORDER BY \"blocks\".\"id\" ASC LIMIT ?"
+    else
+      sql = "SELECT  \"blocks\".* FROM \"blocks\"  WHERE \"blocks\".\"name\" = ? LIMIT ?"
+    end
+    ar_span = find_first_span_by_qualifier(ar_spans) do |span|
+      span[:data][:activerecord][:sql] == sql
+    end
+    assert ar_span[:data][:activerecord].key?(:binds)
+    assert ar_span[:data][:activerecord][:binds].is_a?(Array)
+    assert_equal 2, ar_span[:data][:activerecord][:binds].length
+
+    if ::Rails::VERSION::MAJOR == 3
+      sql = "DELETE FROM \"blocks\" WHERE \"blocks\".\"id\" = 1"
+    else
+      sql = "DELETE FROM \"blocks\" WHERE \"blocks\".\"id\" = $1"
+    end
+    ar_span = find_first_span_by_qualifier(ar_spans) do |span|
+      span[:data][:activerecord][:sql] == sql
+    end
+    assert ar_span[:data][:activerecord].key?(:binds)
+    assert ar_span[:data][:activerecord][:binds].is_a?(Array)
+    assert_equal 1, ar_span[:data][:activerecord][:binds].length
   end
 
   def test_postgresql_lock_table
@@ -93,21 +153,13 @@ class ActiveRecordTest < Minitest::Test
       assert_equal "postgres", ar_span[:data][:activerecord][:username]
     end
 
-    found = false
-    ar_spans.each do |span|
-      if span[:data][:activerecord][:sql] == "LOCK blocks IN ACCESS EXCLUSIVE MODE"
-        found = true
-      end
+    ar_span = find_first_span_by_qualifier(ar_spans) do |span|
+      span[:data][:activerecord][:sql] == "LOCK blocks IN ACCESS EXCLUSIVE MODE"
     end
-    assert found
 
-    found = false
-    ar_spans.each do |span|
-      if span[:data][:activerecord][:sql] == "SELECT ?"
-        found = true
-      end
+    ar_span = find_first_span_by_qualifier(ar_spans) do |span|
+      span[:data][:activerecord][:sql] == "SELECT ?"
     end
-    assert found
   end
 
   def test_postgresql_raw_execute
