@@ -39,9 +39,11 @@ class RailsTestApp < Rails::Application
     get "/test/render_js"             => "test#render_js"
     get "/test/render_alternate_layout"        => "test#render_alternate_layout"
     get "/test/render_partial_that_errors"     => "test#render_partial_that_errors"
+    get "/test/raise_route_error"     => "test#raise_route_error"
 
     get "/api/world" => "socket#world"
     get "/api/error" => "socket#error"
+    get "/api/raise_route_error" => "socket#raise_route_error"
   end
 
   # Enable cache classes. Production style.
@@ -172,6 +174,10 @@ class TestController < ActionController::Base
   def error
     raise Exception.new("Warning: This is a simulated Error")
   end
+
+  def raise_route_error
+    raise ActionController::RoutingError.new('Simulated not found')
+  end
 end
 
 if ::Rails::VERSION::MAJOR > 4
@@ -182,6 +188,10 @@ if ::Rails::VERSION::MAJOR > 4
       else
         render :text => "Hello api world!"
       end
+    end
+
+    def raise_route_error
+      raise ActionController::RoutingError.new('Simulated not found')
     end
 
     def error
