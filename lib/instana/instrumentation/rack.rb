@@ -51,9 +51,13 @@ module Instana
       status, headers, response = @app.call(env)
 
       if ::Instana.tracer.tracing?
-        kvs[:http][:status] = status
+        # In case some previous middleware returned a string status, make sure that we're dealing with
+        # an integer.  In Ruby nil.to_i, "asdfasdf".to_i will always return 0 from Ruby versions 1.8.7 and newer.
+        # So if an 0 status is reported here, it indicates some other issue (e.g. no status from previous middleware)
+        # See Rack Spec: https://www.rubydoc.info/github/rack/rack/file/SPEC#label-The+Status
+        kvs[:http][:status] = status.to_i
 
-        if !status.is_a?(Integer) || status.between?(500, 511)
+        if status.to_i.between?(500, 511)
           # Because of the 5xx response, we flag this span as errored but
           # without a backtrace (no exception)
           ::Instana.tracer.log_error(nil)

@@ -78,6 +78,49 @@ class ActionControllerTest < Minitest::Test
     assert_equal "Exception", ac_span[:data][:log][:parameters]
   end
 
+  def test_api_controller_404
+    # Run only when ActionController::API is used/defined
+    skip unless defined?(::ActionController::API)
+
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/api/thispathdoesnotexist'))
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
+
+    rack_span = find_first_span_by_name(spans, :rack)
+
+    assert_equal false, rack_span.key?(:error)
+    assert_equal "/api/thispathdoesnotexist", rack_span[:data][:http][:url]
+    assert_equal 404, rack_span[:data][:http][:status]
+    assert_equal "GET", rack_span[:data][:http][:method]
+  end
+
+  def test_api_controller_raise_routing_error
+    # Run only when ActionController::API is used/defined
+    skip unless defined?(::ActionController::API)
+
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/api/raise_route_error'))
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
+
+    rack_span = find_first_span_by_name(spans, :rack)
+    ac_span = find_first_span_by_name(spans, :actioncontroller)
+
+    assert_equal false, rack_span.key?(:error)
+    assert_equal "/api/raise_route_error", rack_span[:data][:http][:url]
+    assert_equal 404, rack_span[:data][:http][:status]
+    assert_equal "GET", rack_span[:data][:http][:method]
+
+    assert_equal true, ac_span[:error]
+    assert ac_span.key?(:stack)
+    assert 1, ac_span[:ec]
+  end
+
   def test_404
     clear_all!
 
@@ -86,8 +129,28 @@ class ActionControllerTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 1, spans.length
 
-    first_span = spans[0]
+    rack_span = find_first_span_by_name(spans, :rack)
 
-    assert_equal :rack, first_span[:n]
+    assert_equal false, rack_span.key?(:error)
+    assert_equal 404, rack_span[:data][:http][:status]
+  end
+
+  def test_raise_routing_error
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/raise_route_error'))
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
+
+    rack_span = find_first_span_by_name(spans, :rack)
+    ac_span = find_first_span_by_name(spans, :actioncontroller)
+
+    assert_equal false, rack_span.key?(:error)
+    assert_equal 404, rack_span[:data][:http][:status]
+
+    assert_equal true, ac_span[:error]
+    assert ac_span.key?(:stack)
+    assert 1, ac_span[:ec]
   end
 end
