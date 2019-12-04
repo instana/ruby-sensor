@@ -249,7 +249,7 @@ module Instana
 
       ::Instana.logger.debug { "Announce: http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH} - payload: #{req.body}" }
 
-      response = make_host_agent_request(req)
+      response = make_host_agent_request(req, open_timeout=3, read_timeout=3)
 
       if response && (response.code.to_i == 200)
         data = Oj.load(response.body, OJ_OPTIONS)
@@ -449,14 +449,14 @@ module Instana
     # @param req [Net::HTTP::Req] A prepared Net::HTTP request object of the type
     #  you wish to make (Get, Put, Post etc.)
     #
-    def make_host_agent_request(req)
+    def make_host_agent_request(req, open_timeout=1, read_timeout=1)
       req['Accept'] = MIME_JSON
       req['Content-Type'] = MIME_JSON
 
       if @state == :unannounced
         @httpclient = Net::HTTP.new(req.uri.hostname, req.uri.port)
-        @httpclient.open_timeout = 1
-        @httpclient.read_timeout = 1
+        @httpclient.open_timeout = open_timeout
+        @httpclient.read_timeout = read_timeout
       end
 
       response = @httpclient.request(req)
