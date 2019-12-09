@@ -7,13 +7,20 @@ module AgentHelpers
     Process.pid != get_real_pid
   end
 
+  # Attempts to determine if we're running inside a container.
+  # The qualifications are:
+  #   1. Linux based OS
+  #   2. /proc/self/cpuset exists and contents include a container id
+  def running_in_container?
+    return false unless @is_linux
+    get_cpuset_contents == '/' ? false : true
+  end
+
   # Attempts to determine the true process ID by querying the
   # /proc/<pid>/sched file.  This works on linux currently.
   #
-  def get_real_pid
-    raise RuntimeError.new("Unsupported platform: get_real_pid") unless @is_linux
-
-    sched_file = "/proc/#{Process.pid}/sched"
+  def get_sched_pid
+    sched_file = "/proc/self/sched"
     pid = Process.pid
 
     if File.exist?(sched_file)
@@ -21,6 +28,19 @@ module AgentHelpers
       pid = v.match(/\d+/).to_s.to_i
     end
     pid
+  end
+
+  # Open and read /proc/<pid>/cpuset and return as a string.  Used as
+  # part of the announce payload for process differentiation.
+  #
+  def get_cpuset_contents
+    cpuset_file = "/proc/#{Process.pid}/cpuset"
+    contents = ""
+
+    if File.exist?(cpuset_file)
+      contents = File.open(cpuset_file, "r").read
+    end
+    contents
   end
 
   # Returns the PID that we are reporting to

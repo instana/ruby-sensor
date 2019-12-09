@@ -231,25 +231,35 @@ module Instana
       @process = ::Instana::Util.collect_process_info
 
       announce_payload = {}
-      announce_payload[:pid] = pid_namespace? ? get_real_pid : Process.pid
       announce_payload[:name] = @process[:name]
       announce_payload[:args] = @process[:arguments]
 
+      socket = nil
       if @is_linux && !@testmode
         # We create an open socket to the host agent in case we are running in a container
         # and the real pid needs to be detected.
-        socket = TCPSocket.new @discovered[:agent_host], @discovered[:agent_port]
+        socket = TCPSocket.open @discovered[:agent_host], @discovered[:agent_port]
+
         announce_payload[:fd] = socket.fileno
-        announce_payload[:inode] = File.readlink("/proc/#{Process.pid}/fd/#{socket.fileno}")
+        announce_payload[:inode] = File.readlink("/proc/self/fd/#{socket.fileno}")
+        announce_payload[:cpuSetFileContent] = get_cpuset_contents
+
+        sched_pid = get_sched_pid
+        announce_payload[:pid] = sched_pid
+        announce_payload[:pidFromParentNS] = running_in_container? && (sched_pid != Process.pid)
+      else
+        announce_payload[:pid] = Process.pid
+        announce_payload[:pidFromParentNS] = true
       end
 
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH}")
       req = Net::HTTP::Put.new(uri)
       req.body = Oj.dump(announce_payload, OJ_OPTIONS)
 
-      ::Instana.logger.debug { "Announce: http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH} - payload: #{req.body}" }
+      #::Instana.logger.debug("Announce payload: #{announce_payload}")
+      #::Instana.logger.debug { "Announce: http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH} - payload: #{req.body}" }
 
-      response = make_host_agent_request(req, open_timeout=3, read_timeout=3)
+      response = make_host_agent_request(req, open_timeout=3, read_timeout=3, debug=true)
 
       if response && (response.code.to_i == 200)
         data = Oj.load(response.body, OJ_OPTIONS)
@@ -449,7 +459,7 @@ module Instana
     # @param req [Net::HTTP::Req] A prepared Net::HTTP request object of the type
     #  you wish to make (Get, Put, Post etc.)
     #
-    def make_host_agent_request(req, open_timeout=1, read_timeout=1)
+    def make_host_agent_request(req, open_timeout=1, read_timeout=1, debug=false)
       req['Accept'] = MIME_JSON
       req['Content-Type'] = MIME_JSON
 
@@ -460,7 +470,10 @@ module Instana
       end
 
       response = @httpclient.request(req)
-      # ::Instana.logger.debug "#{req.method}->#{req.uri} body:(#{req.body}) Response:#{response} body:(#{response.body})"
+
+      if debug
+        ::Instana.logger.debug "#{req.method}->#{req.uri} body:(#{req.body}) Response:#{response} body:(#{response.body})"
+      end
 
       response
     rescue Errno::ECONNREFUSED
