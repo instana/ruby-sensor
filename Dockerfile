@@ -1,13 +1,16 @@
 # For development/testing, you can run this instrumentation
 # interactively in a Docker container:
-# docker build -t instana/ruby-sensor-console:0.1
-# docker run -it instana/ruby-sensor-console:0.1
+# docker build -t instana/ruby-sensor:1.0
 #
-FROM ruby:2.3.1
-RUN apt-get update -qq && apt-get install -y build-essential libpq-dev nodejs openssh-client git vim zip curl uni2ascii bsdmainutils
-RUN mkdir /ruby-sensor
-WORKDIR /ruby-sensor
-COPY Gemfile Gemfile.lock instana.gemspec ./
-COPY . ./
-RUN gem install bundler && bundle install --jobs 20 --retry 5
-CMD bundle exec rake console
+# To mount the host ruby-sensor directory in the container:
+# docker run -v /host/path/to/ruby-sensor:/ruby-sensor instana/ruby-sensor:1.0 /bin/bash
+#
+# Once inside the container, you can run `cd /ruby-sensor && bundle install && bundle exec rake console` for a development
+# console in the gem.
+#
+# https://github.com/instana/ruby-sensor#development
+#
+FROM ruby:2.6
+ENV INSTANA_DEBUG=true
+RUN gem install bundler
+RUN apt update && apt install -y vim
