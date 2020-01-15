@@ -175,9 +175,12 @@ module Instana
           return ENV['INSTANA_SERVICE_NAME']
         end
 
-
-        if defined?(::Resque) && ($0 =~ /resque-#{Resque::Version}/)
-          return "Resque Worker"
+        if defined?(::Resque)
+          if ($0 =~ /resque-#{Resque::Version}/)
+            return "Resque Worker"
+          elsif ($0 =~ /resque-pool-master/)
+            return "Resque Pool Master"
+          end
         end
 
         if defined?(::RailsLts) || defined?(::Rails)
