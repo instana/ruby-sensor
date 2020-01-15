@@ -10,9 +10,17 @@ Gem::Specification.new do |spec|
   spec.email         = ["pglombardo@gmail.com"]
 
   spec.summary       = %q{Ruby Distributed Tracing & Metrics Sensor for Instana}
-  spec.description   = %q{The Instana gem collects and reports Ruby metrics and distibuted traces to your Instana dashboard.}
+  spec.description   = %q{The Instana gem is a zero configuration tool that will automatically collect key metrics and distributed traces from your Ruby processes. Just install and go.}
   spec.homepage      = "https://www.instana.com/"
 
+  spec.metadata = {
+      "changelog_uri"     => "https://github.com/instana/ruby-sensor/releases",
+      "documentation_uri" => "https://docs.instana.io/ecosystem/ruby/",
+      "homepage_uri"      => "https://www.instana.com/",
+      "source_code_uri"   => "https://github.com/instana/ruby-sensor",
+  }
+
+  spec.licenses      = ['MIT']
   spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
@@ -21,8 +29,6 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = '>= 2.1'
   spec.platform      = defined?(JRUBY_VERSION) ? 'java' : Gem::Platform::RUBY
-
-  spec.licenses      = ['MIT']
 
   spec.add_development_dependency "bundler", "~> 2.0"
   spec.add_development_dependency "rake", "~> 10.0"
