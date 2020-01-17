@@ -13,7 +13,15 @@ module AgentHelpers
   #   2. /proc/self/cpuset exists and contents include a container id
   def running_in_container?
     return false unless @is_linux
-    get_cpuset_contents == '/' ? false : true
+
+    cpuset_contents = get_cpuset_contents
+
+    if cpuset_contents.nil? or cpuset_contents == '/'
+      ::Instana.logger.debug "running_in_container? == no"
+      return false
+    end
+    ::Instana.logger.debug "running_in_container? == yes"
+    true
   end
 
   # Attempts to determine the true process ID by querying the
@@ -40,7 +48,10 @@ module AgentHelpers
     if File.exist?(cpuset_file)
       contents = File.open(cpuset_file, "r").read
     end
-    contents
+    contents.chomp
+  rescue Exception => e
+    Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
+    return nil
   end
 
   # Returns the PID that we are reporting to
