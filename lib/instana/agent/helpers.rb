@@ -1,12 +1,4 @@
 module AgentHelpers
-  # Indicates whether we are running in a pid namespace (such as
-  # Docker).
-  #
-  def pid_namespace?
-    return false unless @is_linux
-    Process.pid != get_real_pid
-  end
-
   # Attempts to determine if we're running inside a container.
   # The qualifications are:
   #   1. Linux based OS
