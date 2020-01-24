@@ -246,7 +246,20 @@ module Instana
 
         sched_pid = get_sched_pid
         announce_payload[:pid] = sched_pid
-        announce_payload[:pidFromParentNS] = running_in_container? && (sched_pid != Process.pid)
+
+        if running_in_container?
+          if sched_pid != Process.pid
+            # In container: sched reveals true PID
+            announce_payload[:pidFromParentNS] = true
+          else
+            # In container: sched told us nothing
+            announce_payload[:pidFromParentNS] = false
+          end
+        else
+          # Not in a container
+          announce_payload[:pidFromParentNS] = true
+        end
+
       else
         announce_payload[:pid] = Process.pid
         announce_payload[:pidFromParentNS] = true
