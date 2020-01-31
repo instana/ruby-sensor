@@ -200,7 +200,7 @@ module Instana
           return "Rake"
         end
 
-        return File.basename($0)
+        return exe
       rescue Exception => e
         Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
         Instana.logger.debug { e.backtrace.join("\r\n") }
