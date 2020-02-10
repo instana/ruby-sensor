@@ -6,7 +6,7 @@ cache:
     - vendor/bundle
 
 rvm:
-  - 2.5
+  - 2.6
   - 2.4
 
 before_install:
@@ -30,6 +30,7 @@ gemfile:
   - Gemfile
   - gemfiles/libraries.gemfile
   - gemfiles/rails50.gemfile
+  - gemfiles/rails60.gemfile
 
 matrix:
   exclude:
