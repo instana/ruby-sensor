@@ -1,5 +1,5 @@
 <div align="center">
-<img src="http://www.instana.com/wp-content/uploads/2016/11/Instana-Infrastructure-Map-1-1024x551.png"/>
+<img src="https://disznc.s3.amazonaws.com/Ruby-Dashboard-2020-02-10-at-2.31.36-PM.png"/>
 </div>
 
 # Instana
