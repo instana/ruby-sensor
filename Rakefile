@@ -12,7 +12,11 @@ Rake::TestTask.new(:test) do |t|
 
   if ENV.key?('BUNDLE_GEMFILE')
     case File.basename(ENV['BUNDLE_GEMFILE']).split('.').first
-    when /rails50/
+    when /rails6/
+      t.test_files = %w(test/frameworks/rails/activerecord_test.rb
+                        test/frameworks/rails/actioncontroller_test.rb
+                        test/frameworks/rails/actionview5_test.rb)
+    when /rails5/
       t.test_files = %w(test/frameworks/rails/activerecord_test.rb
                         test/frameworks/rails/actioncontroller_test.rb
                         test/frameworks/rails/actionview5_test.rb)

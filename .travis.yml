@@ -6,7 +6,7 @@ cache:
     - vendor/bundle
 
 rvm:
-  - 2.5
+  - 2.6
   - 2.4
 
 before_install:
@@ -30,12 +30,12 @@ gemfile:
   - Gemfile
   - gemfiles/libraries.gemfile
   - gemfiles/rails50.gemfile
+  - gemfiles/rails60.gemfile
 
 matrix:
   exclude:
-    # Rails 5.0+ requires Ruby 2.2.2 or higher
-    - rvm: 2.1.10
-      gemfile: gemfiles/rails50.gemfile
+    - rvm: 2.4
+      gemfile: gemfiles/rails60.gemfile
 
 notifications:
   slack:
