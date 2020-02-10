@@ -176,10 +176,14 @@ module Instana
         end
 
         if defined?(::Resque)
+          # Just because Resque is defined doesn't mean this is a resque process necessarily
+          # Check arguments for a match
           if ($0 =~ /resque-#{Resque::Version}/)
             return "Resque Worker"
           elsif ($0 =~ /resque-pool-master/)
             return "Resque Pool Master"
+          elsif ($0 =~ /resque-scheduler/)
+            return "Resque Scheduler"
           end
         end
 
@@ -187,10 +191,20 @@ module Instana
           return Rails.application.class.to_s.split('::')[0]
         end
 
-        return File.basename($0)
+        if $0.to_s.empty?
+          return "Ruby"
+        end
+
+        exe = File.basename($0)
+        if exe == "rake"
+          return "Rake"
+        end
+
+        return exe
       rescue Exception => e
         Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
         Instana.logger.debug { e.backtrace.join("\r\n") }
+        return "Ruby"
       end
 
       # Get the current time in milliseconds from the epoch
