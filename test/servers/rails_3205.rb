@@ -8,7 +8,12 @@ end
 require "rails/all"
 require "action_controller/railtie" # require more if needed
 require 'rack/handler/puma'
-require File.expand_path(File.dirname(__FILE__) + '/../models/block')
+
+if Rails::VERSION::STRING >= '6.0'
+  require File.expand_path(File.dirname(__FILE__) + '/../models/block6')
+else
+  require File.expand_path(File.dirname(__FILE__) + '/../models/block')
+end
 
 ActiveRecord::Base.establish_connection(ENV['DATABASE_URL'])
 

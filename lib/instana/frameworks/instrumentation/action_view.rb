@@ -6,13 +6,13 @@ module Instana
         ::Instana::Util.method_alias(klass, :render_collection)
       end
 
-      def render_partial_with_instana
+      def render_partial_with_instana(*args)
         kv_payload = { :render => {} }
         kv_payload[:render][:type] = :partial
         kv_payload[:render][:name] = @options[:partial].to_s if @options.is_a?(Hash)
 
         ::Instana.tracer.log_entry(:render, kv_payload)
-        render_partial_without_instana
+        render_partial_without_instana(*args)
       rescue Exception => e
         ::Instana.tracer.log_error(e)
         raise
@@ -20,13 +20,13 @@ module Instana
         ::Instana.tracer.log_exit(:render)
       end
 
-      def render_collection_with_instana
+      def render_collection_with_instana(*args)
         kv_payload = { :render => {} }
         kv_payload[:render][:type] = :collection
         kv_payload[:render][:name] = @path.to_s
 
         ::Instana.tracer.log_entry(:render, kv_payload)
-        render_collection_without_instana
+        render_collection_without_instana(*args)
       rescue Exception => e
         ::Instana.tracer.log_error(e)
         raise

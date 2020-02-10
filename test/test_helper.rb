@@ -25,7 +25,7 @@ allowed_sites = lambda{|uri|
 require "./test/servers/rackapp_6511"
 
 case File.basename(ENV['BUNDLE_GEMFILE'])
-when /rails50|rails42|rails32/
+when /rails/
   require './test/servers/rails_3205'
 when /libraries/
   # Configure gRPC
