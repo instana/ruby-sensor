@@ -190,7 +190,7 @@ class ActionViewTest < Minitest::Test
     assert_equal :partial, fourth_span[:data][:render][:type]
     assert_equal 'syntax_error', fourth_span[:data][:render][:name]
     assert fourth_span[:data][:log].key?(:message)
-    assert_equal "SyntaxError", fourth_span[:data][:log][:parameters]
+    assert(fourth_span[:data][:log][:parameters].include?("SyntaxError"))
     assert fourth_span[:error]
     assert fourth_span[:stack]
   end

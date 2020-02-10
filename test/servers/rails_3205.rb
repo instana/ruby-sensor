@@ -11,6 +11,10 @@ require 'rack/handler/puma'
 
 if Rails::VERSION::STRING >= '6.0'
   require File.expand_path(File.dirname(__FILE__) + '/../models/block6')
+  system("mkdir -p app/assets/config && echo '{}' > app/assets/config/manifest.js")
+  # Rails 6 Issue: https://github.com/rails/rails/issues/37183
+  class ApplicationController < ActionController::Base
+  end
 else
   require File.expand_path(File.dirname(__FILE__) + '/../models/block')
 end
