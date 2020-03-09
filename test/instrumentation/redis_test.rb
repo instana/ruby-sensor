@@ -1,40 +1,44 @@
 require 'test_helper'
 
 class RedisTest < Minitest::Test
+  def setup
+    if ENV.key?('REDIS_URL')
+      @redis_url = ENV['REDIS_URL']
+    else
+      @redis_url = "redis://localhost:6379"
+    end
+    @redis_client = Redis.new(url: @redis_url)
+  end
+
   def test_normal_call
     clear_all!
-    redis_client = create_redis_client
 
     Instana.tracer.start_or_continue_trace(:redis_test) do
-      redis_client.set('hello', 'world')
+      @redis_client.set('hello', 'world')
     end
-    redis_client.disconnect!
 
     assert_redis_trace('SET')
   end
 
   def test_normal_call_with_error
     clear_all!
-    redis_client = create_redis_client
 
     Instana.tracer.start_or_continue_trace(:redis_test) do
       begin
-        redis_client.zadd('hello', 'invalid', 'value')
+        @redis_client.zadd('hello', 'invalid', 'value')
       rescue; end
     end
-    redis_client.disconnect!
 
     assert_redis_trace('ZADD', with_error: 'ERR value is not a valid float')
   end
 
   def test_pipeline_call
     clear_all!
-    redis_client = create_redis_client
 
     Instana.tracer.start_or_continue_trace(:redis_test) do
-      redis_client.pipelined do
-        redis_client.set('hello', 'world')
-        redis_client.set('other', 'world')
+      @redis_client.pipelined do
+        @redis_client.set('hello', 'world')
+        @redis_client.set('other', 'world')
       end
     end
 
@@ -43,13 +47,12 @@ class RedisTest < Minitest::Test
 
   def test_pipeline_call_with_error
     clear_all!
-    redis_client = create_redis_client
 
     Instana.tracer.start_or_continue_trace(:redis_test) do
       begin
-        redis_client.pipelined do
-          redis_client.set('other', 'world')
-          redis_client.call('invalid')
+        @redis_client.pipelined do
+          @redis_client.set('other', 'world')
+          @redis_client.call('invalid')
         end
       rescue; end
     end
@@ -59,12 +62,11 @@ class RedisTest < Minitest::Test
 
   def test_multi_call
     clear_all!
-    redis_client = create_redis_client
 
     Instana.tracer.start_or_continue_trace(:redis_test) do
-      redis_client.multi do
-        redis_client.set('hello', 'world')
-        redis_client.set('other', 'world')
+      @redis_client.multi do
+        @redis_client.set('hello', 'world')
+        @redis_client.set('other', 'world')
       end
     end
 
@@ -73,13 +75,12 @@ class RedisTest < Minitest::Test
 
   def test_multi_call_with_error
     clear_all!
-    redis_client = create_redis_client
 
     Instana.tracer.start_or_continue_trace(:redis_test) do
       begin
-        redis_client.multi do
-          redis_client.set('other', 'world')
-          redis_client.call('invalid')
+        @redis_client.multi do
+          @redis_client.set('other', 'world')
+          @redis_client.call('invalid')
         end
       rescue; end
     end
@@ -88,10 +89,6 @@ class RedisTest < Minitest::Test
   end
 
   private
-
-  def create_redis_client
-    Redis.new(url: ENV['I_REDIS_URL'])
-  end
 
   def assert_redis_trace(command, with_error: nil)
     spans = ::Instana.processor.queued_spans
@@ -105,10 +102,10 @@ class RedisTest < Minitest::Test
 
     data = second_span[:data]
 
-    uri = URI.parse(ENV['I_REDIS_URL'])
+    uri = URI.parse(@redis_url)
     assert_equal "#{uri.host}:#{uri.port}", data[:redis][:connection]
 
-    assert_equal 0, data[:redis][:db]
+    assert_equal "0", data[:redis][:db]
     assert_equal command, data[:redis][:command]
 
     if with_error

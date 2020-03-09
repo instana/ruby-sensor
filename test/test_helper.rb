@@ -56,10 +56,6 @@ when /libraries/
   require './test/servers/sidekiq/worker'
 end
 
-if defined?(::Redis)
-  $redis = Redis.new(url: ENV['I_REDIS_URL'])
-end
-
 Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
 
 # Used to reset the gem to boot state.  It clears out any queued and/or staged
@@ -68,7 +64,6 @@ Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
 def clear_all!
   ::Instana.processor.clear!
   ::Instana.tracer.clear!
-  $redis.flushall if $redis
   nil
 end
 
