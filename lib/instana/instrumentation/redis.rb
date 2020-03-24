@@ -1,13 +1,14 @@
 if defined?(::Redis) && ::Instana.config[:redis][:enabled]
   ::Redis::Client.class_eval do
     def call_with_instana(*args, &block)
-      if !Instana.tracer.tracing?
+      kv_payload = { redis: {} }
+
+      if !Instana.tracer.tracing? || ::Instana.tracer.tracing_span?(:redis)
         return call_without_instana(*args, &block)
       end
 
       ::Instana.tracer.log_entry(:redis)
 
-      kv_payload = { redis: {} }
       begin
         kv_payload[:redis][:connection] = "#{self.host}:#{self.port}"
         kv_payload[:redis][:db] = db.to_s
@@ -31,14 +32,15 @@ if defined?(::Redis) && ::Instana.config[:redis][:enabled]
     alias call call_with_instana
 
     def call_pipeline_with_instana(*args, &block)
-      if !Instana.tracer.tracing?
+      kv_payload = { redis: {} }
+
+      if !Instana.tracer.tracing? || ::Instana.tracer.tracing_span?(:redis)
         return call_pipeline_without_instana(*args, &block)
       end
 
       ::Instana.tracer.log_entry(:redis)
 
       pipeline = args.first
-      kv_payload = { redis: {} }
       begin
         kv_payload[:redis][:connection] = "#{self.host}:#{self.port}"
         kv_payload[:redis][:db] = db.to_s
