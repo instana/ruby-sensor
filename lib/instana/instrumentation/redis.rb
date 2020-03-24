@@ -2,8 +2,9 @@ if defined?(::Redis) && ::Instana.config[:redis][:enabled]
   ::Redis::Client.class_eval do
     def call_with_instana(*args, &block)
       kv_payload = { redis: {} }
+      dnt_spans = [:redis, :'resque-client', :'sidekiq-client']
 
-      if !Instana.tracer.tracing? || ::Instana.tracer.tracing_span?(:redis)
+      if !Instana.tracer.tracing? || dnt_spans.include?(::Instana.tracer.current_span.name)
         return call_without_instana(*args, &block)
       end
 
@@ -33,8 +34,9 @@ if defined?(::Redis) && ::Instana.config[:redis][:enabled]
 
     def call_pipeline_with_instana(*args, &block)
       kv_payload = { redis: {} }
+      dnt_spans = [:redis, :'resque-client', :'sidekiq-client']
 
-      if !Instana.tracer.tracing? || ::Instana.tracer.tracing_span?(:redis)
+      if !Instana.tracer.tracing? || dnt_spans.include?(::Instana.tracer.current_span.name)
         return call_pipeline_without_instana(*args, &block)
       end
 
