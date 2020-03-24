@@ -332,4 +332,25 @@ class OpenTracerTest < Minitest::Test
     assert_equal({:my_bag=>1}, ac_span.context.baggage)
     assert_equal(nil, av_span.context.baggage)
   end
+
+  def test_start_active_span
+    clear_all!
+
+    span = OpenTracing.start_active_span(:rack)
+    assert_equal ::Instana::Tracer.current_span, span
+
+    sleep 0.1
+
+    span.finish
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
+  end
+
+  def test_active_span
+    clear_all!
+
+    span = OpenTracing.start_active_span(:rack)
+    assert_equal OpenTracing.active_span, span
+  end
 end
