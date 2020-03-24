@@ -26,7 +26,7 @@ module Instana
     # Will start a new trace or continue an on-going one (such as
     # from incoming remote requests with context headers).
     #
-    # @param name [String] the name of the span to start
+    # @param name [String, Symbol] the name of the span to start
     # @param kvs [Hash] list of key values to be reported in the span
     # @param incoming_context [Hash] specifies the incoming context.  At a
     #   minimum, it should specify :trace_id and :span_id from the following:
@@ -52,7 +52,7 @@ module Instana
     #   @db.select(1)
     # end
     #
-    # @param name [String] the name of the span to start
+    # @param name [String, Symbol] the name of the span to start
     # @param kvs [Hash] list of key values to be reported in this new span
     #
     def trace(name, kvs = {}, &block)
@@ -72,7 +72,7 @@ module Instana
     # Will start a new trace or continue an on-going one (such as
     # from incoming remote requests with context headers).
     #
-    # @param name [String] the name of the span to start
+    # @param name [String, Symbol] the name of the span to start
     # @param kvs [Hash] list of key values to be reported in the span
     # @param incoming_context [SpanContext or Hash] specifies the incoming context.  At a
     #   minimum, it should specify :trace_id and :span_id from the following:
@@ -107,7 +107,7 @@ module Instana
     # Will establish a new span as a child of the current span
     # in an existing trace
     #
-    # @param name [String] the name of the span to create
+    # @param name [String, Symbol] the name of the span to create
     # @param kvs [Hash] list of key values to be reported in the span
     #
     def log_entry(name, kvs = nil, start_time = ::Instana::Util.now_in_ms, child_of = nil)
@@ -145,7 +145,7 @@ module Instana
     # @note `name` isn't really required but helps keep sanity that
     # we're closing out the span that we really want to close out.
     #
-    # @param name [String] the name of the span to exit (close out)
+    # @param name [String, Symbol] the name of the span to exit (close out)
     # @param kvs [Hash] list of key values to be reported in the span
     #
     def log_exit(name, kvs = {})
