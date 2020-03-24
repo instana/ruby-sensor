@@ -263,6 +263,27 @@ module Instana
       new_span
     end
 
+    # Start a new span which is the child of the current span
+    #
+    # @param operation_name [String] The name of the operation represented by the span
+    # @param child_of [Span] A span to be used as the ChildOf reference
+    # @param start_time [Time] the start time of the span
+    # @param tags [Hash] Starting tags for the span
+    #
+    # @return [Span]
+    #
+    def start_active_span(operation_name, child_of: self.current_span, start_time: ::Instana::Util.now_in_ms, tags: nil)
+      self.current_span = start_span(operation_name, child_of: child_of, start_time: start_time, tags: tags)
+    end
+
+    # Returns the currently active span
+    #
+    # @return [Span]
+    #
+    def active_span
+      self.current_span
+    end
+
     # Inject a span into the given carrier
     #
     # @param span_context [SpanContext]
