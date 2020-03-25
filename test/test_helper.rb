@@ -39,17 +39,17 @@ when /libraries/
     end
   end
 
-  ENV['I_REDIS_URL'] ||= 'redis://127.0.0.1:6379'
+  ENV['REDIS_URL'] ||= 'redis://127.0.0.1:6379'
 
   # Configure redis for sidekiq client
   Sidekiq.configure_client do |config|
-    config.redis = { url: ENV['I_REDIS_URL'] }
+    config.redis = { url: ENV['REDIS_URL'] }
   end
 
   # Configure redis for sidekiq worker
   $sidekiq_mode = :server
   ::Sidekiq.configure_server do |config|
-    config.redis = { url: ENV['I_REDIS_URL'] }
+    config.redis = { url: ENV['REDIS_URL'] }
   end
   $sidekiq_mode = :client
 

@@ -5,8 +5,8 @@ require 'resque'
 
 if ENV.key?('REDIS_URL')
   ::Resque.redis = ENV['REDIS_URL']
-elsif ENV.key?('I_REDIS_URL')
-  ::Resque.redis = ENV['I_REDIS_URL']
+elsif ENV.key?('REDIS_URL')
+  ::Resque.redis = ENV['REDIS_URL']
 else
   ::Resque.redis = 'localhost:6379'
 end
@@ -23,16 +23,15 @@ class ResqueClientTest < Minitest::Test
   end
 
   def test_enqueue
-    ::Instana.tracer.start_or_continue_trace('resque-client_test') do
+    ::Instana.tracer.start_or_continue_trace(:'resque-client_test') do
       ::Resque.enqueue(FastJob)
     end
 
     spans = ::Instana.processor.queued_spans
-    assert_equal 3, spans.length
+    assert_equal 2, spans.length
 
     sdk_span = find_first_span_by_name(spans, :'resque-client_test')
     resque_span = find_first_span_by_name(spans, :'resque-client')
-    redis_span = find_first_span_by_name(spans, :redis)
 
     assert_equal :'resque-client_test', sdk_span[:data][:sdk][:name]
 
@@ -40,48 +39,42 @@ class ResqueClientTest < Minitest::Test
     assert_equal "FastJob", resque_span[:data][:'resque-client'][:job]
     assert_equal :critical, resque_span[:data][:'resque-client'][:queue]
     assert_equal false, resque_span[:data][:'resque-client'].key?(:error)
-
-    assert_equal :redis, redis_span[:n]
   end
 
   def test_enqueue_to
-    ::Instana.tracer.start_or_continue_trace('resque-client_test') do
+    ::Instana.tracer.start_or_continue_trace(:'resque-client_test') do
       ::Resque.enqueue_to(:critical, FastJob)
     end
 
     spans = ::Instana.processor.queued_spans
-    assert_equal 3, spans.length
+    assert_equal 2, spans.length
 
     sdk_span = find_first_span_by_name(spans, :'resque-client_test')
     resque_span = find_first_span_by_name(spans, :'resque-client')
-    redis_span = find_first_span_by_name(spans, :redis)
 
     assert_equal :'resque-client_test', sdk_span[:data][:sdk][:name]
     assert_equal :"resque-client", resque_span[:n]
     assert_equal "FastJob", resque_span[:data][:'resque-client'][:job]
     assert_equal :critical, resque_span[:data][:'resque-client'][:queue]
     assert_equal false, resque_span[:data][:'resque-client'].key?(:error)
-    assert_equal :redis, redis_span[:n]
   end
 
   def test_dequeue
-    ::Instana.tracer.start_or_continue_trace('resque-client_test', '', {}) do
+    ::Instana.tracer.start_or_continue_trace(:'resque-client_test', '', {}) do
       ::Resque.dequeue(FastJob, { :generate => :farfalla })
     end
 
     spans = ::Instana.processor.queued_spans
-    assert_equal 3, spans.length
+    assert_equal 2, spans.length
 
     sdk_span = find_first_span_by_name(spans, :'resque-client_test')
     resque_span = find_first_span_by_name(spans, :'resque-client')
-    redis_span = find_first_span_by_name(spans, :redis)
 
     assert_equal :'resque-client_test', sdk_span[:data][:sdk][:name]
-    assert_equal :"resque-client", spans[1][:n]
+    assert_equal :"resque-client", resque_span[:n]
     assert_equal "FastJob", resque_span[:data][:'resque-client'][:job]
     assert_equal :critical, resque_span[:data][:'resque-client'][:queue]
     assert_equal false, resque_span[:data][:'resque-client'].key?(:error)
-    assert_equal :redis, redis_span[:n]
   end
 
   def test_worker_job
