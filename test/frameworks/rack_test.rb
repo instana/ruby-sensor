@@ -144,6 +144,22 @@ class RackTest < Minitest::Test
     assert_equal 4321, first_span[:p]
   end
 
+  def test_basic_get_with_x_instana_synthetic
+    header 'X-INSTANA-SYNTHETIC', '1'
+
+    clear_all!
+    get '/mrlobster'
+    assert last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+
+    # Span validation
+    assert_equal 1, spans.count
+
+    first_span = spans.first
+    assert_equal true, first_span[:data][:sy]
+  end
+
   def test_instana_response_headers
     clear_all!
     get '/mrlobster'

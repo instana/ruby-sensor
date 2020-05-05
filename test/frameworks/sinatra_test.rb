@@ -40,5 +40,24 @@ if defined?(::Sinatra)
       assert first_span[:data][:http].key?(:host)
       assert_equal "example.org", first_span[:data][:http][:host]
     end
+
+    def test_synthetic
+      clear_all!
+
+      r = get '/hello'
+      assert last_response.ok?
+
+      assert r.headers.key?("X-Instana-T")
+      assert r.headers.key?("X-Instana-S")
+
+      spans = ::Instana.processor.queued_spans
+      assert_equal 1, spans.count
+
+      first_span = spans.first
+      assert_equal :rack, first_span[:n]
+      assert first_span.key?(:data)
+      assert first_span[:data].key?(:sy)
+      assert_equal true, first_span[:data][:sy]
+    end
   end
 end
