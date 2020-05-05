@@ -38,7 +38,7 @@ module Instana
         }
       end
 
-      kvs[:sy] = true if "1".eql? env['HTTP_X_INSTANA_SYNTHETIC']
+      kvs[:sy] = true if '1'.eql? env['HTTP_X_INSTANA_SYNTHETIC']
 
       # Check incoming context
       incoming_context = {}
