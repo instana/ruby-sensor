@@ -4,10 +4,50 @@ version: 2.1
 orbs:
   ruby: circleci/ruby@1.1.2
 
+commands:
+  prelim-deps:
+    steps:
+      - run:
+          name: Preliminary Dependencies
+          command: |
+            gem update --system
+            gem --version
+            gem install bundler
+            bundler --version
+            bundle config set path './vendor/bundle'
+
+  bundle-install:
+    steps:
+      - run:
+          name: Bundle Installation
+          command: |
+            bundle install
+
+  run-tests:
+    steps:
+      - run:
+          name: Run the Tests
+          command: |
+            bundle exec rake test
+
+  save-stan-cache:
+    steps:
+      - save_cache:
+          key: gem-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "Gemfile" }}
+          paths:
+            - vendor/bundle
+
+  restore-stan-cache:
+    steps:
+      - restore_cache:
+          keys:
+            - gem-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "Gemfile" }}
+            - gem-cache-v1-{{ arch }}-{{ .Branch }}
+            - gem-cache-v1
+
+
 jobs:
   ruby24:
-    # we run "parallel job containers" to enable speeding up our tests;
-    # this splits our tests across multiple containers.
     parallelism: 3
     docker:
       - image: circleci/ruby:2.6.3-stretch-node
@@ -18,22 +58,9 @@ jobs:
 
     steps:
       - checkout
-      - run:
-          name: Preliminary Dependencies
-          command: |
-            gem update --system
-            gem --version
-            gem install bundler
-            bundler --version
-            bundle config set path './vendor/bundle'
-      - run:
-          name: Bundle Installation
-          command: |
-            bundle install
-      - run:
-          name: Run the Tests
-          command: |
-            bundle exec rake test
+      - prelim-deps
+      - bundle-install
+      - run-tests
 
   rails50:
     parallelism: 3
@@ -55,14 +82,7 @@ jobs:
 
     steps:
       - checkout
-      - run:
-          name: Preliminary Dependencies
-          command: |
-            gem update --system
-            gem --version
-            gem install bundler
-            bundler --version
-            bundle config set path './vendor/bundle'
+      - prelim-deps
       - run:
           name: Bundle Installation
           command: |
@@ -92,14 +112,7 @@ jobs:
 
     steps:
       - checkout
-      - run:
-          name: Preliminary Dependencies
-          command: |
-            gem update --system
-            gem --version
-            gem install bundler
-            bundler --version
-            bundle config set path './vendor/bundle'
+      - prelim-deps
       - run:
           name: Bundle Installation
           command: |
@@ -132,14 +145,7 @@ jobs:
 
     steps:
       - checkout
-      - run:
-          name: Preliminary Dependencies
-          command: |
-            gem update --system
-            gem --version
-            gem install bundler
-            bundler --version
-            bundle config set path './vendor/bundle'
+      - prelim-deps
       - run:
           name: Bundle Installation
           command: |
@@ -154,6 +160,6 @@ workflows:
   build:
     jobs:
       - ruby24
-      - rails50
-      - rails60
-      - libraries
+      # - rails50
+      # - rails60
+      # - libraries
