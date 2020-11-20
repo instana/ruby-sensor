@@ -24,28 +24,38 @@ commands:
             bundle exec rake test
 
   save-stan-cache:
+    parameters:
+      gemfile:
+        default: "Gemfile"
+        type: string
     steps:
       - save_cache:
-          key: gem-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "Gemfile" }}
+          key: gem-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "<<parameters.gemfile>>" }}
           paths:
             - vendor/bundle
 
   restore-stan-cache:
+    parameters:
+      gemfile:
+        default: "Gemfile"
+        type: string
     steps:
       - restore_cache:
           keys:
-            - gem-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "Gemfile" }}
+            - gem-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "<<parameters.gemfile>>" }}
             - gem-cache-v1-{{ arch }}-{{ .Branch }}
             - gem-cache-v1
 
   bundle-install:
     steps:
-      - restore-stan-cache
+      - restore-stan-cache:
+        gemfile: $BUNDLE_GEMFILE
       - run:
           name: Bundle Installation
           command: |
             bundle install
-      - save-stan-cache
+      - save-stan-cache:
+        gemfile: $BUNDLE_GEMFILE
 
 jobs:
   ruby24:
