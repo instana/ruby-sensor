@@ -14,7 +14,7 @@ class GrpcTest < Minitest::Test
 
     if error
       assert_equal true, data[:rpc][:error]
-      assert_equal "2:RuntimeError: #{error}", data[:log][:message]
+      assert data[:log][:message].include?("2:RuntimeError: #{error}")
     end
   end
 
