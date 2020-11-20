@@ -18,7 +18,8 @@ jobs:
 
     steps:
       - checkout
-      - ruby/install-deps
+      - ruby/install-deps:
+          bundler-version: 2.1.4
       - run:
           name: run tests
           command: |
