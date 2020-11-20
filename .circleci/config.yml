@@ -140,7 +140,7 @@ jobs:
           MYSQL_ROOT_PASSWORD: ''
           MYSQL_ROOT_HOST: '%'
       - image: memcached
-      - image: postgresql
+      - image: postgres
       - image: redis
     executor: ruby/default
     environment:
