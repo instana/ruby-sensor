@@ -16,13 +16,6 @@ commands:
             bundler --version
             bundle config set path './vendor/bundle'
 
-  bundle-install:
-    steps:
-      - run:
-          name: Bundle Installation
-          command: |
-            bundle install
-
   run-tests:
     steps:
       - run:
@@ -44,6 +37,16 @@ commands:
             - gem-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "Gemfile" }}
             - gem-cache-v1-{{ arch }}-{{ .Branch }}
             - gem-cache-v1
+
+  bundle-install:
+    steps:
+      - restore-stan-cache
+      - run:
+          name: Bundle Installation
+          command: |
+            bundle install
+      - save-stan-cache
+
 
 
 jobs:
@@ -83,14 +86,8 @@ jobs:
     steps:
       - checkout
       - prelim-deps
-      - run:
-          name: Bundle Installation
-          command: |
-            bundle install
-      - run:
-          name: Run the Tests
-          command: |
-            bundle exec rake test
+      - bundle-install
+      - run-tests
 
   rails60:
     parallelism: 3
@@ -113,14 +110,8 @@ jobs:
     steps:
       - checkout
       - prelim-deps
-      - run:
-          name: Bundle Installation
-          command: |
-            bundle install
-      - run:
-          name: Run the Tests
-          command: |
-            bundle exec rake test
+      - bundle-install
+      - run-tests
 
   libraries:
     parallelism: 3
@@ -146,14 +137,8 @@ jobs:
     steps:
       - checkout
       - prelim-deps
-      - run:
-          name: Bundle Installation
-          command: |
-            bundle install
-      - run:
-          name: Run the Tests
-          command: |
-            bundle exec rake test
+      - bundle-install
+      - run-tests
 
 workflows:
   version: 2
