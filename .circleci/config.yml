@@ -2,7 +2,7 @@ version: 2.1
 
 # More about orbs: https://circleci.com/docs/2.0/using-orbs/
 orbs:
-  ruby: circleci/ruby@1.0
+  ruby: circleci/ruby@1.1.2
 
 jobs:
   ruby24:
@@ -18,14 +18,7 @@ jobs:
 
     steps:
       - checkout
-      - run:
-          name: gem system update
-          command: |
-            gem update --system
-            gem update bundler
-            gem --version
-            bundler --version
-      - ruby/bundle-install
+      - ruby/install-deps
       - run:
           name: run tests
           command: |
