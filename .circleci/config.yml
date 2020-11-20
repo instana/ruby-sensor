@@ -35,8 +35,68 @@ jobs:
           command: |
             bundle exec rake test
 
+  rails50:
+    parallelism: 3
+    docker:
+      - image: circleci/ruby:2.6.3-stretch-node
+    executor: ruby/default
+    environment:
+      BUNDLE_JOBS: "3"
+      BUNDLE_RETRY: "3"
+      BUNDLE_GEMFILE: "./gemfiles/rails50.gemfile"
+
+    steps:
+      - checkout
+      - run:
+          name: Preliminary Dependencies
+          command: |
+            gem update --system
+            gem --version
+            gem install bundler
+            bundler --version
+            bundle config set path './vendor/bundle'
+      - run:
+          name: Bundle Installation
+          command: |
+            bundle install
+      - run:
+          name: Run the Tests
+          command: |
+            bundle exec rake test
+
+  rails60:
+    parallelism: 3
+    docker:
+      - image: circleci/ruby:2.6.3-stretch-node
+    executor: ruby/default
+    environment:
+      BUNDLE_JOBS: "3"
+      BUNDLE_RETRY: "3"
+      BUNDLE_GEMFILE: "./gemfiles/rails60.gemfile"
+
+    steps:
+      - checkout
+      - run:
+          name: Preliminary Dependencies
+          command: |
+            gem update --system
+            gem --version
+            gem install bundler
+            bundler --version
+            bundle config set path './vendor/bundle'
+      - run:
+          name: Bundle Installation
+          command: |
+            bundle install
+      - run:
+          name: Run the Tests
+          command: |
+            bundle exec rake test
+
 workflows:
   version: 2
   build:
     jobs:
       - ruby24
+      - rails50
+      - rails60
