@@ -7,14 +7,15 @@ module Instana
       def setup_environment
         # Set defaults if not set
         ENV['MEMCACHED_HOST']     ||= '127.0.0.1:11211'
-        ENV['TRAVIS_PSQL_HOST']   ||= "127.0.0.1"
-        ENV['TRAVIS_PSQL_USER']   ||= "postgres"
+        ENV['POSTGRES_HOST']      ||= "127.0.0.1"
+        ENV['POSTGRES_USER']      ||= "stan"
+        ENV['POSTGRES_PASSWORD']  ||= "stanlikesdata"
         ENV['TRAVIS_MYSQL_HOST']  ||= "127.0.0.1"
         ENV['TRAVIS_MYSQL_USER']  ||= "root"
 
         if !ENV.key?('DATABASE_URL')
           if ENV['DB_FLAVOR'] == 'postgresql'
-            ENV['DATABASE_URL'] = "postgresql://#{ENV['TRAVIS_PSQL_USER']}:#{ENV['TRAVIS_PSQL_PASS']}@#{ENV['TRAVIS_PSQL_HOST']}:5432/travis_ci_test"
+            ENV['DATABASE_URL'] = "postgresql://#{ENV['POSTGRES_USER']}:#{ENV['POSTGRES_PASSWORD']}@#{ENV['POSTGRES_HOST']}:5432/#{ENV['POSTGRES_USER']}"
           elsif ENV['DB_FLAVOR'] == 'mysql'
             ENV['DATABASE_URL'] = "mysql://#{ENV['TRAVIS_MYSQL_USER']}:#{ENV['TRAVIS_MYSQL_PASS']}@#{ENV['TRAVIS_MYSQL_HOST']}:3306/travis_ci_test"
           else

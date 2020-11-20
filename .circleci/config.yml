@@ -141,6 +141,9 @@ jobs:
           MYSQL_ROOT_HOST: '%'
       - image: memcached
       - image: postgres
+        environment:
+          POSTGRES_USER: 'stan'
+          POSTGRES_PASSWORD: 'stanlikesdata'
       - image: redis
     executor: ruby/default
     environment:
