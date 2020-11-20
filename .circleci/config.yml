@@ -109,6 +109,46 @@ jobs:
           command: |
             bundle exec rake test
 
+  libraries:
+    parallelism: 3
+    docker:
+      - image: circleci/ruby:2.6.3-stretch-node
+      - image: mariadb
+        environment:
+          MYSQL_DATABASE: 'travis_ci_test'
+          MYSQL_USER: 'root'
+          MYSQL_PASSWORD: ''
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ROOT_HOST: '%'
+      - image: memcached
+      - image: postgresql:11.10
+      - image: redis
+    executor: ruby/default
+    environment:
+      BUNDLE_JOBS: "3"
+      BUNDLE_RETRY: "3"
+      BUNDLE_GEMFILE: "./gemfiles/libraries.gemfile"
+
+    steps:
+      - checkout
+      - run:
+          name: Preliminary Dependencies
+          command: |
+            gem update --system
+            gem --version
+            gem install bundler
+            bundler --version
+            bundle config set path './vendor/bundle'
+      - run:
+          name: Bundle Installation
+          command: |
+            bundle install
+      - run:
+          name: Run the Tests
+          command: |
+            bundle exec rake test
+
 workflows:
   version: 2
   build:
@@ -116,3 +156,4 @@ workflows:
       - ruby24
       - rails50
       - rails60
+      - libraries
