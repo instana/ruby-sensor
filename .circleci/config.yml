@@ -1,15 +1,38 @@
 version: 2.1
+
+# More about orbs: https://circleci.com/docs/2.0/using-orbs/
 orbs:
-  ruby: circleci/ruby@0.1.2 
+  ruby: circleci/ruby@1.0
 
 jobs:
-  build:
+  ruby24:
+    # we run "parallel job containers" to enable speeding up our tests;
+    # this splits our tests across multiple containers.
+    parallelism: 3
     docker:
       - image: circleci/ruby:2.6.3-stretch-node
     executor: ruby/default
+    environment:
+      BUNDLE_JOBS: "3"
+      BUNDLE_RETRY: "3"
+
     steps:
       - checkout
       - run:
-          name: Which bundler?
-          command: bundle -v
+          name: gem system update
+          command: |
+            gem update --system
+            gem update bundler
+            gem --version
+            bundler --version
       - ruby/bundle-install
+      - run:
+          name: run tests
+          command: |
+            bundle exec rake test
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - ruby24
