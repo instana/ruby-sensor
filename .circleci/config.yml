@@ -47,15 +47,19 @@ commands:
             - gem-cache-v1
 
   bundle-install:
+    parameters:
+      gemfile:
+        default: "Gemfile"
+        type: string
     steps:
       - restore-stan-cache:
-        gemfile: $BUNDLE_GEMFILE
+          gemfile: <<parameters.gemfile>>
       - run:
           name: Bundle Installation
           command: |
             bundle install
       - save-stan-cache:
-        gemfile: $BUNDLE_GEMFILE
+          gemfile: <<parameters.gemfile>>
 
 jobs:
   ruby24:
@@ -94,7 +98,8 @@ jobs:
     steps:
       - checkout
       - prelim-deps
-      - bundle-install
+      - bundle-install:
+          gemfile: "./gemfiles/rails50.gemfile"
       - run-tests
 
   rails60:
@@ -118,7 +123,8 @@ jobs:
     steps:
       - checkout
       - prelim-deps
-      - bundle-install
+      - bundle-install:
+          gemfile: "./gemfiles/rails60.gemfile"
       - run-tests
 
   libraries:
@@ -145,7 +151,8 @@ jobs:
     steps:
       - checkout
       - prelim-deps
-      - bundle-install
+      - bundle-install:
+          gemfile: "./gemfiles/libraries.gemfile"
       - run-tests
 
 workflows:
