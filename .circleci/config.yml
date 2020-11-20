@@ -160,9 +160,9 @@ jobs:
 
 workflows:
   version: 2
-  build:
+  whole-enchilada-MRI26:
     jobs:
-      - ruby24
+      - ruby26
       - rails50
       - rails60
       - libraries
