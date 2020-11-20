@@ -18,10 +18,20 @@ jobs:
 
     steps:
       - checkout
-      - ruby/install-deps:
-          bundler-version: 2.1.4
       - run:
-          name: run tests
+          name: Preliminary Dependencies
+          command: |
+            gem update --system
+            gem --version
+            gem install bundler
+            bundler --version
+            bundle config set path './vendor/bundle'
+      - run:
+          name: Bundle Installation
+          command: |
+            bundle install
+      - run:
+          name: Run the Tests
           command: |
             bundle exec rake test
 
