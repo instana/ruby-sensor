@@ -47,8 +47,6 @@ commands:
             bundle install
       - save-stan-cache
 
-
-
 jobs:
   ruby24:
     parallelism: 3
@@ -145,6 +143,6 @@ workflows:
   build:
     jobs:
       - ruby24
-      # - rails50
-      # - rails60
-      # - libraries
+      - rails50
+      - rails60
+      - libraries
