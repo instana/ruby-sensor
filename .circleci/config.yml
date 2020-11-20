@@ -41,14 +41,12 @@ jobs:
       - image: circleci/ruby:2.6.3-stretch-node
       - image: mariadb
         environment:
-          MYSQL_DATABASE: 'circle_test'
+          MYSQL_DATABASE: 'travis_ci_test'
           MYSQL_USER: 'root'
           MYSQL_PASSWORD: ''
           MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
           MYSQL_ROOT_PASSWORD: ''
           MYSQL_ROOT_HOST: '%'
-    volumes:
-      - ./tests/config/database/mysql/conf.d:/etc/mysql/conf.d
     executor: ruby/default
     environment:
       BUNDLE_JOBS: "3"
@@ -69,10 +67,10 @@ jobs:
           name: Bundle Installation
           command: |
             bundle install
-      - run:
-          name: Database Setup
-          command: |
-            mysql -e 'CREATE DATABASE travis_ci_test;'
+      # - run:
+      #     name: Database Setup
+      #     command: |
+      #       mysql -e 'CREATE DATABASE travis_ci_test;'
       - run:
           name: Run the Tests
           command: |
