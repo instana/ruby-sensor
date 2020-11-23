@@ -1,0 +1,168 @@
+version: 2.1
+
+# More about orbs: https://circleci.com/docs/2.0/using-orbs/
+orbs:
+  ruby: circleci/ruby@1.1.2
+
+commands:
+  prelim-deps:
+    steps:
+      - run:
+          name: Preliminary Dependencies
+          command: |
+            gem update --system
+            gem --version
+            gem install bundler
+            bundler --version
+            bundle config set path './vendor/bundle'
+
+  run-tests:
+    steps:
+      - run:
+          name: Run the Tests
+          command: |
+            bundle exec rake test
+
+  save-stan-cache:
+    parameters:
+      gemfile:
+        default: "Gemfile"
+        type: string
+    steps:
+      - save_cache:
+          key: gem-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "<<parameters.gemfile>>" }}
+          paths:
+            - vendor/bundle
+
+  restore-stan-cache:
+    parameters:
+      gemfile:
+        default: "Gemfile"
+        type: string
+    steps:
+      - restore_cache:
+          keys:
+            - gem-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "<<parameters.gemfile>>" }}
+            - gem-cache-v1-{{ arch }}-{{ .Branch }}
+            - gem-cache-v1
+
+  bundle-install:
+    parameters:
+      gemfile:
+        default: "Gemfile"
+        type: string
+    steps:
+      - restore-stan-cache:
+          gemfile: <<parameters.gemfile>>
+      - run:
+          name: Bundle Installation
+          command: |
+            bundle install
+      - save-stan-cache:
+          gemfile: <<parameters.gemfile>>
+
+jobs:
+  ruby26:
+    parallelism: 3
+    docker:
+      - image: circleci/ruby:2.6.3-stretch-node
+    executor: ruby/default
+    environment:
+      BUNDLE_JOBS: "3"
+      BUNDLE_RETRY: "3"
+
+    steps:
+      - checkout
+      - prelim-deps
+      - bundle-install
+      - run-tests
+
+  rails50:
+    parallelism: 3
+    docker:
+      - image: circleci/ruby:2.6.3-stretch-node
+      - image: mariadb
+        environment:
+          MYSQL_DATABASE: 'travis_ci_test'
+          MYSQL_USER: 'root'
+          MYSQL_PASSWORD: ''
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ROOT_HOST: '%'
+    executor: ruby/default
+    environment:
+      BUNDLE_JOBS: "3"
+      BUNDLE_RETRY: "3"
+      BUNDLE_GEMFILE: "./gemfiles/rails50.gemfile"
+
+    steps:
+      - checkout
+      - prelim-deps
+      - bundle-install:
+          gemfile: "./gemfiles/rails50.gemfile"
+      - run-tests
+
+  rails60:
+    parallelism: 3
+    docker:
+      - image: circleci/ruby:2.6.3-stretch-node
+      - image: mariadb
+        environment:
+          MYSQL_DATABASE: 'travis_ci_test'
+          MYSQL_USER: 'root'
+          MYSQL_PASSWORD: ''
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ROOT_HOST: '%'
+    executor: ruby/default
+    environment:
+      BUNDLE_JOBS: "3"
+      BUNDLE_RETRY: "3"
+      BUNDLE_GEMFILE: "./gemfiles/rails60.gemfile"
+
+    steps:
+      - checkout
+      - prelim-deps
+      - bundle-install:
+          gemfile: "./gemfiles/rails60.gemfile"
+      - run-tests
+
+  libraries:
+    parallelism: 3
+    docker:
+      - image: circleci/ruby:2.6.3-stretch-node
+      - image: mariadb
+        environment:
+          MYSQL_DATABASE: 'travis_ci_test'
+          MYSQL_USER: 'root'
+          MYSQL_PASSWORD: ''
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ROOT_HOST: '%'
+      - image: memcached
+      - image: postgres
+        environment:
+          POSTGRES_USER: 'stan'
+          POSTGRES_PASSWORD: 'stanlikesdata'
+      - image: redis
+    executor: ruby/default
+    environment:
+      BUNDLE_JOBS: "3"
+      BUNDLE_RETRY: "3"
+      BUNDLE_GEMFILE: "./gemfiles/libraries.gemfile"
+
+    steps:
+      - checkout
+      - prelim-deps
+      - bundle-install:
+          gemfile: "./gemfiles/libraries.gemfile"
+      - run-tests
+
+workflows:
+  version: 2
+  whole-enchilada-MRI26:
+    jobs:
+      - ruby26
+      - rails50
+      - rails60
+      - libraries
