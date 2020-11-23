@@ -308,7 +308,7 @@ module Instana
       end
 
       # If <value> is not a Symbol, String, Array, Hash or Numeric - convert to string
-      if ![Symbol, String, Array, Hash].include?(value.class) && !value.is_a?(Numeric)
+      if ![Symbol, String, Array, TrueClass, FalseClass, Hash].include?(value.class) && !value.is_a?(Numeric)
         value = value.to_s
       end
 
