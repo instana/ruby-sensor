@@ -46,6 +46,37 @@ class TracerTest < Minitest::Test
     assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
   end
 
+  def test_exotic_tag_types
+    clear_all!
+
+    assert_equal false, ::Instana.tracer.tracing?
+
+    require 'resolv'
+    r = Resolv::DNS.new
+    ipv4 = r.getaddress("www.pwpush.com")
+
+    ::Instana.tracer.start_or_continue_trace(:rack, {:ipaddr => ipv4}) do
+      assert_equal true, ::Instana.tracer.tracing?
+      sleep 0.1
+    end
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
+
+    first_span = spans.first
+    assert_equal :rack, first_span[:n]
+    assert first_span[:ts].is_a?(Integer)
+    assert first_span[:d].is_a?(Integer)
+    assert first_span[:d].between?(100, 130)
+    assert first_span.key?(:data)
+    assert first_span[:data].key?(:ipaddr)
+    assert first_span[:data][:ipaddr].is_a?(String)
+    assert first_span.key?(:f)
+    assert first_span[:f].key?(:e)
+    assert first_span[:f].key?(:h)
+    assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
+  end
+
   def test_errors_are_properly_propagated
     clear_all!
     exception_raised = false
@@ -198,7 +229,6 @@ class TracerTest < Minitest::Test
     assert_equal sdk_span[:k], 3
     assert_equal sdk_span[:data][:sdk][:custom][:tags][:sub_task_info], 1
     assert_equal sdk_span[:data][:sdk][:custom][:tags][:sub_task_exit_info], 1
-
   end
 
   def test_block_tracing_error_capture

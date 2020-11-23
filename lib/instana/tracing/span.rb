@@ -303,6 +303,15 @@ module Instana
     # a String, Numeric, or Boolean it will be encoded with to_s
     #
     def set_tag(key, value)
+      if ![Symbol, String].include?(key.class)
+        key = key.to_s
+      end
+
+      # If <value> is not a Symbol, String, Array, Hash or Numeric - convert to string
+      if ![Symbol, String, Array, TrueClass, FalseClass, Hash].include?(value.class) && !value.is_a?(Numeric)
+        value = value.to_s
+      end
+
       if custom?
         @data[:data][:sdk][:custom] ||= {}
         @data[:data][:sdk][:custom][:tags] ||= {}
