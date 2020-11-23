@@ -8,8 +8,9 @@ module Instana
       @app = app
     end
 
-    def call(env)
-      kvs = { :http => {} }
+    def collect_kvs(env)
+      kvs = {}
+      kvs[:http] = {}
       kvs[:http][:method] = env['REQUEST_METHOD']
       kvs[:http][:url] = ::CGI.unescape(env['PATH_INFO'])
 
@@ -37,14 +38,26 @@ module Instana
           end
         }
       end
+      return kvs
+    end
 
+    def call(env)
       # Check incoming context
       incoming_context = {}
       if env.key?('HTTP_X_INSTANA_T')
         incoming_context[:trace_id]  = ::Instana::Util.header_to_id(env['HTTP_X_INSTANA_T'])
         incoming_context[:span_id]   = ::Instana::Util.header_to_id(env['HTTP_X_INSTANA_S']) if env.key?('HTTP_X_INSTANA_S')
         incoming_context[:level]     = env['HTTP_X_INSTANA_L'] if env.key?('HTTP_X_INSTANA_L')
+
+        # Honor X-Instana-L
+        if incoming_context[:level] and incoming_context[:level].length > 0
+          if incoming_context[:level][0] == "0"
+            return @app.call(env)
+          end
+        end
       end
+
+      kvs = collect_kvs(env)
 
       ::Instana.tracer.log_start_or_continue(:rack, {}, incoming_context)
 
@@ -78,8 +91,10 @@ module Instana
         # Set reponse headers; encode as hex string
         headers['X-Instana-T'] = ::Instana::Util.id_to_header(trace_id)
         headers['X-Instana-S'] = ::Instana::Util.id_to_header(span_id)
+        headers['X-Instana-L'] = '1'
+        headers['Server-Timing'] = "intid;desc=#{::Instana::Util.id_to_header(trace_id)}"
+        ::Instana.tracer.log_end(:rack, kvs)
       end
-      ::Instana.tracer.log_end(:rack, kvs)
     end
   end
 end

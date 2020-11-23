@@ -29,23 +29,33 @@ class RackTest < Minitest::Test
     # Span validation
     assert_equal 1, spans.count
 
-    first_span = spans.first
-    assert_equal :rack, first_span[:n]
-    assert first_span.key?(:data)
-    assert first_span[:data].key?(:http)
-    assert_equal "GET", first_span[:data][:http][:method]
-    assert_equal "/mrlobster", first_span[:data][:http][:url]
-    assert_equal 200, first_span[:data][:http][:status]
-    assert_equal 'example.org', first_span[:data][:http][:host]
-    assert first_span.key?(:f)
-    assert first_span[:f].key?(:e)
-    assert first_span[:f].key?(:h)
-    assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
+    rack_span = spans.first
+    assert_equal :rack, rack_span[:n]
+
+    assert last_response.headers.key?("X-Instana-T")
+    assert last_response.headers["X-Instana-T"] == ::Instana::Util.id_to_header(rack_span[:t])
+    assert last_response.headers.key?("X-Instana-S")
+    assert last_response.headers["X-Instana-S"] == ::Instana::Util.id_to_header(rack_span[:s])
+    assert last_response.headers.key?("X-Instana-L")
+    assert last_response.headers["X-Instana-L"] == '1'
+    assert last_response.headers.key?("Server-Timing")
+    assert last_response.headers["Server-Timing"] == "intid;desc=#{::Instana::Util.id_to_header(rack_span[:t])}"
+
+    assert rack_span.key?(:data)
+    assert rack_span[:data].key?(:http)
+    assert_equal "GET", rack_span[:data][:http][:method]
+    assert_equal "/mrlobster", rack_span[:data][:http][:url]
+    assert_equal 200, rack_span[:data][:http][:status]
+    assert_equal 'example.org', rack_span[:data][:http][:host]
+    assert rack_span.key?(:f)
+    assert rack_span[:f].key?(:e)
+    assert rack_span[:f].key?(:h)
+    assert_equal ::Instana.agent.agent_uuid, rack_span[:f][:h]
 
     # Backtrace fingerprint validation
-    assert first_span.key?(:stack)
-    assert_equal 2, first_span[:stack].count
-    refute_nil first_span[:stack].first[:c].match(/instana\/instrumentation\/rack.rb/)
+    assert rack_span.key?(:stack)
+    assert_equal 2, rack_span[:stack].count
+    refute_nil rack_span[:stack].first[:c].match(/instana\/instrumentation\/rack.rb/)
 
     # Restore to default
     ::Instana.config[:collect_backtraces] = false
@@ -63,8 +73,8 @@ class RackTest < Minitest::Test
     # Span validation
     assert_equal 1, spans.count
 
-    first_span = spans.first
-    assert_equal 'WalterBishop', first_span[:data][:service]
+    rack_span = spans.first
+    assert_equal 'WalterBishop', rack_span[:data][:service]
 
     ENV.delete('INSTANA_SERVICE_NAME')
   end
@@ -78,17 +88,27 @@ class RackTest < Minitest::Test
 
     # Span validation
     assert_equal 1, spans.count
-    first_span = spans.first
-    assert_equal :rack, first_span[:n]
-    assert first_span.key?(:data)
-    assert first_span[:data].key?(:http)
-    assert_equal "POST", first_span[:data][:http][:method]
-    assert_equal "/mrlobster", first_span[:data][:http][:url]
-    assert_equal 200, first_span[:data][:http][:status]
-    assert first_span.key?(:f)
-    assert first_span[:f].key?(:e)
-    assert first_span[:f].key?(:h)
-    assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
+    rack_span = spans.first
+    assert_equal :rack, rack_span[:n]
+
+    assert last_response.headers.key?("X-Instana-T")
+    assert last_response.headers["X-Instana-T"] == ::Instana::Util.id_to_header(rack_span[:t])
+    assert last_response.headers.key?("X-Instana-S")
+    assert last_response.headers["X-Instana-S"] == ::Instana::Util.id_to_header(rack_span[:s])
+    assert last_response.headers.key?("X-Instana-L")
+    assert last_response.headers["X-Instana-L"] == '1'
+    assert last_response.headers.key?("Server-Timing")
+    assert last_response.headers["Server-Timing"] == "intid;desc=#{::Instana::Util.id_to_header(rack_span[:t])}"
+
+    assert rack_span.key?(:data)
+    assert rack_span[:data].key?(:http)
+    assert_equal "POST", rack_span[:data][:http][:method]
+    assert_equal "/mrlobster", rack_span[:data][:http][:url]
+    assert_equal 200, rack_span[:data][:http][:status]
+    assert rack_span.key?(:f)
+    assert rack_span[:f].key?(:e)
+    assert rack_span[:f].key?(:h)
+    assert_equal ::Instana.agent.agent_uuid, rack_span[:f][:h]
   end
 
   def test_basic_put
@@ -100,17 +120,27 @@ class RackTest < Minitest::Test
 
     # Span validation
     assert_equal 1, spans.count
-    first_span = spans.first
-    assert_equal :rack, first_span[:n]
-    assert first_span.key?(:data)
-    assert first_span[:data].key?(:http)
-    assert_equal "PUT", first_span[:data][:http][:method]
-    assert_equal "/mrlobster", first_span[:data][:http][:url]
-    assert_equal 200, first_span[:data][:http][:status]
-    assert first_span.key?(:f)
-    assert first_span[:f].key?(:e)
-    assert first_span[:f].key?(:h)
-    assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
+    rack_span = spans.first
+    assert_equal :rack, rack_span[:n]
+
+    assert last_response.headers.key?("X-Instana-T")
+    assert last_response.headers["X-Instana-T"] == ::Instana::Util.id_to_header(rack_span[:t])
+    assert last_response.headers.key?("X-Instana-S")
+    assert last_response.headers["X-Instana-S"] == ::Instana::Util.id_to_header(rack_span[:s])
+    assert last_response.headers.key?("X-Instana-L")
+    assert last_response.headers["X-Instana-L"] == '1'
+    assert last_response.headers.key?("Server-Timing")
+    assert last_response.headers["Server-Timing"] == "intid;desc=#{::Instana::Util.id_to_header(rack_span[:t])}"
+
+    assert rack_span.key?(:data)
+    assert rack_span[:data].key?(:http)
+    assert_equal "PUT", rack_span[:data][:http][:method]
+    assert_equal "/mrlobster", rack_span[:data][:http][:url]
+    assert_equal 200, rack_span[:data][:http][:status]
+    assert rack_span.key?(:f)
+    assert rack_span[:f].key?(:e)
+    assert rack_span[:f].key?(:h)
+    assert_equal ::Instana.agent.agent_uuid, rack_span[:f][:h]
   end
 
   def test_context_continuation
@@ -125,23 +155,33 @@ class RackTest < Minitest::Test
 
     # Span validation
     assert_equal 1, spans.count
-    first_span = spans.first
-    assert_equal :rack, first_span[:n]
-    assert first_span.key?(:data)
-    assert first_span[:data].key?(:http)
-    assert_equal "GET", first_span[:data][:http][:method]
-    assert_equal "/mrlobster", first_span[:data][:http][:url]
-    assert_equal 200, first_span[:data][:http][:status]
-    assert first_span.key?(:f)
-    assert first_span[:f].key?(:e)
-    assert first_span[:f].key?(:h)
-    assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
+    rack_span = spans.first
+    assert_equal :rack, rack_span[:n]
+
+    assert last_response.headers.key?("X-Instana-T")
+    assert last_response.headers["X-Instana-T"] == ::Instana::Util.id_to_header(rack_span[:t])
+    assert last_response.headers.key?("X-Instana-S")
+    assert last_response.headers["X-Instana-S"] == ::Instana::Util.id_to_header(rack_span[:s])
+    assert last_response.headers.key?("X-Instana-L")
+    assert last_response.headers["X-Instana-L"] == '1'
+    assert last_response.headers.key?("Server-Timing")
+    assert last_response.headers["Server-Timing"] == "intid;desc=#{::Instana::Util.id_to_header(rack_span[:t])}"
+
+    assert rack_span.key?(:data)
+    assert rack_span[:data].key?(:http)
+    assert_equal "GET", rack_span[:data][:http][:method]
+    assert_equal "/mrlobster", rack_span[:data][:http][:url]
+    assert_equal 200, rack_span[:data][:http][:status]
+    assert rack_span.key?(:f)
+    assert rack_span[:f].key?(:e)
+    assert rack_span[:f].key?(:h)
+    assert_equal ::Instana.agent.agent_uuid, rack_span[:f][:h]
 
     # Context validation
     # The first span should have the passed in trace ID
     # and specify the passed in span ID as it's parent.
-    assert_equal 1234, first_span[:t]
-    assert_equal 4321, first_span[:p]
+    assert_equal 1234, rack_span[:t]
+    assert_equal 4321, rack_span[:p]
   end
 
   def test_instana_response_headers
@@ -181,17 +221,17 @@ class RackTest < Minitest::Test
 
     # Span validation
     assert_equal 1, spans.count
-    first_span = spans.first
+    rack_span = spans.first
 
-    assert first_span[:data][:http].key?(:header)
-    assert first_span[:data][:http][:header].key?(:"X-Capture-This")
-    assert !first_span[:data][:http][:header].key?(:"X-Capture-That")
-    assert_equal "ThereYouGo", first_span[:data][:http][:header][:"X-Capture-This"]
+    assert rack_span[:data][:http].key?(:header)
+    assert rack_span[:data][:http][:header].key?(:"X-Capture-This")
+    assert !rack_span[:data][:http][:header].key?(:"X-Capture-That")
+    assert_equal "ThereYouGo", rack_span[:data][:http][:header][:"X-Capture-This"]
 
     # Backtrace fingerprint validation
-    assert first_span.key?(:stack)
-    assert_equal 2, first_span[:stack].count
-    refute_nil first_span[:stack].first[:c].match(/instana\/instrumentation\/rack.rb/)
+    assert rack_span.key?(:stack)
+    assert_equal 2, rack_span[:stack].count
+    refute_nil rack_span[:stack].first[:c].match(/instana\/instrumentation\/rack.rb/)
 
     # Restore to default
     ::Instana.config[:collect_backtraces] = false
