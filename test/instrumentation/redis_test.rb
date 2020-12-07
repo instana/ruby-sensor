@@ -20,6 +20,16 @@ class RedisTest < Minitest::Test
     assert_redis_trace('SET')
   end
 
+  def test_georadius
+    clear_all!
+
+    Instana.tracer.start_or_continue_trace(:redis_test) do
+      @redis_client.georadius('Sicily', '15', '37', '200', 'km', 'WITHCOORD', 'WITHDIST')
+    end
+
+    assert_redis_trace('GEORADIUS')
+  end
+
   def test_normal_call_with_error
     clear_all!
 
