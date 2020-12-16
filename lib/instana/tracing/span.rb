@@ -57,9 +57,6 @@ module Instana
       end
 
       if ::Instana.config[:collect_backtraces]
-        # For entry spans, add a backtrace fingerprint
-        add_stack(limit: 2) if ENTRY_SPANS.include?(name)
-
         # Attach a backtrace to all exit spans
         add_stack if EXIT_SPANS.include?(name)
       end
@@ -76,9 +73,11 @@ module Instana
     #
     # @param limit [Integer] Limit the backtrace to the top <limit> frames
     #
-    def add_stack(limit: nil, stack: Kernel.caller)
+    def add_stack(limit: 30, stack: Kernel.caller)
       frame_count = 0
+      sanitized_stack = []
       @data[:stack] = []
+      limit = 40 if limit > 40
 
       stack.each do |i|
         # If the stack has the full instana gem version in it's path
@@ -86,17 +85,22 @@ module Instana
         if !i.match(/instana\/instrumentation\/rack.rb/).nil? ||
           (i.match(::Instana::VERSION_FULL).nil? && i.match('lib/instana/').nil?)
 
-          break if limit && frame_count >= limit
-
           x = i.split(':')
 
-          @data[:stack] << {
+          sanitized_stack << {
             :c => x[0],
             :n => x[1],
             :m => x[2]
           }
-         frame_count = frame_count + 1 if limit
         end
+      end
+
+      if sanitized_stack.length > limit
+        # (limit * -1) gives us negative form of <limit> used for
+        # slicing from the end of the list. e.g. stack[-30, 30]
+        @data[:stack] = sanitized_stack[limit*-1, limit]
+      else
+        @data[:stack] = sanitized_stack
       end
     end
 
