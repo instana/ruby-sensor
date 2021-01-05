@@ -76,6 +76,11 @@ module Instana
           ::Instana.tracer.log_error(nil)
         end
 
+        # If the framework instrumentation provides a path template,
+        # pass it into the span here.
+        # See: https://www.instana.com/docs/tracing/custom-best-practices/#path-templates-visual-grouping-of-http-endpoints
+        kvs[:http][:path_tpl] = env['INSTANA_HTTP_PATH_TEMPLATE'] if env['INSTANA_HTTP_PATH_TEMPLATE']
+
         # Save the IDs before the trace ends so we can place
         # them in the response headers in the ensure block
         trace_id = ::Instana.tracer.current_span.trace_id
