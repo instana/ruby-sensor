@@ -40,5 +40,19 @@ if defined?(::Roda)
       assert first_span[:data][:http].key?(:host)
       assert_equal "example.org", first_span[:data][:http][:host]
     end
+    
+    def test_path_template
+      clear_all!
+
+      r = get '/greet/instana'
+      assert last_response.ok?
+
+      spans = ::Instana.processor.queued_spans
+      assert_equal 1, spans.count
+
+      first_span = spans.first
+      assert_equal :rack, first_span[:n]
+      assert_equal '/greet/{name}', first_span[:data][:http][:path_tpl]
+    end
   end
 end

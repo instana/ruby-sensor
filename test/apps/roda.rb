@@ -6,5 +6,8 @@ class InstanaRodaApp < Roda
     r.get "hello" do
       "Hello Roda + Instana"
     end
+    r.get "greet", String do |name|
+      "Hello, #{name}!"
+    end
   end
 end
