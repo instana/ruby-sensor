@@ -5,16 +5,22 @@ require "instana/rack"
 
 class RackTest < Minitest::Test
   include Rack::Test::Methods
+  
+  class PathTemplateApp
+    def call(env)
+      env['INSTANA_HTTP_PATH_TEMPLATE'] = 'sample_template'
+      [200, {}, ['Ok']]
+    end
+  end
 
   def app
-    @app = Rack::Builder.new {
+    @app = Rack::Builder.new do
       use Rack::CommonLogger
       use Rack::ShowExceptions
       use Instana::Rack
-      map "/mrlobster" do
-        run Rack::Lobster.new
-      end
-    }
+      map("/mrlobster") { run Rack::Lobster.new }
+      map("/path_tpl") { run PathTemplateApp.new }
+    end
   end
 
   def test_basic_get
@@ -236,5 +242,19 @@ class RackTest < Minitest::Test
     # Restore to default
     ::Instana.config[:collect_backtraces] = false
     ::Instana.agent.extra_headers = nil
+  end
+  
+  def test_capture_http_path_template
+    clear_all!
+    
+    get '/path_tpl'
+    assert last_response.ok?
+    
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
+    
+    rack_span = spans.first
+    assert_equal :rack, rack_span[:n]
+    assert_equal 'sample_template', rack_span[:data][:http][:path_tpl]
   end
 end

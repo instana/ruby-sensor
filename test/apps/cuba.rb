@@ -7,6 +7,10 @@ Cuba.define do
     on "hello" do
       res.write "Hello Instana!"
     end
+    
+    on "greet/:name" do |name|
+      res.write "Hello, #{name}"
+    end
 
     on root do
       res.redirect '/hello'
