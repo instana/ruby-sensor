@@ -25,6 +25,7 @@ module Instana
     attr_accessor :collect_thread
     attr_accessor :thread_spawn_lock
     attr_accessor :extra_headers
+    attr_reader :secret_values
 
     attr_accessor :testmode
 
@@ -83,6 +84,10 @@ module Instana
 
       # The agent may pass down custom headers for this sensor to capture
       @extra_headers = nil
+      
+      # The values considered sensitive and removed from http query parameters
+      # and database connection strings 
+      @secret_values = nil
     end
 
     # Spawns the background thread and calls start.  This method is separated
@@ -278,6 +283,7 @@ module Instana
         data = Oj.load(response.body, OJ_OPTIONS)
         @process[:report_pid] = data['pid']
         @agent_uuid = data['agentUuid']
+        @secret_values = data['secrets']
 
         if data.key?('extraHeaders')
           @extra_headers = data['extraHeaders']
