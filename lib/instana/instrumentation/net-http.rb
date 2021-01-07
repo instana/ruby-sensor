@@ -32,6 +32,8 @@ if defined?(::Net::HTTP) && ::Instana.config[:nethttp][:enabled]
           kv_payload[:http][:url] = "http://#{@address}:#{@port}#{request.path}"
         end
       end
+      
+      kv_payload[:http][:url] = ::Instana.secrets.remove_from_query(kv_payload[:http][:url])
 
       # The core call
       response = request_without_instana(*args, &block)

@@ -3,6 +3,8 @@ require 'uri'
 module Instana
   class Secrets    
     def remove_from_query(str, secret_values = Instana.agent.secret_values)
+      return str unless secret_values
+      
       url = URI(str)
       params = CGI.parse(url.query)
       

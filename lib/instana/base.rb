@@ -12,6 +12,7 @@ module Instana
     attr_accessor :config
     attr_accessor :logger
     attr_accessor :pid
+    attr_reader :secrets
 
     ##
     # setup
@@ -24,6 +25,7 @@ module Instana
       @tracer = ::Instana::Tracer.new
       @processor = ::Instana::Processor.new
       @collector = ::Instana::Collector.new
+      @secrets = ::Instana::Secrets.new
     end
   end
 end
