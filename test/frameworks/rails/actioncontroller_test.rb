@@ -153,4 +153,16 @@ class ActionControllerTest < Minitest::Test
     assert ac_span.key?(:stack)
     assert 1, ac_span[:ec]
   end
+  
+  def test_path_template
+    clear_all!
+
+    Net::HTTP.get(URI.parse('http://localhost:3205/test/world'))
+    
+    spans = ::Instana.processor.queued_spans
+    rack_span = find_first_span_by_name(spans, :rack)
+
+    assert_equal false, rack_span.key?(:error)
+    assert_equal '/test/world(.:format)', rack_span[:data][:http][:path_tpl]
+  end
 end

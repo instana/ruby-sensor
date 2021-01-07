@@ -64,6 +64,15 @@ module Instana
         end
         name
       end
+      
+      def matched_path_template
+        Rails.application.routes.router.recognize(request) do |route, _, _|
+          path = route.path
+          return path.spec.to_s
+        end
+        
+        nil
+      end
     end
 
     # Used in ActionPack versions 5 and beyond, this module provides
@@ -83,6 +92,7 @@ module Instana
         ::Instana.tracer.log_entry(:actioncontroller, kv_payload)
 
         super(*args)
+        request.env['INSTANA_HTTP_PATH_TEMPLATE'] = matched_path_template
       rescue Exception => e
         ::Instana.tracer.log_error(e) unless has_rails_handler?(e)
         raise
@@ -135,6 +145,7 @@ module Instana
         ::Instana.tracer.log_entry(:actioncontroller, kv_payload)
 
         process_action_without_instana(*args)
+        request.env['INSTANA_HTTP_PATH_TEMPLATE'] = matched_path_template
       rescue Exception => e
         ::Instana.tracer.log_error(e) unless has_rails_handler?(e)
         raise
