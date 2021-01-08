@@ -1,53 +1,73 @@
 require 'test_helper'
 
 class SecretsTest < Minitest::Test
+  def setup
+    @subject = Instana::Secrets.new
+  end
+  
   def test_equals_ignore_case
     sample_config = {
       "matcher"=>"equals-ignore-case", 
       "list"=>["key"]
     }
     
-    subject = Instana::Secrets.new
-    assert_equal 'http://example.com/?kEy=<redacted>', subject.remove_from_query('http://example.com/?kEy=abcde', sample_config)  
+    url = url_for(%w(key Str kEy KEY))
+    assert_redacted @subject.remove_from_query(url, sample_config), %w(key kEy KEY)
   end
   
   def test_equals
     sample_config = {
       "matcher"=>"equals", 
-      "list"=>["key"]
+      "list"=>["key", "kEy"]
     }
     
-    subject = Instana::Secrets.new
-    assert_equal 'http://example.com/?key=<redacted>', subject.remove_from_query('http://example.com/?key=abcde', sample_config)  
+    url = url_for(%w(key Str kEy KEY))
+    assert_redacted @subject.remove_from_query(url, sample_config), %w(key kEy)
   end
   
   def test_contains_ignore_case
     sample_config = {
       "matcher"=>"contains-ignore-case", 
-      "list"=>["key"]
+      "list"=>["stan"]
     }
     
-    subject = Instana::Secrets.new
-    assert_equal 'http://example.com/?KEYy=<redacted>', subject.remove_from_query('http://example.com/?KEYy=abcde', sample_config)    
+    url = url_for(%w(instantiate conTESTant sample))
+    assert_redacted @subject.remove_from_query(url, sample_config), %w(instantiate conTESTant)
   end
   
   def test_contains
     sample_config = {
       "matcher"=>"contains", 
-      "list"=>["key"]
+      "list"=>["stan"]
     }
     
-    subject = Instana::Secrets.new
-    assert_equal 'http://example.com/?keymt=<redacted>', subject.remove_from_query('http://example.com/?keymt=abcde', sample_config)  
+    url = url_for(%w(instantiate conTESTant sample))
+    assert_redacted @subject.remove_from_query(url, sample_config), %w(instantiate)
+  
   end
   
   def test_regexp
     sample_config = {
       "matcher"=>"regex", 
-      "list"=>["key"]
+      "list"=>["l{2}"]
     }
     
-    subject = Instana::Secrets.new
-    assert_equal 'http://example.com/?key=<redacted>', subject.remove_from_query('http://example.com/?key=abcde', sample_config)  
+    url = url_for(%w(ball foot move))
+    assert_redacted @subject.remove_from_query(url, sample_config), %w(ball) 
+  end
+  
+  private
+  
+  def url_for(keys)
+    url = URI('http://example.com')
+    url.query = URI.encode_www_form(keys.map { |k| [k, rand(1..100)]})
+    url.to_s
+  end
+  
+  def assert_redacted(str, keys)
+    url = URI(str)
+    params = CGI.parse(url.query)
+    
+    assert_equal keys, params.select { |_, v| v == %w(<redacted>) }.keys, 'to be redacted'
   end
 end
