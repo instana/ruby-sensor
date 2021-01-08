@@ -34,7 +34,8 @@ module Instana
       when 'regex'
         ->(expected, actual) { !Regexp.new(expected).match(actual).nil? }
       else
-        fail '#{@matcher} is not supported.'
+        ::Instana.logger.warn("Matcher #{name} is not supported.")
+        lambda { false }
       end
     end
   end
