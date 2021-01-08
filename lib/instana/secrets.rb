@@ -1,4 +1,5 @@
 require 'uri'
+require 'cgi'
 
 module Instana
   class Secrets    
@@ -15,7 +16,7 @@ module Instana
       end
       
       url.query = URI.encode_www_form(redacted)
-      url.to_s
+      CGI.unescape(url.to_s)
     end
     
     private

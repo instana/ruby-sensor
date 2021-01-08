@@ -8,7 +8,7 @@ class SecretsTest < Minitest::Test
     }
     
     subject = Instana::Secrets.new
-    assert_equal 'http://example.com/?kEy=%3Credacted%3E', subject.remove_from_query('http://example.com/?kEy=abcde', sample_config)  
+    assert_equal 'http://example.com/?kEy=<redacted>', subject.remove_from_query('http://example.com/?kEy=abcde', sample_config)  
   end
   
   def test_equals
@@ -18,7 +18,7 @@ class SecretsTest < Minitest::Test
     }
     
     subject = Instana::Secrets.new
-    assert_equal 'http://example.com/?key=%3Credacted%3E', subject.remove_from_query('http://example.com/?key=abcde', sample_config)  
+    assert_equal 'http://example.com/?key=<redacted>', subject.remove_from_query('http://example.com/?key=abcde', sample_config)  
   end
   
   def test_contains_ignore_case
@@ -28,7 +28,7 @@ class SecretsTest < Minitest::Test
     }
     
     subject = Instana::Secrets.new
-    assert_equal 'http://example.com/?KEYy=%3Credacted%3E', subject.remove_from_query('http://example.com/?KEYy=abcde', sample_config)    
+    assert_equal 'http://example.com/?KEYy=<redacted>', subject.remove_from_query('http://example.com/?KEYy=abcde', sample_config)    
   end
   
   def test_contains
@@ -38,7 +38,7 @@ class SecretsTest < Minitest::Test
     }
     
     subject = Instana::Secrets.new
-    assert_equal 'http://example.com/?keymt=%3Credacted%3E', subject.remove_from_query('http://example.com/?keymt=abcde', sample_config)  
+    assert_equal 'http://example.com/?keymt=<redacted>', subject.remove_from_query('http://example.com/?keymt=abcde', sample_config)  
   end
   
   def test_regexp
@@ -48,6 +48,6 @@ class SecretsTest < Minitest::Test
     }
     
     subject = Instana::Secrets.new
-    assert_equal 'http://example.com/?key=%3Credacted%3E', subject.remove_from_query('http://example.com/?key=abcde', sample_config)  
+    assert_equal 'http://example.com/?key=<redacted>', subject.remove_from_query('http://example.com/?key=abcde', sample_config)  
   end
 end
