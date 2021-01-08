@@ -7,7 +7,7 @@ if defined?(::Excon) && ::Instana.config[:excon][:enabled]
 
           payload = { :http => {} }
           path = datum[:path].split('?').first
-          payload[:http][:url] = "#{datum[:connection].instance_variable_get(:@socket_key)}#{path}"
+          payload[:http][:url] = ::Instana.secrets.remove_from_query("#{datum[:connection].instance_variable_get(:@socket_key)}#{path}")
           payload[:http][:method] = datum[:method] if datum.key?(:method)
 
           if datum[:pipeline] == true
