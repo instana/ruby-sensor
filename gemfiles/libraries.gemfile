@@ -65,6 +65,8 @@ if RUBY_VERSION < '2.2'
   gem 'rack', '< 2.0'
 end
 
+gem 'graphql'
+
 # Include the Instana Ruby gem's base set of gems
 gemspec :path => File.expand_path(File.dirname(__FILE__) + '/../')
 
