@@ -48,6 +48,7 @@ module Instana
       @config[:dalli]              = { :enabled => true }
       @config[:excon]              = { :enabled => true }
       @config[:grpc]               = { :enabled => true }
+      @config[:graphql]            = { :enabled => true }
       @config[:nethttp]            = { :enabled => true }
       @config[:redis]              = { :enabled => true }
       @config[:'resque-client']    = { :enabled => true }
