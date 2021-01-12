@@ -116,8 +116,6 @@ class ExconTest < Minitest::Test
     assert_equal 3, rack_spans.length
     assert_equal 3, excon_spans.length
 
-    # ::Instana::Util.pry!
-
     for rack_span in rack_spans
       # data keys/values
       refute_nil rack_span.key?(:data)

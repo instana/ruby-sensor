@@ -42,6 +42,16 @@ module Instana
       # ::Instana.config[:collect_backtraces] = true
       @config[:collect_backtraces] = false
 
+      # By default, collected SQL will be sanitized to remove potentially sensitive bind params such as:
+      #   > SELECT  "blocks".* FROM "blocks"  WHERE "blocks"."name" = "Mr. Smith"
+      #
+      # ...would be sanitized to be:
+      #   > SELECT  "blocks".* FROM "blocks"  WHERE "blocks"."name" = ?
+      #
+      # This sanitization step can be disabled by setting the following value to false.
+      # ::Instana.config[:sanitize_sql] = false
+      @config[:sanitize_sql] = true
+
       @config[:action_controller]  = { :enabled => true }
       @config[:action_view]        = { :enabled => true }
       @config[:active_record]      = { :enabled => true }
