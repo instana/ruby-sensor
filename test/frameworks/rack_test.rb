@@ -57,11 +57,7 @@ class RackTest < Minitest::Test
     assert rack_span[:f].key?(:e)
     assert rack_span[:f].key?(:h)
     assert_equal ::Instana.agent.agent_uuid, rack_span[:f][:h]
-
-    # Backtrace fingerprint validation
-    assert rack_span.key?(:stack)
-    assert_equal 2, rack_span[:stack].count
-    refute_nil rack_span[:stack].first[:c].match(/instana\/instrumentation\/rack.rb/)
+    assert !rack_span.key?(:stack)
 
     # Restore to default
     ::Instana.config[:collect_backtraces] = false
@@ -233,11 +229,7 @@ class RackTest < Minitest::Test
     assert rack_span[:data][:http][:header].key?(:"X-Capture-This")
     assert !rack_span[:data][:http][:header].key?(:"X-Capture-That")
     assert_equal "ThereYouGo", rack_span[:data][:http][:header][:"X-Capture-This"]
-
-    # Backtrace fingerprint validation
-    assert rack_span.key?(:stack)
-    assert_equal 2, rack_span[:stack].count
-    refute_nil rack_span[:stack].first[:c].match(/instana\/instrumentation\/rack.rb/)
+    assert !rack_span.key?(:stack)
 
     # Restore to default
     ::Instana.config[:collect_backtraces] = false
