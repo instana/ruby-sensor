@@ -1,6 +1,4 @@
-# Note: We really only need "cgi/util" here but Ruby 2.4.1 has an issue:
-# https://bugs.ruby-lang.org/issues/13539
-require "cgi"
+require 'instana/instrumentation/instrumented_request'
 
 module Instana
   class Rack
@@ -42,24 +40,14 @@ module Instana
     end
 
     def call(env)
-      # Check incoming context
-      incoming_context = {}
-      if env.key?('HTTP_X_INSTANA_T')
-        incoming_context[:trace_id]  = ::Instana::Util.header_to_id(env['HTTP_X_INSTANA_T'])
-        incoming_context[:span_id]   = ::Instana::Util.header_to_id(env['HTTP_X_INSTANA_S']) if env.key?('HTTP_X_INSTANA_S')
-        incoming_context[:level]     = env['HTTP_X_INSTANA_L'] if env.key?('HTTP_X_INSTANA_L')
+      req = InstrumentedRequest.new(env)
+      return @app.call(env) if req.skip_trace?
+      kvs = {
+        http: req.request_tags, 
+        service: ENV['INSTANA_SERVICE_NAME']
+      }.compact
 
-        # Honor X-Instana-L
-        if incoming_context[:level] and incoming_context[:level].length > 0
-          if incoming_context[:level][0] == "0"
-            return @app.call(env)
-          end
-        end
-      end
-
-      kvs = collect_kvs(env)
-
-      ::Instana.tracer.log_start_or_continue(:rack, {}, incoming_context)
+      ::Instana.tracer.log_start_or_continue(:rack, {}, req.incoming_context)
 
       status, headers, response = @app.call(env)
 
