@@ -100,6 +100,12 @@ module Instana
       else
         self.current_span = Span.new(name)
       end
+      
+      if incoming_context.is_a?(Hash) && incoming_context[:correlation] && !incoming_context[:correlation].empty?
+        self.current_span[:crid] = incoming_context[:correlation][:id]
+        self.current_span[:crtp] = incoming_context[:correlation][:type]
+      end
+      
       self.current_span.set_tags(kvs) unless kvs.empty?
       self.current_span
     end

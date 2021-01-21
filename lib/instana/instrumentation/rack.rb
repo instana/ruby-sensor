@@ -6,48 +6,20 @@ module Instana
       @app = app
     end
 
-    def collect_kvs(env)
-      kvs = {}
-      kvs[:http] = {}
-      kvs[:http][:method] = env['REQUEST_METHOD']
-      kvs[:http][:url] = ::CGI.unescape(env['PATH_INFO'])
-
-      if env.key?('HTTP_HOST')
-        kvs[:http][:host] = env['HTTP_HOST']
-      elsif env.key?('SERVER_NAME')
-        kvs[:http][:host] = env['SERVER_NAME']
-      end
-
-      if ENV.key?('INSTANA_SERVICE_NAME')
-        kvs[:service] = ENV['INSTANA_SERVICE_NAME']
-      end
-
-      if ::Instana.agent.extra_headers
-        ::Instana.agent.extra_headers.each { |custom_header|
-          # Headers are available in this format: HTTP_X_CAPTURE_THIS
-          rack_header = 'HTTP_' + custom_header.upcase
-          rack_header.tr!('-', '_')
-
-          if env.key?(rack_header)
-            unless kvs[:http].key?(:header)
-              kvs[:http][:header] = {}
-            end
-            kvs[:http][:header][custom_header.to_sym] = env[rack_header]
-          end
-        }
-      end
-      return kvs
-    end
-
     def call(env)
       req = InstrumentedRequest.new(env)
       return @app.call(env) if req.skip_trace?
       kvs = {
-        http: req.request_tags, 
+        http: req.request_tags,
         service: ENV['INSTANA_SERVICE_NAME']
       }.compact
 
-      ::Instana.tracer.log_start_or_continue(:rack, {}, req.incoming_context)
+      current_span = ::Instana.tracer.log_start_or_continue(:rack, {}, req.incoming_context)
+
+      unless req.correlation_data.empty?
+        current_span[:crid] = req.correlation_data[:id]
+        current_span[:crtp] = req.correlation_data[:type]
+      end
 
       status, headers, response = @app.call(env)
 

@@ -5,7 +5,7 @@ require "instana/rack"
 
 class RackTest < Minitest::Test
   include Rack::Test::Methods
-  
+
   class PathTemplateApp
     def call(env)
       env['INSTANA_HTTP_PATH_TEMPLATE'] = 'sample_template'
@@ -187,6 +187,26 @@ class RackTest < Minitest::Test
     assert_equal continuation_id, rack_span[:p]
   end
 
+  def test_correlation_information
+    clear_all!
+
+    header 'X-INSTANA-L', '1,correlationType=test;correlationId=abcdefh123'
+
+    get '/mrlobster'
+    assert last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+
+    # Span validation
+    assert_equal 1, spans.count
+    rack_span = spans.first
+    assert_equal :rack, rack_span[:n]
+
+    assert_equal 'abcdefh123', rack_span[:crid]
+    assert_equal 'test', rack_span[:crtp]
+  end
+
+
   def test_instana_response_headers
     clear_all!
     get '/mrlobster'
@@ -236,16 +256,16 @@ class RackTest < Minitest::Test
     ::Instana.config[:collect_backtraces] = false
     ::Instana.agent.extra_headers = nil
   end
-  
+
   def test_capture_http_path_template
     clear_all!
-    
+
     get '/path_tpl'
     assert last_response.ok?
-    
+
     spans = ::Instana.processor.queued_spans
     assert_equal 1, spans.length
-    
+
     rack_span = spans.first
     assert_equal :rack, rack_span[:n]
     assert_equal 'sample_template', rack_span[:data][:http][:path_tpl]

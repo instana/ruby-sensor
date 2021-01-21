@@ -54,4 +54,31 @@ class InstrumentedRequestTest < Minitest::Test
     ::Instana.agent.extra_headers = nil
   end
   
+  def test_correlation_data_valid
+    req = Instana::InstrumentedRequest.new(
+      'HTTP_X_INSTANA_L' => '1,correlationType=web ;correlationId=1234567890abcdef'
+    )
+    expected = { 
+      type: 'web', 
+      id: '1234567890abcdef' 
+    }
+        
+    assert_equal expected, req.correlation_data
+  end
+  
+  def test_correlation_data_invalid
+    req = Instana::InstrumentedRequest.new(
+      'HTTP_X_INSTANA_L' => '0;sample-data'
+    )
+        
+    assert_equal({}, req.correlation_data)
+  end
+  
+  def test_correlation_data_legacy
+    req = Instana::InstrumentedRequest.new(
+      'HTTP_X_INSTANA_L' => '1'
+    )
+        
+    assert_equal({}, req.correlation_data)
+  end
 end
