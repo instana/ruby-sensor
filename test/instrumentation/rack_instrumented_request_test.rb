@@ -43,6 +43,7 @@ class RackInstrumentedRequestTest < Minitest::Test
 
     expected = {
       external_trace_id: '4bf92f3577b34da6a3ce929d0e0e4736',
+      external_state: nil,
       trace_id: 'a3ce929d0e0e4736',
       span_id: '00f067aa0ba902b7',
       level: '1'
@@ -62,6 +63,19 @@ class RackInstrumentedRequestTest < Minitest::Test
     }
 
     assert_equal expected, req.incoming_context
+  end
+
+  def test_incoming_w3_state
+    req = Instana::InstrumentedRequest.new(
+      'HTTP_X_TRACESTATE' => 'a=12345,in=123;abe,c=[+]'
+    )
+
+    expected = {
+      t: '123',
+      p: 'abe'
+    }
+
+    assert_equal expected, req.instana_ancestor
   end
 
   def test_request_tags

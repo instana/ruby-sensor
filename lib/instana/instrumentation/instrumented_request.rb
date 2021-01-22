@@ -10,6 +10,7 @@ require 'rack/request'
 module Instana
   class InstrumentedRequest < Rack::Request
     W3_TRACE_PARENT_FORMAT = /00-(?<trace>[0-9a-f]+)-(?<parent>[0-9a-f]+)-(?<flags>[0-9a-f]+)/
+    INSTANA_TRACE_STATE = /in=(?<trace>[0-9a-f]+);(?<span>[0-9a-f]+)/
 
     def skip_trace?
       # Honor X-Instana-L
@@ -56,6 +57,10 @@ module Instana
       @correlation_data ||= parse_correlation_data
     end
 
+    def instana_ancestor
+      @instana_ancestor ||= parse_trace_state
+    end
+
     private
 
     def context_from_instana_headers
@@ -72,8 +77,24 @@ module Instana
 
       {
         external_trace_id: matches['trace'],
+        external_state: @env['HTTP_X_TRACESTATE'],
         trace_id: ::Instana::Util.header_to_id(matches['trace'][16..-1]),
         span_id: ::Instana::Util.header_to_id(matches['parent'])
+      }
+    end
+
+    def parse_trace_state
+      return {} unless @env.has_key?('HTTP_X_TRACESTATE')
+      token = @env['HTTP_X_TRACESTATE']
+        .split(/[,]/)
+        .map { |t| t.match(INSTANA_TRACE_STATE) }
+        .reject { |t| t.nil? }
+        .first
+      return {} unless token
+
+      {
+        t: token['trace'],
+        p: token['span']
       }
     end
 
