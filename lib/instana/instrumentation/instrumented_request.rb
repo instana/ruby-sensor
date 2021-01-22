@@ -19,7 +19,7 @@ module Instana
     def incoming_context
       context = if @env['HTTP_X_INSTANA_T']
                   context_from_instana_headers
-                else @env['HTTP_X_TRACEPARENT']
+                else @env['HTTP_X_TRACEPARENT'] && ::Instana.config[:w3_trace_correlation]
                   context_from_trace_parent
                 end
 

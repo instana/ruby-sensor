@@ -55,6 +55,9 @@ module Instana
       # ::Instana.config[:sanitize_sql] = false
       @config[:sanitize_sql] = true
 
+      # W3 Trace Context Support
+      @config[:w3_trace_correlation] = ENV.fetch('INSTANA_W3C_TRACE_CORRELATION', 'true') == true
+
       @config[:action_controller]  = { :enabled => true }
       @config[:action_view]        = { :enabled => true }
       @config[:active_record]      = { :enabled => true }
