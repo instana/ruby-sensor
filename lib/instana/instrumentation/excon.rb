@@ -26,6 +26,11 @@ module Instana
         datum[:headers]['X-Instana-T'] = t_context.trace_id_header
         datum[:headers]['X-Instana-S'] = t_context.span_id_header
 
+        if ::Instana.config[:w3_trace_correlation]
+          datum[:headers]['Traceparent'] = t_context.trace_parent_header
+          datum[:headers]['Tracestate'] = t_context.trace_state_header
+        end
+
         @stack.request_call(datum)
       end
 

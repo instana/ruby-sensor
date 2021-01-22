@@ -45,10 +45,9 @@ module Instana
         # See: https://www.instana.com/docs/tracing/custom-best-practices/#path-templates-visual-grouping-of-http-endpoints
         kvs[:http][:path_tpl] = env['INSTANA_HTTP_PATH_TEMPLATE'] if env['INSTANA_HTTP_PATH_TEMPLATE']
 
-        # Save the IDs before the trace ends so we can place
+        # Save the span context before the trace ends so we can place
         # them in the response headers in the ensure block
-        trace_id = ::Instana.tracer.current_span.trace_id
-        span_id = ::Instana.tracer.current_span.id
+        trace_context = ::Instana.tracer.current_span.context
       end
 
       [status, headers, response]
@@ -58,10 +57,16 @@ module Instana
     ensure
       if headers && ::Instana.tracer.tracing?
         # Set reponse headers; encode as hex string
-        headers['X-Instana-T'] = ::Instana::Util.id_to_header(trace_id)
-        headers['X-Instana-S'] = ::Instana::Util.id_to_header(span_id)
+        headers['X-Instana-T'] = trace_context.trace_id_header
+        headers['X-Instana-S'] = trace_context.span_id_header
         headers['X-Instana-L'] = '1'
-        headers['Server-Timing'] = "intid;desc=#{::Instana::Util.id_to_header(trace_id)}"
+
+        if ::Instana.config[:w3_trace_correlation]
+          headers['Traceparent'] = trace_context.trace_parent_header
+          headers['Tracestate'] = trace_context.trace_state_header
+        end
+
+        headers['Server-Timing'] = "intid;desc=#{trace_context.trace_id_header}"
         ::Instana.tracer.log_end(:rack, kvs)
       end
     end
