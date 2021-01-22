@@ -5,7 +5,7 @@ require "instana/rack"
 
 class RackTest < Minitest::Test
   include Rack::Test::Methods
-  
+
   class PathTemplateApp
     def call(env)
       env['INSTANA_HTTP_PATH_TEMPLATE'] = 'sample_template'
@@ -147,8 +147,9 @@ class RackTest < Minitest::Test
 
   def test_context_continuation
     clear_all!
-    header 'X-INSTANA-T', Instana::Util.id_to_header(1234)
-    header 'X-INSTANA-S', Instana::Util.id_to_header(4321)
+    continuation_id = Instana::Util.generate_id
+    header 'X-INSTANA-T', continuation_id
+    header 'X-INSTANA-S', continuation_id
 
     get '/mrlobster'
     assert last_response.ok?
@@ -182,9 +183,29 @@ class RackTest < Minitest::Test
     # Context validation
     # The first span should have the passed in trace ID
     # and specify the passed in span ID as it's parent.
-    assert_equal 1234, rack_span[:t]
-    assert_equal 4321, rack_span[:p]
+    assert_equal continuation_id, rack_span[:t]
+    assert_equal continuation_id, rack_span[:p]
   end
+
+  def test_correlation_information
+    clear_all!
+
+    header 'X-INSTANA-L', '1,correlationType=test;correlationId=abcdefh123'
+
+    get '/mrlobster'
+    assert last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+
+    # Span validation
+    assert_equal 1, spans.count
+    rack_span = spans.first
+    assert_equal :rack, rack_span[:n]
+
+    assert_equal 'abcdefh123', rack_span[:crid]
+    assert_equal 'test', rack_span[:crtp]
+  end
+
 
   def test_instana_response_headers
     clear_all!
@@ -235,16 +256,16 @@ class RackTest < Minitest::Test
     ::Instana.config[:collect_backtraces] = false
     ::Instana.agent.extra_headers = nil
   end
-  
+
   def test_capture_http_path_template
     clear_all!
-    
+
     get '/path_tpl'
     assert last_response.ok?
-    
+
     spans = ::Instana.processor.queued_spans
     assert_equal 1, spans.length
-    
+
     rack_span = spans.first
     assert_equal :rack, rack_span[:n]
     assert_equal 'sample_template', rack_span[:data][:http][:path_tpl]

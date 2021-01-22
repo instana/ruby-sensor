@@ -225,53 +225,39 @@ module Instana
         (time.to_f * 1000).floor
       end
 
-      # Generate a random 64bit ID
+      # Generate a random 64bit/128bit ID
       #
-      # @return [Integer] a random 64bit integer
+      # @param size [Integer] Number of 64 bit integers used to generate the id
       #
-      def generate_id
-        # Max value is 9223372036854775807 (signed long in Java)
-        rand(ID_RANGE)
+      # @return [String] a random 64bit/128bit hex encoded string
+      #
+      def generate_id(size = 1)
+        Array.new(size) { rand(ID_RANGE) }
+          .pack('q>*')
+          .unpack('H*')
+          .first
       end
 
       # Convert an ID to a value appropriate to pass in a header.
       #
-      # @param id [Integer] the id to be converted
+      # @param id [String] the id to be converted
       #
       # @return [String]
       #
       def id_to_header(id)
-        unless id.is_a?(Integer) || id.is_a?(String)
-          Instana.logger.debug "id_to_header received a #{id.class}: returning empty string"
-          return String.new
-        end
-        [id.to_i].pack('q>').unpack('H*')[0].gsub(/^0+/, '')
-      rescue => e
-        Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-        Instana.logger.debug { e.backtrace.join("\r\n") }
+        return '' unless id.is_a?(String)
+        # Only send 64bit IDs downstream for now 
+        id.length == 32 ? id[16..-1] : id
       end
 
       # Convert a received header value into a valid ID
       #
       # @param header_id [String] the header value to be converted
       #
-      # @return [Integer]
+      # @return [String]
       #
       def header_to_id(header_id)
-        if !header_id.is_a?(String)
-          Instana.logger.debug "header_to_id received a #{header_id.class}: returning 0"
-          return 0
-        end
-        if header_id.length < 16
-          # The header is less than 16 chars.  Prepend
-          # zeros so we can convert correctly
-          missing = 16 - header_id.length
-          header_id = ("0" * missing) + header_id
-        end
-        [header_id].pack("H*").unpack("q>")[0]
-      rescue => e
-        Instana.logger.info "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}"
-        Instana.logger.debug { e.backtrace.join("\r\n") }
+        header_id.is_a?(String) && header_id.match(/\A[a-z\d]{16,32}\z/i) ? header_id : ''
       end
     end
   end
