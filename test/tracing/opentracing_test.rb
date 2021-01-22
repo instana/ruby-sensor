@@ -304,7 +304,7 @@ class OpenTracerTest < Minitest::Test
     assert_equal second_span[:s], third_span[:p]
 
     # Every span should have baggage
-    assert_equal(nil, entry_span.context.baggage)
+    assert_equal({}, entry_span.context.baggage)
     assert_equal({:my_bag=>1}, ac_span.context.baggage)
     assert_equal({:my_bag=>1}, av_span.context.baggage)
   end
@@ -331,9 +331,9 @@ class OpenTracerTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 3, spans.length
 
-    assert_equal(nil, entry_span.context.baggage)
+    assert_equal({}, entry_span.context.baggage)
     assert_equal({:my_bag=>1}, ac_span.context.baggage)
-    assert_equal(nil, av_span.context.baggage)
+    assert_equal({}, av_span.context.baggage)
   end
 
   def test_start_active_span
