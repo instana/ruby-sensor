@@ -9,19 +9,21 @@ require 'rack/request'
 
 module Instana
   class InstrumentedRequest < Rack::Request
+    W3_TRACE_PARENT_FORMAT = /00-(?<trace>[0-9a-f]+)-(?<parent>[0-9a-f]+)-(?<flags>[0-9a-f]+)/
+
     def skip_trace?
       # Honor X-Instana-L
       @env.has_key?('HTTP_X_INSTANA_L') && @env['HTTP_X_INSTANA_L'].start_with?('0')
     end
 
     def incoming_context
-      context = {}
+      context = if @env['HTTP_X_INSTANA_T']
+                  context_from_instana_headers
+                else @env['HTTP_X_TRACEPARENT']
+                  context_from_trace_parent
+                end
 
-      if @env['HTTP_X_INSTANA_T']
-        context[:trace_id] = ::Instana::Util.header_to_id(@env['HTTP_X_INSTANA_T'])
-        context[:span_id] = ::Instana::Util.header_to_id(@env['HTTP_X_INSTANA_S']) if @env['HTTP_X_INSTANA_S']
-        context[:level] = @env['HTTP_X_INSTANA_L'][0] if @env['HTTP_X_INSTANA_L']
-      end
+      context[:level] = @env['HTTP_X_INSTANA_L'][0] if @env['HTTP_X_INSTANA_L']
 
       context
     end
@@ -55,6 +57,25 @@ module Instana
     end
 
     private
+
+    def context_from_instana_headers
+      {
+        trace_id: ::Instana::Util.header_to_id(@env['HTTP_X_INSTANA_T']),
+        span_id: ::Instana::Util.header_to_id(@env['HTTP_X_INSTANA_S'])
+      }.compact
+    end
+
+    def context_from_trace_parent
+      return {} unless @env.has_key?('HTTP_X_TRACEPARENT')
+      matches = @env['HTTP_X_TRACEPARENT'].match(W3_TRACE_PARENT_FORMAT)
+      return {} unless matches
+
+      {
+        external_trace_id: matches['trace'],
+        trace_id: ::Instana::Util.header_to_id(matches['trace'][16..-1]),
+        span_id: ::Instana::Util.header_to_id(matches['parent'])
+      }
+    end
 
     def parse_correlation_data
       return {} unless @env.has_key?('HTTP_X_INSTANA_L')
