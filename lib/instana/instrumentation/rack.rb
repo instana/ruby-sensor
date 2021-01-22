@@ -25,6 +25,10 @@ module Instana
         current_span[:crtp] = req.correlation_data[:type]
       end
 
+      unless req.instana_ancestor.empty?
+        current_span[:ia] = req.instana_ancestor
+      end
+
       status, headers, response = @app.call(env)
 
       if ::Instana.tracer.tracing?
