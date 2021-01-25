@@ -6,13 +6,9 @@ module Instana
 
       # This module supports instrumenting ActiveRecord with the mysql2 adapter.
       #
-      def self.included(klass)
+      def self.prepended(klass)
         # ActiveRecord 3.1 and up only (for now possibly)
         if ActiveRecord::VERSION::STRING > '3.0'
-          Instana::Util.method_alias(klass, :exec_delete)
-          Instana::Util.method_alias(klass, :exec_insert)
-          Instana::Util.method_alias(klass, :exec_query)
-
           @@sanitize_regexp = Regexp.new('(\'[\s\S][^\']*\'|\d*\.\d+|\d+|NULL)', Regexp::IGNORECASE)
         end
       end
@@ -49,37 +45,37 @@ module Instana
         IGNORED_PAYLOADS.include?(name) || sql !~ EXPLAINED_SQLS
       end
 
-      def exec_delete_with_instana(sql, name = nil, binds = [])
+      def exec_delete(sql, name = nil, binds = [])
         if !::Instana.tracer.tracing? || ignore_payload?(name, sql)
-          return exec_delete_without_instana(sql, name, binds)
+          return super(sql, name, binds)
         end
 
         kv_payload = collect(sql)
         ::Instana.tracer.trace(:activerecord, kv_payload) do
-          exec_delete_without_instana(sql, name, binds)
+          super(sql, name, binds)
         end
       end
 
-      def exec_insert_with_instana(sql, name = 'SQL', binds = [], *args)
+      def exec_insert(sql, name = 'SQL', binds = [], *args)
         if !::Instana.tracer.tracing? || ignore_payload?(name, sql)
-          return exec_insert_without_instana(sql, name, binds, *args)
+          return super(sql, name, binds, *args)
         end
 
         kv_payload = collect(sql)
         ::Instana.tracer.trace(:activerecord, kv_payload) do
-          exec_insert_without_instana(sql, name, binds, *args)
+          super(sql, name, binds, *args)
         end
       end
 
-      def exec_query_with_instana(sql, name = 'SQL', binds = [], *args)
+      def exec_query(sql, name = 'SQL', binds = [], *args)
         if !::Instana.tracer.tracing? || ignore_payload?(name, sql) ||
             ::Instana.tracer.current_span[:n] == :activerecord
-          return exec_query_without_instana(sql, name, binds, *args)
+          return super(sql, name, binds, *args)
         end
 
         kv_payload = collect(sql)
         ::Instana.tracer.trace(:activerecord, kv_payload) do
-          exec_query_without_instana(sql, name, binds, *args)
+          super(sql, name, binds, *args)
         end
       end
     end

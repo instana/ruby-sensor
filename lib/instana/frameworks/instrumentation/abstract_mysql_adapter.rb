@@ -6,10 +6,8 @@ module Instana
 
       # This module supports instrumenting ActiveRecord with the mysql2 adapter.
       #
-      def self.included(klass)
+      def self.prepended(klass)
         if ActiveRecord::VERSION::STRING >= '3.2'
-          Instana::Util.method_alias(klass, :execute)
-
           @@sanitize_regexp = Regexp.new('(\'[\s\S][^\']*\'|\d*\.\d+|\d+|NULL)', Regexp::IGNORECASE)
         end
       end
@@ -40,17 +38,17 @@ module Instana
         IGNORED_PAYLOADS.include?(name) || sql !~ EXPLAINED_SQLS
       end
 
-      def execute_with_instana(sql, name = nil)
+      def execute(sql, name = nil)
         tracing = ::Instana.tracer.tracing?
         if !tracing || ignore_payload?(name, sql)
-          return execute_without_instana(sql, name)
+          return super(sql, name)
         elsif ::Instana.tracer.current_span[:n] == :activerecord
-          return execute_without_instana(sql, name)
+          return super(sql, name)
         end
 
         kv_payload = collect(sql)
         ::Instana.tracer.trace(:activerecord, kv_payload) do
-          execute_without_instana(sql, name)
+          super(sql, name)
         end
       end
     end
