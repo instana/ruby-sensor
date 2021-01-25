@@ -1,15 +1,10 @@
 module Instana
   module Instrumentation
     module Dalli
-      def self.included(klass)
-        ::Instana::Util.method_alias(klass, :perform)
-        ::Instana::Util.method_alias(klass, :get_multi)
-      end
-
-      def perform_with_instana(*args, &blk)
+      def perform(*args, &blk)
         if !::Instana.tracer.tracing? || ::Instana.tracer.tracing_span?(:memcache)
           do_skip = true
-          return perform_without_instana(*args, &blk)
+          return super(*args, &blk)
         end
 
         op, key, *_opts = args
@@ -22,7 +17,7 @@ module Instana
         ::Instana.tracer.log_entry(:memcache, entry_payload)
         exit_payload = { :memcache => {} }
 
-        result = perform_without_instana(*args, &blk)
+        result = super(*args, &blk)
 
         if op == :get
           exit_payload[:memcache][:hit] = result ? 1 : 0
@@ -36,7 +31,7 @@ module Instana
         ::Instana.tracer.log_exit(:memcache, exit_payload) unless do_skip
       end
 
-      def get_multi_with_instana(*keys)
+      def get_multi(*keys)
         entry_payload = { :memcache => {} }
         entry_payload[:memcache][:namespace] = @options[:namespace] if @options.key?(:namespace)
         entry_payload[:memcache][:command] = :get_multi
@@ -45,7 +40,7 @@ module Instana
         ::Instana.tracer.log_entry(:memcache, entry_payload)
         exit_payload = { :memcache => {} }
 
-        result = get_multi_without_instana(*keys)
+        result = super(*keys)
 
         exit_payload[:memcache][:hits] = result.length
         result
@@ -63,13 +58,13 @@ module Instana
         ::Instana::Util.method_alias(klass, :request)
       end
 
-      def request_with_instana(op, *args)
+      def request(op, *args)
         if ::Instana.tracer.tracing? || ::Instana.tracer.tracing_span?(:memcache)
           info_payload = { :memcache => {} }
           info_payload[:memcache][:server] = "#{@hostname}:#{@port}"
           ::Instana.tracer.log_info(info_payload)
         end
-        request_without_instana(op, *args)
+        super(op, *args)
       end
     end
   end
@@ -77,6 +72,6 @@ end
 
 if defined?(::Dalli) && ::Instana.config[:dalli][:enabled]
   ::Instana.logger.debug "Instrumenting Dalli"
-  ::Dalli::Client.send(:include, ::Instana::Instrumentation::Dalli)
-  ::Dalli::Server.send(:include, ::Instana::Instrumentation::DalliServer)
+  ::Dalli::Client.send(:prepend, ::Instana::Instrumentation::Dalli)
+  ::Dalli::Server.send(:prepend, ::Instana::Instrumentation::DalliServer)
 end
