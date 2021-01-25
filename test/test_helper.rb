@@ -68,17 +68,11 @@ def clear_all!
 end
 
 def disable_redis_instrumentation
-  ::Redis::Client.class_eval do
-    alias call call_without_instana
-    alias call_pipeline call_pipeline_without_instana
-  end
+  ::Instana.config[:redis][:enabled] = false
 end
 
 def enable_redis_instrumentation
-  ::Redis::Client.class_eval do
-    alias call call_with_instana
-    alias call_pipeline call_pipeline_with_instana
-  end
+  ::Instana.config[:redis][:enabled] = true
 end
 
 def validate_sdk_span(json_span, sdk_hash = {}, errored = false, ec = 1)
