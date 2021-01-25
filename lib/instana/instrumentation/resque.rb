@@ -3,11 +3,8 @@ require 'socket'
 module Instana
   module Instrumentation
     module ResqueClient
-      def self.included(klass)
+      def self.prepended(klass)
         klass.send :extend, ::Resque
-        ::Instana::Util.method_alias(klass, :enqueue)
-        ::Instana::Util.method_alias(klass, :enqueue_to)
-        ::Instana::Util.method_alias(klass, :dequeue)
       end
 
       def collect_kvs(op, klass, args)
@@ -23,50 +20,46 @@ module Instana
         { :'resque-client' => kvs }
       end
 
-      def enqueue_with_instana(klass, *args)
+      def enqueue(klass, *args)
         if Instana.tracer.tracing?
           kvs = collect_kvs(:enqueue, klass, args)
 
           Instana.tracer.trace(:'resque-client', kvs) do
-            enqueue_without_instana(klass, *args)
+            super(klass, *args)
           end
         else
-          enqueue_without_instana(klass, *args)
+          super(klass, *args)
         end
       end
 
-      def enqueue_to_with_instana(queue, klass, *args)
+      def enqueue_to(queue, klass, *args)
         if Instana.tracer.tracing? && !Instana.tracer.tracing_span?(:'resque-client')
           kvs = collect_kvs(:enqueue_to, klass, args)
           kvs[:Queue] = queue.to_s if queue
 
           Instana.tracer.trace(:'resque-client', kvs) do
-            enqueue_to_without_instana(queue, klass, *args)
+            super(queue, klass, *args)
           end
         else
-          enqueue_to_without_instana(queue, klass, *args)
+          super(queue, klass, *args)
         end
       end
 
-      def dequeue_with_instana(klass, *args)
+      def dequeue(klass, *args)
         if Instana.tracer.tracing?
           kvs = collect_kvs(:dequeue, klass, args)
 
           Instana.tracer.trace(:'resque-client', kvs) do
-            dequeue_without_instana(klass, *args)
+            super(klass, *args)
           end
         else
-          dequeue_without_instana(klass, *args)
+          super(klass, *args)
         end
       end
     end
 
     module ResqueWorker
-      def self.included(klass)
-        ::Instana::Util.method_alias(klass, :perform)
-      end
-
-      def perform_with_instana(job)
+      def perform(job)
         kvs = {}
         kvs[:'resque-worker'] = {}
 
@@ -81,17 +74,13 @@ module Instana
         end
 
         Instana.tracer.start_or_continue_trace(:'resque-worker', kvs) do
-          perform_without_instana(job)
+          super(job)
         end
       end
     end
 
     module ResqueJob
-      def self.included(klass)
-        ::Instana::Util.method_alias(klass, :fail)
-      end
-
-      def fail_with_instana(exception)
+      def fail(exception)
         if Instana.tracer.tracing?
           ::Instana.tracer.log_info(:'resque-worker' => { :error => "#{exception.class}: #{exception}"})
           ::Instana.tracer.log_error(exception)
@@ -99,7 +88,7 @@ module Instana
       rescue Exception => e
         ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" } if Instana::Config[:verbose]
       ensure
-        fail_without_instana(exception)
+        super(exception)
       end
     end
   end
@@ -109,14 +98,14 @@ if defined?(::Resque) && RUBY_VERSION >= '1.9.3'
 
   if ::Instana.config[:'resque-client'][:enabled]
     ::Instana.logger.debug 'Instrumenting Resque Client'
-    ::Instana::Util.send_include(::Resque,         ::Instana::Instrumentation::ResqueClient)
+    ::Resque.prepend(::Instana::Instrumentation::ResqueClient)
   end
 
   if ::Instana.config[:'resque-worker'][:enabled]
     ::Instana.logger.debug 'Instrumenting Resque Worker'
 
-    ::Instana::Util.send_include(::Resque::Worker, ::Instana::Instrumentation::ResqueWorker)
-    ::Instana::Util.send_include(::Resque::Job,    ::Instana::Instrumentation::ResqueJob)
+    ::Resque::Worker.prepend(::Instana::Instrumentation::ResqueWorker)
+    ::Resque::Job.prepend(::Instana::Instrumentation::ResqueJob)
 
     ::Resque.before_fork do |job|
       ::Instana.agent.before_resque_fork
