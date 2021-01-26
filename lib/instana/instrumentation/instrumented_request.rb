@@ -20,7 +20,7 @@ module Instana
     def incoming_context
       context = if @env['HTTP_X_INSTANA_T']
                   context_from_instana_headers
-                else @env['HTTP_X_TRACEPARENT'] && ::Instana.config[:w3_trace_correlation]
+                else @env['HTTP_TRACEPARENT'] && ::Instana.config[:w3_trace_correlation]
                   context_from_trace_parent
                 end
 
@@ -71,21 +71,21 @@ module Instana
     end
 
     def context_from_trace_parent
-      return {} unless @env.has_key?('HTTP_X_TRACEPARENT')
-      matches = @env['HTTP_X_TRACEPARENT'].match(W3_TRACE_PARENT_FORMAT)
+      return {} unless @env.has_key?('HTTP_TRACEPARENT')
+      matches = @env['HTTP_TRACEPARENT'].match(W3_TRACE_PARENT_FORMAT)
       return {} unless matches
 
       {
         external_trace_id: matches['trace'],
-        external_state: @env['HTTP_X_TRACESTATE'],
+        external_state: @env['HTTP_TRACESTATE'],
         trace_id: ::Instana::Util.header_to_id(matches['trace'][16..-1]),
         span_id: ::Instana::Util.header_to_id(matches['parent'])
       }
     end
 
     def parse_trace_state
-      return {} unless @env.has_key?('HTTP_X_TRACESTATE')
-      token = @env['HTTP_X_TRACESTATE']
+      return {} unless @env.has_key?('HTTP_TRACESTATE')
+      token = @env['HTTP_TRACESTATE']
         .split(/[,]/)
         .map { |t| t.match(INSTANA_TRACE_STATE) }
         .reject { |t| t.nil? }
