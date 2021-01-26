@@ -1,18 +1,13 @@
 module Instana
   module Instrumentation
     module ActionViewRenderer
-      def self.included(klass)
-        ::Instana::Util.method_alias(klass, :render_partial)
-        ::Instana::Util.method_alias(klass, :render_collection)
-      end
-
-      def render_partial_with_instana(*args)
+      def render_partial(*args)
         kv_payload = { :render => {} }
         kv_payload[:render][:type] = :partial
         kv_payload[:render][:name] = @options[:partial].to_s if @options.is_a?(Hash)
 
         ::Instana.tracer.log_entry(:render, kv_payload)
-        render_partial_without_instana(*args)
+        super(*args)
       rescue Exception => e
         ::Instana.tracer.log_error(e)
         raise
@@ -20,13 +15,14 @@ module Instana
         ::Instana.tracer.log_exit(:render)
       end
 
-      def render_collection_with_instana(*args)
+      def render_collection(*args)
+        puts 'called'
         kv_payload = { :render => {} }
         kv_payload[:render][:type] = :collection
         kv_payload[:render][:name] = @path.to_s
 
         ::Instana.tracer.log_entry(:render, kv_payload)
-        render_collection_without_instana(*args)
+        super(*args)
       rescue Exception => e
         ::Instana.tracer.log_error(e)
         raise
@@ -39,5 +35,5 @@ end
 
 if defined?(::ActionView) && ::Instana.config[:action_view][:enabled] && ::ActionPack::VERSION::STRING >= '3.1'
   ::Instana.logger.debug "Instrumenting ActionView"
-  ::ActionView::PartialRenderer.send(:include, ::Instana::Instrumentation::ActionViewRenderer)
+  ::ActionView::PartialRenderer.send(:prepend, ::Instana::Instrumentation::ActionViewRenderer)
 end

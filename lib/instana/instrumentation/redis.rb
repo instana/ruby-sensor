@@ -1,11 +1,11 @@
-if defined?(::Redis) && ::Instana.config[:redis][:enabled]
-  ::Redis::Client.class_eval do
-    def call_with_instana(*args, &block)
+module Instana
+  module RedisInstrumentation
+    def call(*args, &block)
       kv_payload = { redis: {} }
       dnt_spans = [:redis, :'resque-client', :'sidekiq-client']
 
-      if !Instana.tracer.tracing? || dnt_spans.include?(::Instana.tracer.current_span.name)
-        return call_without_instana(*args, &block)
+      if !Instana.tracer.tracing? || dnt_spans.include?(::Instana.tracer.current_span.name) || !Instana.config[:redis][:enabled]
+        return super(*args, &block)
       end
 
       begin
@@ -19,7 +19,7 @@ if defined?(::Redis) && ::Instana.config[:redis][:enabled]
           nil
         end
 
-        call_without_instana(*args, &block)
+        super(*args, &block)
       rescue => e
         ::Instana.tracer.log_info({ redis: {error: true} })
         ::Instana.tracer.log_error(e)
@@ -29,17 +29,12 @@ if defined?(::Redis) && ::Instana.config[:redis][:enabled]
       end
     end
 
-    ::Instana.logger.debug "Instrumenting Redis"
-
-    alias call_without_instana call
-    alias call call_with_instana
-
-    def call_pipeline_with_instana(*args, &block)
+    def call_pipeline(*args, &block)
       kv_payload = { redis: {} }
       dnt_spans = [:redis, :'resque-client', :'sidekiq-client']
 
-      if !Instana.tracer.tracing? || dnt_spans.include?(::Instana.tracer.current_span.name)
-        return call_pipeline_without_instana(*args, &block)
+      if !Instana.tracer.tracing? || dnt_spans.include?(::Instana.tracer.current_span.name) || !Instana.config[:redis][:enabled]
+        return super(*args, &block)
       end
 
       begin
@@ -54,7 +49,7 @@ if defined?(::Redis) && ::Instana.config[:redis][:enabled]
           nil
         end
 
-        call_pipeline_without_instana(*args, &block)
+        super(*args, &block)
       rescue => e
         ::Instana.tracer.log_info({ redis: {error: true} })
         ::Instana.tracer.log_error(e)
@@ -63,8 +58,10 @@ if defined?(::Redis) && ::Instana.config[:redis][:enabled]
         ::Instana.tracer.log_exit(:redis, kv_payload)
       end
     end
-
-    alias call_pipeline_without_instana call_pipeline
-    alias call_pipeline call_pipeline_with_instana
   end
+end
+
+if defined?(::Redis) && ::Instana.config[:redis][:enabled]
+  ::Instana.logger.debug "Instrumenting Redis"
+  Redis::Client.prepend(::Instana::RedisInstrumentation)
 end

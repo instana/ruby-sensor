@@ -8,15 +8,11 @@ module Instana
       # This module supports instrumenting ActiveRecord with the postgresql adapter.  Only
       # versions >= 3.1 are supported.
       #
-      def self.included(klass)
+      def self.prepended(klass)
         if (::ActiveRecord::VERSION::MAJOR == 3 && ::ActiveRecord::VERSION::MINOR > 0) ||
              ::ActiveRecord::VERSION::MAJOR >= 4
 
           # ActiveRecord 3.1 and up
-          Instana::Util.method_alias(klass, :exec_query)
-          Instana::Util.method_alias(klass, :exec_delete)
-          Instana::Util.method_alias(klass, :execute)
-
           @@sanitize_regexp = Regexp.new('(\'[\s\S][^\']*\'|\d*\.\d+|\d+|NULL)', Regexp::IGNORECASE)
         end
       end
@@ -66,36 +62,36 @@ module Instana
         IGNORED_PAYLOADS.include?(name) || IGNORED_SQL.include?(sql)
       end
 
-      def exec_query_with_instana(sql, name = 'SQL', binds = [], *args)
+      def exec_query(sql, name = 'SQL', binds = [], *args)
         if !::Instana.tracer.tracing? || ignore_payload?(name, sql)
-          return exec_query_without_instana(sql, name, binds, *args)
+          return super(sql, name, binds, *args)
         end
 
         kv_payload = collect(sql, binds)
         ::Instana.tracer.trace(:activerecord, kv_payload) do
-          exec_query_without_instana(sql, name, binds, *args)
+          super(sql, name, binds, *args)
         end
       end
 
-      def exec_delete_with_instana(sql, name = nil, binds = [])
+      def exec_delete(sql, name = nil, binds = [])
         if !::Instana.tracer.tracing? || ignore_payload?(name, sql)
-          return exec_delete_without_instana(sql, name, binds)
+          return super(sql, name, binds)
         end
 
         kv_payload = collect(sql, binds)
         ::Instana.tracer.trace(:activerecord, kv_payload) do
-          exec_delete_without_instana(sql, name, binds)
+          super(sql, name, binds)
         end
       end
 
-      def execute_with_instana(sql, name = nil)
+      def execute(sql, name = nil)
         if !::Instana.tracer.tracing? || ignore_payload?(name, sql)
-          return execute_without_instana(sql, name)
+          return super(sql, name)
         end
 
         kv_payload = collect(sql)
         ::Instana.tracer.trace(:activerecord, kv_payload) do
-          execute_without_instana(sql, name)
+          super(sql, name)
         end
       end
     end

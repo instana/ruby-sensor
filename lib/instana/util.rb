@@ -2,46 +2,6 @@ module Instana
   module Util
     class << self
       ID_RANGE = -2**63..2**63-1
-
-      # An agnostic approach to method aliasing.
-      #
-      # @param klass [Object] The class or module that holds the method to be alias'd.
-      # @param method [Symbol] The name of the method to be aliased.
-      #
-      def method_alias(klass, method)
-        if klass.method_defined?(method.to_sym) ||
-            klass.private_method_defined?(method.to_sym)
-
-          with = "#{method}_with_instana"
-          without = "#{method}_without_instana"
-
-          klass.class_eval do
-            alias_method without, method.to_s
-            alias_method method.to_s, with
-          end
-        else
-          ::Instana.logger.debug "No such method (#{method}) to alias on #{klass}"
-        end
-      end
-
-      # Calls on target_class to 'extend' cls
-      #
-      # @param target_cls [Object] the class/module to do the 'extending'
-      # @param cls [Object] the class/module to be 'extended'
-      #
-      def send_extend(target_cls, cls)
-        target_cls.send(:extend, cls) if defined?(target_cls)
-      end
-
-      # Calls on <target_cls> to include <cls> into itself.
-      #
-      # @param target_cls [Object] the class/module to do the 'including'
-      # @param cls [Object] the class/module to be 'included'
-      #
-      def send_include(target_cls, cls)
-        target_cls.send(:include, cls) if defined?(target_cls)
-      end
-
       # Debugging helper method
       #
       def pry!
@@ -246,7 +206,7 @@ module Instana
       #
       def id_to_header(id)
         return '' unless id.is_a?(String)
-        # Only send 64bit IDs downstream for now 
+        # Only send 64bit IDs downstream for now
         id.length == 32 ? id[16..-1] : id
       end
 
