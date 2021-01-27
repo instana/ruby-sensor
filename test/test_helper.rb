@@ -1,3 +1,15 @@
+begin
+  require 'simplecov'
+  SimpleCov.start do
+    enable_coverage :branch
+
+    add_group 'Frameworks', 'lib/instana/frameworks'
+    add_group 'Instrumentation', 'lib/instana/instrumentation'
+  end
+rescue LoadError => _e
+  nil
+end
+
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 ENV['INSTANA_TEST'] = 'true'
 require "rubygems"
@@ -15,11 +27,9 @@ require "instana/test"
 ::Instana::Test.setup_environment
 
 # Webmock: Whitelist local IPs
-whitelist = ['127.0.0.1', 'localhost', '172.17.0.1', '172.0.12.100']
-allowed_sites = lambda{|uri|
-  whitelist.include?(uri.host)
-}
-::WebMock.disable_net_connect!(allow: allowed_sites)
+WebMock.disable_net_connect!(
+  allow: ->(uri) { %w[127.0.0.1 localhost 172.17.0.1 172.0.12.100].include?(uri.host) }
+)
 
 # Boot background webservers to test against.
 require "./test/servers/rackapp_6511"
