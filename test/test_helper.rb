@@ -1,3 +1,5 @@
+ENV['INSTANA_TEST'] = 'true'
+
 begin
   require 'simplecov'
   SimpleCov.start do
@@ -10,26 +12,23 @@ rescue LoadError => _e
   nil
 end
 
-$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
-ENV['INSTANA_TEST'] = 'true'
-require "rubygems"
-require "bundler/setup"
-Bundler.require(:default, :test)
+require 'bundler/setup'
+Bundler.require
 
 require "minitest/spec"
 require "minitest/autorun"
 require "minitest/reporters"
-require "minitest/debugger" if ENV['DEBUG']
-require "minitest/benchmark"
+
 require 'webmock/minitest'
+# Webmock: Whitelist local IPs
+WebMock.disable_net_connect!(
+  allow: ->(uri) { %w[localhost 127.0.0.1 172.17.0.1 172.0.12.100].include?(uri.host) }
+)
+
+Dir['test/support/*.rb'].each { |f| load(f) }
 
 require "instana/test"
 ::Instana::Test.setup_environment
-
-# Webmock: Whitelist local IPs
-WebMock.disable_net_connect!(
-  allow: ->(uri) { %w[127.0.0.1 localhost 172.17.0.1 172.0.12.100].include?(uri.host) }
-)
 
 # Boot background webservers to test against.
 require "./test/servers/rackapp_6511"
@@ -68,96 +67,4 @@ end
 
 Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
 
-# Used to reset the gem to boot state.  It clears out any queued and/or staged
-# traces and resets the tracer to no active trace.
-#
-def clear_all!
-  ::Instana.processor.clear!
-  ::Instana.tracer.clear!
-  nil
-end
-
-def disable_redis_instrumentation
-  ::Instana.config[:redis][:enabled] = false
-end
-
-def enable_redis_instrumentation
-  ::Instana.config[:redis][:enabled] = true
-end
-
-def validate_sdk_span(json_span, sdk_hash = {}, errored = false, ec = 1)
-  assert_equal :sdk, json_span[:n]
-  assert json_span.key?(:k)
-  assert json_span.key?(:d)
-  assert json_span.key?(:ts)
-
-  for k,v in sdk_hash
-    assert_equal v, json_span[:data][:sdk][k]
-  end
-
-  if errored
-    assert_equal true, json_span[:error]
-    assert_equal 1, json_span[:ec]
-  end
-end
-
-def find_spans_by_name(spans, name)
-  result = []
-  for span in spans
-    if span[:n] == :sdk
-      if span[:data][:sdk][:name] == name
-        result << span
-      end
-    elsif span[:n] == name
-      result << span
-    end
-  end
-  if result.empty?
-    raise Exception.new("No SDK spans (#{name}) could be found")
-  else
-    return result
-  end
-end
-
-def find_first_span_by_name(spans, name)
-  for span in spans
-    if span[:n] == :sdk
-      if span[:data][:sdk][:name] == name
-        return span
-      end
-    else
-      if span[:n] == name
-        return span
-      end
-    end
-  end
-  raise Exception.new("Span (#{name}) not found")
-end
-
-def find_span_by_id(spans, id)
-  for span in spans
-    if span[:s] == id
-      return span
-    end
-  end
-  raise Exception.new("Span with id (#{id}) not found")
-end
-
-# Finds the first span in +spans+ for which +block+ returns true
-#
-#     ar_span = find_first_span_by_qualifier(ar_spans) do |span|
-#       span[:data][:activerecord][:sql] == sql
-#     end
-#
-# This helper will raise an exception if no span evaluates to true against he provided block.
-#
-# +spans+: +Array+ of spans to search
-# +block+: The Ruby block to evaluate against each span
-def find_first_span_by_qualifier(spans, &block)
-  spans.each do |span|
-    if block.call(span)
-      return span
-    end
-  end
-  raise Exception.new("Span with qualifier not found")
-end
+Minitest::Test.include(Instana::TestHelpers)
