@@ -33,13 +33,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "bundler", "~> 2.0"
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency "minitest", "~> 5.0"
-  spec.add_development_dependency('pry', '>= 0.10.0')
-
-  # Development debugging
-  unless RUBY_PLATFORM =~ /java/i
-    spec.add_development_dependency('byebug', '>= 8.0.0')
-    spec.add_development_dependency('pry-byebug', '>= 3.0.0')
-  end
+  spec.add_development_dependency "appraisal"
 
   spec.add_runtime_dependency('sys-proctable', '>= 1.2.2')
   spec.add_runtime_dependency('get_process_mem', '>= 0.2.1')

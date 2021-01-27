@@ -36,10 +36,10 @@ require "./test/servers/rackapp_6511"
 case File.basename(ENV['BUNDLE_GEMFILE'])
 when /rails/
   require './test/servers/rails_3205'
-when /libraries/
+when /grpc/
   # Configure gRPC
   require './test/servers/grpc_50051.rb'
-
+when /sidekiq/
   # Hook into sidekiq to control the current mode
   $sidekiq_mode = :client
   class << Sidekiq

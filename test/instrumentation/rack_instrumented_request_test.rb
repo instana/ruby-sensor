@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class InstrumentedRequestTest < Minitest::Test
+class RackInstrumentedRequestTest < Minitest::Test
   def test_skip_trace_with_header
     req = Instana::InstrumentedRequest.new(
       'HTTP_X_INSTANA_L' => '0;sample-data'

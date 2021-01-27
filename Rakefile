@@ -1,5 +1,5 @@
-require "bundler/gem_tasks"
-require "rake/testtask"
+require 'bundler/gem_tasks'
+require 'rake/testtask'
 
 Rake::TestTask.new(:test) do |t|
   t.verbose = false
@@ -8,43 +8,18 @@ Rake::TestTask.new(:test) do |t|
 
   t.libs << "test"
   t.libs << "lib"
-
-  t.test_files = Dir[
-    'test/*_test.rb',
-    'test/{agent,tracing,profiling,benchmarks}/*_test.rb'
-  ]
-
-  case File.basename(ENV.fetch('BUNDLE_GEMFILE', '')).split('.').first
-  when /rails6/
-    t.test_files = %w(test/frameworks/rails/activerecord_test.rb
-                      test/frameworks/rails/actioncontroller_test.rb
-                      test/frameworks/rails/actionview5_test.rb)
-  when /rails5/
-    t.test_files = %w(test/frameworks/rails/activerecord_test.rb
-                      test/frameworks/rails/actioncontroller_test.rb
-                      test/frameworks/rails/actionview5_test.rb)
-  when /rails42/
-    t.test_files = %w(test/frameworks/rails/activerecord_test.rb
-                      test/frameworks/rails/actioncontroller_test.rb
-                      test/frameworks/rails/actionview4_test.rb)
-  when /rails32/
-    t.test_files = %w(test/frameworks/rails/activerecord_test.rb
-                      test/frameworks/rails/actioncontroller_test.rb
-                      test/frameworks/rails/actionview3_test.rb)
-  when /libraries/
-    t.test_files = Dir['test/{instrumentation,frameworks}/*_test.rb']
+ 
+  if ENV['APPRAISAL_INITIALIZED']
+    appraised_group = File.basename(ENV['BUNDLE_GEMFILE']).split(/_[0-9]+\./).first
+    suite_files = Dir['test/{instrumentation,frameworks}/*_test.rb']
+        
+    t.test_files = suite_files.select { |f| File.basename(f).start_with?(appraised_group) }
+  else
+    t.test_files = Dir[
+      'test/*_test.rb',
+      'test/{agent,tracing}/*_test.rb'
+    ]
   end
-
 end
 
-task :environment do
-  ENV['INSTANA_DEBUG'] = 'true'
-  Bundler.require(:default, :development)
-end
-
-task :console => :environment do
-  ARGV.clear
-  Pry.start
-end
-
-task :default => :spec
+task :default => :test

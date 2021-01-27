@@ -1,3 +1,2 @@
 ---
-BUNDLE_BUILD__LIBV8: "--with-system-v8"
-BUNDLE_WITH: "development"
+BUNDLE_RETRY: "1"
