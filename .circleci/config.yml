@@ -1,168 +1,192 @@
 version: 2.1
 
-# More about orbs: https://circleci.com/docs/2.0/using-orbs/
-orbs:
-  ruby: circleci/ruby@1.1.2
+executors:
+  ruby_25:
+    docker:
+      - image: circleci/ruby:2.5-node
+        environment:
+          MEMCACHED_HOST: '127.0.0.1:11211'
+      - image: memcached
+      - image: redis
+  ruby_26:
+    docker:
+      - image: circleci/ruby:2.6-node
+        environment:
+          MEMCACHED_HOST: '127.0.0.1:11211'
+      - image: memcached
+      - image: redis
+  ruby_27:
+    docker:
+      - image: circleci/ruby:2.7-node
+        environment:
+          MEMCACHED_HOST: '127.0.0.1:11211'
+      - image: memcached
+      - image: redis           
+  ruby_25_mysql2:
+    docker:
+      - image: circleci/ruby:2.5-node
+        environment:
+          DATABASE_URL: "mysql2://root@127.0.0.1:3306/ci_test"
+      - image: mariadb
+        environment:
+          MYSQL_DATABASE: 'ci_test'
+          MYSQL_USER: 'root'
+          MYSQL_PASSWORD: ''
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ROOT_HOST: '%'
+  ruby_26_mysql2:
+    docker:
+      - image: circleci/ruby:2.6-node
+        environment:
+          DATABASE_URL: "mysql2://root@127.0.0.1:3306/ci_test"
+      - image: mariadb
+        environment:
+          MYSQL_DATABASE: 'ci_test'
+          MYSQL_USER: 'root'
+          MYSQL_PASSWORD: ''
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ROOT_HOST: '%'
+  ruby_27_mysql2:
+    docker:
+      - image: circleci/ruby:2.7-node
+        environment:
+          DATABASE_URL: "mysql2://root@127.0.0.1:3306/ci_test"
+      - image: mariadb
+        environment:
+          MYSQL_DATABASE: 'ci_test'
+          MYSQL_USER: 'root'
+          MYSQL_PASSWORD: ''
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ROOT_HOST: '%'
+  ruby_25_postgres:
+    docker:
+      - image: circleci/ruby:2.6-node
+        environment:
+          DATABASE_URL: "postgres://postgres:test@127.0.0.1:5432/ci_test"
+      - image: postgres
+        environment:
+          POSTGRES_PASSWORD: 'test'
+          POSTGRES_DB: 'ci_test'           
+  ruby_26_postgres:
+    docker:
+      - image: circleci/ruby:2.6-node
+        environment:
+          DATABASE_URL: "postgres://postgres:test@127.0.0.1:5432/ci_test"
+      - image: postgres
+        environment:
+          POSTGRES_PASSWORD: 'test'
+          POSTGRES_DB: 'ci_test'           
+  ruby_27_postgres:
+    docker:
+      - image: circleci/ruby:2.7-node
+        environment:
+          DATABASE_URL: "postgres://postgres:test@127.0.0.1:5432/ci_test"
+      - image: postgres
+        environment:
+          POSTGRES_PASSWORD: 'test'
+          POSTGRES_DB: 'ci_test'          
 
 commands:
-  prelim-deps:
+  setup:
     steps:
-      - run:
-          name: Preliminary Dependencies
+      - run: 
+          name: Update RubyGems
           command: |
             gem update --system
             gem --version
+      - run:
+          name: Install Bundler
+          command: |
             gem install bundler
             bundler --version
             bundle config set path './vendor/bundle'
-
-  run-tests:
+      - run: 
+          name: Install Depdendecies
+          command: |
+            bundle check || bundle install
+  run_tests:
     steps:
       - run:
-          name: Run the Tests
+          name: Run Tests
           command: |
-            bundle exec rake test
-
-  save-stan-cache:
-    parameters:
-      gemfile:
-        default: "Gemfile"
-        type: string
-    steps:
-      - save_cache:
-          key: gem-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "<<parameters.gemfile>>" }}
-          paths:
-            - vendor/bundle
-
-  restore-stan-cache:
-    parameters:
-      gemfile:
-        default: "Gemfile"
-        type: string
-    steps:
-      - restore_cache:
-          keys:
-            - gem-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "<<parameters.gemfile>>" }}
-            - gem-cache-v1-{{ arch }}-{{ .Branch }}
-            - gem-cache-v1
-
-  bundle-install:
-    parameters:
-      gemfile:
-        default: "Gemfile"
-        type: string
-    steps:
-      - restore-stan-cache:
-          gemfile: <<parameters.gemfile>>
-      - run:
-          name: Bundle Installation
-          command: |
-            bundle install
-      - save-stan-cache:
-          gemfile: <<parameters.gemfile>>
+            bundle exec rake
+      - store_artifacts:
+          path: coverage/.resultset.json
 
 jobs:
-  ruby26:
-    parallelism: 3
-    docker:
-      - image: circleci/ruby:2.6.3-stretch-node
-    executor: ruby/default
-    environment:
-      BUNDLE_JOBS: "3"
-      BUNDLE_RETRY: "3"
-
+  test_core:
+    parameters:
+      stack:
+        type: executor
+        default: ruby_27
+    executor: << parameters.stack >>
     steps:
       - checkout
-      - prelim-deps
-      - bundle-install
-      - run-tests
-
-  rails50:
-    parallelism: 3
-    docker:
-      - image: circleci/ruby:2.6.3-stretch-node
-      - image: mariadb
-        environment:
-          MYSQL_DATABASE: 'travis_ci_test'
-          MYSQL_USER: 'root'
-          MYSQL_PASSWORD: ''
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-          MYSQL_ROOT_PASSWORD: ''
-          MYSQL_ROOT_HOST: '%'
-    executor: ruby/default
+      - setup
+      - run_tests
+  test_apprisal:
+    parameters:
+      stack:
+        type: executor
+        default: ruby_27_postgres
+      gemfile:
+        type: string
+        default: "./gemfiles/rails_60.gemfile"
+    executor: << parameters.stack >>
     environment:
-      BUNDLE_JOBS: "3"
-      BUNDLE_RETRY: "3"
-      BUNDLE_GEMFILE: "./gemfiles/rails50.gemfile"
-
+      APPRAISAL_INITIALIZED: "1"
+      BUNDLE_GEMFILE: << parameters.gemfile >>
     steps:
       - checkout
-      - prelim-deps
-      - bundle-install:
-          gemfile: "./gemfiles/rails50.gemfile"
-      - run-tests
-
-  rails60:
-    parallelism: 3
-    docker:
-      - image: circleci/ruby:2.6.3-stretch-node
-      - image: mariadb
-        environment:
-          MYSQL_DATABASE: 'travis_ci_test'
-          MYSQL_USER: 'root'
-          MYSQL_PASSWORD: ''
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-          MYSQL_ROOT_PASSWORD: ''
-          MYSQL_ROOT_HOST: '%'
-    executor: ruby/default
-    environment:
-      BUNDLE_JOBS: "3"
-      BUNDLE_RETRY: "3"
-      BUNDLE_GEMFILE: "./gemfiles/rails60.gemfile"
-
-    steps:
-      - checkout
-      - prelim-deps
-      - bundle-install:
-          gemfile: "./gemfiles/rails60.gemfile"
-      - run-tests
-
-  libraries:
-    parallelism: 3
-    docker:
-      - image: circleci/ruby:2.6.3-stretch-node
-      - image: mariadb
-        environment:
-          MYSQL_DATABASE: 'travis_ci_test'
-          MYSQL_USER: 'root'
-          MYSQL_PASSWORD: ''
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-          MYSQL_ROOT_PASSWORD: ''
-          MYSQL_ROOT_HOST: '%'
-      - image: memcached
-      - image: postgres
-        environment:
-          POSTGRES_USER: 'stan'
-          POSTGRES_PASSWORD: 'stanlikesdata'
-      - image: redis
-    executor: ruby/default
-    environment:
-      BUNDLE_JOBS: "3"
-      BUNDLE_RETRY: "3"
-      BUNDLE_GEMFILE: "./gemfiles/libraries.gemfile"
-
-    steps:
-      - checkout
-      - prelim-deps
-      - bundle-install:
-          gemfile: "./gemfiles/libraries.gemfile"
-      - run-tests
+      - setup
+      - run_tests
 
 workflows:
-  version: 2
-  whole-enchilada-MRI26:
+  core:
     jobs:
-      - ruby26
-      - rails50
-      - rails60
-      - libraries
+      - test_core
+  libaries:
+    jobs:
+      - test_apprisal:
+          matrix:
+            parameters:
+              stack:
+                - ruby_27
+                - ruby_26
+                - ruby_25
+              gemfile:
+                - "./gemfiles/cuba_30.gemfile"
+                - "./gemfiles/dalli_20.gemfile"
+                - "./gemfiles/excon_02.gemfile"
+                - "./gemfiles/graphql_10.gemfile"
+                - "./gemfiles/grpc_10.gemfile"
+                - "./gemfiles/net_http_01.gemfile"
+                - "./gemfiles/rack_16.gemfile"
+                - "./gemfiles/rack_20.gemfile"
+                - "./gemfiles/redis_40.gemfile"
+                - "./gemfiles/rest_client_16.gemfile"
+                - "./gemfiles/rest_client_20.gemfile"
+                - "./gemfiles/roda_20.gemfile"
+                - "./gemfiles/roda_30.gemfile"
+                - "./gemfiles/sidekiq_42.gemfile"
+                - "./gemfiles/sidekiq_50.gemfile"
+                - "./gemfiles/sinatra_14.gemfile"
+  rails:
+    jobs:
+      - test_apprisal:
+          matrix:
+            parameters: 
+              stack: 
+                - ruby_27_postgres 
+                - ruby_26_postgres 
+                - ruby_25_postgres 
+                - ruby_27_mysql2 
+                - ruby_26_mysql2
+                - ruby_25_mysql2
+              gemfile:
+                - "./gemfiles/rails_60.gemfile"
+                - "./gemfiles/rails_52.gemfile"
+                - "./gemfiles/rails_50.gemfile"

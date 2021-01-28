@@ -1,6 +1,11 @@
 require 'test_helper'
 
 class RestClientTest < Minitest::Test
+  def setup
+    # See https://github.com/rest-client/rest-client/issues/612
+    OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:ciphers] = OpenSSL::SSL::SSLContext.new.ciphers
+  end
+
   def test_config_defaults
     assert ::Instana.config[:'rest-client'].is_a?(Hash)
     assert ::Instana.config[:'rest-client'].key?(:enabled)

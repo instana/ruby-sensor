@@ -9,6 +9,5 @@ gem "webmock"
 gem "puma"
 gem "rack-test"
 gem "simplecov", "~> 0.21.2"
-gem "net-http", "~> 0.1.1"
 
 gemspec path: "../"

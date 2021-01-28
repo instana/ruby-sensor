@@ -27,9 +27,6 @@ WebMock.disable_net_connect!(
 
 Dir['test/support/*.rb'].each { |f| load(f) }
 
-require "instana/test"
-::Instana::Test.setup_environment
-
 # Boot background webservers to test against.
 require "./test/servers/rackapp_6511"
 
