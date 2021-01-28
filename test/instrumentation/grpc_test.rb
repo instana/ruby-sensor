@@ -1,4 +1,5 @@
 require 'test_helper'
+require 'support/apps/grpc/boot'
 
 class GrpcTest < Minitest::Test
   def client_stub
@@ -225,7 +226,7 @@ class GrpcTest < Minitest::Test
     server_span = find_spans_by_name(spans, :'rpc-server').first
 
     validate_sdk_span(sdk_span)
-    
+
     assert_client_span(
         client_span,
         call: '/PingPongService/FailToPing',

@@ -1,4 +1,4 @@
-require File.expand_path(File.dirname(__FILE__) + '/../apps/grpc_server.rb')
+require_relative 'grpc_server'
 
 ::Instana.logger.info "Booting instrumented gRPC server on port 50051 for tests."
 

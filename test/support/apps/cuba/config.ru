@@ -17,3 +17,5 @@ Cuba.define do
     end
   end
 end
+
+run Cuba

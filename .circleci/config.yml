@@ -6,6 +6,7 @@ executors:
       - image: circleci/ruby:2.5-node
         environment:
           MEMCACHED_HOST: '127.0.0.1:11211'
+          REDIS_URL: 'redis://127.0.0.1:6379'
       - image: memcached
       - image: redis
   ruby_26:
@@ -13,6 +14,7 @@ executors:
       - image: circleci/ruby:2.6-node
         environment:
           MEMCACHED_HOST: '127.0.0.1:11211'
+          REDIS_URL: 'redis://127.0.0.1:6379'
       - image: memcached
       - image: redis
   ruby_27:
@@ -20,6 +22,7 @@ executors:
       - image: circleci/ruby:2.7-node
         environment:
           MEMCACHED_HOST: '127.0.0.1:11211'
+          REDIS_URL: 'redis://127.0.0.1:6379'
       - image: memcached
       - image: redis           
   ruby_25_mysql2:
@@ -147,8 +150,14 @@ jobs:
 workflows:
   core:
     jobs:
-      - test_core
-  libaries:
+      - test_core:
+          matrix:
+            paramaters:
+              stack:
+                - ruby_27
+                - ruby_26
+                - ruby_25
+  libraries:
     jobs:
       - test_apprisal:
           matrix:

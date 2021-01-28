@@ -1,4 +1,3 @@
-
 ::Instana.logger.warn "Starting background Ruby on Rails #{Rails::VERSION::STRING} application on port 3205"
 
 require "rails"
@@ -9,13 +8,9 @@ require "active_model/railtie"
 require 'rack/handler/puma'
 
 if Rails::VERSION::STRING >= '6.0'
-  require File.expand_path(File.dirname(__FILE__) + '/../models/block6')
-  system("mkdir -p app/assets/config && echo '{}' > app/assets/config/manifest.js")
-  # Rails 6 Issue: https://github.com/rails/rails/issues/37183
-  class ApplicationController < ActionController::Base
-  end
+  require_relative 'models/block6'
 else
-  require File.expand_path(File.dirname(__FILE__) + '/../models/block')
+  require_relative 'models/block'
 end
 
 ActiveRecord::Base.establish_connection(ENV['DATABASE_URL'])
@@ -61,7 +56,7 @@ class RailsTestApp < Rails::Application
   # uncomment below to display errors
   # config.consider_all_requests_local = true
 
-  config.paths['app/views'].unshift(File.expand_path(File.dirname(__FILE__) + '/../views'))
+  config.paths['app/views'].unshift(File.join(__dir__, 'views'))
 
   config.active_support.deprecation = :stderr
 

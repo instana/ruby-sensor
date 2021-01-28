@@ -3,8 +3,8 @@ require 'sidekiq/cli'
 require 'sidekiq/api'
 require 'sidekiq/processor'
 
-require Dir.pwd + '/test/jobs/sidekiq_job_1.rb'
-require Dir.pwd + '/test/jobs/sidekiq_job_2.rb'
+require_relative 'jobs/sidekiq_job_1'
+require_relative 'jobs/sidekiq_job_2'
 
 ::Instana.logger.info "Booting instrumented sidekiq worker for tests."
 ::Sidekiq.logger.level = ::Logger::FATAL

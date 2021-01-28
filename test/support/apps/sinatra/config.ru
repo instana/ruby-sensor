@@ -7,3 +7,5 @@ class InstanaSinatraApp < ::Sinatra::Base
     "Hello, #{params[:name]}!"
   end
 end
+
+run InstanaSinatraApp

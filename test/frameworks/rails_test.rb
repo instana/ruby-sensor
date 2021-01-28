@@ -1,5 +1,7 @@
 require 'test_helper'
 
+require 'support/apps/rails/boot'
+
 require_relative 'rails/actioncontroller_test'
 require_relative 'rails/activerecord_test'
 

@@ -1,4 +1,5 @@
 require 'test_helper'
+require 'support/apps/http_endpoint/boot'
 
 class RestClientTest < Minitest::Test
   def setup

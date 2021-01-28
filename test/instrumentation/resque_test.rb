@@ -1,15 +1,7 @@
 require 'test_helper'
-require_relative "../jobs/resque_fast_job"
-require_relative "../jobs/resque_error_job"
-require 'resque'
+require 'support/apps/resque/boot'
 
-if ENV.key?('REDIS_URL')
-  ::Resque.redis = ENV['REDIS_URL']
-elsif ENV.key?('REDIS_URL')
-  ::Resque.redis = ENV['REDIS_URL']
-else
-  ::Resque.redis = 'localhost:6379'
-end
+::Resque.redis = ENV['REDIS_URL']
 
 class ResqueClientTest < Minitest::Test
   def setup
