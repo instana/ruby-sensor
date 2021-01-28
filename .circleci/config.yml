@@ -116,8 +116,12 @@ commands:
           name: Run Tests
           command: |
             bundle exec rake
-      - store_artifacts:
-          path: coverage/.resultset.json
+  run_rubocop:
+    steps:
+      - run:
+          name: Run Tests
+          command: |
+            bundle exec rubocop
 
 jobs:
   test_core:
@@ -146,10 +150,17 @@ jobs:
       - checkout
       - setup
       - run_tests
+  lint:
+    executor: ruby_27
+    steps:
+      - checkout
+      - setup
+      - run_rubocop
 
 workflows:
   core:
     jobs:
+      - lint
       - test_core:
           matrix:
             parameters:
