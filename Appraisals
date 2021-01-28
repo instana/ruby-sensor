@@ -62,6 +62,15 @@ appraise 'rest-client-20' do
   gem 'rest-client', '>= 2.0', '< 3.0'
 end
 
+appraise 'resque-122' do
+  gem 'resque', '>= 1.22', '< 2.0'
+  gem 'redis', '~> 3.3', '>= 3.3.5'
+end
+
+appraise 'resque-20' do
+gem 'resque', '>= 2.0', '< 3.0'
+end
+
 appraise 'roda-20' do
   gem 'roda', '>= 2.0', '< 3.0'
 end
