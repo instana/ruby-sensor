@@ -16,7 +16,7 @@ class ActiveRecordTest < Minitest::Test
   end
 
   def test_postgresql
-    skip unless ::Instana::Test.postgresql?
+    skip unless has_postgres_database?
 
     clear_all!
 
@@ -41,7 +41,7 @@ class ActiveRecordTest < Minitest::Test
       sql = "INSERT INTO \"blocks\" (\"name\", \"color\", \"created_at\", \"updated_at\") VALUES ($?, $?, $?, $?) RETURNING \"id\""
     end
     ar_span = find_first_span_by_qualifier(ar_spans) do |span|
-      span[:data][:activerecord][:sql] == sql
+      span[:data][:activerecord][:sql].squeeze == sql.squeeze
     end
 
     found = false
@@ -53,7 +53,7 @@ class ActiveRecordTest < Minitest::Test
       sql = "SELECT  \"blocks\".* FROM \"blocks\"  WHERE \"blocks\".\"name\" = ? LIMIT ?"
     end
     ar_span = find_first_span_by_qualifier(ar_spans) do |span|
-      span[:data][:activerecord][:sql] == sql
+      span[:data][:activerecord][:sql].squeeze == sql.squeeze
     end
 
     found = false
@@ -63,12 +63,12 @@ class ActiveRecordTest < Minitest::Test
       sql = "DELETE FROM \"blocks\" WHERE \"blocks\".\"id\" = $?"
     end
     ar_span = find_first_span_by_qualifier(ar_spans) do |span|
-      span[:data][:activerecord][:sql] == sql
+      span[:data][:activerecord][:sql].squeeze == sql.squeeze
     end
   end
 
   def test_postgresql_without_sanitize
-    skip unless ::Instana::Test.postgresql?
+    skip unless has_postgres_database?
 
     # Shut SQL sanitization off
     ::Instana.config[:sanitize_sql] = false
@@ -98,7 +98,7 @@ class ActiveRecordTest < Minitest::Test
       sql = "INSERT INTO \"blocks\" (\"name\", \"color\", \"created_at\", \"updated_at\") VALUES ($1, $2, $3, $4) RETURNING \"id\""
     end
     ar_span = find_first_span_by_qualifier(ar_spans) do |span|
-      span[:data][:activerecord][:sql] == sql
+      span[:data][:activerecord][:sql].squeeze == sql.squeeze
     end
     assert ar_span[:data][:activerecord].key?(:binds)
     assert ar_span[:data][:activerecord][:binds].is_a?(Array)
@@ -112,7 +112,7 @@ class ActiveRecordTest < Minitest::Test
       sql = "SELECT  \"blocks\".* FROM \"blocks\"  WHERE \"blocks\".\"name\" = ? LIMIT ?"
     end
     ar_span = find_first_span_by_qualifier(ar_spans) do |span|
-      span[:data][:activerecord][:sql] == sql
+      span[:data][:activerecord][:sql].squeeze == sql.squeeze
     end
     assert ar_span[:data][:activerecord].key?(:binds)
     assert ar_span[:data][:activerecord][:binds].is_a?(Array)
@@ -124,7 +124,7 @@ class ActiveRecordTest < Minitest::Test
       sql = "DELETE FROM \"blocks\" WHERE \"blocks\".\"id\" = $1"
     end
     ar_span = find_first_span_by_qualifier(ar_spans) do |span|
-      span[:data][:activerecord][:sql] == sql
+      span[:data][:activerecord][:sql].squeeze == sql.squeeze
     end
     assert ar_span[:data][:activerecord].key?(:binds)
     assert ar_span[:data][:activerecord][:binds].is_a?(Array)
@@ -132,7 +132,7 @@ class ActiveRecordTest < Minitest::Test
   end
 
   def test_postgresql_lock_table
-    skip unless ::Instana::Test.postgresql?
+    skip unless has_postgres_database?
 
     clear_all!
 
@@ -163,7 +163,7 @@ class ActiveRecordTest < Minitest::Test
   end
 
   def test_postgresql_raw_execute
-    skip unless ::Instana::Test.postgresql?
+    skip unless has_postgres_database?
 
     clear_all!
 
@@ -183,7 +183,7 @@ class ActiveRecordTest < Minitest::Test
   end
 
   def test_postgresql_raw_execute_error
-    skip unless ::Instana::Test.postgresql?
+    skip unless has_postgres_database?
 
     clear_all!
 
@@ -205,7 +205,7 @@ class ActiveRecordTest < Minitest::Test
   end
 
   def test_mysql2
-    skip unless ::Instana::Test.mysql2?
+    skip unless has_mysql2_database?
 
     clear_all!
 
@@ -242,7 +242,7 @@ class ActiveRecordTest < Minitest::Test
   end
 
   def test_mysql
-    skip unless ::Instana::Test.mysql?
+    skip unless has_mysql_database?
 
     clear_all!
 

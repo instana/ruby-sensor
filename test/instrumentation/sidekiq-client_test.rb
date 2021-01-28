@@ -1,4 +1,5 @@
 require 'test_helper'
+require 'support/apps/sidekiq/boot'
 
 class SidekiqClientTest < Minitest::Test
   def setup

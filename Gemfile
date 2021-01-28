@@ -1,41 +1,20 @@
 source 'https://rubygems.org'
 
-group :development, :test do
-  gem 'rake'
-  gem 'minitest', '5.9.1'
-  gem 'minitest-reporters'
-  gem 'minitest-debugger', :require => false
-  gem 'webmock'
-  gem 'puma'
+gem 'rake'
+gem 'minitest', '5.9.1'
+gem 'minitest-reporters'
+gem 'webmock'
+gem 'puma'
 
-  # Rack v2 dropped support for Ruby 2.2 and higher.
-  if RUBY_VERSION < '2.2'
-    gem 'rack', '~> 1.6'
-  end
-  gem 'rack-test'
+gem 'rubocop', '~> 1.9'
 
-  # public_suffix dropped support for Ruby 2.1 and earlier.
-  gem 'public_suffix', '< 3.0'
+# Rack v2 dropped support for Ruby 2.2 and higher.
+if RUBY_VERSION < '2.2'
+  gem 'rack', '~> 1.6'
 end
+gem 'rack-test'
 
-group :development do
-  gem 'ruby-debug',   :platforms => [:mri_18, :jruby]
-  gem 'debugger',     :platform  =>  :mri_19
-  gem 'stackprof',    :platform  =>  [:mri_19, :mri_20]
-
-  if RUBY_VERSION > '1.8.7'
-    gem 'pry'
-
-    if RUBY_VERSION < '2.2'
-      gem 'byebug', '< 9.1.0', :platform  =>  [:mri_19, :mri_20]
-      gem 'pry-byebug', :platform  =>  [:mri_19, :mri_20]
-    else
-      gem 'pry-byebug', :platform  =>  :ruby
-    end
-  else
-    gem 'pry', '0.9.12.4'
-  end
-end
+gem 'simplecov', '~> 0.21.2'
 
 # instana.gemspec
 gemspec
