@@ -1,6 +1,8 @@
 require 'bundler/gem_tasks'
 require 'rake/testtask'
 
+require 'json'
+
 Rake::TestTask.new(:test) do |t|
   t.verbose = false
   t.warning = false
