@@ -2,11 +2,17 @@ ENV['INSTANA_TEST'] = 'true'
 
 begin
   require 'simplecov'
+  require 'simplecov_json_formatter'
+
   SimpleCov.start do
     enable_coverage :branch
 
     add_group 'Frameworks', 'lib/instana/frameworks'
     add_group 'Instrumentation', 'lib/instana/instrumentation'
+
+    if ENV['CI']
+      formatter SimpleCov::Formatter::JSONFormatter
+    end
   end
 rescue LoadError => _e
   nil

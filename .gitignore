@@ -14,3 +14,5 @@ gemfiles/*.lock
 .idea
 *.iml
 .DS_Store
+vendor/bundle
+gemfiles/vendor/bundle
