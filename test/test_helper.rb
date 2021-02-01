@@ -10,6 +10,8 @@ begin
     add_group 'Frameworks', 'lib/instana/frameworks'
     add_group 'Instrumentation', 'lib/instana/instrumentation'
 
+    add_filter %r{^/test/}
+
     if ENV['CI']
       formatter SimpleCov::Formatter::JSONFormatter
     end

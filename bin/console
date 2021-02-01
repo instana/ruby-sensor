@@ -1,7 +1,8 @@
 #!/usr/bin/env ruby
 
-require "bundler/setup"
-require "instana"
+require 'irb'
 
-require "pry"
-Pry.start
+require 'bundler/setup'
+require 'instana'
+
+IRB.start

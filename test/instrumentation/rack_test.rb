@@ -1,7 +1,6 @@
 require 'test_helper'
 require 'rack/test'
 require 'rack/lobster'
-require "instana/rack"
 
 class RackTest < Minitest::Test
   include Rack::Test::Methods

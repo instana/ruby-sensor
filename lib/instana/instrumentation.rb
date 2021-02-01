@@ -1,3 +1,4 @@
+=begin
 module Instana
   AUTOLOAD_DIRECTORIES = [:instrumentation, :frameworks].freeze
 end
@@ -23,3 +24,4 @@ if (!ENV.key?('INSTANA_DISABLE_AUTO_INSTR') || ENV['INSTANA_DISABLE_AUTO_INSTR']
     end
   end
 end
+=end

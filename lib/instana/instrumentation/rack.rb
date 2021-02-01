@@ -1,3 +1,4 @@
+require 'rack'
 require 'instana/instrumentation/instrumented_request'
 
 module Instana
