@@ -4,11 +4,11 @@ module Instana
   module RodaPathTemplateExtractor
     module RequestMethods
       TERM = defined?(::Roda) ? ::Roda::RodaPlugins::Base::RequestMethods::TERM : Object
-      
+
       def if_match(args, &blk)
         path = @remaining_path
         captures = @captures.clear
-  
+
         if match_all(args)
           (env['INSTANA_PATH_TEMPLATE_FRAGMENTS'] ||= []).concat(named_args(args, blk))
           block_result(blk.(*captures))
@@ -21,10 +21,10 @@ module Instana
           false
         end
       end
-      
-      def named_args(args, blk)  
-        parameters = blk.parameters      
-        args.map do |a| 
+
+      def named_args(args, blk)
+        parameters = blk.parameters
+        args.map do |a|
           case a
           when String
             a
@@ -35,13 +35,7 @@ module Instana
             "{#{name}}"
           end
         end.compact
-      end  
+      end
     end
   end
-end
-
-if defined?(::Roda)
-  ::Instana.logger.debug "Instrumenting Roda"
-  Roda.use ::Instana::Rack
-  Roda.plugin ::Instana::RodaPathTemplateExtractor
 end

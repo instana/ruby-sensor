@@ -10,8 +10,6 @@ require "instana/tracing/processor"
 
 require 'instana/activator'
 
-require 'instana/activators/rack'
-
 ::Instana.setup
 ::Instana.agent.setup
 ::Instana::Activator.start

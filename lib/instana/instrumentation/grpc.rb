@@ -1,7 +1,7 @@
 call_types = [:request_response, :client_streamer, :server_streamer, :bidi_streamer]
 
-if defined?(GRPC::ActiveCall) && ::Instana.config[:grpc][:enabled]
-  module Instana
+module Instana
+  module Instrumentation
     module GRPCCientInstrumentation
       CALL_TYPES = [:request_response, :client_streamer, :server_streamer, :bidi_streamer]
 
@@ -42,13 +42,10 @@ if defined?(GRPC::ActiveCall) && ::Instana.config[:grpc][:enabled]
       end
     end
   end
-
-  ::Instana.logger.debug 'Instrumenting GRPC client'
-  ::GRPC::ClientStub.prepend(::Instana::GRPCCientInstrumentation)
 end
 
-if defined?(GRPC::RpcDesc) && ::Instana.config[:grpc][:enabled]
-  module Instana
+module Instana
+  module Instrumentation
     module GRPCServerInstrumentation
       CALL_TYPES = [:request_response, :client_streamer, :server_streamer, :bidi_streamer]
 
@@ -88,7 +85,4 @@ if defined?(GRPC::RpcDesc) && ::Instana.config[:grpc][:enabled]
       end
     end
   end
-
-  ::Instana.logger.debug 'Instrumenting GRPC server'
-  ::GRPC::RpcDesc.prepend(::Instana::GRPCServerInstrumentation)
 end

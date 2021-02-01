@@ -60,8 +60,3 @@ module Instana
     end
   end
 end
-
-if defined?(::Redis) && ::Instana.config[:redis][:enabled]
-  ::Instana.logger.debug "Instrumenting Redis"
-  Redis::Client.prepend(::Instana::RedisInstrumentation)
-end

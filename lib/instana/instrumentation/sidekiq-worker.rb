@@ -43,12 +43,3 @@ module Instana
     end
   end
 end
-
-if defined?(::Sidekiq) && ::Instana.config[:'sidekiq-worker'][:enabled]
-  ::Sidekiq.configure_server do |cfg|
-    cfg.server_middleware do |chain|
-      ::Instana.logger.debug "Instrumenting Sidekiq worker"
-      chain.add ::Instana::Instrumentation::SidekiqWorker
-    end
-  end
-end

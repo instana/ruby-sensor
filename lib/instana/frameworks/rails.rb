@@ -1,7 +1,6 @@
 require "instana/rack"
 
 if defined?(::Rails)
-
   if ::Rails::VERSION::MAJOR < 3
     ::Rails.configuration.after_initialize do
       # In Rails, let's use the Rails logger
