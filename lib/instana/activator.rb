@@ -8,6 +8,7 @@ module Instana
           activated = ::Instana::Activator.call
           ::Instana.logger.debug { "Activated #{activated.join(', ')}" } unless activated.empty?
         end
+
         @trace_point.enable if enabled?
       end
 
