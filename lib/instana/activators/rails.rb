@@ -2,9 +2,7 @@ module Instana
   module Activators
     class Rails < Activator
       def can_instrument?
-        defined?(::Instana::Rack) &&
-          defined?(::Rails) &&
-          defined?(::Rails::VERSION)
+        false
       end
 
       def instrument
