@@ -34,12 +34,3 @@ module Instana
     end
   end
 end
-
-if defined?(::Sidekiq) && ::Instana.config[:'sidekiq-client'][:enabled]
-  ::Sidekiq.configure_client do |cfg|
-    cfg.client_middleware do |chain|
-      ::Instana.logger.debug "Instrumenting Sidekiq client"
-      chain.add ::Instana::Instrumentation::SidekiqClient
-    end
-  end
-end

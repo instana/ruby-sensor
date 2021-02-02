@@ -1,7 +1,7 @@
 require 'net/http'
 
-if defined?(::Net::HTTP) && ::Instana.config[:nethttp][:enabled]
-  module Instana
+module Instana
+  module Instrumentation
     module NetHTTPInstrumentation
       def request(*args, &block)
         if !Instana.tracer.tracing? || !started?
@@ -54,7 +54,4 @@ if defined?(::Net::HTTP) && ::Instana.config[:nethttp][:enabled]
       end
     end
   end
-
-  ::Instana.logger.debug "Instrumenting Net::HTTP"
-  Net::HTTP.prepend(::Instana::NetHTTPInstrumentation)
 end

@@ -7,10 +7,12 @@ require "instana/collector"
 require "instana/secrets"
 require "instana/tracer"
 require "instana/tracing/processor"
-require "instana/instrumentation"
+
+require 'instana/activator'
 
 ::Instana.setup
 ::Instana.agent.setup
+::Instana::Activator.start
 
 # Register the metric collectors
 unless RUBY_PLATFORM == 'java'.freeze

@@ -93,28 +93,3 @@ module Instana
     end
   end
 end
-
-if defined?(::Resque) && RUBY_VERSION >= '1.9.3'
-
-  if ::Instana.config[:'resque-client'][:enabled]
-    ::Instana.logger.debug 'Instrumenting Resque Client'
-    ::Resque.prepend(::Instana::Instrumentation::ResqueClient)
-  end
-
-  if ::Instana.config[:'resque-worker'][:enabled]
-    ::Instana.logger.debug 'Instrumenting Resque Worker'
-
-    ::Resque::Worker.prepend(::Instana::Instrumentation::ResqueWorker)
-    ::Resque::Job.prepend(::Instana::Instrumentation::ResqueJob)
-
-    ::Resque.before_fork do |job|
-      ::Instana.agent.before_resque_fork
-    end
-    ::Resque.after_fork do |job|
-      ::Instana.agent.after_resque_fork
-    end
-
-    # Set this so we assure that any remaining collected traces are reported at_exit
-    ENV['RUN_AT_EXIT_HOOKS'] = "1"
-  end
-end

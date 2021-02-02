@@ -1,6 +1,7 @@
 # Note: We really only need "cgi/util" here but Ruby 2.4.1 has an issue:
 # https://bugs.ruby-lang.org/issues/13539
-require "cgi"
+require 'cgi'
+require 'rack/request'
 
 module Instana
   class InstrumentedRequest < Rack::Request
