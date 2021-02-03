@@ -64,13 +64,13 @@ module Instana
         end
         name
       end
-      
+
       def matched_path_template
         Rails.application.routes.router.recognize(request) do |route, _, _|
           path = route.path
           return path.spec.to_s
         end
-        
+
         nil
       end
     end

@@ -16,7 +16,6 @@ module Instana
       end
 
       def render_collection(*args)
-        puts 'called'
         kv_payload = { :render => {} }
         kv_payload[:render][:type] = :collection
         kv_payload[:render][:name] = @path.to_s

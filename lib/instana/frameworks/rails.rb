@@ -27,14 +27,6 @@ if defined?(::Rails)
             ::Instana.logger.info "Rack: Tracing disabled via config.  Not enabling middleware."
           end
         end
-
-        if ::Instana.config[:tracing][:enabled]
-          config.after_initialize do
-            require "instana/frameworks/instrumentation/active_record"
-            require "instana/frameworks/instrumentation/action_controller"
-            require "instana/frameworks/instrumentation/action_view"
-          end
-        end
       end
     end
   end
