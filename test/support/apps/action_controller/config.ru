@@ -11,7 +11,6 @@ class TestApplication < Rails::Application
     config.hosts.clear
   end
   
-
   routes.append do
 	  get '/base/world' => 'test_base#world'
     get '/base/raise_route_error' => 'test_base#raise_route_error'
