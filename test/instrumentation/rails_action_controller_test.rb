@@ -1,6 +1,13 @@
 require 'test_helper'
 
-class ActionControllerTest < Minitest::Test
+class RailsActionControllerTest < Minitest::Test
+  include Rack::Test::Methods
+  APP = Rack::Builder.parse_file('test/support/apps/action_controller/config.ru').first
+
+  def app
+    APP
+  end
+
   def test_config_defaults
     assert ::Instana.config[:action_controller].is_a?(Hash)
     assert ::Instana.config[:action_controller].key?(:enabled)
@@ -10,28 +17,30 @@ class ActionControllerTest < Minitest::Test
   def test_controller_reporting
     clear_all!
 
-    Net::HTTP.get(URI.parse('http://localhost:3205/test/world'))
+    get '/base/world'
+    assert last_response.ok?
 
     spans = ::Instana.processor.queued_spans
     assert_equal 3, spans.length
 
     ac_span = find_first_span_by_name(spans, :actioncontroller)
 
-    assert_equal "TestController", ac_span[:data][:actioncontroller][:controller]
+    assert_equal "TestBaseController", ac_span[:data][:actioncontroller][:controller]
     assert_equal "world", ac_span[:data][:actioncontroller][:action]
   end
 
   def test_controller_error
     clear_all!
 
-    Net::HTTP.get(URI.parse('http://localhost:3205/test/error'))
+    get '/base/error'
+    refute last_response.ok?
 
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
     ac_span = find_first_span_by_name(spans, :actioncontroller)
 
-    assert_equal "TestController", ac_span[:data][:actioncontroller][:controller]
+    assert_equal "TestBaseController", ac_span[:data][:actioncontroller][:controller]
     assert_equal "error", ac_span[:data][:actioncontroller][:action]
     assert ac_span.key?(:error)
     assert ac_span.key?(:stack)
@@ -45,7 +54,8 @@ class ActionControllerTest < Minitest::Test
 
     clear_all!
 
-    Net::HTTP.get(URI.parse('http://localhost:3205/api/world'))
+    get '/api/world'
+    assert last_response.ok?
 
     spans = ::Instana.processor.queued_spans
     assert_equal 3, spans.length
@@ -53,7 +63,7 @@ class ActionControllerTest < Minitest::Test
     ac_span = find_first_span_by_name(spans, :actioncontroller)
 
     assert_equal :actioncontroller, ac_span[:n]
-    assert_equal "SocketController", ac_span[:data][:actioncontroller][:controller]
+    assert_equal "TestApiController", ac_span[:data][:actioncontroller][:controller]
     assert_equal "world", ac_span[:data][:actioncontroller][:action]
   end
 
@@ -63,14 +73,15 @@ class ActionControllerTest < Minitest::Test
 
     clear_all!
 
-    Net::HTTP.get(URI.parse('http://localhost:3205/api/error'))
+    get '/api/error'
+    refute last_response.ok?
 
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
     ac_span = find_first_span_by_name(spans, :actioncontroller)
 
-    assert_equal "SocketController", ac_span[:data][:actioncontroller][:controller]
+    assert_equal "TestApiController", ac_span[:data][:actioncontroller][:controller]
     assert_equal "error", ac_span[:data][:actioncontroller][:action]
     assert ac_span.key?(:error)
     assert ac_span.key?(:stack)
@@ -84,7 +95,8 @@ class ActionControllerTest < Minitest::Test
 
     clear_all!
 
-    Net::HTTP.get(URI.parse('http://localhost:3205/api/thispathdoesnotexist'))
+    get '/api/thispathdoesnotexist'
+    refute last_response.ok?
 
     spans = ::Instana.processor.queued_spans
     assert_equal 1, spans.length
@@ -103,7 +115,8 @@ class ActionControllerTest < Minitest::Test
 
     clear_all!
 
-    Net::HTTP.get(URI.parse('http://localhost:3205/api/raise_route_error'))
+    get '/api/raise_route_error'
+    refute last_response.ok?
 
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
@@ -124,7 +137,8 @@ class ActionControllerTest < Minitest::Test
   def test_404
     clear_all!
 
-    Net::HTTP.get(URI.parse('http://localhost:3205/test/404'))
+    get '/base/404'
+    refute last_response.ok?
 
     spans = ::Instana.processor.queued_spans
     assert_equal 1, spans.length
@@ -138,7 +152,8 @@ class ActionControllerTest < Minitest::Test
   def test_raise_routing_error
     clear_all!
 
-    Net::HTTP.get(URI.parse('http://localhost:3205/test/raise_route_error'))
+    get '/base/raise_route_error'
+    refute last_response.ok?
 
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
@@ -153,16 +168,18 @@ class ActionControllerTest < Minitest::Test
     assert ac_span.key?(:stack)
     assert 1, ac_span[:ec]
   end
-  
+
   def test_path_template
     clear_all!
 
-    Net::HTTP.get(URI.parse('http://localhost:3205/test/world'))
-    
+    get '/base/world'
+    assert last_response.ok?
+
     spans = ::Instana.processor.queued_spans
     rack_span = find_first_span_by_name(spans, :rack)
 
     assert_equal false, rack_span.key?(:error)
-    assert_equal '/test/world(.:format)', rack_span[:data][:http][:path_tpl]
+    assert_equal '/base/world(.:format)', rack_span[:data][:http][:path_tpl]
   end
+
 end

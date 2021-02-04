@@ -1,0 +1,26 @@
+Instrumenting Rack
+Started GET "/base/error" for 127.0.0.1 at 2021-02-04 11:40:56 -0500
+Processing by TestController#error as HTML
+Completed 500 Internal Server Error in 0ms (Allocations: 127)
+  
+Exception (Warning: This is a simulated Error):
+  
+test/support/apps/action_controller/config.ru:25:in `error'
+Started GET "/base/world" for 127.0.0.1 at 2021-02-04 11:40:56 -0500
+Processing by TestController#world as HTML
+  Rendering text template
+  Rendered text template (Duration: 0.0ms | Allocations: 1)
+Completed 200 OK in 0ms (Views: 0.4ms | Allocations: 200)
+Instrumenting Rack
+Started GET "/base/world" for 127.0.0.1 at 2021-02-04 11:42:17 -0500
+Processing by TestController#world as HTML
+  Rendering text template
+  Rendered text template (Duration: 0.0ms | Allocations: 3)
+Completed 200 OK in 1ms (Views: 0.4ms | Allocations: 220)
+Started GET "/base/error" for 127.0.0.1 at 2021-02-04 11:42:17 -0500
+Processing by TestController#error as HTML
+Completed 500 Internal Server Error in 0ms (Allocations: 116)
+  
+Exception (Warning: This is a simulated Error):
+  
+test/support/apps/action_controller/config.ru:25:in `error'
