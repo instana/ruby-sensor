@@ -4,9 +4,12 @@ require 'action_controller/railtie'
 class TestApplication < Rails::Application
   config.eager_load = 'test'
   config.consider_all_requests_local = false
-  config.hosts.clear
   config.secret_key_base = 'test_key'
   config.secret_token = 'test_token'
+  
+  if Rails::VERSION::MAJOR < 4
+    config.hosts.clear
+  end
   
 
   routes.append do

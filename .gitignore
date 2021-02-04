@@ -16,3 +16,4 @@ gemfiles/*.lock
 .DS_Store
 vendor/bundle
 gemfiles/vendor/bundle
+*.log
