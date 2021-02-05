@@ -1,13 +1,13 @@
 require 'rails'
 require 'action_controller/railtie'
 
-class TestApplication < Rails::Application
+class TestControllerApplication < Rails::Application
   config.eager_load = 'test'
   config.consider_all_requests_local = false
   config.secret_key_base = 'test_key'
   config.secret_token = 'test_token'
   
-  if Rails::VERSION::MAJOR < 4
+  if Rails::VERSION::MAJOR > 5
     config.hosts.clear
   end
   
@@ -54,6 +54,6 @@ if defined?(::ActionController::API)
   end
 end
 
-TestApplication.initialize!
+TestControllerApplication.initialize!
 
-run TestApplication
+run TestControllerApplication
