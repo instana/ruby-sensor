@@ -45,7 +45,7 @@ class RailsActionControllerTest < Minitest::Test
     assert ac_span.key?(:error)
     assert ac_span.key?(:stack)
     assert_equal "Warning: This is a simulated Error", ac_span[:data][:log][:message]
-    assert_equal "Exception", ac_span[:data][:log][:parameters]
+    assert_equal "StandardError", ac_span[:data][:log][:parameters]
   end
 
   def test_api_controller_reporting
@@ -86,7 +86,7 @@ class RailsActionControllerTest < Minitest::Test
     assert ac_span.key?(:error)
     assert ac_span.key?(:stack)
     assert_equal "Warning: This is a simulated Socket API Error", ac_span[:data][:log][:message]
-    assert_equal "Exception", ac_span[:data][:log][:parameters]
+    assert_equal "StandardError", ac_span[:data][:log][:parameters]
   end
 
   def test_api_controller_not_found
