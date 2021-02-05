@@ -30,7 +30,7 @@ class RailsActionViewTest < Minitest::Test
 
   def test_render_nothing
     # `render nothing: true` was removed in 5.1
-    skip unless Rails::VERSION::MAJOR < 6
+    skip unless Rails::VERSION::MAJOR <= 5 && Rails::VERSION::MINOR <= 1
     get '/render_nothing'
     assert last_response.ok?
 
