@@ -30,24 +30,28 @@ appraise 'rails-42' do
   gem 'rails', '>= 4.2', '< 5.0'
   gem 'mysql2', '0.4.10'
   gem 'pg', '~> 0.21'
+  gem 'sqlite3', '~> 1.3', '< 1.4'
 end
 
 appraise 'rails-50' do
   gem 'rails', '>= 5.0', '< 5.1'
   gem 'mysql2', '0.4.10'
   gem 'pg'
+  gem 'sqlite3', '~> 1.3', '< 1.4'
 end
 
 appraise 'rails-52' do
   gem 'rails', '>= 5.2', '< 6.0'
   gem 'mysql2', '0.4.10'
   gem 'pg'
+  gem 'sqlite3', '~> 1.3', '< 1.4'
 end
 
 appraise 'rails-60' do
   gem 'rails', '>= 6.0', '< 6.1'
   gem 'mysql2', '0.4.10'
   gem 'pg'
+  gem 'sqlite3', '~> 1.4'
 end
 
 appraise 'redis-40' do 
