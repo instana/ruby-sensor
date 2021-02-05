@@ -19,6 +19,13 @@ class RailsActiveRecordTest < Minitest::Test
     ActiveRecord::Base.remove_connection(@connection)
   end
 
+  def test_config_defaults
+    assert ::Instana.config[:sanitize_sql] == true
+    assert ::Instana.config[:active_record].is_a?(Hash)
+    assert ::Instana.config[:active_record].key?(:enabled)
+    assert_equal true, ::Instana.config[:active_record][:enabled]
+  end
+
   def test_create
     Instana::Tracer.start_or_continue_trace(:ar_test, {}) do
       Block.create(name: 'core', color: 'blue')
