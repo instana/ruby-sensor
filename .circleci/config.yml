@@ -7,6 +7,7 @@ executors:
         environment:
           MEMCACHED_HOST: '127.0.0.1:11211'
           REDIS_URL: 'redis://127.0.0.1:6379'
+          DATABASE_URL: 'sqlite3::memory:'
       - image: memcached
       - image: redis
   ruby_26:
@@ -15,6 +16,7 @@ executors:
         environment:
           MEMCACHED_HOST: '127.0.0.1:11211'
           REDIS_URL: 'redis://127.0.0.1:6379'
+          DATABASE_URL: 'sqlite3::memory:'
       - image: memcached
       - image: redis
   ruby_27:
@@ -23,8 +25,9 @@ executors:
         environment:
           MEMCACHED_HOST: '127.0.0.1:11211'
           REDIS_URL: 'redis://127.0.0.1:6379'
+          DATABASE_URL: 'sqlite3::memory:'
       - image: memcached
-      - image: redis           
+      - image: redis
   ruby_25_mysql2:
     docker:
       - image: circleci/ruby:2.5-node
@@ -72,7 +75,7 @@ executors:
       - image: postgres
         environment:
           POSTGRES_PASSWORD: 'test'
-          POSTGRES_DB: 'ci_test'           
+          POSTGRES_DB: 'ci_test'
   ruby_26_postgres:
     docker:
       - image: circleci/ruby:2.6-node
@@ -81,7 +84,7 @@ executors:
       - image: postgres
         environment:
           POSTGRES_PASSWORD: 'test'
-          POSTGRES_DB: 'ci_test'           
+          POSTGRES_DB: 'ci_test'
   ruby_27_postgres:
     docker:
       - image: circleci/ruby:2.7-node
@@ -90,7 +93,7 @@ executors:
       - image: postgres
         environment:
           POSTGRES_PASSWORD: 'test'
-          POSTGRES_DB: 'ci_test'          
+          POSTGRES_DB: 'ci_test'
 
 commands:
   setup:
@@ -99,7 +102,7 @@ commands:
           name: Install Java
           command: |
             sudo apt-get install openjdk-11-jdk
-      - run: 
+      - run:
           name: Update RubyGems
           command: |
             gem update --system
@@ -110,7 +113,7 @@ commands:
             gem install bundler
             bundler --version
             bundle config set path './vendor/bundle'
-      - run: 
+      - run:
           name: Install Depdendecies
           command: |
             bundle check || bundle install
@@ -215,12 +218,15 @@ workflows:
     jobs:
       - test_apprisal:
           matrix:
-            parameters: 
-              stack: 
-                - ruby_27_postgres 
-                - ruby_26_postgres 
-                - ruby_25_postgres 
-                - ruby_27_mysql2 
+            parameters:
+              stack:
+                - ruby_27
+                - ruby_26
+                - ruby_25
+                - ruby_27_postgres
+                - ruby_26_postgres
+                - ruby_25_postgres
+                - ruby_27_mysql2
                 - ruby_26_mysql2
                 - ruby_25_mysql2
               gemfile:
