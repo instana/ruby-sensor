@@ -89,7 +89,7 @@ class RailsActionControllerTest < Minitest::Test
     assert_equal "Exception", ac_span[:data][:log][:parameters]
   end
 
-  def test_api_controller_404
+  def test_api_controller_not_found
     # Run only when ActionController::API is used/defined
     skip unless defined?(::ActionController::API)
 
@@ -134,7 +134,7 @@ class RailsActionControllerTest < Minitest::Test
     assert 1, ac_span[:ec]
   end
 
-  def test_404
+  def test_not_found
     clear_all!
 
     get '/base/404'
@@ -181,5 +181,4 @@ class RailsActionControllerTest < Minitest::Test
     assert_equal false, rack_span.key?(:error)
     assert_equal '/base/world(.:format)', rack_span[:data][:http][:path_tpl]
   end
-
 end

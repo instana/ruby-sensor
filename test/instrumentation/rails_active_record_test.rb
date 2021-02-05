@@ -94,7 +94,7 @@ class RailsActiveRecordTest < Minitest::Test
 
   def test_raw
     Instana::Tracer.start_or_continue_trace(:ar_test, {}) do
-     ActiveRecord::Base.connection.execute('SELECT 1')
+      ActiveRecord::Base.connection.execute('SELECT 1')
     end
 
     spans = ::Instana.processor.queued_spans
