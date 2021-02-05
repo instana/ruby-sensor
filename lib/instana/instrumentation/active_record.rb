@@ -40,7 +40,7 @@ module Instana
 
       def ignored?(call_payload, name)
         IGNORED_NAMES.include?(name) ||
-          IGNORED_SQL.any? { |s| call_payload[:activerecord][:sql].start_with?(s) }
+          IGNORED_SQL.any? { |s| call_payload[:activerecord][:sql].upcase.start_with?(s) }
       end
     end
   end
