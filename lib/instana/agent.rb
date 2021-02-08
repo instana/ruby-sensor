@@ -1,6 +1,5 @@
 require 'net/http'
 require 'socket'
-require 'sys/proctable'
 require 'timers'
 require 'uri'
 require 'thread'
@@ -9,11 +8,7 @@ require 'instana/agent/helpers'
 require 'instana/agent/hooks'
 require 'instana/agent/tasks'
 
-include Sys
-
 module Instana
-  OJ_OPTIONS = {:mode => :strict}
-
   class Agent
     include AgentHelpers
     include AgentHooks
@@ -84,9 +79,9 @@ module Instana
 
       # The agent may pass down custom headers for this sensor to capture
       @extra_headers = nil
-      
+
       # The values considered sensitive and removed from http query parameters
-      # and database connection strings 
+      # and database connection strings
       @secret_values = nil
     end
 
@@ -147,7 +142,7 @@ module Instana
         path = sprintf(METRICS_PATH, @process[:report_pid])
         uri = URI.parse("http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/#{path}")
         req = Net::HTTP::Post.new(uri)
-        req.body = Oj.dump({}, OJ_OPTIONS)
+        req.body = JSON.dump({})
 
         response = make_host_agent_request(req)
         if response && (response.code.to_i == 200)
@@ -272,7 +267,7 @@ module Instana
 
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH}")
       req = Net::HTTP::Put.new(uri)
-      req.body = Oj.dump(announce_payload, OJ_OPTIONS)
+      req.body = JSON.dump(announce_payload)
 
       #::Instana.logger.debug("Announce payload: #{announce_payload}")
       #::Instana.logger.debug { "Announce: http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{DISCOVERY_PATH} - payload: #{req.body}" }
@@ -280,7 +275,7 @@ module Instana
       response = make_host_agent_request(req, open_timeout=3, read_timeout=3, debug=true)
 
       if response && (response.code.to_i == 200)
-        data = Oj.load(response.body, OJ_OPTIONS)
+        data = JSON.parse(response.body)
         @process[:report_pid] = data['pid']
         @agent_uuid = data['agentUuid']
         @secret_values = data['secrets']
@@ -316,7 +311,7 @@ module Instana
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{path}")
       req = Net::HTTP::Post.new(uri)
 
-      req.body = Oj.dump(payload, OJ_OPTIONS)
+      req.body = JSON.dump(payload)
       response = make_host_agent_request(req)
 
       if response
@@ -355,9 +350,7 @@ module Instana
       uri = URI.parse("http://#{@discovered[:agent_host]}:#{@discovered[:agent_port]}/#{path}")
       req = Net::HTTP::Post.new(uri)
 
-      opts = OJ_OPTIONS.merge({omit_nil: true})
-
-      req.body = Oj.dump(spans, opts)
+      req.body = JSON.dump(spans)
       response = make_host_agent_request(req)
 
       if response

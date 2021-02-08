@@ -1,4 +1,4 @@
-require 'oj_check'
+require 'json'
 
 require "instana/base"
 require "instana/config"

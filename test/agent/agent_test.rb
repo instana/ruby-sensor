@@ -1,10 +1,6 @@
 require 'test_helper'
-require './lib/oj_check'
 
 class AgentTest < Minitest::Test
-
-  Oj = ::Instana::Oj unless defined?(Oj)
-
   def teardown
     WebMock.reset!
     ::Instana.agent.instance_variable_set(:@discovered, nil)
@@ -75,7 +71,7 @@ class AgentTest < Minitest::Test
     ::Instana.agent.instance_variable_set(:@discovered, discovery)
 
     url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/com.instana.plugin.ruby.discovery"
-    json = Oj.dump({ 'pid' => Process.pid, 'agentUuid' => 'abc' })
+    json = JSON.dump({ 'pid' => Process.pid, 'agentUuid' => 'abc' })
     stub_request(:put, url).to_return(:body => json, :status => 200)
 
     assert_equal true, ::Instana.agent.announce_sensor
@@ -102,7 +98,7 @@ class AgentTest < Minitest::Test
     ::Instana.agent.instance_variable_set(:@discovered, discovery)
 
     url = "http://#{::Instana.config[:agent_host]}:#{::Instana.config[:agent_port]}/com.instana.plugin.ruby.discovery"
-    json = Oj.dump({ 'pid' => Process.pid, 'agentUuid' => 'abc' })
+    json = JSON.dump({ 'pid' => Process.pid, 'agentUuid' => 'abc' })
     stub_request(:put, url).to_return(:body => json, :status => 200)
     ::Instana.agent.announce_sensor
 

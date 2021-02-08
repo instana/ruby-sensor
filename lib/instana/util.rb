@@ -94,32 +94,35 @@ module Instana
         # If there is a /proc filesystem, we read this manually so
         # we can split on embedded null bytes.  Otherwise (e.g. OSX, Windows)
         # use ProcTable.
-        if File.exist?(cmdline_file)
-          cmdline = IO.read(cmdline_file).split(?\x00)
-        else
-          # Attempt to support older versions of sys-proctable and ffi.
-          #
-          # Alternatively we could use Sys::ProcTable::VERSION here but the
-          # consistency across historical versions is unknown.  Alternative
-          # to the alternative, would be Ruby metaprogramming using the `arity`
-          # and `parameters` methods.
-          # e.g ProcTable.method(:ps).arity/parameters
-          if Gem.loaded_specs.key?("sys-proctable") &&
-            (Gem.loaded_specs["sys-proctable"].version >= Gem::Version.new("1.2.0"))
-            cmdline = ProcTable.ps(:pid => Process.pid).cmdline.split(' ')
-          else
-            cmdline = ProcTable.ps(Process.pid).cmdline.split(' ')
-          end
-        end
+        cmdline = if File.exist?(cmdline_file)
+                    IO.read(cmdline_file).split(?\x00)
+                  else
+                    # Attempt to support older versions of sys-proctable and ffi.
+                    #
+                    # Alternatively we could use Sys::ProcTable::VERSION here but the
+                    # consistency across historical versions is unknown.  Alternative
+                    # to the alternative, would be Ruby metaprogramming using the `arity`
+                    # and `parameters` methods.
+                    # e.g ProcTable.method(:ps).arity/parameters
+                    begin
+                      require 'sys-proctable'
+                      if defined?(Sys::ProcTable::VERSION) && Gem::Version.new(Sys::ProcTable::VERSION) >= Gem::Version.new("1.2.0")
+                        Sys::ProcTable.ps(pid: Process.pid).cmdline.split(' ')
+                      else
+                        Sys::ProcTable.ps(Process.pid).cmdline.split(' ')
+                      end
+                    rescue LoadError, ArgumentError => e
+                      ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
+                      ::Instana.logger.debug { e.backtrace.join("\r\n") }
 
-        if RUBY_PLATFORM =~ /darwin/i
-          cmdline.delete_if{ |e| e.include?('=') }
-          process[:name] = cmdline.join(' ')
-        else
-          process[:name] = cmdline.shift
-          process[:arguments] = cmdline
-        end
+                      [$0] + ARGF.argv
+                    end
+                  end
 
+        cmdline.delete_if { |elm| elm.include?('=') } if RUBY_PLATFORM =~ /darwin/i
+
+        process[:name] = cmdline.shift
+        process[:arguments] = cmdline
         process[:pid] = Process.pid
         # This is usually Process.pid but in the case of containers, the host agent
         # will return to us the true host pid in which we use to report data.
