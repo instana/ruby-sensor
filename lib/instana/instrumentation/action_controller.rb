@@ -35,7 +35,7 @@ module Instana
       end
 
       def describe_render_options(options)
-        return unless options
+        return unless options.is_a?(Hash)
 
         describe_layout(options[:layout]) ||
           describe_direct(options)
