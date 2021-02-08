@@ -28,6 +28,16 @@ class RailsActionViewTest < Minitest::Test
     assert_equal 'Default', span[:data][:actionview][:name]
   end
 
+  def test_render_view_direct
+    get '/render_view_direct'
+    assert last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    span = find_first_span_by_name(spans, :actionview)
+
+    assert_equal 'Default', span[:data][:actionview][:name]
+  end
+
   def test_render_nothing
     # `render nothing: true` was removed in 5.1
     skip unless Rails::VERSION::MAJOR <= 5 && Rails::VERSION::MINOR <= 1

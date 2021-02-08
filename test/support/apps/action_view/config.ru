@@ -13,6 +13,7 @@ class TestViewApplication < Rails::Application
 
   routes.append do
     get '/render_view' => 'test_view#render_view'
+    get '/render_view_direct' => 'test_view#render_view_direct'
     get '/render_partial' => 'test_view#render_partial'
     get '/render_partial_that_errors' => 'test_view#render_partial_that_errors'
     get '/render_collection' => 'test_view#render_collection'
@@ -37,6 +38,11 @@ class TestViewController < ActionController::Base
 
   def render_view
     @message = "Hello Instana!"
+  end
+
+  def render_view_direct
+    @message = "Hello Instana!"
+    render "render_view"
   end
 
   def render_partial
