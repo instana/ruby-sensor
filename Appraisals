@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2021
+
 appraise 'cuba-30' do
   gem 'cuba', '>= 3.0', '< 4.0'
 end

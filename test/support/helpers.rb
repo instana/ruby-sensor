@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2021
+
 module Instana
   module TestHelpers
     # Used to reset the gem to boot state.  It clears out any queued and/or staged

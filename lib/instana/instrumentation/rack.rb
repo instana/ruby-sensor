@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2016
+
 require 'rack'
 require 'instana/instrumentation/instrumented_request'
 

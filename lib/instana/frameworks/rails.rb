@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2016
+
 if ::Rails::VERSION::MAJOR < 3
   ::Rails.configuration.after_initialize do
     # In Rails, let's use the Rails logger

@@ -1,5 +1,12 @@
 inherit_from: .rubocop_todo.yml
 
+require:
+  - ./extras/license_header.rb
+
+# Remove when we remove .rubocop_todo.yml
+AllCops:
+  NewCops: disable
+
 # Broken on 1.9
 Style/HashSyntax:
   Enabled: false

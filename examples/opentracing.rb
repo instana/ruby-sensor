@@ -4,6 +4,10 @@
 # to `OpenTracing.global_tracer`.  Once the gem is loaded, you can
 # immediately start making OpenTracing calls.
 #
+
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2018
+
 require "opentracing"
 
 entry_span = OpenTracing.start_span("HandMadeRackServer")

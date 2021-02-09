@@ -1,4 +1,8 @@
 # frozen_string_literal: true
+
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2017
+
 source "https://rubygems.org"
 
 git_source(:github) {|repo_name| "https://github.com/instana/#{repo_name}" }

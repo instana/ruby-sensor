@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2017
+
 module Instana
   module RedisInstrumentation
     def call(*args, &block)

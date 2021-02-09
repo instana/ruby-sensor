@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2017
+
 require_relative 'grpc_server'
 
 ::Instana.logger.info "Booting instrumented gRPC server on port 50051 for tests."

@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2016
+
 module Instana
   module Instrumentation
     class Excon < ::Excon::Middleware::Base

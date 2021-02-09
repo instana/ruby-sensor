@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2018
+
 module AgentTasks
   # When request(s) are received by the host agent, it is sent here
   # for handling & processing.
