@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2018
+
 module AgentHelpers
   # Attempts to determine if we're running inside a container.
   # The qualifications are:

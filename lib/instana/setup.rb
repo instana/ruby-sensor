@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2016
+
 require 'oj_check'
 
 require "instana/base"

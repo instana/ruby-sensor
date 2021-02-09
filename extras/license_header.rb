@@ -11,10 +11,10 @@ module RuboCop
         extend AutoCorrector
 
         MSG = 'The license header should be present in each file.'.freeze
-        HEADER = '(c) Copyright IBM Corp.'
-        HEADER_TEMPLATE = <<~HERE
-         # (c) Copyright IBM Corp. %d
-         # (c) Copyright Instana Inc. %d
+        HEADER = '(c) Copyright IBM Corp.'.freeze
+        HEADER_TEMPLATE = <<~HERE.freeze
+          # (c) Copyright IBM Corp. %d
+          # (c) Copyright Instana Inc. %d
         HERE
 
         def on_new_investigation

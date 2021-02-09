@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2016
+
 module Instana
   module Helpers
     EUM_SNIPPET= (File.read(File.dirname(__FILE__) + '/eum/eum.js.erb')).freeze

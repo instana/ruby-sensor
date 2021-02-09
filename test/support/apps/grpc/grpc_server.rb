@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2017
+
 require 'google/protobuf'
 
 Google::Protobuf::DescriptorPool.generated_pool.build do

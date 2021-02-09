@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2016
+
 require "instana/rack"
 
 # This instrumentation will insert Rack into Sinatra _and_ Padrino since

@@ -1,4 +1,8 @@
 # Hook into sidekiq to control the current mode
+
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2021
+
 $sidekiq_mode = :client
 class << Sidekiq
   def server?

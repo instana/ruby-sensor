@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2016
+
 require "instana/thread_local"
 require "instana/tracing/span"
 require "instana/tracing/span_context"

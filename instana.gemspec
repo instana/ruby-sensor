@@ -1,4 +1,8 @@
 # coding: utf-8
+
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2016
+
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'instana/version'

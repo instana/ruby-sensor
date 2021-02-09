@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2017
+
 ::Instana.logger.warn "Starting background Ruby on Rails #{Rails::VERSION::STRING} application on port 3205"
 
 require "rails"

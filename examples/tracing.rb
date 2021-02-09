@@ -17,6 +17,10 @@
 # points in webservers (e.g. rack), it will initialize tracing and instrument the passed
 # block.  <incoming_id> is a hash for continuing remote traces (remote in terms
 # of service calls, or message queues).
+
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2016
+
 Instana::Tracer.start_or_continue_trace(:my_block_name, {}, incoming_context) do
   # Code block
 end

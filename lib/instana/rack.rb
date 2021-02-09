@@ -7,4 +7,8 @@
 # require 'instana/rack'
 # config.middleware.use ::Instana::Rack
 #
+
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2016
+
 require 'instana/instrumentation/rack'

@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2021
+
 require 'rails'
 require 'active_record/railtie'
 

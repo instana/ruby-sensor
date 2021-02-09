@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2017
+
 call_types = [:request_response, :client_streamer, :server_streamer, :bidi_streamer]
 
 module Instana

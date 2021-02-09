@@ -1,3 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2018
+
 module AgentHooks
   # Used post fork to re-initialize state and restart communications with
   # the host agent.
