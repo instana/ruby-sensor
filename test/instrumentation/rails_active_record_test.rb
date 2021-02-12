@@ -4,8 +4,6 @@
 require 'test_helper'
 require 'support/apps/active_record/active_record'
 
-require 'irb'
-
 class RailsActiveRecordTest < Minitest::Test
   def setup
     skip unless ENV['DATABASE_URL']
