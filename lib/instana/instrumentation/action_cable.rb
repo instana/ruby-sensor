@@ -17,28 +17,34 @@ module Instana
     module ActionCableChannel
       def transmit(*args)
         rpc_tags = {
-          flavor: :actioncable,
-          call: self.class.to_s,
-          call_type: :transmit,
-          host: Socket.gethostname
+          service: ::Instana::Util.get_app_name,
+          rpc: {
+            flavor: :actioncable,
+            call: self.class.to_s,
+            call_type: :transmit,
+            host: Socket.gethostname
+          }
         }
 
         context = connection.instana_trace_context
-        ::Instana.tracer.start_or_continue_trace(:'rpc-server', {rpc: rpc_tags}, context) do
+        ::Instana.tracer.start_or_continue_trace(:'rpc-server', rpc_tags, context) do
           super(*args)
         end
       end
 
       def dispatch_action(action, data)
         rpc_tags = {
-          flavor: :actioncable,
-          call: "#{self.class}##{action}",
-          call_type: :action,
-          host: Socket.gethostname
+          service: ::Instana::Util.get_app_name,
+          rpc: {
+            flavor: :actioncable,
+            call: "#{self.class}##{action}",
+            call_type: :action,
+            host: Socket.gethostname
+          }
         }
 
         context = connection.instana_trace_context
-        ::Instana.tracer.start_or_continue_trace(:'rpc-server', {rpc: rpc_tags}, context) do
+        ::Instana.tracer.start_or_continue_trace(:'rpc-server', rpc_tags, context) do
           super(action, data)
         end
       end
