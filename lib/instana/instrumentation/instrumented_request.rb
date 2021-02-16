@@ -66,6 +66,10 @@ module Instana
       incoming_context.include?(:external_trace_id)
     end
 
+    def synthetic?
+      @env.has_key?('HTTP_X_INSTANA_SYNTHETIC') && @env['HTTP_X_INSTANA_SYNTHETIC'].eql?('1')
+    end
+
     private
 
     def context_from_instana_headers
@@ -83,7 +87,7 @@ module Instana
       {
         external_trace_id: matches['trace'],
         external_state: @env['HTTP_TRACESTATE'],
-        trace_id: ::Instana::Util.header_to_id(matches['trace'][16..]),
+        trace_id: ::Instana::Util.header_to_id(matches['trace'][16..-1]),
         span_id: ::Instana::Util.header_to_id(matches['parent'])
       }
     end

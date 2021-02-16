@@ -34,6 +34,10 @@ module Instana
         curren_span[:lt] = req.incoming_context[:external_trace_id]
       end
 
+      if req.synthetic?
+        current_span[:sy] = true
+      end
+
       status, headers, response = @app.call(env)
 
       if ::Instana.tracer.tracing?
