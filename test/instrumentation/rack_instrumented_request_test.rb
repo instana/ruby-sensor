@@ -33,6 +33,7 @@ class RackInstrumentedRequestTest < Minitest::Test
     }
 
     assert_equal expected, req.incoming_context
+    refute req.continuing_from_trace_parent?
   end
 
   def test_incoming_w3_content
@@ -50,6 +51,7 @@ class RackInstrumentedRequestTest < Minitest::Test
     }
 
     assert_equal expected, req.incoming_context
+    assert req.continuing_from_trace_parent?
   end
 
   def test_incoming_invalid_w3_content
