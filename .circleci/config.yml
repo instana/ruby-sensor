@@ -10,6 +10,7 @@ executors:
           DATABASE_URL: 'sqlite3::memory:'
       - image: memcached
       - image: redis
+      - image: circleci/dynamodb
   ruby_26:
     docker:
       - image: circleci/ruby:2.6-node
@@ -19,6 +20,7 @@ executors:
           DATABASE_URL: 'sqlite3::memory:'
       - image: memcached
       - image: redis
+      - image: circleci/dynamodb
   ruby_27:
     docker:
       - image: circleci/ruby:2.7-node
@@ -28,6 +30,7 @@ executors:
           DATABASE_URL: 'sqlite3::memory:'
       - image: memcached
       - image: redis
+      - image: circleci/dynamodb
   ruby_25_mysql2:
     docker:
       - image: circleci/ruby:2.5-node
@@ -196,6 +199,7 @@ workflows:
                 - ruby_26
                 - ruby_25
               gemfile:
+                - "./gemfiles/aws_30.gemfile"
                 - "./gemfiles/cuba_30.gemfile"
                 - "./gemfiles/dalli_20.gemfile"
                 - "./gemfiles/excon_02.gemfile"

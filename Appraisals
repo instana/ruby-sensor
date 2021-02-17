@@ -1,6 +1,10 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
 
+appraise 'aws-30' do
+  gem 'aws-sdk-dynamodb', '~> 1.59'
+end
+
 appraise 'cuba-30' do
   gem 'cuba', '>= 3.0', '< 4.0'
 end
