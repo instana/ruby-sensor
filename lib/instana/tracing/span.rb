@@ -6,10 +6,10 @@ module Instana
     REGISTERED_SPANS = [ :actioncontroller, :actionview, :activerecord, :excon,
                          :memcache, :'net-http', :rack, :render, :'rpc-client',
                          :'rpc-server', :'sidekiq-client', :'sidekiq-worker',
-                         :redis, :'resque-client', :'resque-worker', :'graphql.server'  ].freeze
+                         :redis, :'resque-client', :'resque-worker', :'graphql.server', :dynamodb  ].freeze
     ENTRY_SPANS = [ :rack, :'resque-worker', :'rpc-server', :'sidekiq-worker', :'graphql.server' ].freeze
     EXIT_SPANS = [ :activerecord, :excon, :'net-http', :'resque-client',
-                   :'rpc-client', :'sidekiq-client', :redis ].freeze
+                   :'rpc-client', :'sidekiq-client', :redis, :dynamodb ].freeze
     HTTP_SPANS = [ :rack, :excon, :'net-http' ].freeze
 
     attr_accessor :parent
@@ -287,6 +287,12 @@ module Instana
 
     def inspect
       @data.inspect
+    end
+
+    # Check to see if the current span indicates an exit from application
+    # code and into an external service
+    def exit_span?
+      EXIT_SPANS.include?(@data[:n])
     end
 
     #############################################################

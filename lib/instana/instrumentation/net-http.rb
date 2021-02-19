@@ -7,7 +7,7 @@ module Instana
   module Instrumentation
     module NetHTTPInstrumentation
       def request(*args, &block)
-        if !Instana.tracer.tracing? || !started?
+        if !Instana.tracer.tracing? || Instana.tracer.current_span.exit_span? || !started?
           do_skip = true
           return super(*args, &block)
         end
