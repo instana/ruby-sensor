@@ -8,7 +8,7 @@ module Instana
         kv_payload = { :'sidekiq-worker' => {} }
         kv_payload[:'sidekiq-worker'][:job_id] = msg['jid']
         kv_payload[:'sidekiq-worker'][:queue] = msg['queue']
-        kv_payload[:'sidekiq-worker'][:job] = msg['class']
+        kv_payload[:'sidekiq-worker'][:job] = msg['class'].to_s
         kv_payload[:'sidekiq-worker'][:retry] = msg['retry'].to_s
 
         # Temporary until we move connection collection to redis

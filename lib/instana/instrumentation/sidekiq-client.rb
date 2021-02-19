@@ -7,7 +7,7 @@ module Instana
       def call(worker_class, msg, queue, _redis_pool)
         kv_payload = { :'sidekiq-client' => {} }
         kv_payload[:'sidekiq-client'][:queue] = queue
-        kv_payload[:'sidekiq-client'][:job] = worker_class
+        kv_payload[:'sidekiq-client'][:job] = worker_class.to_s
         kv_payload[:'sidekiq-client'][:retry] = msg['retry'].to_s
         ::Instana.tracer.log_entry(:'sidekiq-client', kv_payload)
 
