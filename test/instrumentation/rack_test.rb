@@ -15,6 +15,24 @@ class RackTest < Minitest::Test
     end
   end
 
+  class ErrorApp
+    def call(_env)
+      raise 'An Error'
+    end
+  end
+
+  class FiveZeroOneApp
+    def call(_env)
+      [501, {}, ['No']]
+    end
+  end
+
+  class NoHeadersApp
+    def call(_env)
+      [501, nil, ['No']]
+    end
+  end
+
   def app
     @app = Rack::Builder.new do
       use Rack::CommonLogger
@@ -22,6 +40,8 @@ class RackTest < Minitest::Test
       use Instana::Rack
       map("/mrlobster") { run Rack::Lobster.new }
       map("/path_tpl") { run PathTemplateApp.new }
+      map("/error") { run ErrorApp.new }
+      map("/five_zero_one") { run FiveZeroOneApp.new }
     end
   end
 
@@ -48,6 +68,10 @@ class RackTest < Minitest::Test
     assert last_response.headers["X-Instana-L"] == '1'
     assert last_response.headers.key?("Server-Timing")
     assert last_response.headers["Server-Timing"] == "intid;desc=#{::Instana::Util.id_to_header(rack_span[:t])}"
+
+    # W3 Trace Context
+    assert_equal "00-#{rack_span[:t].rjust(32, '0')}-#{rack_span[:s]}-01", last_response.headers["Traceparent"]
+    assert_equal "in=#{rack_span[:t]};#{rack_span[:s]}", last_response.headers["Tracestate"]
 
     assert rack_span.key?(:data)
     assert rack_span[:data].key?(:http)
@@ -271,5 +295,122 @@ class RackTest < Minitest::Test
     rack_span = spans.first
     assert_equal :rack, rack_span[:n]
     assert_equal 'sample_template', rack_span[:data][:http][:path_tpl]
+  end
+
+  def test_basic_get_with_x_instana_synthetic
+    header 'X-INSTANA-SYNTHETIC', '1'
+
+    clear_all!
+    get '/mrlobster'
+    assert last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+
+    # Span validation
+    assert_equal 1, spans.count
+
+    first_span = spans.first
+    assert_equal true, first_span[:sy]
+  end
+
+  def test_basic_get_with_w3_trace
+    clear_all!
+
+    header 'TRACEPARENT', '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+
+    get '/mrlobster'
+    assert last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.count
+
+    first_span = spans.first
+    assert_equal :rack, first_span[:n]
+    assert_equal 'a3ce929d0e0e4736', first_span[:t]
+    assert_equal '00f067aa0ba902b7', first_span[:p]
+    assert_equal '4bf92f3577b34da6a3ce929d0e0e4736', first_span[:lt]
+    assert_nil first_span[:ia]
+    assert first_span[:tp]
+  end
+
+  def test_basic_get_with_w3_disabled
+    clear_all!
+    ::Instana.config[:w3_trace_correlation] = false
+
+    header 'TRACEPARENT', '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+
+    get '/mrlobster'
+    assert last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.count
+
+    first_span = spans.first
+    assert_equal :rack, first_span[:n]
+    refute first_span[:tp]
+    ::Instana.config[:w3_trace_correlation] = true
+  end
+
+  def test_skip_trace
+    clear_all!
+    header 'X_INSTANA_L', '0;junk'
+
+    get '/mrlobster'
+    assert last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 0, spans.count
+  end
+
+  def test_disable_trace
+    clear_all!
+    ::Instana.config[:tracing][:enabled] = false
+
+    get '/mrlobster'
+    assert last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 0, spans.count
+    ::Instana.config[:tracing][:enabled] = true
+  end
+
+  def test_error_trace
+    clear_all!
+
+    get '/error'
+    refute last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.count
+
+    first_span = spans.first
+    assert_equal :rack, first_span[:n]
+    assert_equal 1, first_span[:ec]
+  end
+
+  def test_disable_trace_with_error
+    clear_all!
+    ::Instana.config[:tracing][:enabled] = false
+
+    get '/error'
+    refute last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 0, spans.count
+    ::Instana.config[:tracing][:enabled] = true
+  end
+
+  def test_five_zero_x_trace
+    clear_all!
+
+    get '/five_zero_one'
+    refute last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.count
+
+    first_span = spans.first
+    assert_equal :rack, first_span[:n]
+    assert_equal 1, first_span[:ec]
   end
 end

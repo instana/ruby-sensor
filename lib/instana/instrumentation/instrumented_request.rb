@@ -9,19 +9,24 @@ require 'rack/request'
 
 module Instana
   class InstrumentedRequest < Rack::Request
+    W3_TRACE_PARENT_FORMAT = /00-(?<trace>[0-9a-f]+)-(?<parent>[0-9a-f]+)-(?<flags>[0-9a-f]+)/.freeze
+    INSTANA_TRACE_STATE = /in=(?<trace>[0-9a-f]+);(?<span>[0-9a-f]+)/.freeze
+
     def skip_trace?
       # Honor X-Instana-L
       @env.has_key?('HTTP_X_INSTANA_L') && @env['HTTP_X_INSTANA_L'].start_with?('0')
     end
 
     def incoming_context
-      context = {}
+      context = if @env['HTTP_X_INSTANA_T']
+                  context_from_instana_headers
+                elsif @env['HTTP_TRACEPARENT'] && ::Instana.config[:w3_trace_correlation]
+                  context_from_trace_parent
+                else
+                  {}
+                end
 
-      if @env['HTTP_X_INSTANA_T']
-        context[:trace_id] = ::Instana::Util.header_to_id(@env['HTTP_X_INSTANA_T'])
-        context[:span_id] = ::Instana::Util.header_to_id(@env['HTTP_X_INSTANA_S']) if @env['HTTP_X_INSTANA_S']
-        context[:level] = @env['HTTP_X_INSTANA_L'][0] if @env['HTTP_X_INSTANA_L']
-      end
+      context[:level] = @env['HTTP_X_INSTANA_L'][0] if @env['HTTP_X_INSTANA_L']
 
       context
     end
@@ -54,7 +59,54 @@ module Instana
       @correlation_data ||= parse_correlation_data
     end
 
+    def instana_ancestor
+      @instana_ancestor ||= parse_trace_state
+    end
+
+    def continuing_from_trace_parent?
+      incoming_context.include?(:external_trace_id)
+    end
+
+    def synthetic?
+      @env.has_key?('HTTP_X_INSTANA_SYNTHETIC') && @env['HTTP_X_INSTANA_SYNTHETIC'].eql?('1')
+    end
+
     private
+
+    def context_from_instana_headers
+      {
+        trace_id: ::Instana::Util.header_to_id(@env['HTTP_X_INSTANA_T']),
+        span_id: ::Instana::Util.header_to_id(@env['HTTP_X_INSTANA_S'])
+      }.compact
+    end
+
+    def context_from_trace_parent
+      return {} unless @env.has_key?('HTTP_TRACEPARENT')
+      matches = @env['HTTP_TRACEPARENT'].match(W3_TRACE_PARENT_FORMAT)
+      return {} unless matches
+
+      {
+        external_trace_id: matches['trace'],
+        external_state: @env['HTTP_TRACESTATE'],
+        trace_id: ::Instana::Util.header_to_id(matches['trace'][16..-1]),
+        span_id: ::Instana::Util.header_to_id(matches['parent'])
+      }
+    end
+
+    def parse_trace_state
+      return {} unless @env.has_key?('HTTP_TRACESTATE')
+      token = @env['HTTP_TRACESTATE']
+        .split(/,/)
+        .map { |t| t.match(INSTANA_TRACE_STATE) }
+        .reject { |t| t.nil? }
+        .first
+      return {} unless token
+
+      {
+        t: token['trace'],
+        p: token['span']
+      }
+    end
 
     def parse_correlation_data
       return {} unless @env.has_key?('HTTP_X_INSTANA_L')

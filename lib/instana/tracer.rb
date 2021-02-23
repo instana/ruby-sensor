@@ -91,7 +91,15 @@ module Instana
       if incoming_context
         if incoming_context.is_a?(Hash)
           if !incoming_context.empty?
-            parent_context = SpanContext.new(incoming_context[:trace_id], incoming_context[:span_id], incoming_context[:level])
+            parent_context = SpanContext.new(
+              incoming_context[:trace_id],
+              incoming_context[:span_id],
+              incoming_context[:level],
+              {
+                external_trace_id: incoming_context[:external_trace_id],
+                external_state: incoming_context[:external_state]
+              }
+            )
           end
         else
           parent_context = incoming_context
@@ -103,12 +111,7 @@ module Instana
       else
         self.current_span = Span.new(name)
       end
-      
-      if incoming_context.is_a?(Hash) && incoming_context[:correlation] && !incoming_context[:correlation].empty?
-        self.current_span[:crid] = incoming_context[:correlation][:id]
-        self.current_span[:crtp] = incoming_context[:correlation][:type]
-      end
-      
+
       self.current_span.set_tags(kvs) unless kvs.empty?
       self.current_span
     end

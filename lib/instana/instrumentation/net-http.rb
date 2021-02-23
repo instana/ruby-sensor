@@ -22,6 +22,11 @@ module Instana
         request['X-Instana-T'] = t_context.trace_id_header
         request['X-Instana-S'] = t_context.span_id_header
 
+        if ::Instana.config[:w3_trace_correlation]
+          request['Traceparent'] = t_context.trace_parent_header
+          request['Tracestate'] = t_context.trace_state_header
+        end
+
         # Collect up KV info now in case any exception is raised
         kv_payload = { :http => {} }
         kv_payload[:http][:method] = request.method

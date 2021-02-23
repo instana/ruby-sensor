@@ -18,7 +18,7 @@ module Instana
       @trace_id = tid
       @span_id = sid
       @level = level
-      @baggage = baggage
+      @baggage = baggage || {}
     end
 
     def trace_id_header
@@ -29,8 +29,31 @@ module Instana
       ::Instana::Util.id_to_header(@span_id)
     end
 
+    def trace_parent_header
+      return '' unless valid?
+
+      trace = (@baggage[:external_trace_id] || @trace_id).rjust(32, '0')
+      parent = @span_id.rjust(16, '0')
+      flags = @level == 1 ? "01" : "00"
+
+      "00-#{trace}-#{parent}-#{flags}"
+    end
+
+    def trace_state_header
+      return '' unless valid?
+
+      state = ["in=#{@trace_id};#{@span_id}", @baggage[:external_state]]
+      state.compact.join(',')
+    end
+
     def to_hash
       { :trace_id => @trace_id, :span_id => @span_id }
+    end
+
+    private
+
+    def valid?
+      @baggage && @trace_id && @span_id
     end
   end
 end
