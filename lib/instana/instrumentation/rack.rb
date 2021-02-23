@@ -20,27 +20,26 @@ module Instana
 
       current_span = ::Instana.tracer.log_start_or_continue(:rack, {}, req.incoming_context)
 
-      unless req.correlation_data.empty?
-        current_span[:crid] = req.correlation_data[:id]
-        current_span[:crtp] = req.correlation_data[:type]
-      end
-
-      unless req.instana_ancestor.empty? && !req.continuing_from_trace_parent?
-        current_span[:ia] = req.instana_ancestor
-      end
-
-      if req.continuing_from_trace_parent?
-        current_span[:tp] = true
-        curren_span[:lt] = req.incoming_context[:external_trace_id]
-      end
-
-      if req.synthetic?
-        current_span[:sy] = true
-      end
-
       status, headers, response = @app.call(env)
 
       if ::Instana.tracer.tracing?
+        unless req.correlation_data.empty?
+          current_span[:crid] = req.correlation_data[:id]
+          current_span[:crtp] = req.correlation_data[:type]
+        end
+
+        unless req.instana_ancestor.empty? && !req.continuing_from_trace_parent?
+          current_span[:ia] = req.instana_ancestor
+        end
+
+        if req.continuing_from_trace_parent?
+          current_span[:tp] = true
+          current_span[:lt] = req.incoming_context[:external_trace_id]
+        end
+
+        if req.synthetic?
+          current_span[:sy] = true
+        end
         # In case some previous middleware returned a string status, make sure that we're dealing with
         # an integer.  In Ruby nil.to_i, "asdfasdf".to_i will always return 0 from Ruby versions 1.8.7 and newer.
         # So if an 0 status is reported here, it indicates some other issue (e.g. no status from previous middleware)
@@ -65,21 +64,24 @@ module Instana
 
       [status, headers, response]
     rescue Exception => e
-      ::Instana.tracer.log_error(e)
+      ::Instana.tracer.log_error(e) if ::Instana.tracer.tracing?
       raise
     ensure
-      if headers && ::Instana.tracer.tracing?
-        # Set reponse headers; encode as hex string
-        headers['X-Instana-T'] = trace_context.trace_id_header
-        headers['X-Instana-S'] = trace_context.span_id_header
-        headers['X-Instana-L'] = '1'
+      if ::Instana.tracer.tracing?
+        if headers
+          # Set response headers; encode as hex string
+          headers['X-Instana-T'] = trace_context.trace_id_header
+          headers['X-Instana-S'] = trace_context.span_id_header
+          headers['X-Instana-L'] = '1'
 
-        if ::Instana.config[:w3_trace_correlation]
-          headers['Traceparent'] = trace_context.trace_parent_header
-          headers['Tracestate'] = trace_context.trace_state_header
+          if ::Instana.config[:w3_trace_correlation]
+            headers['Traceparent'] = trace_context.trace_parent_header
+            headers['Tracestate'] = trace_context.trace_state_header
+          end
+
+          headers['Server-Timing'] = "intid;desc=#{trace_context.trace_id_header}"
         end
 
-        headers['Server-Timing'] = "intid;desc=#{trace_context.trace_id_header}"
         ::Instana.tracer.log_end(:rack, kvs)
       end
     end

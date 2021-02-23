@@ -15,6 +15,24 @@ class RackTest < Minitest::Test
     end
   end
 
+  class ErrorApp
+    def call(_env)
+      raise 'An Error'
+    end
+  end
+
+  class FiveZeroOneApp
+    def call(_env)
+      [501, {}, ['No']]
+    end
+  end
+
+  class NoHeadersApp
+    def call(_env)
+      [501, nil, ['No']]
+    end
+  end
+
   def app
     @app = Rack::Builder.new do
       use Rack::CommonLogger
@@ -22,6 +40,8 @@ class RackTest < Minitest::Test
       use Instana::Rack
       map("/mrlobster") { run Rack::Lobster.new }
       map("/path_tpl") { run PathTemplateApp.new }
+      map("/error") { run ErrorApp.new }
+      map("/five_zero_one") { run FiveZeroOneApp.new }
     end
   end
 
@@ -291,5 +311,105 @@ class RackTest < Minitest::Test
 
     first_span = spans.first
     assert_equal true, first_span[:sy]
+  end
+
+  def test_basic_get_with_w3_trace
+    clear_all!
+
+    header 'TRACEPARENT', '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+
+    get '/mrlobster'
+    assert last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.count
+
+    first_span = spans.first
+    assert_equal :rack, first_span[:n]
+    assert_equal 'a3ce929d0e0e4736', first_span[:t]
+    assert_equal '00f067aa0ba902b7', first_span[:p]
+    assert_equal '4bf92f3577b34da6a3ce929d0e0e4736', first_span[:lt]
+    assert first_span[:tp]
+  end
+
+  def test_basic_get_with_w3_disabled
+    clear_all!
+    ::Instana.config[:w3_trace_correlation] = false
+
+    header 'TRACEPARENT', '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+
+    get '/mrlobster'
+    assert last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.count
+
+    first_span = spans.first
+    assert_equal :rack, first_span[:n]
+    refute first_span[:tp]
+    ::Instana.config[:w3_trace_correlation] = true
+  end
+
+  def test_skip_trace
+    clear_all!
+    header 'X_INSTANA_L', '0;junk'
+
+    get '/mrlobster'
+    assert last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 0, spans.count
+  end
+
+  def test_disable_trace
+    clear_all!
+    ::Instana.config[:tracing][:enabled] = false
+
+    get '/mrlobster'
+    assert last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 0, spans.count
+    ::Instana.config[:tracing][:enabled] = true
+  end
+
+  def test_error_trace
+    clear_all!
+
+    get '/error'
+    refute last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.count
+
+    first_span = spans.first
+    assert_equal :rack, first_span[:n]
+    assert_equal 1, first_span[:ec]
+  end
+
+  def test_disable_trace_with_error
+    clear_all!
+    ::Instana.config[:tracing][:enabled] = false
+
+    get '/error'
+    refute last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 0, spans.count
+    ::Instana.config[:tracing][:enabled] = true
+  end
+
+  def test_five_zero_x_trace
+    clear_all!
+
+    get '/five_zero_one'
+    refute last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.count
+
+    first_span = spans.first
+    assert_equal :rack, first_span[:n]
+    assert_equal 1, first_span[:ec]
   end
 end
