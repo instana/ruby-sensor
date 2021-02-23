@@ -34,8 +34,9 @@ module Instana
 
       trace = (@baggage[:external_trace_id] || @trace_id).rjust(32, '0')
       parent = @span_id.rjust(16, '0')
+      flags = level == 1 ? "01" : "00"
 
-      "00-#{trace}-#{parent}-00"
+      "00-#{trace}-#{parent}-#{flags}"
     end
 
     def trace_state_header
