@@ -329,6 +329,7 @@ class RackTest < Minitest::Test
     assert_equal 'a3ce929d0e0e4736', first_span[:t]
     assert_equal '00f067aa0ba902b7', first_span[:p]
     assert_equal '4bf92f3577b34da6a3ce929d0e0e4736', first_span[:lt]
+    assert_nil first_span[:ia]
     assert first_span[:tp]
   end
 

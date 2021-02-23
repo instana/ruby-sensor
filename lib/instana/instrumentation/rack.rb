@@ -28,7 +28,7 @@ module Instana
           current_span[:crtp] = req.correlation_data[:type]
         end
 
-        unless req.instana_ancestor.empty? && !req.continuing_from_trace_parent?
+        if !req.instana_ancestor.empty? && req.continuing_from_trace_parent?
           current_span[:ia] = req.instana_ancestor
         end
 
