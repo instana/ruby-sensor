@@ -5,7 +5,7 @@ module Instana
   module Activators
     class Excon < Activator
       def can_instrument?
-        defined?(::Excon) && Instana.config[:excon][:enabled]
+        defined?(::Excon) && defined?(::Excon::Middleware::Base) && Instana.config[:excon][:enabled]
       end
 
       def instrument
