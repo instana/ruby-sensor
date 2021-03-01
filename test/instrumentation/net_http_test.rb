@@ -11,6 +11,24 @@ class NetHTTPTest < Minitest::Test
     assert_equal true, ::Instana.config[:nethttp][:enabled]
   end
 
+  def test_get_with_query
+    clear_all!
+    WebMock.allow_net_connect!
+
+    Instana.tracer.start_or_continue_trace(:"net-http-test") do
+      Net::HTTP.get(URI('http://127.0.0.1:6511/?query_value=true'))
+    end
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
+
+    http_span = find_first_span_by_name(spans, :'net-http')
+    assert_equal "http://127.0.0.1:6511/?query_value=true", http_span[:data][:http][:url]
+    assert_equal "query_value=true", http_span[:data][:http][:params]
+
+    WebMock.disable_net_connect!
+  end
+
   def test_block_request
     clear_all!
     WebMock.allow_net_connect!

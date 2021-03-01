@@ -33,6 +33,7 @@ module Instana
 
         if request.uri
           kv_payload[:http][:url] = request.uri.to_s
+          kv_payload[:http][:params] = ::Instana.secrets.remove_from_query(request.uri.query)
         else
           if use_ssl?
             kv_payload[:http][:url] = "https://#{@address}:#{@port}#{request.path}"

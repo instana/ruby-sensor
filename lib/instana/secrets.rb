@@ -10,7 +10,11 @@ module Instana
       return str unless secret_values
 
       url = URI(str)
-      params = CGI.parse(url.query || '')
+      params = if url.is_a? URI::Generic
+                 CGI.parse(str || '')
+               else
+                 CGI.parse(url.query || '')
+               end
 
       redacted = params.map do |k, v|
         needs_redaction = secret_values['list']
