@@ -66,7 +66,7 @@ module Instana
 
       # Check for custom tracing
       if REGISTERED_SPANS.include?(name.to_sym)
-        @data[:n] = name.to_sym
+        configure_builtin(name.to_sym)
       else
         configure_custom(name)
       end
@@ -140,6 +140,20 @@ module Instana
       self
     end
 
+
+    # Configure this span to be a built-in span with a defined representation in
+    # the backend.
+    # @ param name [Symbol] span name
+    def configure_builtin(name)
+      @data[:n] = name
+      @data[:k] = if ENTRY_SPANS.include?(name)
+                    1
+                  elsif EXIT_SPANS.include?(name)
+                    2
+                  else
+                    3
+                  end
+    end
 
     # Configure this span to be a custom span per the
     # SDK generic span type.

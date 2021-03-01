@@ -23,7 +23,7 @@ class NetHTTPTest < Minitest::Test
     assert_equal 3, spans.length
 
     http_span = find_first_span_by_name(spans, :'net-http')
-    assert_equal "http://127.0.0.1:6511/?query_value=true", http_span[:data][:http][:url]
+    assert_equal "http://127.0.0.1:6511/", http_span[:data][:http][:url]
     assert_equal "query_value=true", http_span[:data][:http][:params]
 
     WebMock.disable_net_connect!

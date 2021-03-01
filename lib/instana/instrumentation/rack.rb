@@ -12,7 +12,7 @@ module Instana
 
     def call(env)
       req = InstrumentedRequest.new(env)
-      return @app.call(env) if req.skip_trace?
+      return skip_call(env, req) if req.skip_trace?
       kvs = {
         http: req.request_tags,
         service: ENV['INSTANA_SERVICE_NAME']
@@ -34,12 +34,16 @@ module Instana
 
         if req.continuing_from_trace_parent?
           current_span[:tp] = true
-          current_span[:lt] = req.incoming_context[:external_trace_id]
+        end
+
+        if req.external_trace_id?
+          current_span[:lt] = req.external_trace_id
         end
 
         if req.synthetic?
           current_span[:sy] = true
         end
+
         # In case some previous middleware returned a string status, make sure that we're dealing with
         # an integer.  In Ruby nil.to_i, "asdfasdf".to_i will always return 0 from Ruby versions 1.8.7 and newer.
         # So if an 0 status is reported here, it indicates some other issue (e.g. no status from previous middleware)
@@ -74,16 +78,30 @@ module Instana
           headers['X-Instana-S'] = trace_context.span_id_header
           headers['X-Instana-L'] = '1'
 
-          if ::Instana.config[:w3_trace_correlation]
-            headers['Traceparent'] = trace_context.trace_parent_header
-            headers['Tracestate'] = trace_context.trace_state_header
-          end
+          headers['Traceparent'] = trace_context.trace_parent_header
+          headers['Tracestate'] = trace_context.trace_state_header
 
           headers['Server-Timing'] = "intid;desc=#{trace_context.trace_id_header}"
         end
 
         ::Instana.tracer.log_end(:rack, kvs)
       end
+    end
+
+    private
+
+    def skip_call(env, req)
+      ::Instana.logger.debug('Skipping tracing since X-Instana-L is set to 0.')
+      id = ::Instana::Util.generate_id
+      trace_context = ::Instana::SpanContext.new(id, id, 0, req.incoming_context)
+      status, headers, response = @app.call(env)
+
+      headers['X-Instana-L'] = '0'
+
+      headers['Traceparent'] = trace_context.trace_parent_header
+      headers['Tracestate'] = trace_context.trace_state_header
+
+      [status, headers, response]
     end
   end
 end

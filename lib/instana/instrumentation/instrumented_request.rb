@@ -18,15 +18,33 @@ module Instana
     end
 
     def incoming_context
-      context = if @env['HTTP_X_INSTANA_T']
+      context = if !correlation_data.empty?
+                  {}
+                elsif @env['HTTP_X_INSTANA_T']
                   context_from_instana_headers
-                elsif @env['HTTP_TRACEPARENT'] && ::Instana.config[:w3_trace_correlation]
+                elsif @env['HTTP_TRACEPARENT']
                   context_from_trace_parent
+                elsif @env['HTTP_TRACESTATE']
+                  context_from_trace_state
                 else
                   {}
                 end
 
       context[:level] = @env['HTTP_X_INSTANA_L'][0] if @env['HTTP_X_INSTANA_L']
+
+      unless ::Instana.config[:w3_trace_correlation]
+        trace_state = parse_trace_state
+
+        if context[:from_w3] && trace_state.empty?
+          context.delete(:span_id)
+          context[:from_w3] = false
+        elsif context[:from_w3] && !trace_state.empty?
+          context[:trace_id] = trace_state[:t]
+          context[:span_id] = trace_state[:p]
+          context[:from_w3] = false
+          context[:fudge] = false
+        end
+      end
 
       context
     end
@@ -69,19 +87,43 @@ module Instana
     end
 
     def continuing_from_trace_parent?
-      incoming_context.include?(:external_trace_id)
+      incoming_context[:from_w3]
     end
 
     def synthetic?
       @env.has_key?('HTTP_X_INSTANA_SYNTHETIC') && @env['HTTP_X_INSTANA_SYNTHETIC'].eql?('1')
     end
 
+    def long_instana_id?
+      ::Instana::Util.header_to_id(@env['HTTP_X_INSTANA_T']).length == 32
+    end
+
+    def external_trace_id?
+      continuing_from_trace_parent? || long_instana_id?
+    end
+
+    def external_trace_id
+      incoming_context[:long_instana_id] || incoming_context[:external_trace_id]
+    end
+
     private
 
     def context_from_instana_headers
+      sanitized_t = ::Instana::Util.header_to_id(@env['HTTP_X_INSTANA_T'])
+      sanitized_s = ::Instana::Util.header_to_id(@env['HTTP_X_INSTANA_S'])
+      external_trace_id = if @env['HTTP_TRACEPARENT']
+                            context_from_trace_parent[:external_trace_id]
+                          elsif long_instana_id?
+                            sanitized_t
+                          end
+
       {
-        trace_id: ::Instana::Util.header_to_id(@env['HTTP_X_INSTANA_T']),
-        span_id: ::Instana::Util.header_to_id(@env['HTTP_X_INSTANA_S'])
+        span_id: sanitized_s,
+        trace_id: long_instana_id? ? sanitized_t[16..-1] : sanitized_t, # rubocop:disable Style/SlicingWithRange, Lint/RedundantCopDisableDirective
+        long_instana_id: long_instana_id? ? sanitized_t : nil,
+        external_trace_id: external_trace_id,
+        external_state: @env['HTTP_TRACESTATE'],
+        from_w3: false
       }.compact
     end
 
@@ -90,12 +132,26 @@ module Instana
       matches = @env['HTTP_TRACEPARENT'].match(W3_TRACE_PARENT_FORMAT)
       return {} unless matches
 
+      trace_id = ::Instana::Util.header_to_id(matches['trace'][16..-1]) # rubocop:disable Style/SlicingWithRange, Lint/RedundantCopDisableDirective
+      span_id = ::Instana::Util.header_to_id(matches['parent'])
+
       {
         external_trace_id: matches['trace'],
         external_state: @env['HTTP_TRACESTATE'],
-        trace_id: ::Instana::Util.header_to_id(matches['trace'][16..-1]), # rubocop:disable Style/SlicingWithRange
-        span_id: ::Instana::Util.header_to_id(matches['parent'])
+        trace_id: trace_id,
+        span_id: span_id,
+        from_w3: true
       }
+    end
+
+    def context_from_trace_state
+      state = parse_trace_state
+
+      {
+        trace_id: state[:t],
+        span_id: state[:p],
+        from_w3: false
+      }.compact
     end
 
     def parse_trace_state

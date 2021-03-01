@@ -106,7 +106,7 @@ module Instana
         end
       end
 
-      if parent_context
+      if parent_context && parent_context.valid? # rubocop:disable Style/SafeNavigation
         self.current_span = Span.new(name, parent_ctx: parent_context)
       else
         self.current_span = Span.new(name)
