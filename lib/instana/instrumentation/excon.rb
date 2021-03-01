@@ -8,9 +8,10 @@ module Instana
         return @stack.request_call(datum) unless ::Instana.tracer.tracing? || !Instana.tracer.current_span.exit_span?
 
         payload = { :http => {} }
-        path = datum[:path].split('?').first
+        path, query = datum[:path].split('?', 2)
         payload[:http][:url] = ::Instana.secrets.remove_from_query("#{datum[:connection].instance_variable_get(:@socket_key)}#{path}")
         payload[:http][:method] = datum[:method] if datum.key?(:method)
+        payload[:http][:params] = ::Instana.secrets.remove_from_query(query || '')
 
         if datum[:pipeline] == true
           # Pass the context along in the datum so we get back on response

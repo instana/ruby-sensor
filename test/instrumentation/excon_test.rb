@@ -40,6 +40,7 @@ class ExconTest < Minitest::Test
     refute_nil excon_span[:data].key?(:http)
     assert_equal "http://127.0.0.1:6511/", excon_span[:data][:http][:url]
     assert_equal 200, excon_span[:data][:http][:status]
+    assert_equal 'basic_get', excon_span[:data][:http][:params]
 
     # excon backtrace not included by default check
     assert !excon_span.key?(:stack)

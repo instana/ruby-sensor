@@ -203,6 +203,7 @@ workflows:
                 - "./gemfiles/cuba_30.gemfile"
                 - "./gemfiles/dalli_20.gemfile"
                 - "./gemfiles/excon_02.gemfile"
+                - "./gemfiles/excon_079.gemfile"
                 - "./gemfiles/graphql_10.gemfile"
                 - "./gemfiles/grpc_10.gemfile"
                 - "./gemfiles/net_http_01.gemfile"
