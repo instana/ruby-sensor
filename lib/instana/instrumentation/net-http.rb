@@ -33,7 +33,7 @@ module Instana
 
         if request.uri
           uri_without_query = request.uri.dup.tap { |r| r.query = nil }
-          kv_payload[:http][:url] = uri_without_query.to_s
+          kv_payload[:http][:url] = uri_without_query.to_s.gsub(/\?\z/, '')
           kv_payload[:http][:params] = ::Instana.secrets.remove_from_query(request.uri.query)
         else
           if use_ssl?
