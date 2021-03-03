@@ -27,7 +27,7 @@ class AwsTest < Minitest::Test
     assert rest.empty?
     assert_equal entry_span[:s], dynamo_span[:p]
     assert_equal :dynamodb, dynamo_span[:n]
-    assert_equal :get_item, dynamo_span[:data][:op]
-    assert_equal 'sample_table', dynamo_span[:data][:table]
+    assert_equal 'get', dynamo_span[:data][:dynamodb][:op]
+    assert_equal 'sample_table', dynamo_span[:data][:dynamodb][:table]
   end
 end
