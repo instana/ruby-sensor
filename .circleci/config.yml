@@ -11,6 +11,8 @@ executors:
       - image: memcached
       - image: redis
       - image: circleci/dynamodb
+      - image: minio/minio:latest
+        command: ["server", "/data"]
   ruby_26:
     docker:
       - image: circleci/ruby:2.6-node
@@ -21,6 +23,8 @@ executors:
       - image: memcached
       - image: redis
       - image: circleci/dynamodb
+      - image: minio/minio:latest
+        command: ["server", "/data"]
   ruby_27:
     docker:
       - image: circleci/ruby:2.7-node
@@ -31,6 +35,8 @@ executors:
       - image: memcached
       - image: redis
       - image: circleci/dynamodb
+      - image: minio/minio:latest
+        command: ["server", "/data"]
   ruby_25_mysql2:
     docker:
       - image: circleci/ruby:2.5-node
@@ -159,10 +165,10 @@ jobs:
     parameters:
       stack:
         type: executor
-        default: ruby_27_postgres
+        default: ruby_27
       gemfile:
         type: string
-        default: "./gemfiles/rails_60.gemfile"
+        default: "./gemfiles/aws_30.gemfile"
     executor: << parameters.stack >>
     environment:
       APPRAISAL_INITIALIZED: "1"

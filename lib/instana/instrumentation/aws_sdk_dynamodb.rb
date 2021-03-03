@@ -38,7 +38,6 @@ module Instana
             name.to_s
           end
         end
-
       end
 
       def add_handlers(handlers, _config)
