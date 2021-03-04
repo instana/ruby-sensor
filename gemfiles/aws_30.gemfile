@@ -15,5 +15,6 @@ gem "rack-test"
 gem "simplecov", "~> 0.21.2"
 gem "aws-sdk-dynamodb", "~> 1.59"
 gem "aws-sdk-s3", "~> 1.59"
+gem "aws-sdk-sns", "~> 1.38"
 
 gemspec path: "../"
