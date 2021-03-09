@@ -38,8 +38,8 @@ module Instana
     #     :level specifies data collection level (optional)
     #
     def start_or_continue_trace(name, kvs = {}, incoming_context = nil, &block)
-      log_start_or_continue(name, kvs, incoming_context)
-      yield
+      span = log_start_or_continue(name, kvs, incoming_context)
+      yield(span)
     rescue Exception => e
       log_error(e)
       raise
@@ -59,8 +59,8 @@ module Instana
     # @param kvs [Hash] list of key values to be reported in this new span
     #
     def trace(name, kvs = {}, &block)
-      log_entry(name, kvs)
-      yield
+      span = log_entry(name, kvs)
+      yield(span)
     rescue Exception => e
       log_error(e)
       raise

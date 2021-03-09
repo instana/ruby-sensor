@@ -16,5 +16,6 @@ gem "simplecov", "~> 0.21.2"
 gem "aws-sdk-dynamodb", "~> 1.59"
 gem "aws-sdk-s3", "~> 1.59"
 gem "aws-sdk-sns", "~> 1.38"
+gem "aws-sdk-sqs", "~> 1.36"
 
 gemspec path: "../"

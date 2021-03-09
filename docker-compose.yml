@@ -13,3 +13,8 @@ services:
     image: circleci/dynamodb
     ports:
       - "8000:8000"
+  sqs:
+    image: softwaremill/elasticmq-native
+    ports:
+      - "9324:9324"
+      - "9325:9325"

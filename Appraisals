@@ -5,6 +5,7 @@ appraise 'aws-30' do
   gem 'aws-sdk-dynamodb', '~> 1.59'
   gem 'aws-sdk-s3', '~> 1.59'
   gem 'aws-sdk-sns', '~> 1.38'
+  gem 'aws-sdk-sqs', '~> 1.36'
 end
 
 appraise 'cuba-30' do
