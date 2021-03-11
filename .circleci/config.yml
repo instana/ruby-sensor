@@ -231,6 +231,7 @@ workflows:
                 - "./gemfiles/sidekiq_42.gemfile"
                 - "./gemfiles/sidekiq_50.gemfile"
                 - "./gemfiles/sinatra_14.gemfile"
+                - "./gemfiles/shoryuken_50.gemfile"
   rails:
     jobs:
       - test_apprisal:
