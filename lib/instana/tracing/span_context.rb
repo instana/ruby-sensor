@@ -6,6 +6,7 @@ module Instana
     attr_accessor :trace_id
     attr_accessor :span_id
     attr_accessor :baggage
+    attr_reader :level
 
     # Create a new SpanContext
     #

@@ -3,6 +3,9 @@
 
 appraise 'aws-30' do
   gem 'aws-sdk-dynamodb', '~> 1.59'
+  gem 'aws-sdk-s3', '~> 1.59'
+  gem 'aws-sdk-sns', '~> 1.38'
+  gem 'aws-sdk-sqs', '~> 1.36'
 end
 
 appraise 'cuba-30' do
@@ -100,6 +103,11 @@ end
 
 appraise 'sinatra-14' do
   gem 'sinatra', '1.4.7'
+end
+
+appraise 'shoryuken-50' do
+  gem 'shoryuken', '~> 5.2'
+  gem 'aws-sdk-sqs', '~> 1.36'
 end
 
 appraise 'sidekiq-42' do
