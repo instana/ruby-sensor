@@ -5,6 +5,10 @@ module Instana
   module Instrumentation
     class Shoryuken
       def call(_worker_instance, _queue, sqs_message, _body, &block)
+        if sqs_message.is_a? Array
+          return yield
+        end
+
         sqs_tags = {
           sort: 'entry',
           queue: sqs_message.queue_url
