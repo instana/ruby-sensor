@@ -43,7 +43,7 @@ module Instana
           end
         end
 
-        kv_payload[:http][:url] = ::Instana.secrets.remove_from_query(kv_payload[:http][:url])
+        kv_payload[:http][:url] = ::Instana.secrets.remove_from_query(kv_payload[:http][:url]).gsub(/\?\z/, '')
 
         # The core call
         response = super(*args, &block)
