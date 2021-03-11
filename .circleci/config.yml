@@ -13,6 +13,8 @@ executors:
       - image: circleci/dynamodb
       - image: minio/minio:latest
         command: ["server", "/data"]
+      - image: s12v/sns
+      - image: softwaremill/elasticmq-native
   ruby_26:
     docker:
       - image: circleci/ruby:2.6-node
@@ -25,6 +27,8 @@ executors:
       - image: circleci/dynamodb
       - image: minio/minio:latest
         command: ["server", "/data"]
+      - image: s12v/sns
+      - image: softwaremill/elasticmq-native
   ruby_27:
     docker:
       - image: circleci/ruby:2.7-node
@@ -37,6 +41,8 @@ executors:
       - image: circleci/dynamodb
       - image: minio/minio:latest
         command: ["server", "/data"]
+      - image: s12v/sns
+      - image: softwaremill/elasticmq-native
   ruby_25_mysql2:
     docker:
       - image: circleci/ruby:2.5-node
