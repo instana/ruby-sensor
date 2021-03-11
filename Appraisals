@@ -105,6 +105,11 @@ appraise 'sinatra-14' do
   gem 'sinatra', '1.4.7'
 end
 
+appraise 'shoryuken-50' do
+  gem 'shoryuken', '~> 5.2'
+  gem 'aws-sdk-sqs', '~> 1.36'
+end
+
 appraise 'sidekiq-42' do
   gem 'sidekiq', '~> 4.2.10'
 end
