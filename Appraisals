@@ -13,8 +13,12 @@ appraise 'dalli-20' do
   gem 'dalli', '>= 2.0', '< 3.0'
 end
 
-appraise 'excon-02' do
+appraise 'excon-021' do
   gem 'excon', '>= 0.21.0', '< 1.0'
+end
+
+appraise 'excon-079' do
+  gem 'excon', '>= 0.79.0', '< 1.0'
 end
 
 appraise 'grpc-10' do

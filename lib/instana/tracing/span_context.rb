@@ -42,7 +42,7 @@ module Instana
     def trace_state_header
       return '' unless valid?
 
-      state = ["in=#{@trace_id};#{@span_id}", @baggage[:external_state]]
+      state = ["in=#{trace_id_header};#{span_id_header}", @baggage[:external_state]]
       state.compact.join(',')
     end
 

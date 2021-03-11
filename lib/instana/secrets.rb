@@ -10,7 +10,7 @@ module Instana
       return str unless secret_values
 
       url = URI(str)
-      params = CGI.parse(url.query || '')
+      params = url.scheme ? CGI.parse(url.query || '') : CGI.parse(url.to_s)
 
       redacted = params.map do |k, v|
         needs_redaction = secret_values['list']
@@ -19,7 +19,7 @@ module Instana
       end
 
       url.query = URI.encode_www_form(redacted)
-      CGI.unescape(url.to_s)
+      url.scheme ? CGI.unescape(url.to_s) : CGI.unescape(url.query)
     end
 
     private

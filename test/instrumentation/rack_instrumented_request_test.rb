@@ -86,7 +86,8 @@ class RackInstrumentedRequestTest < Minitest::Test
       'HTTP_HOST' => 'example.com',
       'REQUEST_METHOD' => 'GET',
       'HTTP_X_CAPTURE_THIS' => 'that',
-      'PATH_INFO' => '/'
+      'PATH_INFO' => '/',
+      'QUERY_STRING' => 'test=true'
     )
 
     expected = {
@@ -95,7 +96,8 @@ class RackInstrumentedRequestTest < Minitest::Test
       host: 'example.com',
       header: {
         "X-Capture-This": 'that'
-      }
+      },
+      params: 'test=true'
     }
 
     assert_equal expected, req.request_tags

@@ -46,12 +46,17 @@ module Instana
       headers
     end
 
+    def request_params
+      ::Instana.secrets.remove_from_query(@env['QUERY_STRING'])
+    end
+
     def request_tags
       {
         method: request_method,
         url: CGI.unescape(path_info),
         host: host_with_port,
-        header: extra_header_tags
+        header: extra_header_tags,
+        params: request_params
       }.compact
     end
 
@@ -88,7 +93,7 @@ module Instana
       {
         external_trace_id: matches['trace'],
         external_state: @env['HTTP_TRACESTATE'],
-        trace_id: ::Instana::Util.header_to_id(matches['trace'][16..-1]),
+        trace_id: ::Instana::Util.header_to_id(matches['trace'][16..-1]), # rubocop:disable Style/SlicingWithRange, Lint/RedundantCopDisableDirective
         span_id: ::Instana::Util.header_to_id(matches['parent'])
       }
     end
