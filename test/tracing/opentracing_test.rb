@@ -34,8 +34,6 @@ module Instana
   end
 end
 
-OpenTracing.global_tracer = ::Instana.tracer
-
 class OpenTracerTest < Minitest::Test
   include Rack::Test::Methods
 
