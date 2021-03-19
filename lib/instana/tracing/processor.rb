@@ -27,12 +27,6 @@ module Instana
     #
     # @param [Trace] - the trace to be added to the queue
     def add_span(span)
-      # Occasionally, do a checkup on our background thread.
-      if rand(10) > 8
-        if ::Instana.agent.collect_thread.nil? || !::Instana.agent.collect_thread.alive?
-          ::Instana.agent.spawn_background_thread
-        end
-      end
       @queue.push(span)
     end
 
@@ -53,11 +47,7 @@ module Instana
       spans = queued_spans
 
       # Report spans in batches
-      batch = spans.shift(@batch_size)
-      while !batch.empty? do
-        ::Instana.agent.report_spans(batch)
-        batch = spans.shift(@batch_size)
-      end
+      spans.each_slice(@batch_size) { |s| yield(s) }
     end
 
     # Retrieves all of the traces in @queue and returns

@@ -1,6 +1,9 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2016
 
+require 'concurrent'
+require 'sys-proctable'
+
 require "instana/setup"
 
 # Boot the instana agent background thread.  If you wish to have greater

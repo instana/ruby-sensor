@@ -5,30 +5,6 @@ module Instana
   module Util
     class << self
       ID_RANGE = -2**63..2**63-1
-      # Debugging helper method
-      #
-      def pry!
-        # Only valid for development or test environments
-        #env = ENV['RACK_ENV'] || ENV['RAILS_ENV']
-        #return unless %w(development, test).include? env
-        require 'pry-byebug'
-
-        if defined?(PryByebug)
-          Pry.commands.alias_command 'c', 'continue'
-          Pry.commands.alias_command 's', 'step'
-          Pry.commands.alias_command 'n', 'next'
-          Pry.commands.alias_command 'f', 'finish'
-
-          Pry::Commands.command(/^$/, 'repeat last command') do
-            _pry_.run_command Pry.history.to_a.last
-          end
-        end
-
-        binding.pry
-      rescue LoadError
-        ::Instana.logger.warn("No debugger in bundle.  Couldn't load pry-byebug.")
-      end
-
       # Retrieves and returns the source code for any ruby
       # files requested by the UI via the host agent
       #
@@ -85,49 +61,6 @@ module Instana
         ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
         ::Instana.logger.debug { e.backtrace.join("\r\n") }
         return data
-      end
-
-      # Used in class initialization and after a fork, this method
-      # collects up process information
-      #
-      def collect_process_info
-        process = {}
-        cmdline_file = "/proc/#{Process.pid}/cmdline"
-
-        # If there is a /proc filesystem, we read this manually so
-        # we can split on embedded null bytes.  Otherwise (e.g. OSX, Windows)
-        # use ProcTable.
-        if File.exist?(cmdline_file)
-          cmdline = IO.read(cmdline_file).split(?\x00)
-        else
-          # Attempt to support older versions of sys-proctable and ffi.
-          #
-          # Alternatively we could use Sys::ProcTable::VERSION here but the
-          # consistency across historical versions is unknown.  Alternative
-          # to the alternative, would be Ruby metaprogramming using the `arity`
-          # and `parameters` methods.
-          # e.g ProcTable.method(:ps).arity/parameters
-          if Gem.loaded_specs.key?("sys-proctable") &&
-            (Gem.loaded_specs["sys-proctable"].version >= Gem::Version.new("1.2.0"))
-            cmdline = ProcTable.ps(:pid => Process.pid).cmdline.split(' ')
-          else
-            cmdline = ProcTable.ps(Process.pid).cmdline.split(' ')
-          end
-        end
-
-        if RUBY_PLATFORM =~ /darwin/i
-          cmdline.delete_if{ |e| e.include?('=') }
-          process[:name] = cmdline.join(' ')
-        else
-          process[:name] = cmdline.shift
-          process[:arguments] = cmdline
-        end
-
-        process[:pid] = Process.pid
-        # This is usually Process.pid but in the case of containers, the host agent
-        # will return to us the true host pid in which we use to report data.
-        process[:report_pid] = nil
-        process
       end
 
       # Best effort to determine a name for the instrumented application

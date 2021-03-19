@@ -25,7 +25,7 @@ Gem::Specification.new do |spec|
   }
 
   spec.licenses      = ['MIT']
-  spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
+  spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test)/}) }
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
@@ -38,13 +38,9 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency "minitest", "~> 5.0"
   spec.add_development_dependency "appraisal"
+  spec.add_development_dependency "fakefs"
 
+  spec.add_runtime_dependency('concurrent-ruby', '>= 1.1')
   spec.add_runtime_dependency('sys-proctable', '>= 1.2.2')
-  spec.add_runtime_dependency('get_process_mem', '>= 0.2.1')
-  spec.add_runtime_dependency('timers', '>= 4.0.4')
   spec.add_runtime_dependency('oj', '>=3.0.11') unless RUBY_PLATFORM =~ /java/i
-
-  # Indirect dependency
-  # https://github.com/instana/ruby-sensor/issues/10
-  spec.add_runtime_dependency('ffi', '>=1.0.11')
 end

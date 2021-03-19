@@ -8,7 +8,6 @@ require "instana/util"
 module Instana
   class << self
     attr_accessor :agent
-    attr_accessor :collector
     attr_accessor :tracer
     attr_accessor :processor
     attr_accessor :config
@@ -23,10 +22,9 @@ module Instana
     # to run" state.
     #
     def setup
-      @agent  = ::Instana::Agent.new
+      @agent  = ::Instana::Backend::Agent.new
       @tracer = ::Instana::Tracer.new
       @processor = ::Instana::Processor.new
-      @collector = ::Instana::Collector.new
       @secrets = ::Instana::Secrets.new
     end
   end

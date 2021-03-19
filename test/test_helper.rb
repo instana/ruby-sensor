@@ -10,10 +10,21 @@ begin
   SimpleCov.start do
     enable_coverage :branch
 
-    add_group 'Frameworks', 'lib/instana/frameworks'
-    add_group 'Instrumentation', 'lib/instana/instrumentation'
-
     add_filter %r{^/test/}
+
+    add_group(
+      'In Process Collector',
+      [%r{lib/instana/(agent|backend|tracing|collectors|open_tracing)}, %r{lib/instana/[^/]+\.rb}]
+    )
+
+    if ENV['APPRAISAL_INITIALIZED']
+      add_group(
+        'Instrumentation',
+        %r{lib/instana/(activators|frameworks|instrumentation)}
+      )
+    else
+      add_filter %r{lib/instana/(activators|frameworks|instrumentation)}
+    end
 
     if ENV['CI']
       formatter SimpleCov::Formatter::JSONFormatter
@@ -29,6 +40,7 @@ Bundler.require
 require "minitest/spec"
 require "minitest/autorun"
 require "minitest/reporters"
+require 'fakefs/safe'
 
 require 'webmock/minitest'
 # Webmock: Whitelist local IPs

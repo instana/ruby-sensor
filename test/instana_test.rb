@@ -16,10 +16,6 @@ class InstanaTest < Minitest::Test
     refute_nil ::Instana.agent
   end
 
-  def test_that_it_has_a_collector
-    refute_nil ::Instana.collector
-  end
-
   def test_that_it_has_a_tracer
     refute_nil ::Instana.tracer
   end
