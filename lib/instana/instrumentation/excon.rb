@@ -5,7 +5,7 @@ module Instana
   module Instrumentation
     class Excon < ::Excon::Middleware::Base
       def request_call(datum)
-        return @stack.request_call(datum) unless ::Instana.tracer.tracing? || !Instana.tracer.current_span.exit_span?
+        return @stack.request_call(datum) unless ::Instana.tracer.tracing? && !Instana.tracer.current_span.exit_span?
 
         payload = { :http => {} }
         path, query = datum[:path].split('?', 2)
