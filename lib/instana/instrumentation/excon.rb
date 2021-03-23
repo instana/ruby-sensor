@@ -5,7 +5,7 @@ module Instana
   module Instrumentation
     class Excon < ::Excon::Middleware::Base
       def request_call(datum)
-        return @stack.request_call(datum) unless ::Instana.tracer.tracing? && !Instana.tracer.current_span.exit_span?
+        return @stack.request_call(datum) unless traceable?
 
         payload = { :http => {} }
         path, query = datum[:path].split('?', 2)
@@ -36,7 +36,7 @@ module Instana
       end
 
       def error_call(datum)
-        return @stack.error_call(datum) unless ::Instana.tracer.tracing? || !Instana.tracer.current_span.exit_span?
+        return @stack.error_call(datum) unless traceable?
 
         if datum[:pipeline] == true
           ::Instana.tracer.log_async_error(datum[:error], datum[:instana_span])
@@ -49,7 +49,7 @@ module Instana
       def response_call(datum)
         # FIXME: Will connect exceptions call a response?
         #
-        return @stack.response_call(datum) unless ::Instana.tracer.tracing? || !Instana.tracer.current_span.exit_span?
+        return @stack.response_call(datum) unless traceable?
 
         result =  @stack.response_call(datum)
 
@@ -71,6 +71,13 @@ module Instana
           ::Instana.tracer.log_exit(:excon, { :http => {:status => status } })
         end
         result
+      end
+
+      private
+
+      def traceable?
+        ::Instana.tracer.tracing? &&
+          (!Instana.tracer.current_span.exit_span? || Instana.tracer.current_span.name == :excon)
       end
     end
   end

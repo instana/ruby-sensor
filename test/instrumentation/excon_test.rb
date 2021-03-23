@@ -22,7 +22,7 @@ class ExconTest < Minitest::Test
     url = "http://127.0.0.1:6511"
 
     connection = Excon.new(url)
-    Instana.tracer.start_or_continue_trace('excon-test') do
+    Instana.tracer.start_or_continue_trace(:'excon-test') do
       connection.get(:path => '/?basic_get')
     end
 
@@ -146,5 +146,19 @@ class ExconTest < Minitest::Test
       assert_nil grandparent_span[:p]
       assert_equal :sdk, grandparent_span[:n]
     end
+  end
+
+  def test_basic_get_no_tracing
+    clear_all!
+
+    # A slight hack but webmock chokes with pipelined requests.
+    # Delete their excon middleware
+    Excon.defaults[:middlewares].delete ::WebMock::HttpLibAdapters::ExconAdapter
+    Excon.defaults[:middlewares].delete ::Excon::Middleware::Mock
+
+    url = "http://127.0.0.1:6511"
+
+    connection = Excon.new(url)
+    connection.get(:path => '/?basic_get')
   end
 end
