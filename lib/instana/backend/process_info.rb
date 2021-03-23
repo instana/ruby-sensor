@@ -5,7 +5,7 @@ module Instana
   module Backend
     # Wrapper around {Sys::ProcTable} that adds support for reading the /proc
     # file system for extra information around containers
-    # @since 1.195.4
+    # @since 1.197.0
     class ProcessInfo < SimpleDelegator
       def name
         cmdline

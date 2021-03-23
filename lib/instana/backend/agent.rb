@@ -3,7 +3,7 @@
 
 module Instana
   module Backend
-    # @since 1.195.4
+    # @since 1.197.0
     class Agent
       def initialize(discovery: Concurrent::Atom.new(nil))
         @discovery = discovery

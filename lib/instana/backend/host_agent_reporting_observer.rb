@@ -4,7 +4,7 @@
 module Instana
   module Backend
     # Process which is responsible for reporting metrics and tracing to the local agent
-    # @since 1.195.4
+    # @since 1.197.0
     class HostAgentReportingObserver
       ENTITY_DATA_URL = '/com.instana.plugin.ruby.%i'.freeze
       RESPONSE_DATA_URL = '/com.instana.plugin.ruby/response.%i?messageId=%s'.freeze

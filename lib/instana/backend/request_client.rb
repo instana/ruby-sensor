@@ -8,7 +8,7 @@ require 'json' # TODO: Oj
 module Instana
   module Backend
     # Convince wrapper around {Net::HTTP}.
-    # @since 1.195.4
+    # @since 1.197.0
     class RequestClient
       class Response < SimpleDelegator
         # @return [Hash] the decoded json response

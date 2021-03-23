@@ -7,7 +7,7 @@ module Instana
   module Backend
     # Utility class to discover the agent that a given instance of the collector
     # needs to communicate with.
-    # @since 1.195.4
+    # @since 1.197.0
     class HostAgentLookup
       def initialize(host = ::Instana.config[:agent_host], port = ::Instana.config[:agent_port], destination: '00000000')
         @host = host

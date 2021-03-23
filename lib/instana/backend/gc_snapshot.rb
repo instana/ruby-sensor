@@ -6,7 +6,7 @@ require 'singleton'
 module Instana
   module Backend
     # Keeps track of garbage collector related metrics
-    # @since 1.195.4
+    # @since 1.197.0
     class GCSnapshot
       include Singleton
 
