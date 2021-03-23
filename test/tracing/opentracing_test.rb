@@ -354,4 +354,10 @@ class OpenTracerTest < Minitest::Test
     span = OpenTracing.start_active_span(:rack)
     assert_equal OpenTracing.active_span, span
   end
+
+  def test_span_rename
+    span = OpenTracing.start_active_span(:rack)
+    span.operation_name = 'test'
+    assert_equal 'test', span.name
+  end
 end

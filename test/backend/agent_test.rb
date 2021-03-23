@@ -27,6 +27,6 @@ class AgentTest < Minitest::Test
   def test_discovery_value
     discovery = Concurrent::Atom.new({'pid' => 1})
     subject = Instana::Backend::Agent.new(discovery: discovery)
-    assert_equal 1, subject.report_pid
+    assert_equal 1, subject.source[:e]
   end
 end

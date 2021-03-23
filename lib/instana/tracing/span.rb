@@ -20,48 +20,39 @@ module Instana
     def initialize(name, parent_ctx: nil, start_time: ::Instana::Util.now_in_ms)
       @data = {}
 
-      if parent_ctx == nil
+      if parent_ctx.is_a?(::Instana::Span)
+        @parent = parent_ctx
+        parent_ctx = parent_ctx.context
+      end
+
+      if parent_ctx.is_a?(::Instana::SpanContext)
+        @is_root = false
+
+        @data[:t] = parent_ctx.trace_id       # Trace ID
+        @data[:s] = ::Instana::Util.generate_id # Span ID
+        @data[:p] = parent_ctx.span_id        # Parent ID
+
+        @baggage = parent_ctx.baggage.dup
+        @level = parent_ctx.level
+      else
         # No parent specified so we're starting a new Trace - this will be the root span
+        @is_root = true
+        @level = 1
+
         id = ::Instana::Util.generate_id
         @data[:t] = id                    # Trace ID
         @data[:s] = id                    # Span ID
-        @is_root = true
-      else
-        if parent_ctx.is_a?(::Instana::Span)
-          @parent = parent_ctx
-          parent_context = parent_ctx.context
-        elsif parent_ctx.is_a?(::Instana::SpanContext)
-          parent_context = parent_ctx
-        end
-
-        @data[:t] = parent_context.trace_id       # Trace ID
-        @data[:s] = ::Instana::Util.generate_id # Span ID
-        @data[:p] = parent_context.span_id        # Parent ID
-
-        if parent_context.baggage
-          @baggage = parent_ctx.baggage.dup
-        else
-          @baggage = nil
-        end
-
-        @is_root = false
       end
 
       @data[:data] = {}
 
       # Entity Source
-      @data[:f] = { :e => ::Instana.agent.report_pid,
-                    :h => ::Instana.agent.agent_uuid }
+      @data[:f] = ::Instana.agent.source
       # Start time
       if start_time.is_a?(Time)
         @data[:ts] = ::Instana::Util.time_to_ms(start_time)
       else
         @data[:ts] = start_time
-      end
-
-      if ::Instana.config[:collect_backtraces]
-        # Attach a backtrace to all exit spans
-        add_stack if EXIT_SPANS.include?(name)
       end
 
       # Check for custom tracing
@@ -70,6 +61,9 @@ module Instana
       else
         configure_custom(name)
       end
+
+      # Attach a backtrace to all exit spans
+      add_stack if ::Instana.config[:collect_backtraces] && exit_span?
     end
 
     # Adds a backtrace to this span
@@ -195,7 +189,7 @@ module Instana
     # @return [Instana::SpanContext]
     #
     def context
-      @context ||= ::Instana::SpanContext.new(@data[:t], @data[:s], 1, @baggage)
+      @context ||= ::Instana::SpanContext.new(@data[:t], @data[:s], @level, @baggage)
     end
 
     # Retrieve the ID for this span
@@ -344,9 +338,7 @@ module Instana
           end
         end
       else
-        if !@data[:data].key?(key)
-          @data[:data][key] = value
-        elsif value.is_a?(Hash) && self[:data][key].is_a?(Hash)
+        if value.is_a?(Hash) && @data[:data][key].is_a?(Hash)
           @data[:data][key].merge!(value)
         else
           @data[:data][key] = value
@@ -381,7 +373,7 @@ module Instana
       if @context
         @context.baggage = @baggage
       else
-        @context ||= ::Instana::SpanContext.new(@data[:t], @data[:s], 1, @baggage)
+        @context ||= ::Instana::SpanContext.new(@data[:t], @data[:s], @level, @baggage)
       end
       self
     end
@@ -393,7 +385,6 @@ module Instana
     # @return Value of the baggage item
     #
     def get_baggage_item(key)
-      return nil if @baggage.nil?
       @baggage[key]
     end
 
@@ -403,7 +394,7 @@ module Instana
       if custom?
         tags = @data[:data][:sdk][:custom][:tags]
       else
-        tags = @data[:data][key]
+        tags = @data[:data]
       end
       key ? tags[key] : tags
     end

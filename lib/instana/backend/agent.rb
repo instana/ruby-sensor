@@ -28,14 +28,12 @@ module Instana
         ENV.key?('INSTANA_TEST') || !@discovery.value.nil?
       end
 
-      # @return [Integer] the process id the local agent or has identified
-      def report_pid
-        discovery_value['pid']
-      end
-
-      # @return [Integer] uuid of the local agent
-      def agent_uuid
-        discovery_value['agentUuid']
+      # @return [Hash, NilClass] the backend friendly description of the current in process collector
+      def source
+        {
+          e: discovery_value['pid'],
+          h: discovery_value['agentUuid']
+        }.compact
       end
 
       # @return [Array] extra headers to include in the trace

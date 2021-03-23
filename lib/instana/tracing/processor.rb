@@ -16,13 +16,6 @@ module Instana
       @batch_size = 3000
     end
 
-    # Adds a Set of spans to the queue
-    #
-    # @param [spans] - the trace to be added to the queue
-    def add_spans(spans)
-      spans.each { |span| @queue.push(span)}
-    end
-
     # Adds a span to the span queue
     #
     # @param [Trace] - the trace to be added to the queue
@@ -40,14 +33,14 @@ module Instana
     #   - Out of control/growing queue
     #   - Prevent another run of the timer while this is running
     #
-    def send
+    def send(&block)
       return if @queue.empty? || ENV.key?('INSTANA_TEST')
 
       # Retrieve all spans for queued traces
       spans = queued_spans
 
       # Report spans in batches
-      spans.each_slice(@batch_size) { |s| yield(s) }
+      spans.each_slice(@batch_size, &block)
     end
 
     # Retrieves all of the traces in @queue and returns
@@ -65,9 +58,7 @@ module Instana
       until @queue.empty? do
         # Non-blocking pop; ignore exception
         span = @queue.pop(true) rescue nil
-        if span
-          spans << span.raw
-        end
+        spans << span.raw if span.is_a?(Span) && span.context.level == 1
       end
       spans
     end
