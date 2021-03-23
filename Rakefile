@@ -22,7 +22,7 @@ Rake::TestTask.new(:test) do |t|
   else
     t.test_files = Dir[
       'test/*_test.rb',
-      'test/{agent,tracing,backend}/*_test.rb'
+      'test/{agent,tracing,backend,snapshot}/*_test.rb'
     ]
   end
 end

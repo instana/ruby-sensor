@@ -14,7 +14,7 @@ begin
 
     add_group(
       'In Process Collector',
-      [%r{lib/instana/(agent|backend|tracing|collectors|open_tracing)}, %r{lib/instana/[^/]+\.rb}]
+      [%r{lib/instana/(agent|backend|tracing|collectors|open_tracing|snapshot)}, %r{lib/instana/[^/]+\.rb}]
     )
 
     if ENV['APPRAISAL_INITIALIZED']

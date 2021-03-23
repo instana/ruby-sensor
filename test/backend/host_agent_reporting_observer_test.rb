@@ -4,24 +4,6 @@
 require 'test_helper'
 
 class HostAgentReportingObserverTest < Minitest::Test
-  class MockTimer
-    attr_reader :opts, :block, :running
-
-    def initialize(*args, &blk)
-      @opts = args.first
-      @block = blk
-      @running = false
-    end
-
-    def shutdown
-      @running = false
-    end
-
-    def execute
-      @running = true
-    end
-  end
-
   def test_start_stop
     client = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
     discovery = Concurrent::Atom.new(nil)

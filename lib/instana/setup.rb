@@ -13,10 +13,19 @@ require 'instana/backend/request_client'
 require 'instana/backend/gc_snapshot'
 require 'instana/backend/process_info'
 
+require 'instana/snapshot/deltable'
+require 'instana/snapshot/ruby_process'
+require 'instana/snapshot/fargate_process'
+require 'instana/snapshot/fargate_task'
+require 'instana/snapshot/fargate_container'
+require 'instana/snapshot/docker_container'
+
 require 'instana/backend/host_agent_lookup'
 require 'instana/backend/host_agent_activation_observer'
 require 'instana/backend/host_agent_reporting_observer'
 
+require 'instana/backend/host_agent'
+require 'instana/backend/serverless_agent'
 require 'instana/backend/agent'
 
 ::Instana.setup

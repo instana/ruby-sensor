@@ -3,54 +3,57 @@
 
 module Instana
   module Backend
+    # Wrapper class around the various transport backends
     # @since 1.197.0
     class Agent
-      def initialize(discovery: Concurrent::Atom.new(nil))
-        @discovery = discovery
-        @client = nil
+      attr_reader :delegate
+
+      def initialize(fargate_metadata_uri: ENV['ECS_CONTAINER_METADATA_URI'], logger: ::Instana.logger)
+        @delegate = nil
+        @logger = logger
+        @fargate_metadata_uri = fargate_metadata_uri
       end
 
       def setup
-        return if ENV.key?('INSTANA_TEST')
+        @delegate = if @fargate_metadata_uri
+                      ServerlessAgent.new(fargate_snapshots)
+                    else
+                      HostAgent.new
+                    end
 
-        @client = HostAgentLookup.new.call
-        @discovery
-          .with_observer(HostAgentActivationObserver.new(@client, @discovery))
-          .with_observer(HostAgentReportingObserver.new(@client, @discovery))
+        @delegate.setup
       end
 
-      def spawn_background_thread
-        @discovery.swap { nil }
+      def method_missing(mth, *args, &block)
+        if @delegate.respond_to?(mth)
+          @delegate.public_send(mth, *args, &block)
+        else
+          super(mth, *args, &block)
+        end
       end
 
-      # @return [Boolean] true if the agent able to send spans to the backend
-      def ready?
-        ENV.key?('INSTANA_TEST') || !@discovery.value.nil?
-      end
-
-      # @return [Hash, NilClass] the backend friendly description of the current in process collector
-      def source
-        {
-          e: discovery_value['pid'],
-          h: discovery_value['agentUuid']
-        }.compact
-      end
-
-      # @return [Array] extra headers to include in the trace
-      def extra_headers
-        discovery_value['extraHeaders']
-      end
-
-      # @return [Hash] values which are removed from urls sent to the backend
-      def secret_values
-        discovery_value['secrets']
+      def respond_to_missing?(mth, include_all = false)
+        @delegate.respond_to?(mth, include_all)
       end
 
       private
 
-      def discovery_value
-        v = @discovery.value
-        v || {}
+      def fargate_snapshots
+        metadata_uri = URI(@fargate_metadata_uri)
+        client = Backend::RequestClient.new(metadata_uri.host, metadata_uri.port, use_ssl: metadata_uri.scheme == "https")
+        response = client.send_request('GET', "#{metadata_uri.path}/task")
+
+        if response.ok?
+          docker = response
+                   .json['Containers']
+                   .map { |c| [Snapshot::DockerContainer.new(c), Snapshot::FargateContainer.new(c)] }
+                   .flatten
+
+          docker + [Snapshot::FargateProcess.new, Snapshot::RubyProcess.new, Snapshot::FargateTask.new]
+        else
+          @logger.warn("Received #{response.code} when requesting containers.")
+          []
+        end
       end
     end
   end

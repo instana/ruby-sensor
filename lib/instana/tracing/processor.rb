@@ -60,6 +60,7 @@ module Instana
         span = @queue.pop(true) rescue nil
         spans << span.raw if span.is_a?(Span) && span.context.level == 1
       end
+
       spans
     end
 

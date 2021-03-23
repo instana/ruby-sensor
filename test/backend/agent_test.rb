@@ -4,29 +4,51 @@
 require 'test_helper'
 
 class AgentTest < Minitest::Test
-  def test_setup
-    ENV['INSTANA_TEST'] = nil
-    ::Instana.config[:agent_host] = '10.10.10.10'
-
-    stub_request(:get, "http://10.10.10.10:42699/")
-      .to_return(status: 200, body: "", headers: {})
-
-    discovery = Minitest::Mock.new
-    discovery.expect(:with_observer, discovery, [Instana::Backend::HostAgentActivationObserver])
-    discovery.expect(:with_observer, discovery, [Instana::Backend::HostAgentReportingObserver])
-
-    subject = Instana::Backend::Agent.new(discovery: discovery)
+  def test_host
+    subject = Instana::Backend::Agent.new
+    assert_nil subject.delegate
     subject.setup
-
-    discovery.verify
-  ensure
-    ::Instana.config[:agent_host] = '127.0.0.1'
-    ENV['INSTANA_TEST'] = 'true'
+    assert subject.delegate.is_a?(Instana::Backend::HostAgent)
   end
 
-  def test_discovery_value
-    discovery = Concurrent::Atom.new({'pid' => 1})
-    subject = Instana::Backend::Agent.new(discovery: discovery)
-    assert_equal 1, subject.source[:e]
+  def test_fargate
+    ENV['ECS_CONTAINER_METADATA_URI'] = 'https://10.10.10.10:9292/v3'
+    ENV['INSTANA_ENDPOINT_URL'] = 'http://example.com'
+
+    stub_request(:get, 'https://10.10.10.10:9292/v3/task')
+      .to_return(status: 200, body: File.read('test/support/ecs/task.json'))
+
+    subject = Instana::Backend::Agent.new(fargate_metadata_uri: 'https://10.10.10.10:9292/v3')
+    assert_nil subject.delegate
+    subject.setup
+    assert subject.delegate.is_a?(Instana::Backend::ServerlessAgent)
+  ensure
+    ENV['INSTANA_ENDPOINT_URL'] = nil
+    ENV['ECS_CONTAINER_METADATA_URI'] = nil
+  end
+
+  def test_fargate_error
+    ENV['ECS_CONTAINER_METADATA_URI'] = 'https://10.10.10.10:9292/v3'
+    ENV['INSTANA_ENDPOINT_URL'] = 'http://example.com'
+
+    stub_request(:get, 'https://10.10.10.10:9292/v3/task')
+      .to_return(status: 500)
+
+    subject = Instana::Backend::Agent.new(logger: Logger.new('/dev/null'))
+    assert_nil subject.delegate
+    subject.setup
+    assert subject.delegate.is_a?(Instana::Backend::ServerlessAgent)
+  ensure
+    ENV['INSTANA_ENDPOINT_URL'] = nil
+    ENV['ECS_CONTAINER_METADATA_URI'] = nil
+  end
+
+  def test_delegate_super
+    subject = Instana::Backend::Agent.new
+    assert_raises NoMethodError do
+      subject.invalid
+    end
+
+    refute subject.respond_to?(:invalid)
   end
 end

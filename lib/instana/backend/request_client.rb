@@ -5,6 +5,14 @@ require 'net/http'
 require 'delegate'
 require 'json' # TODO: Oj
 
+# :nocov:
+begin
+  require 'oj'
+rescue LoadError => _e
+  Instana.logger.warn("Unable to load Oj.")
+end
+# :nocov:
+
 module Instana
   module Backend
     # Convince wrapper around {Net::HTTP}.
@@ -22,8 +30,8 @@ module Instana
         end
       end
 
-      def initialize(host, port)
-        @client = Net::HTTP.start(host, port)
+      def initialize(host, port, use_ssl: false)
+        @client = Net::HTTP.start(host, port, use_ssl: use_ssl)
       end
 
       # Send a request to the backend. If data is a {Hash},
@@ -67,7 +75,9 @@ module Instana
       private
 
       def encode_body(data)
-        JSON.dump(data)
+        # :nocov:
+        defined?(Oj) ? Oj.dump(data, mode: :strict) : JSON.dump(data)
+        # :nocov:
       end
     end
   end
