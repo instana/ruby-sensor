@@ -1,5 +1,8 @@
-require 'delegate'
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2021
 
+require 'delegate'
+# :nocov:
 module OpenTracing
   class InstanaTracer < SimpleDelegator
     Span = ::Instana::Span
@@ -14,11 +17,11 @@ module OpenTracing
     # @return [Span]
     #
     def start_span(operation_name, child_of: nil, start_time: ::Instana::Util.now_in_ms, tags: nil)
-      if child_of && (child_of.is_a?(::Instana::Span) || child_of.is_a?(::Instana::SpanContext))
-        new_span = Span.new(operation_name, parent_ctx: child_of, start_time: start_time)
-      else
-        new_span = Span.new(operation_name, start_time: start_time)
-      end
+      new_span = if child_of && (child_of.is_a?(::Instana::Span) || child_of.is_a?(::Instana::SpanContext))
+                   Span.new(operation_name, parent_ctx: child_of, start_time: start_time)
+                 else
+                   Span.new(operation_name, start_time: start_time)
+                 end
       new_span.set_tags(tags) if tags
       new_span
     end
@@ -32,7 +35,7 @@ module OpenTracing
     #
     # @return [Span]
     #
-    def start_active_span(operation_name, child_of: self.active_span, start_time: ::Instana::Util.now_in_ms, tags: nil)
+    def start_active_span(operation_name, child_of: active_span, start_time: ::Instana::Util.now_in_ms, tags: nil)
       ::Instana.tracer.current_span = start_span(operation_name, child_of: child_of, start_time: start_time, tags: tags)
     end
 
@@ -75,7 +78,7 @@ module OpenTracing
         ::Instana.logger.debug 'Unsupported extract format'
       when OpenTracing::FORMAT_RACK
         ::Instana::SpanContext.new(::Instana::Util.header_to_id(carrier['HTTP_X_INSTANA_T']),
-                                     ::Instana::Util.header_to_id(carrier['HTTP_X_INSTANA_S']))
+                                   ::Instana::Util.header_to_id(carrier['HTTP_X_INSTANA_S']))
       else
         ::Instana.logger.debug 'Unknown inject format'
         nil
@@ -88,3 +91,4 @@ module OpenTracing
     end
   end
 end
+# :nocov:

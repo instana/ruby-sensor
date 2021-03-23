@@ -136,10 +136,10 @@ module Instana
       return unless self.current_span || child_of
 
       new_span = if child_of.is_a?(::Instana::Span) || child_of.is_a?(::Instana::SpanContext)
-       Span.new(name, parent_ctx: child_of, start_time: start_time)
-      else
-        Span.new(name, parent_ctx: self.current_span, start_time: start_time)
-      end
+                   Span.new(name, parent_ctx: child_of, start_time: start_time)
+                 else
+                   Span.new(name, parent_ctx: self.current_span, start_time: start_time)
+                 end
       new_span.set_tags(kvs) if kvs
       self.current_span = new_span
     end
@@ -202,7 +202,6 @@ module Instana
       if self.current_span.name != name
         @logger.warn "Span mismatch: Attempt to end #{name} span but #{self.current_span.name} is active."
       end
-
 
       self.current_span.set_tags(kvs)
       self.current_span.close(end_time)

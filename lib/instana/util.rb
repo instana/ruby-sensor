@@ -23,6 +23,7 @@ module Instana
       # Method to collect up process info for snapshots.  This
       # is generally used once per process.
       #
+      # :nocov:
       def take_snapshot
         data = {}
 
@@ -62,10 +63,12 @@ module Instana
         ::Instana.logger.debug { e.backtrace.join("\r\n") }
         return data
       end
+      # :nocov:
 
       # Best effort to determine a name for the instrumented application
       # on the dashboard.
       #
+      # :nocov:
       def get_app_name
         if ENV.key?('INSTANA_SERVICE_NAME')
           return ENV['INSTANA_SERVICE_NAME']
@@ -102,6 +105,7 @@ module Instana
         Instana.logger.debug { e.backtrace.join("\r\n") }
         return "Ruby"
       end
+      # :nocov:
 
       # Get the current time in milliseconds from the epoch
       #

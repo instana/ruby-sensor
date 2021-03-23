@@ -6,6 +6,10 @@ require 'cgi'
 
 module Instana
   class Secrets
+    def initialize(logger: ::Instana.logger)
+      @logger = logger
+    end
+
     def remove_from_query(str, secret_values = Instana.agent.secret_values)
       return str unless secret_values
 
@@ -37,8 +41,8 @@ module Instana
       when 'regex'
         ->(expected, actual) { !Regexp.new(expected).match(actual).nil? }
       else
-        ::Instana.logger.warn("Matcher #{name} is not supported.")
-        lambda { false }
+        @logger.warn("Matcher #{name} is not supported.")
+        ->(_e, _a) { false }
       end
     end
   end
