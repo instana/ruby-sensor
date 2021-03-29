@@ -31,18 +31,15 @@ class HostAgentActivationObserverTest < Minitest::Test
       .and_return(status: 200, body: '{"ok": true}')
 
     client = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
-    client.define_singleton_method(:fileno) { '0' } # This is the cleanest way to fake it so it works across all test environments
+    # This is the cleanest way to fake it so it works across all test environments
+    client.define_singleton_method(:fileno) { '0' }
+    client.define_singleton_method(:inode) { '0' }
+
     discovery = Concurrent::Atom.new(nil)
 
     subject = Instana::Backend::HostAgentActivationObserver.new(client, discovery, wait_time: 0, logger: Logger.new('/dev/null'), max_wait_tries: 1)
 
-    FakeFS.with_fresh do
-      FakeFS::FileSystem.clone('test/support/proc', '/proc')
-      Dir.mkdir('/proc/self/fd')
-      File.symlink('/proc/self/sched', '/proc/self/fd/0')
-
-      subject.update(nil, nil, nil)
-    end
+    subject.update(nil, nil, nil)
 
     assert_equal({'pid' => 1234}, discovery.value)
   end

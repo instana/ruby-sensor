@@ -26,7 +26,7 @@ module Instana
       def host_listening?(host, port)
         client = RequestClient.new(host, port)
         client.send_request('GET', '/').ok? ? client : nil
-      rescue Net::OpenTimeout => _e
+      rescue Net::OpenTimeout, Errno::ECONNREFUSED => _e
         nil
       end
 

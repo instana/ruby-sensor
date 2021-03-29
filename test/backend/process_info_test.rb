@@ -27,10 +27,14 @@ class ProcessInfoTest < Minitest::Test
   def test_no_proc
     subject = Instana::Backend::ProcessInfo.new(OpenStruct.new(pid: 0))
 
-    assert_equal 0, subject.parent_pid
-    assert_nil subject.cpuset
-    assert_nil subject.sched_pid
-    refute subject.in_container?
+    FakeFS.with_fresh do
+      FakeFS::FileSystem.clone('test/support/ecs', '/proc')
+
+      assert_equal 0, subject.parent_pid
+      assert_nil subject.cpuset
+      assert_nil subject.sched_pid
+      refute subject.in_container?
+    end
   end
 
   def test_cpuset_proc

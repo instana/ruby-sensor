@@ -58,6 +58,8 @@ class OpenTracerTest < Minitest::Test
     assert OpenTracing.global_tracer.respond_to?(:inject)
     assert OpenTracing.global_tracer.respond_to?(:extract)
 
+    assert OpenTracing.respond_to?(:start_span)
+
     assert defined?(OpenTracing::Carrier)
     carrier = OpenTracing::Carrier.new
     assert carrier.respond_to?(:[])
@@ -353,6 +355,13 @@ class OpenTracerTest < Minitest::Test
 
     span = OpenTracing.start_active_span(:rack)
     assert_equal OpenTracing.active_span, span
+  end
+
+  def test_active_span_block
+    clear_all!
+
+    obj = OpenTracing.start_active_span(:rack) { 1 }
+    assert_equal 1, obj
   end
 
   def test_span_rename

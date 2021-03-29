@@ -3,7 +3,7 @@
 
 require 'net/http'
 require 'delegate'
-require 'json' # TODO: Oj
+require 'json'
 
 # :nocov:
 begin
@@ -67,7 +67,7 @@ module Instana
       # @return [String] the inode asscoated with the Net::HTTP socket or nil if it can't be identified
       def inode
         path = "/proc/self/fd/#{fileno}"
-        return unless File.exist?(path)
+        return unless File.exist?(path) && fileno
 
         File.readlink(path)
       end

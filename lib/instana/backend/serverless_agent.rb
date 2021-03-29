@@ -92,10 +92,12 @@ module Instana
 
       def agent_snapshots
         @snapshots.map do |snapshot|
-          snapshot.snapshot
-        rescue StandardError => e
-          @logger.error(e.message)
-          nil
+          begin
+            snapshot.snapshot
+          rescue StandardError => e
+            @logger.error(e.message)
+            nil
+          end
         end.compact
       end
 

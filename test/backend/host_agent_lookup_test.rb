@@ -20,7 +20,12 @@ class HostAgentLookupTest < Minitest::Test
       .to_timeout
 
     subject = Instana::Backend::HostAgentLookup.new('10.10.10.10', 42699)
-    client = subject.call
+
+    client = FakeFS.with_fresh do
+      FakeFS::FileSystem.clone('test/support/ecs', '/proc')
+
+      subject.call
+    end
 
     assert_nil client
   end
@@ -30,7 +35,12 @@ class HostAgentLookupTest < Minitest::Test
       .to_return(status: 500)
 
     subject = Instana::Backend::HostAgentLookup.new('10.10.10.10', 42699)
-    client = subject.call
+
+    client = FakeFS.with_fresh do
+      FakeFS::FileSystem.clone('test/support/ecs', '/proc')
+
+      subject.call
+    end
 
     assert_nil client
   end
