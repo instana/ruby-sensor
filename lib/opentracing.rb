@@ -20,6 +20,10 @@ module OpenTracing
     def method_missing(method_name, *args, &block)
       @global_tracer.send(method_name, *args, &block)
     end
+
+    def respond_to_missing?(name, all)
+      @global_tracer.respond_to?(name, all)
+    end
   end
 end
 

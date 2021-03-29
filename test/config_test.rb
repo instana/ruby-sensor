@@ -21,4 +21,14 @@ class ConfigTest < Minitest::Test
       assert_equal true, ::Instana.config[:metrics][k].key?(:enabled)
     end
   end
+
+  def test_custom_agent_host
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'), agent_host: 'abc')
+    assert_equal 'abc', subject[:agent_host]
+  end
+
+  def test_custom_agent_port
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'), agent_port: 'abc')
+    assert_equal 'abc', subject[:agent_port]
+  end
 end

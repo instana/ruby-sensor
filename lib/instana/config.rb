@@ -3,25 +3,20 @@
 
 module Instana
   class Config
-
-    def initialize
+    def initialize(logger: ::Instana.logger, agent_host: ENV['INSTANA_AGENT_HOST'], agent_port: ENV['INSTANA_AGENT_PORT'])
       @config = {}
-      if ENV.key?('INSTANA_AGENT_HOST')
-        ::Instana.logger.debug "Using custom agent host location specified in INSTANA_AGENT_HOST (#{ENV['INSTANA_AGENT_HOST']})"
-        @config[:agent_host] = ENV['INSTANA_AGENT_HOST']
+      if agent_host
+        logger.debug "Using custom agent host location specified in INSTANA_AGENT_HOST (#{ENV['INSTANA_AGENT_HOST']})"
+        @config[:agent_host] = agent_host
       else
         @config[:agent_host] = '127.0.0.1'
       end
-      if ENV.key?('INSTANA_AGENT_PORT')
-        ::Instana.logger.debug "Using custom agent port specified in INSTANA_AGENT_PORT (#{ENV['INSTANA_AGENT_PORT']})"
-        @config[:agent_port] = ENV['INSTANA_AGENT_PORT']
+      if agent_port
+        logger.debug "Using custom agent port specified in INSTANA_AGENT_PORT (#{ENV['INSTANA_AGENT_PORT']})"
+        @config[:agent_port] = agent_port
       else
         @config[:agent_port] = 42699
       end
-
-      # This option has been DEPRECATED. Use the INSTANA_DISABLE environment variable instead.
-      # https://docs.instana.io/ecosystem/ruby/configuration/
-      @config[:enabled] = true
 
       # Enable/disable metrics globally or individually (default: all enabled)
       @config[:metrics] = { :enabled => true }

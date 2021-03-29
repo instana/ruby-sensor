@@ -37,6 +37,7 @@ module OpenTracing
     #
     def start_active_span(operation_name, child_of: active_span, start_time: ::Instana::Util.now_in_ms, tags: nil)
       ::Instana.tracer.current_span = start_span(operation_name, child_of: child_of, start_time: start_time, tags: tags)
+      block_given? ? yield(::Instana.tracer.current_span) : ::Instana.tracer.current_span
     end
 
     # Returns the currently active span
@@ -85,9 +86,13 @@ module OpenTracing
       end
     end
 
-    def method_missing(m, *args, &block)
+    def method_missing(method, *args, &block)
       ::Instana.logger.warn { "You are invoking `#{m}` on Instana::Tracer via OpenTracing." }
-      super(m, *args, &block)
+      super(method, *args, &block)
+    end
+
+    def respond_to_missing?(*)
+      super(method)
     end
   end
 end

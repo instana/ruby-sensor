@@ -1,6 +1,8 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2016
 
+require 'instana/logger_delegator'
+
 require "instana/base"
 require "instana/config"
 require "instana/secrets"
