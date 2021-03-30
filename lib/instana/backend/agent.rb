@@ -15,7 +15,7 @@ module Instana
       end
 
       def setup
-        @delegate = if @fargate_metadata_uri
+        @delegate = if @fargate_metadata_uri && ENV.key?('INSTANA_ENDPOINT_URL')
                       ServerlessAgent.new(fargate_snapshots)
                     else
                       HostAgent.new
