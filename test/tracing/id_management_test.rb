@@ -69,4 +69,8 @@ class TracerIDMgmtTest < Minitest::Test
     bogus_result = Instana::Util.header_to_id([1234])
     assert_equal '', bogus_result
   end
+
+  def test_long_id_trim
+    assert_equal 16, Instana::Util.id_to_header(::Instana::Util.generate_id(2)).length
+  end
 end

@@ -1,0 +1,23 @@
+cat (35, #threads: 1)
+-------------------------------------------------------------------
+se.exec_start                                :        820865.307850
+se.vruntime                                  :           805.150445
+se.sum_exec_runtime                          :             0.459800
+se.nr_migrations                             :                    0
+nr_switches                                  :                    2
+nr_voluntary_switches                        :                    2
+nr_involuntary_switches                      :                    0
+se.load.weight                               :              1048576
+se.runnable_weight                           :              1048576
+se.avg.load_sum                              :                46068
+se.avg.runnable_load_sum                     :                46068
+se.avg.util_sum                              :             23811867
+se.avg.load_avg                              :                 1006
+se.avg.runnable_load_avg                     :                 1006
+se.avg.util_avg                              :                  507
+se.avg.last_update_time                      :         820865307648
+se.avg.util_est.ewma                         :                  128
+se.avg.util_est.enqueued                     :                  512
+policy                                       :                    0
+prio                                         :                  120
+clock-delta                                  :                   17

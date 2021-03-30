@@ -81,7 +81,8 @@ class RackInstrumentedRequestTest < Minitest::Test
   end
 
   def test_request_tags
-    ::Instana.agent.extra_headers = %w[X-Capture-This]
+    ::Instana.agent.define_singleton_method(:extra_headers) { %w[X-Capture-This] }
+
     req = Instana::InstrumentedRequest.new(
       'HTTP_HOST' => 'example.com',
       'REQUEST_METHOD' => 'GET',
@@ -101,7 +102,7 @@ class RackInstrumentedRequestTest < Minitest::Test
     }
 
     assert_equal expected, req.request_tags
-    ::Instana.agent.extra_headers = nil
+    ::Instana.agent.singleton_class.send(:remove_method, :extra_headers)
   end
 
   def test_correlation_data_valid

@@ -198,4 +198,33 @@ class TracerAsyncTest < Minitest::Test
     assert_equal 3, fourth_span[:data][:sdk][:custom][:tags][:entry_kv]
     assert_equal 3, fourth_span[:data][:sdk][:custom][:tags][:exit_kv]
   end
+
+  def test_async_helpers
+    clear_all!
+    ::Instana.tracer.log_start_or_continue(:rack)
+
+    span = ::Instana.tracer.log_async_entry(:async, {})
+    ::Instana.tracer.log_async_info({a: 1}, span)
+    ::Instana.tracer.log_async_error(StandardError.new('Error'), span)
+    ::Instana.tracer.log_async_exit(nil, {}, span)
+
+    spans = ::Instana.processor.queued_spans
+    span, = spans
+
+    assert_equal({a: 1}, span[:data][:sdk][:custom][:tags])
+    assert_equal(1, span[:ec])
+  end
+
+  def test_async_helpers_tag_exit
+    clear_all!
+    ::Instana.tracer.log_start_or_continue(:rack)
+
+    span = ::Instana.tracer.log_async_entry(:async, {})
+    ::Instana.tracer.log_async_exit(nil, {a: 1}, span)
+
+    spans = ::Instana.processor.queued_spans
+    span, = spans
+
+    assert_equal({a: 1}, span[:data][:sdk][:custom][:tags])
+  end
 end

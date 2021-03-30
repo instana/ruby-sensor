@@ -18,7 +18,7 @@ module Instana
     def initialize(tid, sid, level = 1, baggage = {})
       @trace_id = tid
       @span_id = sid
-      @level = level
+      @level = Integer(level || 1)
       @baggage = baggage || {}
     end
 

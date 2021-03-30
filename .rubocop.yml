@@ -2,7 +2,7 @@ inherit_from: .rubocop_todo.yml
 
 require:
   - ./extras/license_header.rb
-
+  
 # Remove when we remove .rubocop_todo.yml
 AllCops:
   NewCops: disable
@@ -18,4 +18,8 @@ Style/NilComparison:
   Enabled: false
 
 Style/SoleNestedConditional:
+  Enabled: false
+  
+# Ruby 2.1 compatibility
+Style/SafeNavigation:
   Enabled: false

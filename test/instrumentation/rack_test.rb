@@ -80,9 +80,6 @@ class RackTest < Minitest::Test
     assert_equal 200, rack_span[:data][:http][:status]
     assert_equal 'example.org', rack_span[:data][:http][:host]
     assert rack_span.key?(:f)
-    assert rack_span[:f].key?(:e)
-    assert rack_span[:f].key?(:h)
-    assert_equal ::Instana.agent.agent_uuid, rack_span[:f][:h]
     assert !rack_span.key?(:stack)
 
     # Restore to default
@@ -134,9 +131,6 @@ class RackTest < Minitest::Test
     assert_equal "/mrlobster", rack_span[:data][:http][:url]
     assert_equal 200, rack_span[:data][:http][:status]
     assert rack_span.key?(:f)
-    assert rack_span[:f].key?(:e)
-    assert rack_span[:f].key?(:h)
-    assert_equal ::Instana.agent.agent_uuid, rack_span[:f][:h]
   end
 
   def test_basic_put
@@ -166,9 +160,6 @@ class RackTest < Minitest::Test
     assert_equal "/mrlobster", rack_span[:data][:http][:url]
     assert_equal 200, rack_span[:data][:http][:status]
     assert rack_span.key?(:f)
-    assert rack_span[:f].key?(:e)
-    assert rack_span[:f].key?(:h)
-    assert_equal ::Instana.agent.agent_uuid, rack_span[:f][:h]
   end
 
   def test_context_continuation
@@ -202,9 +193,6 @@ class RackTest < Minitest::Test
     assert_equal "/mrlobster", rack_span[:data][:http][:url]
     assert_equal 200, rack_span[:data][:http][:status]
     assert rack_span.key?(:f)
-    assert rack_span[:f].key?(:e)
-    assert rack_span[:f].key?(:h)
-    assert_equal ::Instana.agent.agent_uuid, rack_span[:f][:h]
 
     # Context validation
     # The first span should have the passed in trace ID
@@ -260,7 +248,7 @@ class RackTest < Minitest::Test
   def test_custom_headers_capture
     clear_all!
     ::Instana.config[:collect_backtraces] = true
-    ::Instana.agent.extra_headers = %w(X-Capture-This X-Capture-That)
+    ::Instana.agent.define_singleton_method(:extra_headers) { %w(X-Capture-This X-Capture-That) }
 
     get '/mrlobster', {}, { "HTTP_X_CAPTURE_THIS" => "ThereYouGo" }
     assert last_response.ok?
@@ -280,7 +268,7 @@ class RackTest < Minitest::Test
 
     # Restore to default
     ::Instana.config[:collect_backtraces] = false
-    ::Instana.agent.extra_headers = nil
+    ::Instana.agent.singleton_class.send(:remove_method, :extra_headers)
   end
 
   def test_capture_http_path_template

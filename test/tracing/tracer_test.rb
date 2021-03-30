@@ -22,7 +22,6 @@ class TracerTest < Minitest::Test
     ::Instana.config[:tracing][:enabled] = true
   end
 
-
   def test_basic_trace_block
     clear_all!
 
@@ -44,9 +43,7 @@ class TracerTest < Minitest::Test
     assert first_span.key?(:data)
     assert_equal 1, first_span[:data][:one]
     assert first_span.key?(:f)
-    assert first_span[:f].key?(:e)
-    assert first_span[:f].key?(:h)
-    assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
+    assert_equal ::Instana.agent.source, first_span[:f]
   end
 
   def test_exotic_tag_types
@@ -75,9 +72,7 @@ class TracerTest < Minitest::Test
     assert first_span[:data].key?(:ipaddr)
     assert first_span[:data][:ipaddr].is_a?(String)
     assert first_span.key?(:f)
-    assert first_span[:f].key?(:e)
-    assert first_span[:f].key?(:h)
-    assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
+    assert_equal ::Instana.agent.source, first_span[:f]
   end
 
   def test_errors_are_properly_propagated
@@ -105,9 +100,7 @@ class TracerTest < Minitest::Test
     assert first_span.key?(:data)
     assert_equal 1, first_span[:data][:one]
     assert first_span.key?(:f)
-    assert first_span[:f].key?(:e)
-    assert first_span[:f].key?(:h)
-    assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
+    assert_equal ::Instana.agent.source, first_span[:f]
     assert_equal first_span[:error], true
     assert_equal first_span[:ec], 1
   end
@@ -222,9 +215,7 @@ class TracerTest < Minitest::Test
     assert_equal rack_span[:data][:close_one], 1
 
     assert rack_span.key?(:f)
-    assert rack_span[:f].key?(:e)
-    assert rack_span[:f].key?(:h)
-    assert_equal ::Instana.agent.agent_uuid, rack_span[:f][:h]
+    assert_equal ::Instana.agent.source, rack_span[:f]
 
     assert_equal sdk_span[:n], :sdk
     assert_equal sdk_span[:data][:sdk][:name], :sub_task
@@ -239,7 +230,9 @@ class TracerTest < Minitest::Test
     exception_raised = false
     begin
       ::Instana.tracer.start_or_continue_trace(:test_trace, {:one => 1}) do
-        raise Exception.new("Block exception test error")
+        ::Instana.tracer.trace(:test_trace_two) do
+          raise Exception.new("Block exception test error")
+        end
       end
     rescue Exception
       exception_raised = true
@@ -248,9 +241,9 @@ class TracerTest < Minitest::Test
     assert exception_raised
 
     spans = ::Instana.processor.queued_spans
-    assert_equal 1, spans.length
+    assert_equal 2, spans.length
 
-    sdk_span = spans[0]
+    sdk_span = spans.last
 
     assert_equal sdk_span[:n], :sdk
     assert_equal sdk_span[:data][:sdk][:name], :test_trace
@@ -284,5 +277,78 @@ class TracerTest < Minitest::Test
     assert_equal sdk_span[:error], true
     assert_equal sdk_span[:ec], 1
     assert_equal sdk_span.key?(:stack), false
+  end
+
+  def test_nil_returns
+    clear_all!
+
+    refute ::Instana.tracer.tracing?
+    assert_nil ::Instana.tracer.log_entry(nil)
+    assert_nil ::Instana.tracer.log_info(nil)
+    assert_nil ::Instana.tracer.log_error(nil)
+    assert_nil ::Instana.tracer.log_exit(nil)
+    assert_nil ::Instana.tracer.log_end(nil)
+    assert_nil ::Instana.tracer.log_async_entry(nil, nil)
+    assert_nil ::Instana.tracer.context
+  end
+
+  def test_tracing_span
+    clear_all!
+
+    refute ::Instana.tracer.tracing_span?(:rack)
+    ::Instana.tracer.log_start_or_continue(:rack)
+    assert ::Instana.tracer.tracing_span?(:rack)
+  end
+
+  def test_log_exit_warn_span_name
+    logger = Minitest::Mock.new
+    logger.expect(:warn, true, [String])
+    subject = Instana::Tracer.new(logger: logger)
+
+    subject.log_start_or_continue(:sample)
+    subject.log_exit(:roda)
+
+    logger.verify
+  end
+
+  def test_log_end_warn_span_name
+    clear_all!
+
+    logger = Minitest::Mock.new
+    logger.expect(:warn, true, [String])
+    subject = Instana::Tracer.new(logger: logger)
+
+    subject.log_start_or_continue(:sample)
+    subject.log_end(:roda)
+
+    logger.verify
+  end
+
+  def test_log_entry_span
+    clear_all!
+
+    subject = Instana::Tracer.new
+    span = Instana::Span.new(:rack)
+
+    subject.log_entry(:sample, {}, ::Instana::Util.now_in_ms, span)
+    assert subject.tracing?
+    assert subject.current_span.parent, span
+  end
+
+  def test_log_entry_span_context
+    clear_all!
+
+    subject = Instana::Tracer.new
+    span_context = Instana::SpanContext.new('test', 'test')
+
+    subject.log_entry(:sample, {}, ::Instana::Util.now_in_ms, span_context)
+    assert subject.tracing?
+    assert subject.current_span.context, span_context
+  end
+
+  def test_missing_class_super
+    assert_raises NoMethodError do
+      Instana::Tracer.invalid
+    end
   end
 end

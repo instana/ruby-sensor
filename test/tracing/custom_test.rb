@@ -39,9 +39,7 @@ class CustomTracingTest < Minitest::Test
     assert_equal :entry, first_span[:data][:sdk][:type]
 
     assert first_span.key?(:f)
-    assert first_span[:f].key?(:e)
-    assert first_span[:f].key?(:h)
-    assert_equal ::Instana.agent.agent_uuid, first_span[:f][:h]
+    assert_equal ::Instana.agent.source, first_span[:f]
   end
 
   def test_custom_tracing_with_args

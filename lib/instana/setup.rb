@@ -1,29 +1,38 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2016
 
-require 'oj_check'
+require 'instana/logger_delegator'
 
 require "instana/base"
 require "instana/config"
-require "instana/agent"
-require "instana/collector"
 require "instana/secrets"
 require "instana/tracer"
 require "instana/tracing/processor"
 
 require 'instana/activator'
 
+require 'instana/backend/request_client'
+require 'instana/backend/gc_snapshot'
+require 'instana/backend/process_info'
+
+require 'instana/snapshot/deltable'
+require 'instana/snapshot/ruby_process'
+require 'instana/snapshot/fargate_process'
+require 'instana/snapshot/fargate_task'
+require 'instana/snapshot/fargate_container'
+require 'instana/snapshot/docker_container'
+
+require 'instana/backend/host_agent_lookup'
+require 'instana/backend/host_agent_activation_observer'
+require 'instana/backend/host_agent_reporting_observer'
+
+require 'instana/backend/host_agent'
+require 'instana/backend/serverless_agent'
+require 'instana/backend/agent'
+
 ::Instana.setup
 ::Instana.agent.setup
 ::Instana::Activator.start
-
-# Register the metric collectors
-unless RUBY_PLATFORM == 'java'.freeze
-  require 'instana/collectors/gc'
-end
-
-require 'instana/collectors/memory'
-require 'instana/collectors/thread'
 
 # Require supported OpenTracing interfaces
 require "opentracing"
