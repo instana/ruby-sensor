@@ -5,21 +5,23 @@ module Instana
   module Backend
     # @since 1.197.0
     class HostAgent
-      def initialize(discovery: Concurrent::Atom.new(nil))
+      def initialize(discovery: Concurrent::Atom.new(nil), logger: ::Instana.logger)
         @discovery = discovery
         @client = nil
+        @logger = logger
       end
 
-      def setup
+      def setup; end
+
+      def spawn_background_thread
         return if ENV.key?('INSTANA_TEST')
 
-        @client = HostAgentLookup.new.call
+        @client = until_not_nil { HostAgentLookup.new.call }
+        @discovery.delete_observers
         @discovery
           .with_observer(HostAgentActivationObserver.new(@client, @discovery))
           .with_observer(HostAgentReportingObserver.new(@client, @discovery))
-      end
 
-      def spawn_background_thread
         @discovery.swap { nil }
       end
 
@@ -47,6 +49,16 @@ module Instana
       end
 
       private
+
+      def until_not_nil
+        loop do
+          result = yield
+          return result unless result.nil?
+
+          @logger.debug("Waiting on a connection to the agent.")
+          sleep(1)
+        end
+      end
 
       def discovery_value
         v = @discovery.value
