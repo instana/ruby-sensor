@@ -19,13 +19,15 @@ module Instana
 
         # Set request headers; encode IDs as hexadecimal strings
         t_context = ::Instana.tracer.context
-        request['X-Instana-T'] = t_context.trace_id_header
-        request['X-Instana-S'] = t_context.span_id_header
+        request['X-Instana-L'] = t_context.level.to_s
 
-        if ::Instana.config[:w3_trace_correlation]
-          request['Traceparent'] = t_context.trace_parent_header
-          request['Tracestate'] = t_context.trace_state_header
+        if t_context.active?
+          request['X-Instana-T'] = t_context.trace_id_header
+          request['X-Instana-S'] = t_context.span_id_header
         end
+
+        request['Traceparent'] = t_context.trace_parent_header
+        request['Tracestate'] = t_context.trace_state_header unless t_context.trace_state_header.empty?
 
         # Collect up KV info now in case any exception is raised
         kv_payload = { :http => {} }

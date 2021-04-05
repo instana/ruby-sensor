@@ -156,8 +156,10 @@ module Instana
       #
       # @return [String]
       #
-      def header_to_id(header_id)
-        header_id.is_a?(String) && header_id.match(/\A[a-z\d]{16,32}\z/i) ? header_id : ''
+      def header_to_id(given)
+        return '' unless given.is_a?(String)
+        return '' unless given.match(/\A[a-z\d]{16,32}\z/i)
+        given
       end
     end
   end

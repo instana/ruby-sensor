@@ -11,8 +11,7 @@ class SpanContextTest < Minitest::Test
 
   def test_invalid
     subject = Instana::SpanContext.new(nil, nil)
-    assert subject.trace_parent_header.empty?
-    assert subject.trace_state_header.empty?
+    refute subject.valid?
   end
 
   def test_flags_level_zero

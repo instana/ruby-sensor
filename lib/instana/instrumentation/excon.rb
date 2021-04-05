@@ -24,13 +24,15 @@ module Instana
         end
 
         # Set request headers; encode IDs as hexadecimal strings
-        datum[:headers]['X-Instana-T'] = t_context.trace_id_header
-        datum[:headers]['X-Instana-S'] = t_context.span_id_header
+        datum[:headers]['X-Instana-L'] = t_context.level.to_s
 
-        if ::Instana.config[:w3_trace_correlation]
-          datum[:headers]['Traceparent'] = t_context.trace_parent_header
-          datum[:headers]['Tracestate'] = t_context.trace_state_header
+        if t_context.active?
+          datum[:headers]['X-Instana-T'] = t_context.trace_id_header
+          datum[:headers]['X-Instana-S'] = t_context.span_id_header
         end
+
+        datum[:headers]['Traceparent'] = t_context.trace_parent_header
+        datum[:headers]['Tracestate'] = t_context.trace_state_header unless t_context.trace_state_header.empty?
 
         @stack.request_call(datum)
       end

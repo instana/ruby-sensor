@@ -31,19 +31,22 @@ module Instana
     end
 
     def trace_parent_header
-      return '' unless valid?
-
-      trace = (@baggage[:external_trace_id] || @trace_id).rjust(32, '0')
-      parent = @span_id.rjust(16, '0')
+      trace = (@baggage[:external_trace_id] || trace_id_header).rjust(32, '0')
+      parent = span_id_header.rjust(16, '0')
       flags = @level == 1 ? "01" : "00"
 
       "00-#{trace}-#{parent}-#{flags}"
     end
 
     def trace_state_header
-      return '' unless valid?
+      external_state = @baggage[:external_state] || ''
+      state = external_state.split(/,/)
 
-      state = ["in=#{trace_id_header};#{span_id_header}", @baggage[:external_state]]
+      if @level == 1
+        state = state.reject { |s| s.start_with?('in=') }
+        state.unshift("in=#{trace_id_header};#{span_id_header}")
+      end
+
       state.compact.join(',')
     end
 
@@ -51,10 +54,12 @@ module Instana
       { :trace_id => @trace_id, :span_id => @span_id }
     end
 
-    private
-
     def valid?
-      @baggage && @trace_id && @span_id
+      @baggage && @trace_id && !@trace_id.emtpy?
+    end
+
+    def active?
+      @level == 1
     end
   end
 end
