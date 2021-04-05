@@ -25,6 +25,8 @@ class HostAgentTest < Minitest::Test
       subject.spawn_background_thread
     end
 
+    subject.future.value!
+
     discovery.verify
   ensure
     ::Instana.config[:agent_host] = '127.0.0.1'

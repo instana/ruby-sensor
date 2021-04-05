@@ -8,12 +8,11 @@ module Instana
     # @since 1.197.0
     class ProcessInfo < SimpleDelegator
       def name
-        cmdline
-          .split(' ').first
+        command_line.first
       end
 
       def arguments
-        _, *arguments = cmdline.split(' ')
+        _, *arguments = command_line
         clean_arguments(arguments)
       end
 
@@ -45,6 +44,13 @@ module Instana
         return unless File.exist?(path)
 
         File.read(path).match(/\d+/).to_s.to_i
+      end
+
+      def command_line
+        path = "/proc/#{pid}/cmdline"
+        return cmdline.split(' ') unless File.exists?(path)
+
+        File.read(path).split(?\x00)
       end
 
       private

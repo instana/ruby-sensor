@@ -5,10 +5,12 @@ module Instana
   module Backend
     # @since 1.197.0
     class HostAgent
+      attr_reader :future
+
       def initialize(discovery: Concurrent::Atom.new(nil), logger: ::Instana.logger)
         @discovery = discovery
-        @client = nil
         @logger = logger
+        @future = nil
       end
 
       def setup; end
@@ -16,13 +18,16 @@ module Instana
       def spawn_background_thread
         return if ENV.key?('INSTANA_TEST')
 
-        @client = until_not_nil { HostAgentLookup.new.call }
-        @discovery.delete_observers
-        @discovery
-          .with_observer(HostAgentActivationObserver.new(@client, @discovery))
-          .with_observer(HostAgentReportingObserver.new(@client, @discovery))
+        @future = Concurrent::Promises.future do
+          client = until_not_nil { HostAgentLookup.new.call }
+          @discovery.delete_observers
+          @discovery
+            .with_observer(HostAgentActivationObserver.new(client, @discovery))
+            .with_observer(HostAgentReportingObserver.new(client, @discovery))
 
-        @discovery.swap { nil }
+          @discovery.swap { nil }
+          client
+        end
       end
 
       # @return [Boolean] true if the agent able to send spans to the backend
