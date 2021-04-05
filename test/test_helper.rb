@@ -45,7 +45,7 @@ require 'fakefs/safe'
 require 'webmock/minitest'
 # Webmock: Whitelist local IPs
 WebMock.disable_net_connect!(
-  allow: ->(uri) { %w[localhost 127.0.0.1 172.17.0.1 172.0.12.100].include?(uri.host) }
+  allow: ->(uri) { %w[localhost 127.0.0.1 172.17.0.1 172.0.12.100].include?(uri.host) && ENV.key?('APPRAISAL_INITIALIZED') }
 )
 
 Dir['test/support/*.rb'].each { |f| load(f) }
