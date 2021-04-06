@@ -21,6 +21,7 @@ require 'instana/snapshot/fargate_process'
 require 'instana/snapshot/fargate_task'
 require 'instana/snapshot/fargate_container'
 require 'instana/snapshot/docker_container'
+require 'instana/snapshot/lambda_function'
 
 require 'instana/backend/host_agent_lookup'
 require 'instana/backend/host_agent_activation_observer'
