@@ -41,6 +41,7 @@ class HostAgentActivationObserverTest < Minitest::Test
 
     FakeFS.with_fresh do
       FakeFS::FileSystem.clone('test/support/proc', '/proc')
+      FakeFS::FileSystem.clone('test/support/proc/0', "/proc/#{Process.pid}")
       Dir.mkdir('/proc/self/fd')
       File.symlink('/proc/self/sched', "/proc/self/fd/0")
 
