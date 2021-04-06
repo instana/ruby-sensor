@@ -28,9 +28,15 @@ module Instana
       if parent_ctx.is_a?(::Instana::SpanContext)
         @is_root = false
 
-        @data[:t] = parent_ctx.trace_id       # Trace ID
+        # If we have a parent trace, link to it
+        if parent_ctx.trace_id
+          @data[:t] = parent_ctx.trace_id       # Trace ID
+          @data[:p] = parent_ctx.span_id        # Parent ID
+        else
+          @data[:t] = ::Instana::Util.generate_id
+        end
+
         @data[:s] = ::Instana::Util.generate_id # Span ID
-        @data[:p] = parent_ctx.span_id        # Parent ID
 
         @baggage = parent_ctx.baggage.dup
         @level = parent_ctx.level

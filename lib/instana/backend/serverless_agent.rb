@@ -92,7 +92,7 @@ module Instana
 
       def agent_snapshots
         @snapshots.map do |snapshot|
-          begin
+          begin # rubocop:disable Style/RedundantBegin, Lint/RedundantCopDisableDirective
             snapshot.snapshot
           rescue StandardError => e
             @logger.error(e.message)

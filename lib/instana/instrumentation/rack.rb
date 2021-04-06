@@ -12,7 +12,6 @@ module Instana
 
     def call(env)
       req = InstrumentedRequest.new(env)
-      return @app.call(env) if req.skip_trace?
       kvs = {
         http: req.request_tags,
         service: ENV['INSTANA_SERVICE_NAME']
@@ -34,12 +33,16 @@ module Instana
 
         if req.continuing_from_trace_parent?
           current_span[:tp] = true
-          current_span[:lt] = req.incoming_context[:external_trace_id]
+        end
+
+        if req.external_trace_id?
+          current_span[:lt] = req.external_trace_id
         end
 
         if req.synthetic?
           current_span[:sy] = true
         end
+
         # In case some previous middleware returned a string status, make sure that we're dealing with
         # an integer.  In Ruby nil.to_i, "asdfasdf".to_i will always return 0 from Ruby versions 1.8.7 and newer.
         # So if an 0 status is reported here, it indicates some other issue (e.g. no status from previous middleware)
@@ -70,15 +73,17 @@ module Instana
       if ::Instana.tracer.tracing?
         if headers
           # Set response headers; encode as hex string
-          headers['X-Instana-T'] = trace_context.trace_id_header
-          headers['X-Instana-S'] = trace_context.span_id_header
-          headers['X-Instana-L'] = '1'
+          if trace_context.active?
+            headers['X-Instana-T'] = trace_context.trace_id_header
+            headers['X-Instana-S'] = trace_context.span_id_header
+            headers['X-Instana-L'] = '1'
 
-          if ::Instana.config[:w3_trace_correlation]
-            headers['Traceparent'] = trace_context.trace_parent_header
             headers['Tracestate'] = trace_context.trace_state_header
+          else
+            headers['X-Instana-L'] = '0'
           end
 
+          headers['Traceparent'] = trace_context.trace_parent_header
           headers['Server-Timing'] = "intid;desc=#{trace_context.trace_id_header}"
         end
 

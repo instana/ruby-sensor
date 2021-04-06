@@ -12,20 +12,23 @@ module Instana
 
       # @param [RequestClient] client used to make requests to the backend
       # @param [Concurrent::Atom] discovery object used to store discovery response in
-      def initialize(client, discovery, wait_time: 60, logger: ::Instana.logger, max_wait_tries: 60, proc_table: Sys::ProcTable) # rubocop:disable Metrics/ParameterLists
+      def initialize(client, discovery, wait_time: 1, logger: ::Instana.logger, max_wait_tries: 60, proc_table: Sys::ProcTable, socket_proc: default_socket_proc) # rubocop:disable Metrics/ParameterLists
         @client = client
         @discovery = discovery
         @wait_time = wait_time
         @logger = logger
         @max_wait_tries = max_wait_tries
         @proc_table = proc_table
+        @socket_proc = socket_proc
       end
 
       def update(_time, _old_version, new_version)
         return unless new_version.nil?
 
+        socket = @socket_proc.call(@client)
+
         try_forever_with_backoff do
-          payload = discovery_payload
+          payload = discovery_payload(socket)
           discovery_response = @client.send_request('PUT', DISCOVERY_URL, payload)
 
           raise DiscoveryError, "Discovery response was #{discovery_response.code} with `#{payload}`." unless discovery_response.ok?
@@ -36,11 +39,13 @@ module Instana
           @logger.debug("Agent ready.")
           @discovery.swap { discovery }
         end
+
+        socket.close
       end
 
       private
 
-      def discovery_payload
+      def discovery_payload(socket)
         proc_table = @proc_table.ps(pid: Process.pid)
         process = ProcessInfo.new(proc_table)
 
@@ -52,9 +57,10 @@ module Instana
           cpuSetFileContent: process.cpuset
         }
 
-        if @client.fileno && @client.inode
-          payload[:fd] = @client.fileno
-          payload[:inode] = @client.inode
+        inode_path = "/proc/self/fd/#{socket.fileno}"
+        if socket.fileno && File.exist?(inode_path)
+          payload[:fd] = socket.fileno
+          payload[:inode] = File.readlink(inode_path)
         end
 
         payload.compact
@@ -76,11 +82,15 @@ module Instana
       def try_forever_with_backoff
         yield
       rescue DiscoveryError, Net::OpenTimeout => e
-        @logger.error(e)
+        @logger.warn(e)
         sleep(@wait_time)
         retry
       rescue StandardError => e
         @logger.error(%(#{e}\n#{e.backtrace.join("\n")}))
+      end
+
+      def default_socket_proc
+        ->(c) { TCPSocket.new(c.host, c.port) }
       end
     end
   end

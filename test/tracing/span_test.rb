@@ -46,6 +46,15 @@ class SpanTest < Minitest::Test
     assert_equal 'test', span.trace_id
   end
 
+  def test_span_from_contetx_invalid
+    context = Instana::SpanContext.new(nil, nil, 1)
+    span = Instana::Span.new(:test, parent_ctx: context)
+
+    assert_nil span.parent_id
+    refute_equal context.span_id, span.trace_id
+    assert_equal 1, span.context.level
+  end
+
   def test_span_collect_backtraces
     Instana.config[:collect_backtraces] = true
     span = Instana::Span.new(:excon)

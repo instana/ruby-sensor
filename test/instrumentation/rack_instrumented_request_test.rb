@@ -29,6 +29,7 @@ class RackInstrumentedRequestTest < Minitest::Test
     expected = {
       trace_id: id,
       span_id: id,
+      from_w3: false,
       level: '1'
     }
 
@@ -47,6 +48,7 @@ class RackInstrumentedRequestTest < Minitest::Test
       external_state: nil,
       trace_id: 'a3ce929d0e0e4736',
       span_id: '00f067aa0ba902b7',
+      from_w3: true,
       level: '1'
     }
 

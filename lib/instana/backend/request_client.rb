@@ -18,6 +18,8 @@ module Instana
     # Convince wrapper around {Net::HTTP}.
     # @since 1.197.0
     class RequestClient
+      attr_reader :host, :port
+
       class Response < SimpleDelegator
         # @return [Hash] the decoded json response
         def json
@@ -31,6 +33,8 @@ module Instana
       end
 
       def initialize(host, port, use_ssl: false)
+        @host = host
+        @port = port
         @client = Net::HTTP.start(host, port, use_ssl: use_ssl)
       end
 
@@ -55,21 +59,6 @@ module Instana
 
         response = @client.send_request(method, path, body, headers)
         Response.new(response)
-      end
-
-      # @return [Integer, NilClass] the fileno of the Net::HTTP socket or nil if it can't be identified
-      def fileno
-        socket = @client.instance_variable_get('@socket')
-        io = socket && socket.instance_variable_get('@io')
-        io && io.fileno
-      end
-
-      # @return [String] the inode asscoated with the Net::HTTP socket or nil if it can't be identified
-      def inode
-        path = "/proc/self/fd/#{fileno}"
-        return unless File.exist?(path) && fileno
-
-        File.readlink(path)
       end
 
       private

@@ -36,26 +36,4 @@ class RequestClientTest < Minitest::Test
 
     refute response.ok?
   end
-
-  def test_fileno
-    subject = Instana::Backend::RequestClient.new('example.com', 9292)
-    assert_nil subject.fileno
-  end
-
-  def test_inode
-    subject = Instana::Backend::RequestClient.new('example.com', 9292)
-    subject.define_singleton_method(:fileno) { '0' } # This is the cleanest way to fake it so it works across all test environments
-    FakeFS.with_fresh do
-      FakeFS::FileSystem.clone('test/support/proc', '/proc')
-      Dir.mkdir('/proc/self/fd')
-      File.symlink('/proc/self/sched', '/proc/self/fd/0')
-
-      assert_equal '/proc/self/sched', subject.inode
-    end
-  end
-
-  def test_inode_no_proc
-    subject = Instana::Backend::RequestClient.new('example.com', 9292)
-    assert_nil subject.inode
-  end
 end
