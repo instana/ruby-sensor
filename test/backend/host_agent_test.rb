@@ -9,7 +9,7 @@ class HostAgentTest < Minitest::Test
     ::Instana.config[:agent_host] = '10.10.10.10'
 
     if File.exist?('/sbin/ip')
-      addr = %x[/sbin/ip route | awk '/default/ { print $3 }']
+      addr = `/sbin/ip route | awk '/default/ { print $3 }'`.strip
       stub_request(:get, "http://#{addr}:42699/")
         .to_timeout
     end
