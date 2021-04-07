@@ -39,12 +39,10 @@ module Instana
 
       # @return [Hash, NilClass] the backend friendly description of the current in process collector
       def source
-        return @source if @source
-
         snapshot = @snapshots.detect { |s| s.respond_to?(:source) }
 
         if snapshot
-          @source = snapshot.source
+          snapshot.source
         else
           @logger.warn('Unable to find a snapshot which provides a source.')
           {}
@@ -58,19 +56,8 @@ module Instana
 
       # @return [Hash] values which are removed from urls sent to the backend
       def secret_values
-        # TODO: Parse from env
         matcher, *keys = @secrets.split(/[:,]/)
         {'matcher' => matcher, 'list' => keys}
-      end
-
-      private
-
-      def request_headers
-        {
-          'X-Instana-Host' => host_name,
-          'X-Instana-Key' => ENV['INSTANA_AGENT_KEY'],
-          'X-Instana-Time' => (Time.now.to_i * 1000).to_s
-        }
       end
 
       def send_bundle
@@ -90,6 +77,16 @@ module Instana
         @logger.warn("Recived a `#{response.code}` when sending data.")
       end
 
+      private
+
+      def request_headers
+        {
+          'X-Instana-Host' => host_name,
+          'X-Instana-Key' => ENV['INSTANA_AGENT_KEY'],
+          'X-Instana-Time' => (Time.now.to_i * 1000).to_s
+        }
+      end
+
       def agent_snapshots
         @snapshots.map do |snapshot|
           begin # rubocop:disable Style/RedundantBegin, Lint/RedundantCopDisableDirective
@@ -102,12 +99,10 @@ module Instana
       end
 
       def host_name
-        return @host_name if @host_name
-
         snapshot = @snapshots.detect { |s| s.respond_to?(:host_name) }
 
         if snapshot
-          @host_name = snapshot.host_name
+          snapshot.host_name
         else
           @logger.warn('Unable to find a snapshot which provides a host_name.')
           ''

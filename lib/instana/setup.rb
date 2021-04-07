@@ -9,6 +9,8 @@ require "instana/secrets"
 require "instana/tracer"
 require "instana/tracing/processor"
 
+require 'instana/serverless'
+
 require 'instana/activator'
 
 require 'instana/backend/request_client'
