@@ -15,7 +15,8 @@ class SpanContextTest < Minitest::Test
   end
 
   def test_flags_level_zero
-    subject = Instana::SpanContext.new('trace', 'span', 0)
+    subject = Instana::SpanContext.new('trace', 'span', 0, {external_state: 'cn=test'})
     assert_equal '00-000000000000000000000000000trace-000000000000span-00', subject.trace_parent_header
+    assert_equal 'cn=test', subject.trace_state_header
   end
 end

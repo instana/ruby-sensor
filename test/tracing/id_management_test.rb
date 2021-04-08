@@ -68,6 +68,10 @@ class TracerIDMgmtTest < Minitest::Test
     # Bogus Array arg
     bogus_result = Instana::Util.header_to_id([1234])
     assert_equal '', bogus_result
+
+    # Invalid characters/length
+    bogus_result = Instana::Util.header_to_id('qwerty')
+    assert_equal '', bogus_result
   end
 
   def test_long_id_trim
