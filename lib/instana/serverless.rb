@@ -16,7 +16,7 @@ module Instana
     end
 
     def wrap_aws(event, context, &block)
-      Thread.current[:instana_function_arn] = context.invoked_function_arn
+      Thread.current[:instana_function_arn] = [context.invoked_function_arn, context.function_version].join(':')
       trigger, event_tags, span_context = trigger_from_event(event)
 
       tags = {
