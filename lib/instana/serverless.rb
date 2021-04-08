@@ -9,9 +9,10 @@ require 'instana/instrumentation/instrumented_request'
 module Instana
   # @since 1.198.0
   class Serverless
-    def initialize(agent: ::Instana.agent, tracer: ::Instana.tracer)
+    def initialize(agent: ::Instana.agent, tracer: ::Instana.tracer, logger: ::Instana.logger)
       @agent = agent
       @tracer = tracer
+      @logger = logger
     end
 
     def wrap_aws(event, context, &block)
@@ -36,7 +37,11 @@ module Instana
 
       @tracer.start_or_continue_trace(:'aws.lambda.entry', tags, span_context, &block)
     ensure
-      @agent.send_bundle
+      begin
+        @agent.send_bundle
+      rescue StandardError => e
+        @logger.error(e.message)
+      end
       Thread.current[:instana_function_arn] = nil
     end
 
@@ -71,7 +76,7 @@ module Instana
       event['headers']
         .transform_keys { |k| "HTTP_#{k.gsub('-', '_').upcase}" }
         .merge(
-          'QUERY_STRING' => URI.encode_www_form(event['queryStringParameters']),
+          'QUERY_STRING' => URI.encode_www_form(event['queryStringParameters'] || {}),
           'PATH_INFO' => event['path'],
           'REQUEST_METHOD' => event['httpMethod']
         )

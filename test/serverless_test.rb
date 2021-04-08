@@ -14,6 +14,25 @@ class ServerlessTest < Minitest::Test
     @mock_agent.verify
   end
 
+  def test_lambda_send_error
+    mock_logger = Minitest::Mock.new
+    mock_logger.expect(:error, true, [String])
+
+    @mock_agent.expect(:send_bundle, true) { |_args| raise StandardError, 'error' }
+
+    mock_context = OpenStruct.new(
+      invoked_function_arn: 'test_arn',
+      function_name: 'test_function',
+      function_version: '$TEST'
+    )
+
+    subject = Instana::Serverless.new(agent: @mock_agent, logger: mock_logger)
+    subject.wrap_aws(nil, mock_context) { 0 }
+    subject.wrap_aws(nil, mock_context) { 0 }
+
+    mock_logger.verify
+  end
+
   def test_lambda_data
     clear_all!
 
@@ -110,7 +129,6 @@ class ServerlessTest < Minitest::Test
       },
       "httpMethod" => "GET",
       "path" => "/hello",
-      "queryStringParameters" => {"test" => "abcde"},
       "requestContext" => { "elb" => {} }
     }
 
@@ -128,7 +146,7 @@ class ServerlessTest < Minitest::Test
     assert_equal 'GET', data[:method]
     assert_equal '/hello', data[:url]
     assert_equal '127.0.0.1:3000', data[:host]
-    assert_equal 'test=abcde', data[:params]
+    assert_equal '', data[:params]
   end
 
   def test_lambda_cw_event
