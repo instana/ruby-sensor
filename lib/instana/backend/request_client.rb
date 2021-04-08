@@ -33,9 +33,10 @@ module Instana
       end
 
       def initialize(host, port, use_ssl: false)
+        timeout = Integer(ENV.fetch('INSTANA_TIMEOUT', 500))
         @host = host
         @port = port
-        @client = Net::HTTP.start(host, port, use_ssl: use_ssl)
+        @client = Net::HTTP.start(host, port, use_ssl: use_ssl, read_timeout: timeout)
       end
 
       # Send a request to the backend. If data is a {Hash},

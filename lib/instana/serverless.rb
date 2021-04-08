@@ -1,0 +1,133 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2021
+
+require 'base64'
+require 'zlib'
+
+require 'instana/instrumentation/instrumented_request'
+
+module Instana
+  # @since 1.198.0
+  class Serverless
+    def initialize(agent: ::Instana.agent, tracer: ::Instana.tracer, logger: ::Instana.logger)
+      @agent = agent
+      @tracer = tracer
+      @logger = logger
+    end
+
+    def wrap_aws(event, context, &block)
+      Thread.current[:instana_function_arn] = [context.invoked_function_arn, context.function_version].join(':')
+      trigger, event_tags, span_context = trigger_from_event(event)
+
+      tags = {
+        lambda: {
+          arn: context.invoked_function_arn,
+          functionName: context.function_name,
+          functionVersion: context.function_version,
+          runtime: 'ruby',
+          trigger: trigger
+        }
+      }
+
+      if event_tags.key?(:http)
+        tags = tags.merge(event_tags)
+      else
+        tags[:lambda] = tags[:lambda].merge(event_tags)
+      end
+
+      @tracer.start_or_continue_trace(:'aws.lambda.entry', tags, span_context, &block)
+    ensure
+      begin
+        @agent.send_bundle
+      rescue StandardError => e
+        @logger.error(e.message)
+      end
+      Thread.current[:instana_function_arn] = nil
+    end
+
+    private
+
+    def trigger_from_event(event) # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+      case event
+      when ->(e) { e.is_a?(Hash) && e.key?('requestContext') && e['requestContext'].key?('elb') }
+        request = InstrumentedRequest.new(event_to_rack(event))
+        ['aws:application.load.balancer', {http: request.request_tags}, request.incoming_context]
+      when ->(e) { e.is_a?(Hash) && e.key?('httpMethod') && e.key?('path') && e.key?('headers') }
+        request = InstrumentedRequest.new(event_to_rack(event))
+        ['aws:api.gateway', {http: request.request_tags}, request.incoming_context]
+      when ->(e) { e.is_a?(Hash) && e['source'] == 'aws.events' && e['detail-type'] == 'Scheduled Event' }
+        tags = decode_cloudwatch_events(event)
+        ['aws:cloudwatch.events', {cw: tags}, {}]
+      when ->(e) { e.is_a?(Hash) && e.key?('awslogs') }
+        tags = decode_cloudwatch_logs(event)
+        ['aws:cloudwatch.logs', {cw: tags}, {}]
+      when ->(e) { e.is_a?(Hash) && e.key?('Records') && e['Records'].is_a?(Array) && e['Records'].first && e['Records'].first['source'] == 'aws:s3' }
+        tags = decode_s3(event)
+        ['aws:s3', {s3: tags}, {}]
+      when ->(e) { e.is_a?(Hash) && e.key?('Records') && e['Records'].is_a?(Array) && e['Records'].first && e['Records'].first['source'] == 'aws:sqs' }
+        tags = decode_sqs(event)
+        ['aws:sqs', {sqs: tags}, {}]
+      else
+        ['aws:api.gateway.noproxy', {}, {}]
+      end
+    end
+
+    def event_to_rack(event)
+      event['headers']
+        .transform_keys { |k| "HTTP_#{k.gsub('-', '_').upcase}" }
+        .merge(
+          'QUERY_STRING' => URI.encode_www_form(event['queryStringParameters'] || {}),
+          'PATH_INFO' => event['path'],
+          'REQUEST_METHOD' => event['httpMethod']
+        )
+    end
+
+    def decode_cloudwatch_events(event)
+      {
+        events: {
+          id: event['id'],
+          resources: event['resources']
+        }
+      }
+    end
+
+    def decode_cloudwatch_logs(event)
+      logs = begin
+        payload = JSON.parse(Zlib::Inflate.inflate(Base64.decode64(event['awslogs']['data'])))
+
+        {
+          group: payload['logGroup'],
+          stream: payload['logStream']
+        }
+      rescue StandardError => e
+        {
+          decodingError: e.message
+        }
+      end
+
+      {logs: logs}
+    end
+
+    def decode_s3(event)
+      span_events = event['Records'].map do |record|
+        {
+          name: record['eventName'],
+          bucket: record['s3'] && record['s3']['bucket'] ? record['s3']['bucket']['name'] : nil,
+          object: record['s3'] && record['s3']['object'] ? record['s3']['object']['key'] : nil
+        }
+      end
+
+      {events: span_events}
+    end
+
+    def decode_sqs(event)
+      span_events = event['Records'].map do |record|
+        {
+          queue: record['eventSourceARN']
+        }
+      end
+
+      {messages: span_events}
+    end
+  end
+end

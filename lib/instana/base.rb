@@ -13,6 +13,7 @@ module Instana
     attr_accessor :config
     attr_accessor :pid
     attr_reader :secrets
+    attr_reader :serverless
 
     ##
     # setup
@@ -25,6 +26,7 @@ module Instana
       @tracer = ::Instana::Tracer.new
       @processor = ::Instana::Processor.new
       @secrets = ::Instana::Secrets.new
+      @serverless = ::Instana::Serverless.new
     end
 
     def logger
