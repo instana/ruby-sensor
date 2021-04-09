@@ -56,6 +56,19 @@ class AgentTest < Minitest::Test
     ENV['INSTANA_ENDPOINT_URL'] = nil
   end
 
+  def test_google_cloud
+    ENV['K_REVISION'] = 'TEST'
+    ENV['INSTANA_ENDPOINT_URL'] = 'http://example.com'
+
+    subject = Instana::Backend::Agent.new
+    assert_nil subject.delegate
+    subject.setup
+    assert subject.delegate.is_a?(Instana::Backend::ServerlessAgent)
+  ensure
+    ENV['K_REVISION'] = nil
+    ENV['INSTANA_ENDPOINT_URL'] = nil
+  end
+
   def test_delegate_super
     subject = Instana::Backend::Agent.new
     assert_raises NoMethodError do
