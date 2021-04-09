@@ -17,6 +17,12 @@ module Instana
       def setup
         @delegate = if ENV.key?('_HANDLER')
                       ServerlessAgent.new([Snapshot::LambdaFunction.new])
+                    elsif ENV.key?('K_REVISION') && ENV.key?('INSTANA_ENDPOINT_URL')
+                      ServerlessAgent.new([
+                                            Snapshot::GoogleCloudRunProcess.new,
+                                            Snapshot::GoogleCloudRunInstance.new,
+                                            Snapshot::RubyProcess.new
+                                          ])
                     elsif @fargate_metadata_uri && ENV.key?('INSTANA_ENDPOINT_URL')
                       ServerlessAgent.new(fargate_snapshots)
                     else
