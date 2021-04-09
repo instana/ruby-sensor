@@ -4,7 +4,13 @@
 require 'base64'
 require 'zlib'
 
-require 'instana/instrumentation/instrumented_request'
+# :nocov:
+begin
+  require 'instana/instrumentation/instrumented_request'
+rescue LoadError => _e
+  Instana.logger.warn("Unable to Instana::InstrumentedRequest. HTTP based triggers won't generate spans.")
+end
+# :nocov:
 
 module Instana
   # @since 1.198.0
@@ -49,10 +55,10 @@ module Instana
 
     def trigger_from_event(event) # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
       case event
-      when ->(e) { e.is_a?(Hash) && e.key?('requestContext') && e['requestContext'].key?('elb') }
+      when ->(e) { defined?(::Instana::InstrumentedRequest) && e.is_a?(Hash) && e.key?('requestContext') && e['requestContext'].key?('elb') }
         request = InstrumentedRequest.new(event_to_rack(event))
         ['aws:application.load.balancer', {http: request.request_tags}, request.incoming_context]
-      when ->(e) { e.is_a?(Hash) && e.key?('httpMethod') && e.key?('path') && e.key?('headers') }
+      when ->(e) { defined?(::Instana::InstrumentedRequest) && e.is_a?(Hash) && e.key?('httpMethod') && e.key?('path') && e.key?('headers') }
         request = InstrumentedRequest.new(event_to_rack(event))
         ['aws:api.gateway', {http: request.request_tags}, request.incoming_context]
       when ->(e) { e.is_a?(Hash) && e['source'] == 'aws.events' && e['detail-type'] == 'Scheduled Event' }
