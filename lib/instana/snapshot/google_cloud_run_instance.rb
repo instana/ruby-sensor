@@ -7,7 +7,7 @@ module Instana
     class GoogleCloudRunInstance
       ID = 'com.instana.plugin.gcp.run.revision.instance'.freeze
 
-      def initialize(metadata_uri: 'http://metadata.google.internal/')
+      def initialize(metadata_uri: 'http://metadata.google.internal')
         @metadata_uri = URI(metadata_uri)
         @client = Backend::RequestClient.new(@metadata_uri.host, @metadata_uri.port, use_ssl: @metadata_uri.scheme == "https")
       end
@@ -25,8 +25,8 @@ module Instana
           revision: ENV['K_REVISION'],
           instanceId: entity_id,
           port: ENV['PORT'],
-          numericProjectId: lookup('/computeMetadata/v1/project/numericProjectId'),
-          projectId: lookup('/computeMetadata/v1/project/projectId')
+          numericProjectId: lookup('/computeMetadata/v1/project/numeric-project-id'),
+          projectId: lookup('/computeMetadata/v1/project/project-id')
         }.compact
       end
 
@@ -53,14 +53,14 @@ module Instana
       private
 
       def gcp_region
-        lookup('/computeMetadata/v1/instance/region').split('/').last
+        lookup('/computeMetadata/v1/instance/zone').split('/').last
       end
 
       def lookup(resource)
         path = @metadata_uri.path + resource
         response = @client.send_request('GET', path, nil, {'Metadata-Flavor' => 'Google'})
 
-        raise "Unable to get `#{path}`. Got `#{response.code}`." unless response.ok?
+        raise "Unable to get `#{path}`. Got `#{response.code}` `#{response['location']}`." unless response.ok?
 
         response.body
       end

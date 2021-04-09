@@ -12,11 +12,11 @@ class GoogleCloudRunInstanceTest < Minitest::Test
 
     stub_request(:get, 'http://10.10.10.10//computeMetadata/v1/instance/id')
       .to_return(status: 200, body: 'test_instance_id')
-    stub_request(:get, 'http://10.10.10.10//computeMetadata/v1/instance/region')
+    stub_request(:get, 'http://10.10.10.10//computeMetadata/v1/instance/zone')
       .to_return(status: 200, body: 'region/number/test_region')
-    stub_request(:get, 'http://10.10.10.10//computeMetadata/v1/project/numericProjectId')
+    stub_request(:get, 'http://10.10.10.10//computeMetadata/v1/project/numeric-project-id')
       .to_return(status: 200, body: 'numericProjectId')
-    stub_request(:get, 'http://10.10.10.10//computeMetadata/v1/project/projectId')
+    stub_request(:get, 'http://10.10.10.10//computeMetadata/v1/project/project-id')
       .to_return(status: 200, body: 'projectId')
 
     subject = Instana::Snapshot::GoogleCloudRunInstance.new(metadata_uri: 'http://10.10.10.10/')

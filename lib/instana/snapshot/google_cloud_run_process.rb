@@ -7,7 +7,7 @@ module Instana
     class GoogleCloudRunProcess
       ID = 'com.instana.plugin.process'.freeze
 
-      def initialize(metadata_uri: 'http://metadata.google.internal/')
+      def initialize(metadata_uri: 'http://metadata.google.internal')
         @metadata_uri = URI(metadata_uri)
         @client = Backend::RequestClient.new(@metadata_uri.host, @metadata_uri.port, use_ssl: @metadata_uri.scheme == "https")
         @start_time = Time.now
@@ -47,9 +47,9 @@ module Instana
 
       def lookup(resource)
         path = @metadata_uri.path + resource
-        response = @client.send_request('GET', path)
+        response = @client.send_request('GET', path, nil, {'Metadata-Flavor' => 'Google'})
 
-        raise "Unable to get `#{path}`. Got `#{response.code}`." unless response.ok?
+        raise "Unable to get `#{path}`. Got `#{response.code}` `#{response['location']}`." unless response.ok?
 
         response.body
       end
