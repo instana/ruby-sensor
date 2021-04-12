@@ -78,6 +78,16 @@ class SecretsTest < Minitest::Test
     assert_redacted @subject.remove_from_query(url, sample_config), %w(instantiate)
   end
 
+  def test_without_url
+    sample_config = {
+      "matcher"=>"contains",
+      "list"=>["stan"]
+    }
+
+    url = 'filter[instantiate]=true'
+    assert_redacted @subject.remove_from_query(url, sample_config), %w(filter[instantiate]), raw_str: true
+  end
+
   private
 
   def url_for(keys)
@@ -86,9 +96,9 @@ class SecretsTest < Minitest::Test
     url.to_s
   end
 
-  def assert_redacted(str, keys)
-    url = URI(str)
-    params = CGI.parse(url.query)
+  def assert_redacted(str, keys, raw_str: false)
+    params = raw_str ? CGI.parse(str) : CGI.parse(URI(str).query)
+    pp params
 
     assert_equal keys, params.select { |_, v| v == %w(<redacted>) }.keys, 'to be redacted'
   end

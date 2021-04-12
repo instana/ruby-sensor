@@ -13,20 +13,30 @@ module Instana
     def remove_from_query(str, secret_values = Instana.agent.secret_values)
       return str unless secret_values
 
-      url = URI(str)
-      params = url.scheme ? CGI.parse(url.query || '') : CGI.parse(url.to_s)
+      begin
+        url = URI(str)
+        params = url.scheme ? CGI.parse(url.query || '') : CGI.parse(url.to_s)
 
-      redacted = params.map do |k, v|
+        redacted = redact(params, secret_values)
+
+        url.query = URI.encode_www_form(redacted)
+        url.scheme ? CGI.unescape(url.to_s) : CGI.unescape(url.query)
+      rescue URI::InvalidURIError => _e
+        params = CGI.parse(str || '')
+        redacted = redact(params, secret_values)
+        CGI.unescape(URI.encode_www_form(redacted))
+      end
+    end
+
+    private
+
+    def redact(params, secret_values)
+      params.map do |k, v|
         needs_redaction = secret_values['list']
           .any? { |t| matcher(secret_values['matcher']).(t,k) }
         [k, needs_redaction ? '<redacted>' : v]
       end
-
-      url.query = URI.encode_www_form(redacted)
-      url.scheme ? CGI.unescape(url.to_s) : CGI.unescape(url.query)
     end
-
-    private
 
     def matcher(name)
       case name
