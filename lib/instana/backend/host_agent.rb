@@ -30,6 +30,9 @@ module Instana
         end
       end
 
+      alias start spawn_background_thread
+      alias after_fork spawn_background_thread
+
       # @return [Boolean] true if the agent able to send spans to the backend
       def ready?
         ENV.key?('INSTANA_TEST') || !@discovery.value.nil?
