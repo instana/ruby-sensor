@@ -70,4 +70,14 @@ class ServerlesAgentTest < Minitest::Test
 
     subject.timer.block.call
   end
+
+  def test_start
+    subject = Instana::Backend::ServerlessAgent.new([], timer_class: MockTimer, backend_uri: 'http://10.10.10.10:9292/', logger: Logger.new('/dev/null'))
+    assert subject.respond_to? :start
+  end
+
+  def test_after_fork
+    subject = Instana::Backend::ServerlessAgent.new([], timer_class: MockTimer, backend_uri: 'http://10.10.10.10:9292/', logger: Logger.new('/dev/null'))
+    assert subject.respond_to? :after_fork
+  end
 end
