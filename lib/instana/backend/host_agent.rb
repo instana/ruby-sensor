@@ -19,19 +19,24 @@ module Instana
         return if ENV.key?('INSTANA_TEST')
 
         @future = Concurrent::Promises.future do
-          client = until_not_nil { HostAgentLookup.new.call }
-          @discovery.delete_observers
-          @discovery
-            .with_observer(HostAgentActivationObserver.new(client, @discovery))
-            .with_observer(HostAgentReportingObserver.new(client, @discovery))
-
-          @discovery.swap { nil }
-          client
+          announce
         end
       end
 
       alias start spawn_background_thread
-      alias after_fork spawn_background_thread
+
+      def announce
+        client = until_not_nil { HostAgentLookup.new.call }
+        @discovery.delete_observers
+        @discovery
+          .with_observer(HostAgentActivationObserver.new(client, @discovery))
+          .with_observer(HostAgentReportingObserver.new(client, @discovery))
+
+        @discovery.swap { nil }
+        client
+      end
+
+      alias after_fork announce
 
       # @return [Boolean] true if the agent able to send spans to the backend
       def ready?
