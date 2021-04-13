@@ -82,7 +82,7 @@ module Instana
       def try_forever_with_backoff
         yield
       rescue DiscoveryError, Net::OpenTimeout => e
-        @logger.warn(e)
+        @logger.debug(e)
         sleep(@wait_time)
         retry
       rescue StandardError => e
