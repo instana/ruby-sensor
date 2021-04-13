@@ -98,8 +98,6 @@ class SecretsTest < Minitest::Test
 
   def assert_redacted(str, keys, raw_str: false)
     params = raw_str ? CGI.parse(str) : CGI.parse(URI(str).query)
-    pp params
-
     assert_equal keys, params.select { |_, v| v == %w(<redacted>) }.keys, 'to be redacted'
   end
 end

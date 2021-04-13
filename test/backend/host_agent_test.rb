@@ -44,4 +44,14 @@ class HostAgentTest < Minitest::Test
     subject = Instana::Backend::HostAgent.new(discovery: discovery)
     assert_equal 1, subject.source[:e]
   end
+
+  def test_start
+    subject = Instana::Backend::HostAgent.new
+    assert subject.respond_to? :start
+  end
+
+  def test_after_fork
+    subject = Instana::Backend::HostAgent.new
+    assert subject.respond_to? :after_fork
+  end
 end

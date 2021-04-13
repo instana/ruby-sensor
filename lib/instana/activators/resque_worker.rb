@@ -16,11 +16,8 @@ module Instana
         ::Resque::Worker.prepend(::Instana::Instrumentation::ResqueWorker)
         ::Resque::Job.prepend(::Instana::Instrumentation::ResqueJob)
 
-        ::Resque.before_fork do |_job|
-          ::Instana.agent.before_resque_fork
-        end
         ::Resque.after_fork do |_job|
-          ::Instana.agent.after_resque_fork
+          ::Instana.agent.after_fork
         end
 
         # Set this so we assure that any remaining collected traces are reported at_exit
