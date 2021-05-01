@@ -12,7 +12,7 @@ module Instana
 
       # @param [RequestClient] client used to make requests to the backend
       # @param [Concurrent::Atom] discovery object used to store discovery response in
-      def initialize(client, discovery, wait_time: 1, logger: ::Instana.logger, max_wait_tries: 60, proc_table: Sys::ProcTable, socket_proc: default_socket_proc) # rubocop:disable Metrics/ParameterLists
+      def initialize(client, discovery, wait_time: 30, logger: ::Instana.logger, max_wait_tries: 60, proc_table: Sys::ProcTable, socket_proc: default_socket_proc) # rubocop:disable Metrics/ParameterLists
         @client = client
         @discovery = discovery
         @wait_time = wait_time
