@@ -155,7 +155,19 @@ commands:
           name: Run Tests
           command: |
             bundle exec rubocop
-
+  publish_gem:
+    steps:
+      - run:
+          name: Setup Access
+          command: |
+            mkdir -p ~/.gem
+            echo -e "---\r\n:rubygems_api_key: $RUBYGEMS_API_KEY" > ~/.gem/credentials
+            chmod 0600 /home/circleci/.gem/credentials
+      - run: 
+          name: Publish Gem
+          command: |
+            bundle exec rake release[origin]
+            
 jobs:
   test_core:
     parameters:
@@ -189,8 +201,22 @@ jobs:
       - checkout
       - setup
       - run_rubocop
+  publish:
+    executor: ruby_27
+    steps:
+      - checkout
+      - setup
+      - publish_gem
 
 workflows:
+  publish:
+    jobs:
+      - publish:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
   core:
     jobs:
       - lint
