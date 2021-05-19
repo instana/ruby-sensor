@@ -49,11 +49,10 @@ module Instana
           response = @client.send_request('POST', path, spans)
 
           unless response.ok?
+            @logger.debug("Sent `#{spans.count}` spans to `#{path}` and got `#{response.code}`.")
             @discovery.swap { nil }
             break
           end
-
-          @logger.debug("Sent `#{spans.count}` spans to `#{path}` and got `#{response.code}`.")
         end
       end
 
@@ -68,10 +67,9 @@ module Instana
         if response.ok?
           handle_agent_tasks(response, discovery) unless response.body.empty?
         else
+          @logger.debug("Sent `#{payload}` to `#{path}` and got `#{response.code}`.")
           @discovery.swap { nil }
         end
-
-        @logger.debug("Sent `#{payload}` to `#{path}` and got `#{response.code}`.")
       end
 
       def handle_agent_tasks(response, discovery)
