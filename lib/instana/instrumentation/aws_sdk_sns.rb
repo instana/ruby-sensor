@@ -11,7 +11,7 @@ module Instana
             target: context.params[:target_arn],
             phone: context.params[:phone_number],
             subject: context.params[:subject]
-          }.compact
+          }.reject { |_, v| v.nil? }
 
           if context.operation_name == :publish
             ::Instana.tracer.trace(:sns, {sns: sns_tags}) { @handler.call(context) }

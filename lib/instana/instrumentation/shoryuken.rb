@@ -29,7 +29,7 @@ module Instana
           trace_id: trace_id,
           span_id: span_id,
           level: level
-        }.compact
+        }.reject { |_, v| v.nil? }
       end
 
       def try(attributes, *args)

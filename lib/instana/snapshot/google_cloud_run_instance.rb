@@ -27,7 +27,7 @@ module Instana
           port: ENV['PORT'],
           numericProjectId: lookup('/computeMetadata/v1/project/numeric-project-id'),
           projectId: lookup('/computeMetadata/v1/project/project-id')
-        }.compact
+        }.reject { |_, v| v.nil? }
       end
 
       def snapshot

@@ -31,7 +31,7 @@ module Instana
           pullStoppedAt: task_metadata['PullStoppedAt'],
           instanaZone: instana_zone,
           tags: instana_tags
-        }.compact
+        }.reject { |_, v| v.nil? }
       end
 
       def snapshot

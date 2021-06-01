@@ -74,7 +74,7 @@ module Instana
         host: host_with_port,
         header: extra_header_tags,
         params: request_params
-      }.compact
+      }.reject { |_, v| v.nil? }
     end
 
     def correlation_data
@@ -123,7 +123,7 @@ module Instana
         external_trace_id: external_trace_id,
         external_state: @env['HTTP_TRACESTATE'],
         from_w3: false
-      }.compact
+      }.reject { |_, v| v.nil? }
     end
 
     def context_from_trace_parent
@@ -150,7 +150,7 @@ module Instana
         trace_id: state[:t],
         span_id: state[:p],
         from_w3: false
-      }.compact
+      }.reject { |_, v| v.nil? }
     end
 
     def parse_trace_state
@@ -179,7 +179,7 @@ module Instana
       {
         type: data['correlationType'],
         id: data['correlationId']
-      }.compact
+      }.reject { |_, v| v.nil? }
     end
   end
 end

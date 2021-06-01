@@ -56,7 +56,7 @@ module Instana
           blkio: blkio_stats(metrics),
           cpu: cpu_stats(metrics),
           network: network_stats(metrics)
-        }.compact
+        }.reject { |_, v| v.nil? }
       end
 
       def memory_stats(metrics)

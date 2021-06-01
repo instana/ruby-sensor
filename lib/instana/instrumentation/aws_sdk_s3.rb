@@ -10,7 +10,7 @@ module Instana
             op: format_operation(context.operation_name),
             bucket: bucket_name_from(context),
             key: key_from_context(context)
-          }.compact
+          }.reject { |_, v| v.nil? }
 
           ::Instana.tracer.trace(:s3, {s3: s3_tags}) { @handler.call(context) }
         end
