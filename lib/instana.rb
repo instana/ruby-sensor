@@ -1,10 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2016
 
-require 'concurrent'
-require 'sys-proctable'
-
-require "instana/setup"
+require 'instana/setup'
 
 # Boot the instana agent background thread.  If you wish to have greater
 # control on the where and which thread this is run in, instead use
@@ -15,4 +12,5 @@ require "instana/setup"
 # the thread of your choice.
 #
 
+::Instana::Activator.start
 ::Instana.agent.spawn_background_thread

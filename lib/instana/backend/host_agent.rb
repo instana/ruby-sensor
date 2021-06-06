@@ -5,12 +5,13 @@ module Instana
   module Backend
     # @since 1.197.0
     class HostAgent
-      attr_reader :future
+      attr_reader :future, :client
 
       def initialize(discovery: Concurrent::Atom.new(nil), logger: ::Instana.logger)
         @discovery = discovery
         @logger = logger
         @future = nil
+        @client = nil
       end
 
       def setup; end
@@ -26,14 +27,14 @@ module Instana
       alias start spawn_background_thread
 
       def announce
-        client = until_not_nil { HostAgentLookup.new.call }
+        @client = until_not_nil { HostAgentLookup.new.call }
         @discovery.delete_observers
         @discovery
-          .with_observer(HostAgentActivationObserver.new(client, @discovery))
-          .with_observer(HostAgentReportingObserver.new(client, @discovery))
+          .with_observer(HostAgentActivationObserver.new(@client, @discovery))
+          .with_observer(HostAgentReportingObserver.new(@client, @discovery))
 
         @discovery.swap { nil }
-        client
+        @client
       end
 
       alias after_fork announce

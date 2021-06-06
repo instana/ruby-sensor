@@ -1,6 +1,9 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2016
 
+require 'concurrent'
+require 'sys-proctable'
+
 require 'instana/logger_delegator'
 
 require "instana/base"
@@ -37,7 +40,6 @@ require 'instana/backend/agent'
 
 ::Instana.setup
 ::Instana.agent.setup
-::Instana::Activator.start
 
 # Require supported OpenTracing interfaces
 require "opentracing"
