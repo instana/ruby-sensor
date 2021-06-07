@@ -5,6 +5,9 @@ require 'thread'
 
 module Instana
   class Processor
+    extend Forwardable
+    def_delegators :@queue, :empty?
+
     def initialize(logger: ::Instana.logger)
       # The main queue before being reported to the
       # host agent.  Spans in this queue are complete
@@ -15,7 +18,7 @@ module Instana
       # agent at once.
       @batch_size = 3000
       @logger = logger
-      @pid = $PROCESS_ID
+      @pid = Process.pid
     end
 
     # Adds a span to the span queue
@@ -23,10 +26,10 @@ module Instana
     # @param [Trace] - the trace to be added to the queue
     def add_span(span)
       # :nocov:
-      if @pid != $PROCESS_ID
-        @logger.info("Proces `#{@pid}` has forked into #{$PROCESS_ID}. Resetting discovery.")
-        ::Instana.agent.spawn_background_thread
-        @pid = $PROCESS_ID
+      if @pid != Process.pid
+        @logger.info("Proces `#{@pid}` has forked into #{Process.pid}. Running post fork hook.")
+        ::Instana.config[:post_fork_proc].call
+        @pid = Process.pid
       end
       # :nocov:
 

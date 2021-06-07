@@ -53,6 +53,8 @@ module Instana
       # W3 Trace Context Support
       @config[:w3_trace_correlation] = ENV['INSTANA_DISABLE_W3C_TRACE_CORRELATION'].nil?
 
+      @config[:post_fork_proc] = proc { ::Instana.agent.spawn_background_thread }
+
       @config[:action_controller]  = { :enabled => true }
       @config[:action_view]        = { :enabled => true }
       @config[:active_record]      = { :enabled => true }
@@ -63,7 +65,7 @@ module Instana
       @config[:nethttp]            = { :enabled => true }
       @config[:redis]              = { :enabled => true }
       @config[:'resque-client']    = { :enabled => true }
-      @config[:'resque-worker']    = { :enabled => true }
+      @config[:'resque-worker']    = { :enabled => true, :'setup-fork' => true }
       @config[:'rest-client']      = { :enabled => true }
       @config[:'sidekiq-client']   = { :enabled => true }
       @config[:'sidekiq-worker']   = { :enabled => true }
