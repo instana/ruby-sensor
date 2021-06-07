@@ -37,7 +37,7 @@ module Instana
             _, name = parameters.pop
             "{#{name}}"
           end
-        end.reject { |_, v| v.nil? }
+        end.reject { |v| v.nil? }
       end
     end
   end
