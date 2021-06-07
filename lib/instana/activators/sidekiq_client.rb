@@ -5,7 +5,7 @@ module Instana
   module Activators
     class SidekiqClient < Activator
       def can_instrument?
-        defined?(::Sidekiq) && ::Instana.config[:'sidekiq-client'][:enabled]
+        defined?(::Sidekiq) && ::Sidekiq.respond_to?(:configure_client) && ::Instana.config[:'sidekiq-client'][:enabled]
       end
 
       def instrument

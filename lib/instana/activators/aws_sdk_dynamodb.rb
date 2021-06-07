@@ -5,7 +5,7 @@ module Instana
   module Activators
     class AwsDynamoDB < Activator
       def can_instrument?
-        defined?(Aws::DynamoDB::Client)
+        defined?(::Aws::DynamoDB::Client) && ::Aws::DynamoDB::Client.respond_to?(:add_plugin)
       end
 
       def instrument

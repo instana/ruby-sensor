@@ -2,10 +2,13 @@ inherit_from: .rubocop_todo.yml
 
 require:
   - ./extras/license_header.rb
-  
+
 # Remove when we remove .rubocop_todo.yml
 AllCops:
   NewCops: disable
+
+Metrics/PerceivedComplexity:
+  Max: 20
 
 # Broken on 1.9
 Style/HashSyntax:
@@ -19,7 +22,13 @@ Style/NilComparison:
 
 Style/SoleNestedConditional:
   Enabled: false
-  
+
 # Ruby 2.1 compatibility
 Style/SafeNavigation:
+  Enabled: false
+
+Style/SymbolProc:
+  Enabled: false
+
+Style/MultilineBlockChain:
   Enabled: false
