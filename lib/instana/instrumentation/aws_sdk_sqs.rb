@@ -13,7 +13,7 @@ module Instana
             return @handler.call(context)
           end
 
-          span_tags = tags_for(context.operation_name, context.params).compact
+          span_tags = tags_for(context.operation_name, context.params).reject { |_, v| v.nil? }
 
           ::Instana.tracer.trace(:sqs, {sqs: span_tags}) do |span|
             case context.operation_name

@@ -47,7 +47,7 @@ module Instana
         state.unshift("in=#{trace_id_header};#{span_id_header}")
       end
 
-      state.compact.join(',')
+      state.reject { |_, v| v.nil? }.join(',')
     end
 
     def to_hash

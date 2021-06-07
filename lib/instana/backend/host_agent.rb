@@ -49,7 +49,7 @@ module Instana
         {
           e: discovery_value['pid'],
           h: discovery_value['agentUuid']
-        }.compact
+        }.reject { |_, v| v.nil? }
       end
 
       # @return [Array] extra headers to include in the trace

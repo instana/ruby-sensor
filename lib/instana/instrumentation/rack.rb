@@ -15,7 +15,7 @@ module Instana
       kvs = {
         http: req.request_tags,
         service: ENV['INSTANA_SERVICE_NAME']
-      }.compact
+      }.reject { |_, v| v.nil? }
 
       current_span = ::Instana.tracer.log_start_or_continue(:rack, {}, req.incoming_context)
 
