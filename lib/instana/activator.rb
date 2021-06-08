@@ -43,4 +43,14 @@ module Instana
   end
 end
 
-Dir["#{__dir__}/activators/*.rb"].sort.each { |f| require(f) }
+Dir["#{__dir__}/activators/*.rb"]
+  .sort
+  .select do |f|
+  if ENV['INSTANA_ACTIVATE_SET']
+    base = File.basename(f, '.rb')
+    ENV.fetch('INSTANA_ACTIVATE_SET', '').split(',').include?(base)
+  else
+    true
+  end
+end
+  .each { |f| require(f) }
