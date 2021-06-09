@@ -6,7 +6,7 @@ module Instana
     REGISTERED_SPANS = [ :actioncontroller, :actionview, :activerecord, :excon,
                          :memcache, :'net-http', :rack, :render, :'rpc-client',
                          :'rpc-server', :'sidekiq-client', :'sidekiq-worker',
-                         :redis, :'resque-client', :'resque-worker', :'graphql.server', :dynamodb, :s3, :sns, :sqs, :'aws.lambda.entry'  ].freeze
+                         :redis, :'resque-client', :'resque-worker', :'graphql.server', :dynamodb, :s3, :sns, :sqs, :'aws.lambda.entry', :activejob  ].freeze
     ENTRY_SPANS = [ :rack, :'resque-worker', :'rpc-server', :'sidekiq-worker', :'graphql.server', :sqs, :'aws.lambda.entry' ].freeze
     EXIT_SPANS = [ :activerecord, :excon, :'net-http', :'resque-client',
                    :'rpc-client', :'sidekiq-client', :redis, :dynamodb, :s3, :sns, :sqs ].freeze
