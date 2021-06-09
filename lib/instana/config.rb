@@ -27,6 +27,9 @@ module Instana
       # Enable/disable tracing (default: enabled)
       @config[:tracing] = { :enabled => true }
 
+      # Enable/Disable logging
+      @config[:logging] = { :enabled => true }
+
       # Collector interval
       @config[:collector] = { :enabled => true, :interval => 1 }
 
