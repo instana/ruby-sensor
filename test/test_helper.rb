@@ -50,5 +50,14 @@ WebMock.disable_net_connect!(
 
 Dir['test/support/*.rb'].each { |f| load(f) }
 
-Minitest::Reporters.use! MiniTest::Reporters::SpecReporter.new
+if ENV['CI']
+  Minitest::Reporters.use!([
+                             Minitest::Reporters::JUnitReporter.new('_junit', false),
+                             Minitest::Reporters::SpecReporter.new
+                           ])
+else
+  Minitest::Reporters.use!([
+                             MiniTest::Reporters::SpecReporter.new
+                           ])
+end
 Minitest::Test.include(Instana::TestHelpers)

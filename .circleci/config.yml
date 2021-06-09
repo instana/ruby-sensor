@@ -132,12 +132,12 @@ commands:
           name: Install Depdendecies
           command: |
             bundle check || bundle install
-  run_tests:
+  run_sonarqube:
     steps:
       - run:
-          name: Run Tests
+          name: Install Java
           command: |
-            bundle exec rake
+            sudo apt-get install openjdk-11-jdk
       - run:
           name: Run SonarQube to capture coverage
           command: |
@@ -147,8 +147,16 @@ commands:
             -Dsonar.projectKey=ruby-sensor \
             -Dsonar.sources=. \
             -Dsonar.host.url="${SONARQUBE_URL}" \
-            -Dsonar.login="${SONARQUBE_LOGIN}" \
-            -Dsonar.ruby.coverage.reportPaths=coverage/coverage.json
+            -Dsonar.login="${SONARQUBE_LOGIN}"          
+  run_tests:
+    steps:
+      - run:
+          name: Run Tests
+          command: |
+            mkdir _junit
+            bundle exec rake
+      - store_test_results:
+          path: ~/_junit
   run_rubocop:
     steps:
       - run:
@@ -201,6 +209,7 @@ jobs:
       - checkout
       - setup
       - run_rubocop
+      - run_sonarqube
   publish:
     executor: ruby_27
     steps:
