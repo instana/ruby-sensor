@@ -1,10 +1,12 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2016
 
+require 'logger'
 require 'concurrent'
 require 'sys-proctable'
 
 require 'instana/logger_delegator'
+require 'instana/instrumented_logger'
 
 require "instana/base"
 require "instana/config"

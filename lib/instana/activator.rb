@@ -7,7 +7,6 @@ module Instana
       attr_reader :trace_point, :activators
 
       def start
-        # :nocov:
         @trace_point = TracePoint.new(:end) do
           activated = ::Instana::Activator.call
           ::Instana.logger.debug { "Activated #{activated.join(', ')}" } unless activated.empty?
@@ -46,11 +45,13 @@ end
 Dir["#{__dir__}/activators/*.rb"]
   .sort
   .select do |f|
+  # :nocov:
   if ENV['INSTANA_ACTIVATE_SET']
     base = File.basename(f, '.rb')
     ENV.fetch('INSTANA_ACTIVATE_SET', '').split(',').include?(base)
   else
     true
   end
+  # :nocov:
 end
   .each { |f| require(f) }
