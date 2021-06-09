@@ -14,7 +14,6 @@ class InstrumentedLoggerTest < Minitest::Test
     end
 
     spans = ::Instana.processor.queued_spans
-    pp spans
 
     warn_span, error_span, = *spans
 

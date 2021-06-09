@@ -7,6 +7,7 @@ module Instana
       attr_reader :trace_point, :activators
 
       def start
+        # :nocov:
         @trace_point = TracePoint.new(:end) do
           activated = ::Instana::Activator.call
           ::Instana.logger.debug { "Activated #{activated.join(', ')}" } unless activated.empty?
