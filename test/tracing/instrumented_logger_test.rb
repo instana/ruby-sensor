@@ -4,6 +4,10 @@
 require 'test_helper'
 
 class InstrumentedLoggerTest < Minitest::Test
+  def setup
+    clear_all!
+  end
+
   def test_log_warn_error
     subject = Instana::InstrumentedLogger.new('/dev/null')
 
@@ -14,7 +18,6 @@ class InstrumentedLoggerTest < Minitest::Test
     end
 
     spans = ::Instana.processor.queued_spans
-    pp spans
 
     warn_span, error_span, = *spans
 
