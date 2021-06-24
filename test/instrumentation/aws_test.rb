@@ -171,7 +171,9 @@ class AwsTest < Minitest::Test
 
     lambda = Aws::Lambda::Client.new(
       endpoint: 'https://lambda.local.amazonaws.com',
-      region: 'local'
+      region: 'local',
+      access_key_id: "test",
+      secret_access_key: "test"
     )
 
     Instana::Tracer.start_or_continue_trace(:lambda_test, {}) do
