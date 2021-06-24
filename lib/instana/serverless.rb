@@ -23,7 +23,7 @@ module Instana
 
     def wrap_aws(event, context, &block)
       Thread.current[:instana_function_arn] = [context.invoked_function_arn, context.function_version].join(':')
-      trigger, event_tags, span_context = trigger_from_event(event)
+      trigger, event_tags, span_context = trigger_from_event(event, context)
 
       tags = {
         lambda: {
@@ -53,7 +53,7 @@ module Instana
 
     private
 
-    def trigger_from_event(event) # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+    def trigger_from_event(event, context) # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
       case event
       when ->(e) { defined?(::Instana::InstrumentedRequest) && e.is_a?(Hash) && e.key?('requestContext') && e['requestContext'].key?('elb') }
         request = InstrumentedRequest.new(event_to_rack(event))
@@ -74,7 +74,28 @@ module Instana
         tags = decode_sqs(event)
         ['aws:sqs', {sqs: tags}, {}]
       else
-        ['aws:api.gateway.noproxy', {}, {}]
+        ctx = context_from_lambda_context(context)
+        if ctx.empty?
+          ['aws:api.gateway.noproxy', {}, {}]
+        else
+          ['aws.lambda.invoke', {}, ctx]
+        end
+      end
+    end
+
+    def context_from_lambda_context(context)
+      return {} unless context.client_context
+
+      begin
+        context = JSON.parse(Base64.decode64(context.client_context))
+
+        {
+          trace_id: context['X-INSTANA-T'],
+          span_id: context['X-INSTANA-S'],
+          level: Integer(context['X-INSTANA-L'])
+        }
+      rescue TypeError, JSON::ParserError, NoMethodError => _
+        {}
       end
     end
 
