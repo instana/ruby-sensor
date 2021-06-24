@@ -158,4 +158,39 @@ class AwsTest < Minitest::Test
     assert_equal send_span[:s], message.message_attributes['X_INSTANA_S'].string_value
     assert_equal 'Sample', message.body
   end
+
+  def test_lambda
+    stub_request(:post, "https://lambda.local.amazonaws.com/2015-03-31/functions/Test/invocations")
+      .with(
+        body: "data",
+        headers: {
+          'X-Amz-Client-Context' => /.+/
+        }
+      )
+      .to_return(status: 200, body: "", headers: {})
+
+    lambda = Aws::Lambda::Client.new(
+      endpoint: 'https://lambda.local.amazonaws.com',
+      region: 'local',
+      access_key_id: "test",
+      secret_access_key: "test"
+    )
+
+    Instana::Tracer.start_or_continue_trace(:lambda_test, {}) do
+      lambda.invoke(
+        function_name: 'Test',
+        invocation_type: 'Event',
+        payload: 'data'
+      )
+    end
+
+    spans = ::Instana.processor.queued_spans
+    lambda_span, _entry_span, *rest = spans
+
+    assert rest.empty?
+
+    assert_equal :"aws.lambda.invoke", lambda_span[:n]
+    assert_equal 'Test', lambda_span[:data][:aws][:lambda][:invoke][:function]
+    assert_equal 'Event', lambda_span[:data][:aws][:lambda][:invoke][:type]
+  end
 end

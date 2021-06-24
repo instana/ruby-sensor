@@ -320,4 +320,50 @@ class ServerlessTest < Minitest::Test
 
     assert_equal 'test_arn', data[:messages].first[:queue]
   end
+
+  def test_lambda_client_context
+    clear_all!
+
+    mock_context = OpenStruct.new(
+      invoked_function_arn: 'test_arn',
+      function_name: 'test_function',
+      function_version: '$TEST',
+      client_context: "eyJYLUlOU1RBTkEtVCI6IjEyMyIsIlgtSU5TVEFOQS1TIjoiNDU2IiwiWC1J\nTlNUQU5BLUwiOiIxIn0=\n"
+    )
+    mock_event = {
+      "Invoked" => true
+    }
+
+    @subject.wrap_aws(mock_event, mock_context) { 0 }
+
+    lambda_span, *rest = Instana.processor.queued_spans
+    assert rest.empty?
+
+    assert_equal 'aws.lambda.invoke', lambda_span[:data][:lambda][:trigger]
+    assert_equal '123', lambda_span[:t]
+    assert_equal '456', lambda_span[:p]
+  end
+
+  def test_lambda_client_context_error
+    clear_all!
+
+    mock_context = OpenStruct.new(
+      invoked_function_arn: 'test_arn',
+      function_name: 'test_function',
+      function_version: '$TEST',
+      client_context: "eyJYLUlOU1RBkEtVCI6IjEyMyIsIlgtSU5TVEFOQS1TIjoiNDU2IiwiWC1J\nTlNUQU5BLUwiOiIxIn0=\n"
+    )
+    mock_event = {
+      "Invoked" => true
+    }
+
+    @subject.wrap_aws(mock_event, mock_context) { 0 }
+
+    lambda_span, *rest = Instana.processor.queued_spans
+    assert rest.empty?
+
+    refute_equal 'aws.lambda.invoke', lambda_span[:data][:lambda][:trigger]
+    refute_equal '123', lambda_span[:t]
+    refute_equal '456', lambda_span[:p]
+  end
 end
