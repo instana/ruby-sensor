@@ -170,6 +170,7 @@ class AwsTest < Minitest::Test
       .to_return(status: 200, body: "", headers: {})
 
     lambda = Aws::Lambda::Client.new(
+      endpoint: 'https://lambda.local.amazonaws.com',
       region: 'local'
     )
 
