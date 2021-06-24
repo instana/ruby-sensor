@@ -77,5 +77,5 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/instan
 
 ## More
 
-Want to instrument other languages?  See our [Node.js](https://github.com/instana/nodejs-sensor), [Go](https://github.com/instana/golang-sensor), [Python](https://github.com/instana/python-sensor) repositories or [many other supported technologies](https://www.instana.com/supported-technologies/).
+Want to instrument other languages?  See our [Node.js](https://github.com/instana/nodejs), [Go](https://github.com/instana/golang-sensor), [Python](https://github.com/instana/python-sensor) repositories or [many other supported technologies](https://www.instana.com/supported-technologies/).
 
