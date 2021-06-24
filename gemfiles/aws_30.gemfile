@@ -17,5 +17,6 @@ gem "aws-sdk-dynamodb", "~> 1.59"
 gem "aws-sdk-s3", "~> 1.59"
 gem "aws-sdk-sns", "~> 1.38"
 gem "aws-sdk-sqs", "~> 1.36"
+gem "aws-sdk-lambda", "~> 1.62"
 
 gemspec path: "../"

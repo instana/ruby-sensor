@@ -6,6 +6,7 @@ appraise 'aws-30' do
   gem 'aws-sdk-s3', '~> 1.59'
   gem 'aws-sdk-sns', '~> 1.38'
   gem 'aws-sdk-sqs', '~> 1.36'
+  gem 'aws-sdk-lambda', '~> 1.62'
 end
 
 appraise 'cuba-30' do

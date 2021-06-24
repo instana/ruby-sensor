@@ -94,7 +94,7 @@ module Instana
           span_id: context['X-INSTANA-S'],
           level: Integer(context['X-INSTANA-L'])
         }
-      rescue TypeError, JSON::ParserError, NoMethodError => _
+      rescue TypeError, JSON::ParserError, NoMethodError => _e
         {}
       end
     end
