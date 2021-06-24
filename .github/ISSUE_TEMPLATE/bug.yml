@@ -1,0 +1,39 @@
+name: Bug Report
+description: File a bug report
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to fill out this report. Remember that these issues are public and if you need to discuss implementation specific issues securely, please [use our support portal](https://support.instana.com/hc/en-us).
+  - type: textarea
+    id: problem-description
+    attributes:
+      label: Problem Description
+      description: What was the issue that caused you to file this bug?
+    validations:
+      required: true
+  - type: textarea
+    id: mcve
+    attributes:
+      label: Minimal, Complete, Verifiable, Example
+      description: Can you provide steps needed to reproduce this issue outside of your application?
+    validations:
+      required: false
+  - type: textarea
+    id: gemfile-lock
+    attributes:
+      label: Gemfile.lock
+      description: Please paste the contents of the Gemfile.lock for the application that was affected by this bug.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: ruby-version
+    attributes:
+      label: Ruby Version
+      description: What version of Ruby was the application running under when it encountered this bug?
+      render: shell
+    validations:
+      required: true
