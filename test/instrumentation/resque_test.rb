@@ -22,6 +22,7 @@ class ResqueClientTest < Minitest::Test
       ::Resque.enqueue(FastJob)
     end
 
+    resque_job = Resque.reserve('critical')
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
@@ -34,6 +35,9 @@ class ResqueClientTest < Minitest::Test
     assert_equal "FastJob", resque_span[:data][:'resque-client'][:job]
     assert_equal :critical, resque_span[:data][:'resque-client'][:queue]
     assert_equal false, resque_span[:data][:'resque-client'].key?(:error)
+
+    assert_equal resque_job.args.first['trace_id'], resque_span[:t]
+    assert_equal resque_job.args.first['span_id'], resque_span[:s]
   end
 
   def test_enqueue_to
@@ -41,6 +45,7 @@ class ResqueClientTest < Minitest::Test
       ::Resque.enqueue_to(:critical, FastJob)
     end
 
+    resque_job = Resque.reserve('critical')
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
 
@@ -52,6 +57,9 @@ class ResqueClientTest < Minitest::Test
     assert_equal "FastJob", resque_span[:data][:'resque-client'][:job]
     assert_equal :critical, resque_span[:data][:'resque-client'][:queue]
     assert_equal false, resque_span[:data][:'resque-client'].key?(:error)
+
+    assert_equal resque_job.args.first['trace_id'], resque_span[:t]
+    assert_equal resque_job.args.first['span_id'], resque_span[:s]
   end
 
   def test_dequeue
@@ -73,17 +81,25 @@ class ResqueClientTest < Minitest::Test
   end
 
   def test_worker_job
-    Resque::Job.create(:critical, FastJob)
-    @worker.work(0)
+    ::Instana.tracer.start_or_continue_trace(:'resque-client_test') do
+      ::Resque.enqueue_to(:critical, FastJob)
+    end
+
+    resque_job = Resque.reserve('critical')
+    @worker.work_one_job(resque_job)
 
     spans = ::Instana.processor.queued_spans
-    assert_equal 3, spans.length
+    assert_equal 5, spans.length
 
-    resque_span = spans[2]
-    redis1_span = spans[1]
-    redis2_span = spans[0]
+    client_span = spans[0]
+    resque_span = spans[4]
+    redis1_span = spans[3]
+    redis2_span = spans[2]
+
+    assert_equal :'resque-client', client_span[:n]
 
     assert_equal :'resque-worker', resque_span[:n]
+    assert_equal client_span[:s], resque_span[:p]
     assert_equal false, resque_span.key?(:error)
     assert_equal false, resque_span.key?(:ec)
     assert_equal "FastJob", resque_span[:data][:'resque-worker'][:job]
