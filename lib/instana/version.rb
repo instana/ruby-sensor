@@ -2,6 +2,6 @@
 # (c) Copyright Instana Inc. 2016
 
 module Instana
-  VERSION = "1.202.0"
+  VERSION = "1.203.0"
   VERSION_FULL = "instana-#{VERSION}"
 end
