@@ -28,7 +28,7 @@ module Instana
           kvs = collect_kvs(:enqueue, klass, args)
 
           Instana.tracer.trace(:'resque-client', kvs) do
-            args.push(::Instana.tracer.context.to_hash)
+            args.push(::Instana.tracer.context.to_hash) if ::Instana.config[:'resque-client'][:propagate]
             super(klass, *args)
           end
         else
@@ -42,7 +42,7 @@ module Instana
           kvs[:Queue] = queue.to_s if queue
 
           Instana.tracer.trace(:'resque-client', kvs) do
-            args.push(::Instana.tracer.context.to_hash)
+            args.push(::Instana.tracer.context.to_hash) if ::Instana.config[:'resque-client'][:propagate]
             super(queue, klass, *args)
           end
         else
@@ -78,7 +78,7 @@ module Instana
           ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" } if Instana::Config[:verbose]
         end
 
-        trace_context = if job.payload['args'][-1].is_a?(Hash) && job.payload['args'][-1].keys.include?('trace_id')
+        trace_context = if ::Instana.config[:'resque-client'][:propagate] && job.payload['args'][-1].is_a?(Hash) && job.payload['args'][-1].keys.include?('trace_id')
                           context_from_wire = job.payload['args'].pop
                           ::Instana::SpanContext.new(
                             context_from_wire['trace_id'],

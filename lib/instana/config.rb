@@ -67,7 +67,7 @@ module Instana
       @config[:graphql]            = { :enabled => true }
       @config[:nethttp]            = { :enabled => true }
       @config[:redis]              = { :enabled => true }
-      @config[:'resque-client']    = { :enabled => true }
+      @config[:'resque-client']    = { :enabled => true, :propagate => true }
       @config[:'resque-worker']    = { :enabled => true, :'setup-fork' => true }
       @config[:'rest-client']      = { :enabled => true }
       @config[:'sidekiq-client']   = { :enabled => true }
