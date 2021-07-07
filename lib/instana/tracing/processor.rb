@@ -2,6 +2,7 @@
 # (c) Copyright Instana Inc. 2016
 
 require 'thread'
+require 'forwardable'
 
 module Instana
   class Processor
