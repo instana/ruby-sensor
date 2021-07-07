@@ -80,34 +80,16 @@ module Instana
     # @param limit [Integer] Limit the backtrace to the top <limit> frames
     #
     def add_stack(limit: 30, stack: Kernel.caller)
-      frame_count = 0
-      sanitized_stack = []
-      @data[:stack] = []
-      limit = 40 if limit > 40
+      @data[:stack] = stack
+                      .map do |call|
+        file, line, *method = call.split(':')
 
-      stack.each do |i|
-        # If the stack has the full instana gem version in it's path
-        # then don't include that frame. Also don't exclude the Rack module.
-        if !i.match(/instana\/instrumentation\/rack.rb/).nil? ||
-          (i.match(::Instana::VERSION_FULL).nil? && i.match('lib/instana/').nil?)
-
-          x = i.split(':')
-
-          sanitized_stack << {
-            :c => x[0],
-            :n => x[1],
-            :m => x[2]
-          }
-        end
-      end
-
-      if sanitized_stack.length > limit
-        # (limit * -1) gives us negative form of <limit> used for
-        # slicing from the end of the list. e.g. stack[-30, 30]
-        @data[:stack] = sanitized_stack[limit*-1, limit]
-      else
-        @data[:stack] = sanitized_stack
-      end
+        {
+          c: file,
+          n: line,
+          m: method.join(' ')
+        }
+      end.take(limit > 40 ? 40 : limit)
     end
 
     # Log an error into the span
