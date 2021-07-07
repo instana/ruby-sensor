@@ -112,6 +112,41 @@ class ResqueClientTest < Minitest::Test
     assert_equal "SET", redis2_span[:data][:redis][:command]
   end
 
+  def test_worker_job_no_propagate
+    ::Instana.config[:'resque-client'][:propagate] = false
+    ::Instana.tracer.start_or_continue_trace(:'resque-client_test') do
+      ::Resque.enqueue_to(:critical, FastJob)
+    end
+
+    resque_job = Resque.reserve('critical')
+    @worker.work_one_job(resque_job)
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 5, spans.length
+
+    client_span = spans[0]
+    resque_span = spans[4]
+    redis1_span = spans[3]
+    redis2_span = spans[2]
+
+    assert_equal :'resque-client', client_span[:n]
+
+    assert_equal :'resque-worker', resque_span[:n]
+    refute_equal client_span[:s], resque_span[:p]
+    assert_equal false, resque_span.key?(:error)
+    assert_equal false, resque_span.key?(:ec)
+    assert_equal "FastJob", resque_span[:data][:'resque-worker'][:job]
+    assert_equal "critical", resque_span[:data][:'resque-worker'][:queue]
+    assert_equal false, resque_span[:data][:'resque-worker'].key?(:error)
+
+    assert_equal :redis, redis1_span[:n]
+    assert_equal "SET", redis1_span[:data][:redis][:command]
+    assert_equal :redis, redis2_span[:n]
+    assert_equal "SET", redis2_span[:data][:redis][:command]
+  ensure
+    ::Instana.config[:'resque-client'][:propagate] = true
+  end
+
   def test_worker_error_job
     Resque::Job.create(:critical, ErrorJob)
     @worker.work(0)
