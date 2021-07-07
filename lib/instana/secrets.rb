@@ -11,7 +11,7 @@ module Instana
     end
 
     def remove_from_query(str, secret_values = Instana.agent.secret_values)
-      return str unless secret_values
+      return str unless secret_values && !str.nil?
 
       begin
         url = URI(str)
