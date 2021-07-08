@@ -88,6 +88,15 @@ class SecretsTest < Minitest::Test
     assert_redacted @subject.remove_from_query(url, sample_config), %w(filter[instantiate]), raw_str: true
   end
 
+  def test_with_nil
+    sample_config = {
+      "matcher"=>"contains",
+      "list"=>["stan"]
+    }
+
+    assert_equal @subject.remove_from_query(nil, sample_config), nil
+  end
+
   private
 
   def url_for(keys)
