@@ -5,7 +5,7 @@ module Instana
   module Activators
     class ActionMailer < Activator
       def can_instrument?
-        defined?(::ActionMailer::Base)
+        defined?(::ActionMailer::Base) && defined?(ActiveSupport::Executor)
       end
 
       def instrument
