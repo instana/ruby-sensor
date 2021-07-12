@@ -20,6 +20,9 @@ module Instana
       @batch_size = 3000
       @logger = logger
       @pid = Process.pid
+
+      @spans_opened = Concurrent::AtomicFixnum.new(0)
+      @spans_closed = Concurrent::AtomicFixnum.new(0)
     end
 
     # Adds a span to the span queue
@@ -34,7 +37,29 @@ module Instana
       end
       # :nocov:
 
+      @spans_closed.increment
       @queue.push(span)
+    end
+
+    # Note that we've started a new span. Used to
+    # generate monitoring metrics.
+    def start_span(_)
+      @spans_opened.increment
+    end
+
+    # Clears and retrieves metrics associated with span creation and submission
+    def span_metrics
+      response = {
+        opened: @spans_opened.value,
+        closed: @spans_closed.value,
+        filtered: 0,
+        dropped: 0
+      }
+
+      @spans_opened.value = 0
+      @spans_closed.value = 0
+
+      response
     end
 
     ##
@@ -82,6 +107,9 @@ module Instana
     # test suite to reset state.
     #
     def clear!
+      @spans_opened.value = 0
+      @spans_closed.value = 0
+
       until @queue.empty? do
         # Non-blocking pop; ignore exception
         @queue.pop(true) rescue nil

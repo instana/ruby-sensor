@@ -133,4 +133,21 @@ class SpanTest < Minitest::Test
     assert_equal({}, span.tags)
     time.verify
   end
+
+  def test_inc_processed_counts
+    clear_all!
+
+    span = Instana::Span.new(:excon)
+    span.close
+
+    metrics = Instana.processor.span_metrics
+
+    assert_equal 1, metrics[:opened]
+    assert_equal 1, metrics[:closed]
+
+    metrics = Instana.processor.span_metrics
+
+    assert_equal 0, metrics[:opened]
+    assert_equal 0, metrics[:closed]
+  end
 end
