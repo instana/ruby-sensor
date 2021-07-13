@@ -71,6 +71,8 @@ module Instana
         configure_custom(name)
       end
 
+      ::Instana.processor.start_span(self)
+
       # Attach a backtrace to all exit spans
       add_stack if ::Instana.config[:collect_backtraces] && exit_span?
     end

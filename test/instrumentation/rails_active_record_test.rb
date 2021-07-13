@@ -38,8 +38,6 @@ class RailsActiveRecordTest < Minitest::Test
     data = span[:data][:activerecord]
 
     assert data[:sql].start_with?('INSERT INTO')
-    assert 'core', data[:binds][0]
-    assert 'blue', data[:binds][1]
   end
 
   def test_read
@@ -54,8 +52,6 @@ class RailsActiveRecordTest < Minitest::Test
     data = span[:data][:activerecord]
 
     assert data[:sql].start_with?('SELECT')
-    assert 'core', data[:binds][0]
-    assert 1, data[:binds][1]
   end
 
   def test_update
@@ -73,8 +69,6 @@ class RailsActiveRecordTest < Minitest::Test
     data = span[:data][:activerecord]
 
     assert data[:sql].start_with?('UPDATE')
-    assert 'red', data[:binds][0]
-    assert 1, data[:binds][2]
   end
 
   def test_delete
@@ -90,7 +84,6 @@ class RailsActiveRecordTest < Minitest::Test
     data = span[:data][:activerecord]
 
     assert data[:sql].start_with?('DELETE')
-    assert 1, data[:binds][0]
   end
 
   def test_raw

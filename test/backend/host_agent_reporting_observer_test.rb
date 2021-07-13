@@ -23,6 +23,8 @@ class HostAgentReportingObserverTest < Minitest::Test
   end
 
   def test_report
+    stub_request(:post, "http://10.10.10.10:9292/tracermetrics")
+      .to_return(status: 200)
     stub_request(:post, "http://10.10.10.10:9292/com.instana.plugin.ruby.0")
       .to_return(status: 200)
 
@@ -35,6 +37,8 @@ class HostAgentReportingObserverTest < Minitest::Test
   end
 
   def test_report_fail
+    stub_request(:post, "http://10.10.10.10:9292/tracermetrics")
+      .to_return(status: 200)
     stub_request(:post, "http://10.10.10.10:9292/com.instana.plugin.ruby.0")
       .to_return(status: 500)
 
@@ -53,6 +57,9 @@ class HostAgentReportingObserverTest < Minitest::Test
       messageId: 'test',
       args: {file: 'test_helper.rb'}
     )
+
+    stub_request(:post, "http://10.10.10.10:9292/tracermetrics")
+      .to_return(status: 200)
 
     stub_request(:post, "http://10.10.10.10:9292/com.instana.plugin.ruby.0")
       .to_return(status: 200, body: action)
@@ -75,6 +82,9 @@ class HostAgentReportingObserverTest < Minitest::Test
                          args: {file: 'test_helper.rb'}
                        ])
 
+    stub_request(:post, "http://10.10.10.10:9292/tracermetrics")
+      .to_return(status: 200)
+
     stub_request(:post, "http://10.10.10.10:9292/com.instana.plugin.ruby.0")
       .to_return(status: 200, body: action)
 
@@ -90,6 +100,9 @@ class HostAgentReportingObserverTest < Minitest::Test
   end
 
   def test_agent_action_error
+    stub_request(:post, "http://10.10.10.10:9292/tracermetrics")
+      .to_return(status: 200)
+
     stub_request(:post, "http://10.10.10.10:9292/com.instana.plugin.ruby.0")
       .to_return(status: 200, body: 'INVALID')
 

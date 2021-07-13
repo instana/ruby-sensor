@@ -9,6 +9,7 @@ module Instana
       ENTITY_DATA_URL = '/com.instana.plugin.ruby.%i'.freeze
       RESPONSE_DATA_URL = '/com.instana.plugin.ruby/response.%i?messageId=%s'.freeze
       TRACES_DATA_URL = "/com.instana.plugin.ruby/traces.%i".freeze
+      TRACE_METRICS_URL = "/tracermetrics".freeze
 
       attr_reader :report_timer
 
@@ -35,8 +36,22 @@ module Instana
       def report_to_backend
         report_metrics if ::Instana.config[:metrics][:enabled]
         report_traces if ::Instana.config[:tracing][:enabled]
+        report_trace_stats if ::Instana.config[:tracing][:enabled]
       rescue StandardError => e
         @logger.error(%(#{e}\n#{e.backtrace.join("\n")}))
+      end
+
+      def report_trace_stats
+        discovery = @discovery.value
+        return unless discovery
+
+        payload = {
+          tracer: 'ruby',
+          pid: discovery['pid'],
+          metrics: @processor.span_metrics
+        }
+
+        @client.send_request('POST', TRACE_METRICS_URL, payload)
       end
 
       def report_traces

@@ -19,7 +19,7 @@ module Instana
           }
         }
 
-        if binds.all? { |b| b.respond_to?(:value_before_type_cast) }
+        if binds.all? { |b| b.respond_to?(:value_before_type_cast) } && !::Instana.config[:sanitize_sql]
           mapped = binds.map(&:value_before_type_cast)
           call_payload[:activerecord][:binds] = mapped
         end
