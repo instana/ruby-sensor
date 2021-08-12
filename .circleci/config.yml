@@ -141,13 +141,15 @@ commands:
       - run:
           name: Run SonarQube to capture coverage
           command: |
-            wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.5.0.2216.zip
+            wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip
             unzip -d /tmp /tmp/sonar-scanner-cli.zip
-            /tmp/sonar-scanner-4.5.0.2216/bin/sonar-scanner \
+            /tmp/sonar-scanner-4.6.2.2472/bin/sonar-scanner \
             -Dsonar.projectKey=ruby-sensor \
             -Dsonar.sources=. \
             -Dsonar.host.url="${SONARQUBE_URL}" \
-            -Dsonar.login="${SONARQUBE_LOGIN}"          
+            -Dsonar.login="${SONARQUBE_LOGIN}" \
+            -Dsonar.branch.name="${CIRCLE_BRANCH}" \
+            -Dsonar.ruby.coverage.reportPaths=./coverage/coverage.json
   run_tests:
     steps:
       - run:
@@ -171,11 +173,11 @@ commands:
             mkdir -p ~/.gem
             echo -e "---\r\n:rubygems_api_key: $RUBYGEMS_API_KEY" > ~/.gem/credentials
             chmod 0600 /home/circleci/.gem/credentials
-      - run: 
+      - run:
           name: Publish Gem
           command: |
             bundle exec rake release[origin]
-            
+
 jobs:
   test_core:
     parameters:
@@ -187,6 +189,7 @@ jobs:
       - checkout
       - setup
       - run_tests
+      - run_sonarqube
   test_apprisal:
     parameters:
       stack:
@@ -203,6 +206,7 @@ jobs:
       - checkout
       - setup
       - run_tests
+      - run_sonarqube
   lint:
     executor: ruby_27
     steps:
