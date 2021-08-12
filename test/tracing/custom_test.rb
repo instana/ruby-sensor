@@ -111,7 +111,6 @@ class CustomTracingTest < Minitest::Test
 
       ::Instana.tracer.log_entry(:custom_span, kvs)
       raise "custom tracing error.  This is only a test"
-      ::Instana.tracer.log_info({:on_info_kv => 1})
     rescue => e
       ::Instana.tracer.log_error(e)
     ensure

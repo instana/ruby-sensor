@@ -12,8 +12,6 @@ class FastJob
 
     if ENV.key?('REDIS_URL')
       redis = Redis.new(:url => ENV['REDIS_URL'])
-    elsif ENV.key?('REDIS_URL')
-      redis = Redis.new(:url => ENV['REDIS_URL'])
     else
       redis = Redis.new(:url => 'redis://localhost:6379')
     end
