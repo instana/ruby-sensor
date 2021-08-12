@@ -10,8 +10,6 @@ class ErrorJob
   def self.perform
     if ENV.key?('REDIS_URL')
       redis = Redis.new(:url => ENV['REDIS_URL'])
-    elsif ENV.key?('REDIS_URL')
-      redis = Redis.new(:url => ENV['REDIS_URL'])
     else
       redis = Redis.new(:url => 'localhost:6379')
     end
@@ -20,6 +18,5 @@ class ErrorJob
     redis.set('ts', dt)
 
     raise Exception.new("Silly Rabbit, Trix are for kids.")
-    redis.set(:nb_id, 2)
   end
 end
