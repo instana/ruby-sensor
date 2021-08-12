@@ -158,7 +158,7 @@ commands:
             mkdir _junit
             bundle exec rake
       - store_test_results:
-          path: ~/_junit
+          path: ~/project/_junit
   run_rubocop:
     steps:
       - run:
