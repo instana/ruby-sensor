@@ -143,13 +143,24 @@ commands:
           command: |
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip
             unzip -d /tmp /tmp/sonar-scanner-cli.zip
-            /tmp/sonar-scanner-4.6.2.2472/bin/sonar-scanner \
-            -Dsonar.projectKey=ruby-sensor \
-            -Dsonar.sources=. \
-            -Dsonar.host.url="${SONARQUBE_URL}" \
-            -Dsonar.login="${SONARQUBE_LOGIN}" \
-            -Dsonar.branch.name="${CIRCLE_BRANCH}" \
-            -Dsonar.ruby.coverage.reportPaths=./coverage/coverage.json
+            if [[ -n "${CIRCLE_PR_NUMBER}" ]]; then
+              /tmp/sonar-scanner-4.6.2.2472/bin/sonar-scanner \
+                -Dsonar.projectKey=ruby-sensor \
+                -Dsonar.sources=. \
+                -Dsonar.host.url="${SONARQUBE_URL}" \
+                -Dsonar.login="${SONARQUBE_LOGIN}" \
+                -Dsonar.pullrequest.key="${CIRCLE_PR_NUMBER}" \
+                -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}" \
+                -Dsonar.ruby.coverage.reportPaths=./coverage/coverage.json
+            else
+              /tmp/sonar-scanner-4.6.2.2472/bin/sonar-scanner \
+                -Dsonar.projectKey=ruby-sensor \
+                -Dsonar.sources=. \
+                -Dsonar.host.url="${SONARQUBE_URL}" \
+                -Dsonar.login="${SONARQUBE_LOGIN}" \
+                -Dsonar.branch.name="${CIRCLE_BRANCH}" \
+                -Dsonar.ruby.coverage.reportPaths=./coverage/coverage.json
+            fi
   run_tests:
     steps:
       - run:
