@@ -149,6 +149,8 @@ commands:
             -Dsonar.host.url="${SONARQUBE_URL}" \
             -Dsonar.login="${SONARQUBE_LOGIN}" \
             -Dsonar.branch.name="${CIRCLE_BRANCH}" \
+            -Dsonar.pullrequest.key="${CIRCLE_PR_NUMBER}" \
+            -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}" \
             -Dsonar.ruby.coverage.reportPaths=./coverage/coverage.json
   run_tests:
     steps:
