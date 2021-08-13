@@ -145,21 +145,15 @@ commands:
             unzip -d /tmp /tmp/sonar-scanner-cli.zip
             if [[ -n "${CIRCLE_PR_NUMBER}" ]]; then
               /tmp/sonar-scanner-4.6.2.2472/bin/sonar-scanner \
-                -Dsonar.projectKey=ruby-sensor \
-                -Dsonar.sources=. \
                 -Dsonar.host.url="${SONARQUBE_URL}" \
                 -Dsonar.login="${SONARQUBE_LOGIN}" \
                 -Dsonar.pullrequest.key="${CIRCLE_PR_NUMBER}" \
-                -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}" \
-                -Dsonar.ruby.coverage.reportPaths=./coverage/coverage.json
+                -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}"
             else
               /tmp/sonar-scanner-4.6.2.2472/bin/sonar-scanner \
-                -Dsonar.projectKey=ruby-sensor \
-                -Dsonar.sources=. \
                 -Dsonar.host.url="${SONARQUBE_URL}" \
                 -Dsonar.login="${SONARQUBE_LOGIN}" \
-                -Dsonar.branch.name="${CIRCLE_BRANCH}" \
-                -Dsonar.ruby.coverage.reportPaths=./coverage/coverage.json
+                -Dsonar.branch.name="${CIRCLE_BRANCH}"
             fi
   run_tests:
     steps:
