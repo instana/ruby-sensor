@@ -189,7 +189,6 @@ jobs:
       - checkout
       - setup
       - run_tests
-      - run_sonarqube
   test_apprisal:
     parameters:
       stack:
@@ -206,7 +205,6 @@ jobs:
       - checkout
       - setup
       - run_tests
-      - run_sonarqube
   lint:
     executor: ruby_27
     steps:
