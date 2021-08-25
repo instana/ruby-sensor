@@ -114,6 +114,10 @@ commands:
   setup:
     steps:
       - run:
+          name: Install iproute2
+          command: |
+            sudo apt-get install iproute2
+      - run:
           name: Install Java
           command: |
             sudo apt-get install openjdk-11-jdk
