@@ -60,4 +60,24 @@ class ProcessInfoTest < Minitest::Test
       assert_equal subject.sched_pid, subject.parent_pid
     end
   end
+
+  def test_osx_memory_used
+    host_os = RbConfig::CONFIG['host_os']
+    RbConfig::CONFIG['host_os'] = 'darwin'
+
+    subject = Instana::Backend::ProcessInfo.new(OpenStruct.new(rss: 1024))
+    assert_equal 1, subject.memory_used
+  ensure
+    RbConfig::CONFIG['host_os'] = host_os
+  end
+
+  def test_linux_memory_used
+    host_os = RbConfig::CONFIG['host_os']
+    RbConfig::CONFIG['host_os'] = 'linux'
+
+    subject = Instana::Backend::ProcessInfo.new(OpenStruct.new(rss: 1))
+    assert_equal 4096, subject.memory_used
+  ensure
+    RbConfig::CONFIG['host_os'] = host_os
+  end
 end

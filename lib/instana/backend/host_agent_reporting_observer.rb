@@ -111,7 +111,7 @@ module Instana
           exec_args: process.arguments,
           gc: GCSnapshot.instance.report,
           thread: {count: ::Thread.list.count},
-          memory: {rss_size: proc_table.rss / 1024} # Bytes to Kilobytes
+          memory: {rss_size: process.memory_used}
         }
       end
     end

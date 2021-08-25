@@ -47,6 +47,14 @@ module Instana
         File.read(path).match(/\d+/).to_s.to_i
       end
 
+      def memory_used
+        if RbConfig::CONFIG['host_os'].include?('darwin')
+          rss / 1024
+        else
+          rss * 4096
+        end
+      end
+
       private
 
       def clean_arguments(arguments)
