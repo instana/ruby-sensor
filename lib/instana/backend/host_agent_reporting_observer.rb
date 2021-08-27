@@ -102,17 +102,27 @@ module Instana
       end
 
       def metrics_payload(discovery)
-        proc_table = Sys::ProcTable.ps(pid: Process.pid)
-        process = ProcessInfo.new(proc_table)
-
-        {
+        payload = {
           pid: discovery['pid'],
-          name: Util.get_app_name,
-          exec_args: process.arguments,
-          gc: GCSnapshot.instance.report,
-          thread: {count: ::Thread.list.count},
-          memory: {rss_size: process.memory_used}
+          name: Util.get_app_name
         }
+
+        if ::Instana.config[:metrics][:memory][:enabled]
+          proc_table = Sys::ProcTable.ps(pid: Process.pid)
+          process = ProcessInfo.new(proc_table)
+          payload[:exec_args] = process.arguments
+          payload[:memory] = {rss_size: process.memory_used}
+        end
+
+        if ::Instana.config[:metrics][:gc][:enabled]
+          payload[:gc] = GCSnapshot.instance.report
+        end
+
+        if ::Instana.config[:metrics][:thread][:enabled]
+          payload[:thread] = {count: ::Thread.list.count}
+        end
+
+        payload
       end
     end
   end
