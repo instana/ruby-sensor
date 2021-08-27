@@ -127,6 +127,75 @@ class HostAgentReportingObserverTest < Minitest::Test
     ::Instana.config[:metrics][:enabled] = true
   end
 
+  def test_disable_metrics_memory
+    ::Instana.config[:metrics][:memory][:enabled] = false
+
+    stub_request(:post, "http://10.10.10.10:9292/tracermetrics")
+      .to_return(status: 200)
+
+    stub_request(:post, "http://10.10.10.10:9292/com.instana.plugin.ruby.0")
+      .with(body: ->(data) { (JSON.parse(data).keys & ['exec_args', 'memory']).length.eql?(0) })
+      .to_return(status: 200)
+
+    stub_request(:post, "http://10.10.10.10:9292/com.instana.plugin.ruby/traces.0")
+      .to_return(status: 200)
+
+    client = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
+    discovery = Concurrent::Atom.new({'pid' => 0})
+
+    subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
+
+    subject.report_timer.block.call
+  ensure
+    ::Instana.config[:metrics][:memory][:enabled] = true
+  end
+
+  def test_disable_gc
+    ::Instana.config[:metrics][:gc][:enabled] = false
+
+    stub_request(:post, "http://10.10.10.10:9292/tracermetrics")
+      .to_return(status: 200)
+
+    stub_request(:post, "http://10.10.10.10:9292/com.instana.plugin.ruby.0")
+      .with(body: ->(data) { (JSON.parse(data).keys & ['gc']).length.eql?(0) })
+      .to_return(status: 200)
+
+    stub_request(:post, "http://10.10.10.10:9292/com.instana.plugin.ruby/traces.0")
+      .to_return(status: 200)
+
+    client = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
+    discovery = Concurrent::Atom.new({'pid' => 0})
+
+    subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
+
+    subject.report_timer.block.call
+  ensure
+    ::Instana.config[:metrics][:gc][:enabled] = true
+  end
+
+  def test_disable_thread
+    ::Instana.config[:metrics][:thread][:enabled] = false
+
+    stub_request(:post, "http://10.10.10.10:9292/tracermetrics")
+      .to_return(status: 200)
+
+    stub_request(:post, "http://10.10.10.10:9292/com.instana.plugin.ruby.0")
+      .with(body: ->(data) { (JSON.parse(data).keys & ['thread']).length.eql?(0) })
+      .to_return(status: 200)
+
+    stub_request(:post, "http://10.10.10.10:9292/com.instana.plugin.ruby/traces.0")
+      .to_return(status: 200)
+
+    client = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
+    discovery = Concurrent::Atom.new({'pid' => 0})
+
+    subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
+
+    subject.report_timer.block.call
+  ensure
+    ::Instana.config[:metrics][:thread][:enabled] = true
+  end
+
   def test_disable_tracing
     ::Instana.config[:tracing][:enabled] = false
 
