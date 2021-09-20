@@ -6,11 +6,8 @@
 
 The Instana gem provides Ruby metrics and traces (request, queue & cross-host) for [Instana](https://www.instana.com/).
 
-[![Build Status](https://travis-ci.org/instana/ruby-sensor.svg?branch=master)](https://travis-ci.org/instana/ruby-sensor)
-[![Code
-Climate](https://codeclimate.com/github/instana/ruby-sensor/badges/gpa.svg)](https://codeclimate.com/github/instana/ruby-sensor)
+[![CircleCI](https://circleci.com/gh/instana/ruby-sensor.svg?style=svg)](https://circleci.com/gh/instana/ruby-sensor)
 [![Gem Version](https://badge.fury.io/rb/instana.svg)](https://badge.fury.io/rb/instana)
-[![OpenTracing Badge](https://img.shields.io/badge/OpenTracing-enabled-blue.svg)](http://opentracing.io)
 
 ## Note
 
@@ -78,4 +75,3 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/instan
 ## More
 
 Want to instrument other languages?  See our [Node.js](https://github.com/instana/nodejs), [Go](https://github.com/instana/golang-sensor), [Python](https://github.com/instana/python-sensor) repositories or [many other supported technologies](https://www.instana.com/supported-technologies/).
-
