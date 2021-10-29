@@ -116,6 +116,7 @@ commands:
       - run:
           name: Install iproute2
           command: |
+            sudo apt-get update
             sudo apt-get install iproute2
       - run:
           name: Install Java
@@ -141,6 +142,7 @@ commands:
       - run:
           name: Install Java
           command: |
+            sudo apt-get update
             sudo apt-get install openjdk-11-jdk
       - run:
           name: Run SonarQube to capture coverage
