@@ -56,6 +56,20 @@ class RackInstrumentedRequestTest < Minitest::Test
     assert req.continuing_from_trace_parent?
   end
 
+  def test_incoming_w3_content_invalid_id
+    req = Instana::InstrumentedRequest.new(
+      'HTTP_X_INSTANA_L' => '1',
+      'HTTP_TRACEPARENT' => '00-00000000000000000000000000000000-0000000000000000-01'
+    )
+
+    expected = {
+      level: '1'
+    }
+
+    assert_equal expected, req.incoming_context
+    refute req.continuing_from_trace_parent?
+  end
+
   def test_incoming_invalid_w3_content
     req = Instana::InstrumentedRequest.new(
       'HTTP_X_INSTANA_L' => '1',
