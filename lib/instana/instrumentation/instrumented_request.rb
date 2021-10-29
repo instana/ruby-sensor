@@ -130,6 +130,7 @@ module Instana
       return {} unless @env.has_key?('HTTP_TRACEPARENT')
       matches = @env['HTTP_TRACEPARENT'].match(W3_TRACE_PARENT_FORMAT)
       return {} unless matches
+      return {} if matches_is_invalid(matches)
 
       trace_id = ::Instana::Util.header_to_id(matches['trace'][16..-1]) # rubocop:disable Style/SlicingWithRange, Lint/RedundantCopDisableDirective
       span_id = ::Instana::Util.header_to_id(matches['parent'])
@@ -141,6 +142,10 @@ module Instana
         span_id: span_id,
         from_w3: true
       }
+    end
+
+    def matches_is_invalid(matches)
+      matches['trace'].match(/\A0+\z/) || matches['parent'].match(/\A0+\z/)
     end
 
     def context_from_trace_state
