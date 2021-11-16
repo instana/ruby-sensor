@@ -13,7 +13,7 @@ appraise 'cuba-30' do
   gem 'cuba', '>= 3.0', '< 4.0'
 end
 
-appraise 'dalli-20' do 
+appraise 'dalli-20' do
   gem 'dalli', '>= 2.0', '< 3.0'
 end
 
@@ -69,7 +69,7 @@ appraise 'rails-60' do
   gem 'sqlite3', '~> 1.4'
 end
 
-appraise 'redis-40' do 
+appraise 'redis-40' do
   gem 'redis', '>= 4.0.0', '< 5.0'
 end
 
@@ -87,7 +87,7 @@ appraise 'resque-122' do
 end
 
 appraise 'resque-20' do
-gem 'resque', '>= 2.0', '< 3.0'
+  gem 'resque', '>= 2.0', '< 3.0'
 end
 
 appraise 'roda-20' do
@@ -117,4 +117,8 @@ end
 
 appraise 'sidekiq-50' do
   gem 'sidekiq', '>= 5.0', '< 6.0'
+end
+
+appraise 'mongo-216' do
+  gem 'mongo', '>= 2.16', '< 3'
 end
