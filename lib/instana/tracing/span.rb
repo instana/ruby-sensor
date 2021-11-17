@@ -7,12 +7,12 @@ module Instana
                          :memcache, :'net-http', :rack, :render, :'rpc-client',
                          :'rpc-server', :'sidekiq-client', :'sidekiq-worker',
                          :redis, :'resque-client', :'resque-worker', :'graphql.server', :dynamodb, :s3, :sns, :sqs, :'aws.lambda.entry', :activejob, :log, :"mail.actionmailer",
-                         :"aws.lambda.invoke"  ].freeze
+                         :"aws.lambda.invoke", :mongo  ].freeze
     ENTRY_SPANS = [ :rack, :'resque-worker', :'rpc-server', :'sidekiq-worker', :'graphql.server', :sqs,
                     :'aws.lambda.entry' ].freeze
     EXIT_SPANS = [ :activerecord, :excon, :'net-http', :'resque-client',
                    :'rpc-client', :'sidekiq-client', :redis, :dynamodb, :s3, :sns, :sqs, :log, :"mail.actionmailer",
-                   :"aws.lambda.invoke" ].freeze
+                   :"aws.lambda.invoke", :mongo ].freeze
     HTTP_SPANS = [ :rack, :excon, :'net-http' ].freeze
 
     attr_accessor :parent
@@ -120,7 +120,7 @@ module Instana
         elsif @data[:n] == :activerecord
           @data[:data][:activerecord][:error] = e.message
         else
-          log(:error, Time.now, { :message => e.message, :parameters => e.class.to_s })
+          log(:error, Time.now, message: e.message, parameters: e.class.to_s)
         end
         e.instance_variable_set(:@instana_logged, true)
       end

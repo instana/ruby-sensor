@@ -15,6 +15,7 @@ executors:
         command: ["server", "/data"]
       - image: s12v/sns
       - image: softwaremill/elasticmq-native
+      - image: circleci/mongo:5-focal-ram
   ruby_26:
     docker:
       - image: circleci/ruby:2.6-node
@@ -29,6 +30,7 @@ executors:
         command: ["server", "/data"]
       - image: s12v/sns
       - image: softwaremill/elasticmq-native
+      - image: circleci/mongo:5-focal-ram
   ruby_27:
     docker:
       - image: circleci/ruby:2.7-node
@@ -43,6 +45,7 @@ executors:
         command: ["server", "/data"]
       - image: s12v/sns
       - image: softwaremill/elasticmq-native
+      - image: circleci/mongo:5-focal-ram
   ruby_25_mysql2:
     docker:
       - image: circleci/ruby:2.5-node
@@ -280,6 +283,7 @@ workflows:
                 - "./gemfiles/sidekiq_50.gemfile"
                 - "./gemfiles/sinatra_14.gemfile"
                 - "./gemfiles/shoryuken_50.gemfile"
+                - "./gemfiles/mongo_216.gemfile"
   rails:
     jobs:
       - test_apprisal:
