@@ -12,5 +12,9 @@ require 'instana/setup'
 # the thread of your choice.
 #
 
-::Instana::Activator.start
-::Instana.agent.spawn_background_thread
+# :nocov:
+unless ENV.fetch('INSTANA_DISABLE', false)
+  ::Instana::Activator.start
+  ::Instana.agent.spawn_background_thread
+end
+# :nocov:
