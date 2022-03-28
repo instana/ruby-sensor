@@ -38,5 +38,3 @@ module Instana
     end
   end
 end
-
-::Instana.logger.info "Stan is on the scene.  Starting Instana instrumentation version #{::Instana::VERSION}"
