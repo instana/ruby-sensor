@@ -1,21 +1,6 @@
 version: 2.1
 
 executors:
-  ruby_25:
-    docker:
-      - image: circleci/ruby:2.5-node
-        environment:
-          MEMCACHED_HOST: '127.0.0.1:11211'
-          REDIS_URL: 'redis://127.0.0.1:6379'
-          DATABASE_URL: 'sqlite3::memory:'
-      - image: memcached
-      - image: redis
-      - image: circleci/dynamodb
-      - image: minio/minio:latest
-        command: ["server", "/data"]
-      - image: s12v/sns
-      - image: softwaremill/elasticmq-native
-      - image: circleci/mongo:5-focal-ram
   ruby_26:
     docker:
       - image: circleci/ruby:2.6-node
@@ -46,19 +31,6 @@ executors:
       - image: s12v/sns
       - image: softwaremill/elasticmq-native
       - image: circleci/mongo:5-focal-ram
-  ruby_25_mysql2:
-    docker:
-      - image: circleci/ruby:2.5-node
-        environment:
-          DATABASE_URL: "mysql2://root@127.0.0.1:3306/ci_test"
-      - image: mariadb
-        environment:
-          MYSQL_DATABASE: 'ci_test'
-          MYSQL_USER: 'root'
-          MYSQL_PASSWORD: ''
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-          MYSQL_ROOT_PASSWORD: ''
-          MYSQL_ROOT_HOST: '%'
   ruby_26_mysql2:
     docker:
       - image: circleci/ruby:2.6-node
@@ -85,15 +57,6 @@ executors:
           MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
           MYSQL_ROOT_PASSWORD: ''
           MYSQL_ROOT_HOST: '%'
-  ruby_25_postgres:
-    docker:
-      - image: circleci/ruby:2.6-node
-        environment:
-          DATABASE_URL: "postgres://postgres:test@127.0.0.1:5432/ci_test"
-      - image: postgres
-        environment:
-          POSTGRES_PASSWORD: 'test'
-          POSTGRES_DB: 'ci_test'
   ruby_26_postgres:
     docker:
       - image: circleci/ruby:2.6-node
@@ -251,7 +214,6 @@ workflows:
               stack:
                 - ruby_27
                 - ruby_26
-                - ruby_25
   libraries:
     jobs:
       - test_apprisal:
@@ -260,7 +222,6 @@ workflows:
               stack:
                 - ruby_27
                 - ruby_26
-                - ruby_25
               gemfile:
                 - "./gemfiles/aws_30.gemfile"
                 - "./gemfiles/cuba_30.gemfile"
@@ -292,13 +253,10 @@ workflows:
               stack:
                 - ruby_27
                 - ruby_26
-                - ruby_25
                 - ruby_27_postgres
                 - ruby_26_postgres
-                - ruby_25_postgres
                 - ruby_27_mysql2
                 - ruby_26_mysql2
-                - ruby_25_mysql2
               gemfile:
                 - "./gemfiles/rails_60.gemfile"
                 - "./gemfiles/rails_52.gemfile"
