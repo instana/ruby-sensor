@@ -12,6 +12,7 @@ class HostAgentActivationObserverTest < Minitest::Test
     stub_request(:put, "http://10.10.10.10:9292/com.instana.plugin.ruby.discovery")
       .and_timeout
       .and_return(status: 500, body: '{"ok": false}')
+      .and_return(status: 200, body: '[{"pid": 1234}]')
       .and_return(status: 200, body: '{"pid": 1234}')
 
     stub_request(:head, "http://10.10.10.10:9292/com.instana.plugin.ruby.1234")

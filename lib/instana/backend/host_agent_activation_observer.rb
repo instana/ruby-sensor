@@ -34,6 +34,8 @@ module Instana
           raise DiscoveryError, "Discovery response was #{discovery_response.code} with `#{payload}`." unless discovery_response.ok?
 
           discovery = discovery_response.json
+          raise DiscoveryError, "Expected discovery to be a Hash, not a `#{discovery.class}`." unless discovery.is_a?(Hash)
+
           @logger.debug("Discovery complete (`#{discovery}`). Waiting for agent.")
           wait_for_backend(discovery['pid'])
           @logger.debug("Agent ready.")
