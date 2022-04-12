@@ -63,6 +63,18 @@ class SpanTest < Minitest::Test
     Instana.config[:collect_backtraces] = false
   end
 
+  def test_span_backtrace_cleaner
+    Instana.config[:collect_backtraces] = true
+    Instana.config[:backtrace_cleaner] =
+      ->(trace) { trace.filter { |line| line.include?("lib/instana") } }
+    span = Instana::Span.new(:excon)
+
+    assert_equal 1, span[:stack].size
+  ensure
+    Instana.config[:backtrace_cleaner] = nil
+    Instana.config[:collect_backtraces] = false
+  end
+
   def test_span_stack_over_limit
     def inner(depth = 50, &blk) # rubocop:disable Lint/NestedMethodDefinition
       return blk.call if depth.zero?

@@ -82,6 +82,9 @@ module Instana
     # @param limit [Integer] Limit the backtrace to the top <limit> frames
     #
     def add_stack(limit: 30, stack: Kernel.caller)
+      cleaner = ::Instana.config[:backtrace_cleaner]
+      stack = cleaner.call(stack) if cleaner
+
       @data[:stack] = stack
                       .map do |call|
         file, line, *method = call.split(':')
