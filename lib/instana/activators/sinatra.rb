@@ -5,7 +5,7 @@ module Instana
   module Activators
     class Sinatra < Activator
       def can_instrument?
-        defined?(::Instana::Rack) && defined?(::Sinatra) && defined?(::Sinatra::Base)
+        defined?(::Instana::Rack) && defined?(::Sinatra) && defined?(::Sinatra::Base) && !::Sinatra::Base.middleware.nil?
       end
 
       def instrument
