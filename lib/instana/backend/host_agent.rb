@@ -52,9 +52,15 @@ module Instana
         }.reject { |_, v| v.nil? }
       end
 
-      # @return [Array] extra headers to include in the trace
+      # @return [Array] extra headers to capture with HTTP spans
       def extra_headers
-        discovery_value['extraHeaders']
+        if discovery_value['tracing']
+          # Starting with discovery version 1.6.4, this value is in tracing.extra-http-headers.
+          discovery_value['tracing']['extra-http-headers']
+        else
+          # Legacy fallback for discovery versions <= 1.6.3.
+          discovery_value['extraHeaders']
+        end
       end
 
       # @return [Hash] values which are removed from urls sent to the backend
