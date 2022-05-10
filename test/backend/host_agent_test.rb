@@ -45,6 +45,24 @@ class HostAgentTest < Minitest::Test
     assert_equal 1, subject.source[:e]
   end
 
+  def test_extra_headers_from_tracing_config
+    discovery = Concurrent::Atom.new(
+      {
+        'tracing' => {
+          'extra-http-headers' => ["X-Header-1", "X-Header-2"]
+        }
+      }
+    )
+    subject = Instana::Backend::HostAgent.new(discovery: discovery)
+    assert_equal ["X-Header-1", "X-Header-2"], subject.extra_headers
+  end
+
+  def test_extra_headers_legacy
+    discovery = Concurrent::Atom.new({'extraHeaders' => ["X-Header-3", "X-Header-4"]})
+    subject = Instana::Backend::HostAgent.new(discovery: discovery)
+    assert_equal ["X-Header-3", "X-Header-4"], subject.extra_headers
+  end
+
   def test_start
     subject = Instana::Backend::HostAgent.new
     assert subject.respond_to? :start
