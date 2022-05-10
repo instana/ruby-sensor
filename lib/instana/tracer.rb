@@ -180,11 +180,7 @@ module Instana
       self.current_span.set_tags(kvs)
       self.current_span.close
 
-      if self.current_span.parent
-        self.current_span = self.current_span.parent
-      else
-        self.current_span = nil
-      end
+      self.current_span = self.current_span.parent || nil
     end
 
     # Closes out the current span in the current trace
