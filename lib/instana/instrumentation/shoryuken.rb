@@ -21,9 +21,9 @@ module Instana
       private
 
       def incomming_context_from(attributes)
-        trace_id = try(attributes, 'X_INSTANA_T', 'X_INSTANA_ST')
-        span_id = try(attributes, 'X_INSTANA_S', 'X_INSTANA_SS')
-        level = try(attributes, 'X_INSTANA_L', 'X_INSTANA_SL')
+        trace_id = read_message_header(attributes, 'X_INSTANA_T')
+        span_id = read_message_header(attributes, 'X_INSTANA_S')
+        level = read_message_header(attributes, 'X_INSTANA_L')
 
         {
           trace_id: trace_id,
@@ -32,12 +32,8 @@ module Instana
         }.reject { |_, v| v.nil? }
       end
 
-      def try(attributes, *args)
-        key = args.detect do |a|
-          attributes && attributes[a] && attributes[a].respond_to?(:string_value)
-        end
-
-        attributes[key].string_value if attributes && key
+      def read_message_header(attributes, key)
+        attributes[key].string_value if attributes && attributes[key] && attributes[key].respond_to?(:string_value)
       end
     end
   end
