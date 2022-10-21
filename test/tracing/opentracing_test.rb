@@ -3,7 +3,13 @@
 
 require 'test_helper'
 require 'rack/test'
-require 'rack/lobster'
+
+if Rack.release >= '3.0.0'
+  require 'rackup/lobster'
+else
+  require 'rack/lobster'
+end
+
 require "opentracing"
 
 module Instana
@@ -45,7 +51,11 @@ class OpenTracerTest < Minitest::Test
       use Rack::ShowExceptions
       use Instana::OTRack2
       map "/mrlobster" do
-        run Rack::Lobster.new
+        if Rack.release >= '3.0.0'
+          run Rackup::Lobster.new
+        else
+          run Rack::Lobster.new
+        end
       end
     }
   end
