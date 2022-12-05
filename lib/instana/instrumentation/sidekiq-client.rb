@@ -4,6 +4,21 @@
 module Instana
   module Instrumentation
     class SidekiqClient
+      def self.redis_url
+        Sidekiq.redis_pool.with do |client|
+          host, port =
+            case
+            when client.respond_to?(:config)
+              [client.config.host, client.config.port]
+            when client.respond_to?(:connection)
+              [client.connection[:host], client.connection[:port]]
+            else
+              [client.client.options[:host], client.client.options[:port]]
+            end
+          return "#{host}:#{port}"
+        end
+      end
+
       def call(worker_class, msg, queue, _redis_pool)
         kv_payload = { :'sidekiq-client' => {} }
         kv_payload[:'sidekiq-client'][:queue] = queue
@@ -13,10 +28,7 @@ module Instana
 
         # Temporary until we move connection collection to redis
         # instrumentation
-        Sidekiq.redis_pool.with do |client|
-          opts = client.respond_to?(:connection) ? client.connection : client.client.options
-          kv_payload[:'sidekiq-client'][:'redis-url'] = "#{opts[:host]}:#{opts[:port]}"
-        end
+        kv_payload[:'sidekiq-client'][:'redis-url'] = SidekiqClient.redis_url
 
         context = ::Instana.tracer.context
         if context

@@ -119,6 +119,14 @@ appraise 'sidekiq-50' do
   gem 'sidekiq', '>= 5.0', '< 6.0'
 end
 
+appraise 'sidekiq-60' do
+  gem 'sidekiq', '>= 6.0', '< 7.0'
+end
+
+appraise 'sidekiq-70' do
+  gem 'sidekiq', '>= 7.0', '< 8.0'
+end
+
 appraise 'mongo-216' do
   gem 'mongo', '>= 2.16', '< 3'
 end
