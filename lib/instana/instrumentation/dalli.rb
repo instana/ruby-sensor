@@ -61,13 +61,13 @@ module Instana
         ::Instana::Util.method_alias(klass, :request)
       end
 
-      def request(op, *args)
+      def request(op, *args, **kwargs)
         if ::Instana.tracer.tracing? || ::Instana.tracer.tracing_span?(:memcache)
           info_payload = { :memcache => {} }
           info_payload[:memcache][:server] = "#{@hostname}:#{@port}"
           ::Instana.tracer.log_info(info_payload)
         end
-        super(op, *args)
+        super(op, *args, **kwargs)
       end
     end
   end

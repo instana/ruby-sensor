@@ -8,7 +8,7 @@ module Instana
       IGNORED_SQL = %w[BEGIN COMMIT SET].freeze
       SANITIZE_REGEXP = /('[\s\S][^']*'|\d*\.\d+|\d+|NULL)/i.freeze
 
-      def log(sql, name = 'SQL', binds = [], *args)
+      def log(sql, name = 'SQL', binds = [], *args, **kwargs)
         call_payload = {
           activerecord: {
             adapter: @config[:adapter],
@@ -24,7 +24,7 @@ module Instana
           call_payload[:activerecord][:binds] = mapped
         end
 
-        maybe_trace(call_payload, name) { super(sql, name, binds, *args) }
+        maybe_trace(call_payload, name) { super(sql, name, binds, *args, **kwargs) }
       end
 
       private

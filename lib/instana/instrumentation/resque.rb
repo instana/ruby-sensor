@@ -23,7 +23,7 @@ module Instana
         { :'resque-client' => kvs }
       end
 
-      def enqueue(klass, *args)
+      def enqueue(klass, *args, **kwargs)
         if Instana.tracer.tracing?
           kvs = collect_kvs(:enqueue, klass, args)
 
@@ -32,11 +32,11 @@ module Instana
             super(klass, *args)
           end
         else
-          super(klass, *args)
+          super(klass, *args, **kwargs)
         end
       end
 
-      def enqueue_to(queue, klass, *args)
+      def enqueue_to(queue, klass, *args, **kwargs)
         if Instana.tracer.tracing? && !Instana.tracer.tracing_span?(:'resque-client')
           kvs = collect_kvs(:enqueue_to, klass, args)
           kvs[:Queue] = queue.to_s if queue
@@ -46,19 +46,19 @@ module Instana
             super(queue, klass, *args)
           end
         else
-          super(queue, klass, *args)
+          super(queue, klass, *args, **kwargs)
         end
       end
 
-      def dequeue(klass, *args)
+      def dequeue(klass, *args, **kwargs)
         if Instana.tracer.tracing?
           kvs = collect_kvs(:dequeue, klass, args)
 
           Instana.tracer.trace(:'resque-client', kvs) do
-            super(klass, *args)
+            super(klass, *args, **kwargs)
           end
         else
-          super(klass, *args)
+          super(klass, *args, **kwargs)
         end
       end
     end

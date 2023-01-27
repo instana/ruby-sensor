@@ -32,11 +32,11 @@ module Instana
         @delegate.setup
       end
 
-      def method_missing(mth, *args, &block)
+      def method_missing(mth, *args, **kwargs, &block)
         if @delegate.respond_to?(mth)
-          @delegate.public_send(mth, *args, &block)
+          @delegate.public_send(mth, *args, **kwargs, &block)
         else
-          super(mth, *args, &block)
+          super(mth, *args, **kwargs, &block)
         end
       end
 

@@ -86,9 +86,9 @@ module OpenTracing
       end
     end
 
-    def method_missing(method, *args, &block)
+    def method_missing(method, *args, **kwargs, &block)
       ::Instana.logger.warn { "You are invoking `#{m}` on Instana::Tracer via OpenTracing." }
-      super(method, *args, &block)
+      super(method, *args, **kwargs, &block)
     end
 
     def respond_to_missing?(*)
