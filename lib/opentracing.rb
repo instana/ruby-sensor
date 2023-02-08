@@ -17,9 +17,10 @@ module OpenTracing
 
     attr_accessor :global_tracer
 
-    def method_missing(method_name, *args, **kwargs, &block)
-      @global_tracer.send(method_name, *args, **kwargs, &block)
+    def method_missing(method_name, *args, &block)
+      @global_tracer.send(method_name, *args, &block)
     end
+    ruby2_keywords :method_missing if respond_to?(:ruby2_keywords, true)
 
     def respond_to_missing?(name, all)
       @global_tracer.respond_to?(name, all)

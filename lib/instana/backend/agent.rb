@@ -32,13 +32,14 @@ module Instana
         @delegate.setup
       end
 
-      def method_missing(mth, *args, **kwargs, &block)
+      def method_missing(mth, *args, &block)
         if @delegate.respond_to?(mth)
-          @delegate.public_send(mth, *args, **kwargs, &block)
+          @delegate.public_send(mth, *args, &block)
         else
-          super(mth, *args, **kwargs, &block)
+          super(mth, *args, &block)
         end
       end
+      ruby2_keywords :method_missing if respond_to?(:ruby2_keywords, true)
 
       def respond_to_missing?(mth, include_all = false)
         @delegate.respond_to?(mth, include_all)

@@ -8,13 +8,14 @@ module Instana
   class Tracer
     # Support ::Instana::Tracer.xxx call style for the instantiated tracer
     class << self
-      def method_missing(method, *args, **kwargs, &block)
+      def method_missing(method, *args, &block)
         if ::Instana.tracer.respond_to?(method)
-          ::Instana.tracer.send(method, *args, **kwargs, &block)
+          ::Instana.tracer.send(method, *args, &block)
         else
           super
         end
       end
+      ruby2_keywords :method_missing if respond_to?(:ruby2_keywords, true)
     end
 
     def initialize(logger: Instana.logger)

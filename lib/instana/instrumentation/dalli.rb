@@ -61,14 +61,15 @@ module Instana
         ::Instana::Util.method_alias(klass, :request)
       end
 
-      def request(op, *args, **kwargs)
+      def request(op, *args)
         if ::Instana.tracer.tracing? || ::Instana.tracer.tracing_span?(:memcache)
           info_payload = { :memcache => {} }
           info_payload[:memcache][:server] = "#{@hostname}:#{@port}"
           ::Instana.tracer.log_info(info_payload)
         end
-        super(op, *args, **kwargs)
+        super(op, *args)
       end
+      ruby2_keywords :request if respond_to?(:ruby2_keywords, true)
     end
   end
 end

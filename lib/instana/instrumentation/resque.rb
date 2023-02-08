@@ -23,7 +23,7 @@ module Instana
         { :'resque-client' => kvs }
       end
 
-      def enqueue(klass, *args, **kwargs)
+      def enqueue(klass, *args)
         if Instana.tracer.tracing?
           kvs = collect_kvs(:enqueue, klass, args)
 
@@ -32,11 +32,12 @@ module Instana
             super(klass, *args)
           end
         else
-          super(klass, *args, **kwargs)
+          super(klass, *args)
         end
       end
+      ruby2_keywords :enqueue if respond_to?(:ruby2_keywords, true)
 
-      def enqueue_to(queue, klass, *args, **kwargs)
+      def enqueue_to(queue, klass, *args)
         if Instana.tracer.tracing? && !Instana.tracer.tracing_span?(:'resque-client')
           kvs = collect_kvs(:enqueue_to, klass, args)
           kvs[:Queue] = queue.to_s if queue
@@ -46,21 +47,23 @@ module Instana
             super(queue, klass, *args)
           end
         else
-          super(queue, klass, *args, **kwargs)
+          super(queue, klass, *args)
         end
       end
+      ruby2_keywords :enqueue_to if respond_to?(:ruby2_keywords, true)
 
-      def dequeue(klass, *args, **kwargs)
+      def dequeue(klass, *args)
         if Instana.tracer.tracing?
           kvs = collect_kvs(:dequeue, klass, args)
 
           Instana.tracer.trace(:'resque-client', kvs) do
-            super(klass, *args, **kwargs)
+            super(klass, *args)
           end
         else
-          super(klass, *args, **kwargs)
+          super(klass, *args)
         end
       end
+      ruby2_keywords :dequeue if respond_to?(:ruby2_keywords, true)
     end
 
     module ResqueWorker
