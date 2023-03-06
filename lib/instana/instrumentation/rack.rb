@@ -13,8 +13,7 @@ module Instana
     def call(env)
       req = InstrumentedRequest.new(env)
       kvs = {
-        http: req.request_tags,
-        service: ENV['INSTANA_SERVICE_NAME']
+        http: req.request_tags
       }.reject { |_, v| v.nil? }
 
       current_span = ::Instana.tracer.log_start_or_continue(:rack, {}, req.incoming_context)
