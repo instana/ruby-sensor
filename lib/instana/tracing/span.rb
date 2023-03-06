@@ -55,6 +55,10 @@ module Instana
 
       @data[:data] = {}
 
+      if ENV.key?('INSTANA_SERVICE_NAME')
+        @data[:data][:service] = ENV['INSTANA_SERVICE_NAME']
+      end
+
       # Entity Source
       @data[:f] = ::Instana.agent.source
       # Start time

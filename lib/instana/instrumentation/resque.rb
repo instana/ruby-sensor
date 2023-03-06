@@ -69,9 +69,6 @@ module Instana
         kvs[:'resque-worker'] = {}
 
         begin
-          if ENV.key?('INSTANA_SERVICE_NAME')
-            kvs[:service] = ENV['INSTANA_SERVICE_NAME']
-          end
           kvs[:'resque-worker'][:job] = job.payload['class'].to_s
           kvs[:'resque-worker'][:queue] = job.queue
         rescue => e

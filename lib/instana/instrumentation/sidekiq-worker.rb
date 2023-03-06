@@ -18,10 +18,6 @@ module Instana
           kv_payload[:'sidekiq-worker'][:'redis-url'] = "#{opts[:host]}:#{opts[:port]}"
         end
 
-        if ENV.key?('INSTANA_SERVICE_NAME')
-          kv_payload[:service] = ENV['INSTANA_SERVICE_NAME']
-        end
-
         context = {}
         if msg.key?('X-Instana-T')
           trace_id = msg.delete('X-Instana-T')
