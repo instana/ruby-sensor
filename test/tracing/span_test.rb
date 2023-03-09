@@ -162,4 +162,18 @@ class SpanTest < Minitest::Test
     assert_equal 0, metrics[:opened]
     assert_equal 0, metrics[:closed]
   end
+
+  def test_custom_service_name_set
+    service_name = 'MyVeryCustomRubyServiceNameForInstanaTesting'
+    ENV['INSTANA_SERVICE_NAME'] = service_name
+    span = Instana::Span.new(:excon)
+    assert_equal(service_name, span[:data][:service])
+  ensure
+    ENV.delete('INSTANA_SERVICE_NAME')
+  end
+
+  def test_no_custom_service_name_set
+    span = Instana::Span.new(:excon)
+    assert_nil(span[:data][:service])
+  end
 end
