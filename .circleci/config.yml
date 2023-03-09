@@ -10,12 +10,12 @@ executors:
           DATABASE_URL: 'sqlite3::memory:'
       - image: memcached
       - image: redis
-      - image: circleci/dynamodb
+      - image: amazon/dynamodb-local
       - image: minio/minio:latest
         command: ["server", "/data"]
       - image: s12v/sns
       - image: softwaremill/elasticmq-native
-      - image: circleci/mongo:5-focal-ram
+      - image: mongo:5-focal
   ruby_27:
     docker:
       - image: cimg/ruby:2.7-node
@@ -25,12 +25,12 @@ executors:
           DATABASE_URL: 'sqlite3::memory:'
       - image: memcached
       - image: redis
-      - image: circleci/dynamodb
+      - image: amazon/dynamodb-local
       - image: minio/minio:latest
         command: ["server", "/data"]
       - image: s12v/sns
       - image: softwaremill/elasticmq-native
-      - image: circleci/mongo:5-focal-ram
+      - image: mongo:5-focal
   ruby_26_mysql2:
     docker:
       - image: cimg/ruby:2.6-node
