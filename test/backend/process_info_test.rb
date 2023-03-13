@@ -64,7 +64,7 @@ class ProcessInfoTest < Minitest::Test
   def test_osx_memory_used
     host_os = RbConfig::CONFIG['host_os']
     RbConfig::CONFIG['host_os'] = 'darwin'
-
+   
     subject = Instana::Backend::ProcessInfo.new(OpenStruct.new(rss: 1024))
     assert_equal 1, subject.memory_used
   ensure
@@ -74,9 +74,9 @@ class ProcessInfoTest < Minitest::Test
   def test_linux_memory_used
     host_os = RbConfig::CONFIG['host_os']
     RbConfig::CONFIG['host_os'] = 'linux'
-
+    # 1 page memory page is 4 kb
     subject = Instana::Backend::ProcessInfo.new(OpenStruct.new(rss: 1))
-    assert_equal 4096, subject.memory_used
+    assert_equal 4, subject.memory_used
   ensure
     RbConfig::CONFIG['host_os'] = host_os
   end

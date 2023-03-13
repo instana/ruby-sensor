@@ -51,7 +51,7 @@ module Instana
         if RbConfig::CONFIG['host_os'].include?('darwin')
           rss / 1024
         else
-          rss * 4096
+          rss * 4 # This has to be 4KB not 4096B if we want KB 
         end
       end
 
