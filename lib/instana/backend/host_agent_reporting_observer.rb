@@ -111,7 +111,8 @@ module Instana
           proc_table = Sys::ProcTable.ps(pid: Process.pid)
           process = ProcessInfo.new(proc_table)
           payload[:exec_args] = process.arguments
-          payload[:memory] = {rss_size: process.memory_used}
+          payload[:memory] = {rss_size: process.memory_used / 1024} # Bytes to Kilobytes like in ruby_process.rb
+
         end
 
         if ::Instana.config[:metrics][:gc][:enabled]

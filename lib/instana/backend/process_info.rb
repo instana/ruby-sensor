@@ -49,7 +49,7 @@ module Instana
 
       def memory_used
         if RbConfig::CONFIG['host_os'].include?('darwin')
-          rss / 1024
+          rss
         else
           rss * 4096
         end

@@ -65,7 +65,7 @@ class ProcessInfoTest < Minitest::Test
     host_os = RbConfig::CONFIG['host_os']
     RbConfig::CONFIG['host_os'] = 'darwin'
 
-    subject = Instana::Backend::ProcessInfo.new(OpenStruct.new(rss: 1024))
+    subject = Instana::Backend::ProcessInfo.new(OpenStruct.new(rss: 1))
     assert_equal 1, subject.memory_used
   ensure
     RbConfig::CONFIG['host_os'] = host_os
