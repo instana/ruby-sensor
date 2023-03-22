@@ -31,7 +31,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.test_files    = Dir.glob("{test}/**/*.rb")
 
-  spec.required_ruby_version = '>= 2.1'
+  spec.required_ruby_version = '>= 2.7'
   spec.platform      = defined?(JRUBY_VERSION) ? 'java' : Gem::Platform::RUBY
 
   spec.add_development_dependency "bundler", "~> 2.0"
