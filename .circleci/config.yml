@@ -186,6 +186,7 @@ workflows:
               gemfile:
                 - "./gemfiles/aws_30.gemfile"
                 - "./gemfiles/cuba_30.gemfile"
+                - "./gemfiles/cuba_40.gemfile"
                 - "./gemfiles/dalli_20.gemfile"
                 - "./gemfiles/excon_02.gemfile"
                 - "./gemfiles/excon_079.gemfile"
