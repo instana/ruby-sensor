@@ -6,7 +6,10 @@ require 'rack/test'
 
 class CubaTest < Minitest::Test
   include Rack::Test::Methods
-  APP = Rack::Builder.parse_file('test/support/apps/cuba/config.ru').first
+
+  # rack < 3.0.0 returns a two long array `app, options`
+  # rack >= 3.0.0 returns only the app
+  APP, *  = Rack::Builder.parse_file('test/support/apps/cuba/config.ru')
 
   def app
     APP
