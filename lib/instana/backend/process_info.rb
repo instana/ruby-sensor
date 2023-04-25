@@ -18,7 +18,7 @@ module Instana
       end
 
       def parent_pid
-        if in_container? && sched_pid != pid
+        if in_container? && !sched_pid.nil?
           sched_pid
         else
           pid
