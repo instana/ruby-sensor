@@ -191,6 +191,7 @@ workflows:
                 - "./gemfiles/excon_02.gemfile"
                 - "./gemfiles/excon_079.gemfile"
                 - "./gemfiles/graphql_10.gemfile"
+                - "./gemfiles/graphql_20.gemfile"
                 - "./gemfiles/grpc_10.gemfile"
                 - "./gemfiles/net_http_01.gemfile"
                 - "./gemfiles/rack_16.gemfile"
