@@ -122,3 +122,9 @@ end
 appraise 'mongo-216' do
   gem 'mongo', '>= 2.16', '< 3'
 end
+
+appraise 'padrino-0-13' do
+  gem 'sinatra', '1.4.7'
+  gem 'bundler', '~> 1.17', '>= 1.17.3'
+  gem 'padrino', '0.14.2'
+end
