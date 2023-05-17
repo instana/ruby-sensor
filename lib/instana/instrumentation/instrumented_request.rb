@@ -9,7 +9,7 @@ require 'rack/request'
 
 module Instana
   class InstrumentedRequest < Rack::Request
-    W3_TRACE_PARENT_FORMAT = /[0-9a-f][0-9a-e]-(?<trace>[0-9a-f]{32})-(?<parent>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})/.freeze
+    W3C_TRACE_PARENT_FORMAT = /[0-9a-f][0-9a-e]-(?<trace>[0-9a-f]{32})-(?<parent>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})/.freeze
     INSTANA_TRACE_STATE = /in=(?<trace>[0-9a-f]+);(?<span>[0-9a-f]+)/.freeze
 
     def skip_trace?
@@ -32,16 +32,16 @@ module Instana
 
       context[:level] = @env['HTTP_X_INSTANA_L'][0] if @env['HTTP_X_INSTANA_L']
 
-      unless ::Instana.config[:w3_trace_correlation]
+      unless ::Instana.config[:w3c_trace_correlation]
         trace_state = parse_trace_state
 
-        if context[:from_w3] && trace_state.empty?
+        if context[:from_w3c] && trace_state.empty?
           context.delete(:span_id)
-          context[:from_w3] = false
-        elsif context[:from_w3] && !trace_state.empty?
+          context[:from_w3c] = false
+        elsif context[:from_w3c] && !trace_state.empty?
           context[:trace_id] = trace_state[:t]
           context[:span_id] = trace_state[:p]
-          context[:from_w3] = false
+          context[:from_w3c] = false
         end
       end
 
@@ -86,7 +86,7 @@ module Instana
     end
 
     def continuing_from_trace_parent?
-      incoming_context[:from_w3]
+      incoming_context[:from_w3c]
     end
 
     def synthetic?
@@ -122,13 +122,13 @@ module Instana
         long_instana_id: long_instana_id? ? sanitized_t : nil,
         external_trace_id: external_trace_id,
         external_state: @env['HTTP_TRACESTATE'],
-        from_w3: false
+        from_w3c: false
       }.reject { |_, v| v.nil? }
     end
 
     def context_from_trace_parent
       return {} unless @env.has_key?('HTTP_TRACEPARENT')
-      matches = @env['HTTP_TRACEPARENT'].match(W3_TRACE_PARENT_FORMAT)
+      matches = @env['HTTP_TRACEPARENT'].match(W3C_TRACE_PARENT_FORMAT)
       return {} unless matches
       return {} if matches_is_invalid(matches)
 
@@ -140,7 +140,7 @@ module Instana
         external_state: @env['HTTP_TRACESTATE'],
         trace_id: trace_id,
         span_id: span_id,
-        from_w3: true
+        from_w3c: true
       }
     end
 
@@ -154,7 +154,7 @@ module Instana
       {
         trace_id: state[:t],
         span_id: state[:p],
-        from_w3: false
+        from_w3c: false
       }.reject { |_, v| v.nil? }
     end
 

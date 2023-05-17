@@ -53,8 +53,8 @@ module Instana
       # ::Instana.config[:sanitize_sql] = false
       @config[:sanitize_sql] = true
 
-      # W3 Trace Context Support
-      @config[:w3_trace_correlation] = ENV['INSTANA_DISABLE_W3C_TRACE_CORRELATION'].nil?
+      # W3C Trace Context Support
+      @config[:w3c_trace_correlation] = ENV['INSTANA_DISABLE_W3C_TRACE_CORRELATION'].nil?
 
       @config[:post_fork_proc] = proc { ::Instana.agent.spawn_background_thread }
 
