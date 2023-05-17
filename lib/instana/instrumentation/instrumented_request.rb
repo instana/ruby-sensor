@@ -9,7 +9,7 @@ require 'rack/request'
 
 module Instana
   class InstrumentedRequest < Rack::Request
-    W3_TRACE_PARENT_FORMAT = /00-(?<trace>[0-9a-f]+)-(?<parent>[0-9a-f]+)-(?<flags>[0-9a-f]+)/.freeze
+    W3_TRACE_PARENT_FORMAT = /[0-9a-f][0-9a-e]-(?<trace>[0-9a-f]{32})-(?<parent>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})/.freeze
     INSTANA_TRACE_STATE = /in=(?<trace>[0-9a-f]+);(?<span>[0-9a-f]+)/.freeze
 
     def skip_trace?
