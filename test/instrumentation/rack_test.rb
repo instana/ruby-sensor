@@ -69,7 +69,7 @@ class RackTest < Minitest::Test
     assert last_response.headers.key?("Server-Timing")
     assert last_response.headers["Server-Timing"] == "intid;desc=#{::Instana::Util.id_to_header(rack_span[:t])}"
 
-    # W3 Trace Context
+    # W3C Trace Context
     assert_equal "00-#{rack_span[:t].rjust(32, '0')}-#{rack_span[:s]}-01", last_response.headers["Traceparent"]
     assert_equal "in=#{rack_span[:t]};#{rack_span[:s]}", last_response.headers["Tracestate"]
 
@@ -301,7 +301,7 @@ class RackTest < Minitest::Test
     assert_equal true, first_span[:sy]
   end
 
-  def test_basic_get_with_w3_trace
+  def test_basic_get_with_w3c_trace
     clear_all!
 
     header 'TRACEPARENT', '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
@@ -321,9 +321,9 @@ class RackTest < Minitest::Test
     assert first_span[:tp]
   end
 
-  def test_basic_get_with_w3_disabled
+  def test_basic_get_with_w3c_disabled
     clear_all!
-    ::Instana.config[:w3_trace_correlation] = false
+    ::Instana.config[:w3c_trace_correlation] = false
 
     header 'TRACEPARENT', '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
 
@@ -336,7 +336,7 @@ class RackTest < Minitest::Test
     first_span = spans.first
     assert_equal :rack, first_span[:n]
     refute first_span[:tp]
-    ::Instana.config[:w3_trace_correlation] = true
+    ::Instana.config[:w3c_trace_correlation] = true
   end
 
   def test_skip_trace
