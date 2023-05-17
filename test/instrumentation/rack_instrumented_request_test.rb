@@ -4,12 +4,34 @@
 require 'test_helper'
 
 class RackInstrumentedRequestTest < Minitest::Test
-  def test_skip_trace_with_header
+  def test_suppression_via_x_instana_l
+    req = Instana::InstrumentedRequest.new(
+      'HTTP_X_INSTANA_L' => '0'
+    )
+
+    assert req.skip_trace?
+  end
+
+  def test_suppression_via_x_instana_l_with_trailing_content
     req = Instana::InstrumentedRequest.new(
       'HTTP_X_INSTANA_L' => '0;sample-data'
     )
 
     assert req.skip_trace?
+  end
+
+  def test_no_suppression_assume_level_1_as_default
+    req = Instana::InstrumentedRequest.new({})
+
+    assert !req.skip_trace?
+  end
+
+  def test_no_suppression_when_x_instana_l_is_provided_explicitly
+    req = Instana::InstrumentedRequest.new(
+      'HTTP_X_INSTANA_L' => '1'
+    )
+
+    assert !req.skip_trace?
   end
 
   def test_skip_trace_without_header
@@ -39,7 +61,6 @@ class RackInstrumentedRequestTest < Minitest::Test
 
   def test_incoming_w3c_context
     req = Instana::InstrumentedRequest.new(
-      'HTTP_X_INSTANA_L' => '1',
       'HTTP_TRACEPARENT' => '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
     )
 
@@ -48,8 +69,7 @@ class RackInstrumentedRequestTest < Minitest::Test
       external_state: nil,
       trace_id: 'a3ce929d0e0e4736',
       span_id: '00f067aa0ba902b7',
-      from_w3c: true,
-      level: '1'
+      from_w3c: true
     }
 
     assert_equal expected, req.incoming_context
@@ -66,8 +86,7 @@ class RackInstrumentedRequestTest < Minitest::Test
       external_state: nil,
       trace_id: 'a3ce929d0e0e4736',
       span_id: '00f067aa0ba902b7',
-      from_w3c: true,
-      level: '1'
+      from_w3c: true
     }
 
     assert_equal expected, req.incoming_context
@@ -76,7 +95,6 @@ class RackInstrumentedRequestTest < Minitest::Test
 
   def test_incoming_w3c_context_unknown_flags
     req = Instana::InstrumentedRequest.new(
-      'HTTP_X_INSTANA_L' => '1',
       'HTTP_TRACEPARENT' => '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-ff'
     )
 
@@ -85,8 +103,7 @@ class RackInstrumentedRequestTest < Minitest::Test
       external_state: nil,
       trace_id: 'a3ce929d0e0e4736',
       span_id: '00f067aa0ba902b7',
-      from_w3c: true,
-      level: '1'
+      from_w3c: true
     }
 
     assert_equal expected, req.incoming_context
@@ -106,13 +123,10 @@ class RackInstrumentedRequestTest < Minitest::Test
 
   def test_incoming_w3c_context_invalid_id
     req = Instana::InstrumentedRequest.new(
-      'HTTP_X_INSTANA_L' => '1',
       'HTTP_TRACEPARENT' => '00-00000000000000000000000000000000-0000000000000000-01'
     )
 
-    expected = {
-      level: '1'
-    }
+    expected = {}
 
     assert_equal expected, req.incoming_context
     refute req.continuing_from_trace_parent?
@@ -120,13 +134,10 @@ class RackInstrumentedRequestTest < Minitest::Test
 
   def test_incoming_invalid_w3c_context
     req = Instana::InstrumentedRequest.new(
-      'HTTP_X_INSTANA_L' => '1',
       'HTTP_TRACEPARENT' => '00-XXa3ce929d0e0e4736-00f67aa0ba902b7-01'
     )
 
-    expected = {
-      level: '1'
-    }
+    expected = {}
 
     assert_equal expected, req.incoming_context
     refute req.continuing_from_trace_parent?
