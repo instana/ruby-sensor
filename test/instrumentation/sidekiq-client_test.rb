@@ -6,6 +6,19 @@ require 'support/apps/sidekiq/boot'
 
 class SidekiqClientTest < Minitest::Test
   def setup
+    @framework_version = Gem::Specification.find_by_name('sidekiq').version
+    @supported_framework_version = @framework_version < Gem::Version.new('5.3')
+    @execute_test_if_framework_version_is_supported = lambda {
+      unless @supported_framework_version
+        skip "Skipping this test because sidekiq version #{@framework_version} is not yet supported!"
+      end
+    }
+    @execute_test_only_if_framework_version_is_not_supported = lambda {
+      if @supported_framework_version
+        skip "Skipping this test because sidekiq version #{@framework_version} is already supported!"
+      end
+    }
+
     Sidekiq.configure_client do |config|
       config.redis = { url: ENV["REDIS_URL"] }
     end
@@ -19,6 +32,7 @@ class SidekiqClientTest < Minitest::Test
   end
 
   def test_enqueue
+    @execute_test_if_framework_version_is_supported.call
     clear_all!
     Instana.tracer.start_or_continue_trace(:sidekiqtests) do
       disable_redis_instrumentation
@@ -39,6 +53,7 @@ class SidekiqClientTest < Minitest::Test
   end
 
   def test_enqueue_failure
+    @execute_test_if_framework_version_is_supported.call
     clear_all!
 
     Instana.tracer.start_or_continue_trace(:sidekiqtests) do
