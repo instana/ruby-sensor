@@ -87,6 +87,47 @@ class GraphqlTest < Minitest::Test
     assert_equal expected_data, query_span[:data][:graphql]
   end
 
+  def test_query_with_fragment
+    clear_all!
+
+    query = "
+    fragment actionDetails on Task {
+      action
+    }
+
+    query SampleWithFragment {
+      tasks {
+        nodes {
+          ... actionDetails
+        }
+      }
+    }"
+
+    expected_data = {
+      :operationName => "SampleWithFragment",
+      :operationType => "query",
+      :arguments => {},
+      :fields => { "tasks" => ["nodes"], "nodes" => ["actionDetails"] }
+    }
+    expected_results = {
+      "data" => {
+        "tasks" => {
+          "nodes" => [{"action" => "Sample 00"}, {"action" => "Sample 01"},
+                      {"action" => "Sample 02"}, {"action" => "Sample 03"},
+                      {"action" => "Sample 04"}]
+        }
+      }
+    }
+
+    results = Instana.tracer.start_or_continue_trace('graphql-test') { Schema.execute(query) }
+    query_span, root_span = *Instana.processor.queued_spans
+
+    assert_equal expected_results, results.to_h
+    assert_equal :sdk, root_span[:n]
+    assert_equal :'graphql.server', query_span[:n]
+    assert_equal expected_data, query_span[:data][:graphql]
+  end
+
   def test_mutation
     clear_all!
 
