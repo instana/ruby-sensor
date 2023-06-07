@@ -63,7 +63,20 @@ module Instana
         return [] unless parent.respond_to?(method)
 
         parent.send(method).map do |field|
-          [{object: parent.name, field: field.name}] + walk_fields(field, method)
+          # Certain types like GraphQL::Language::Nodes::InlineFragment
+          # have no "name" instance variable defined,
+          # in such case we use the class's name
+          parent_name = if parent.instance_variable_defined?(:@name)
+                          parent.name
+                        else
+                          parent.class.name.split('::').last
+                        end
+          field_name = if field.instance_variable_defined?(:@name)
+                         field.name
+                       else
+                         field.class.name.split('::').last
+                       end
+          [{object: parent_name, field: field_name}] + walk_fields(field, method)
         end.flatten
       end
 
