@@ -53,6 +53,36 @@ executors:
       - image: s12v/sns
       - image: softwaremill/elasticmq-native
       - image: mongo:5-focal
+  ruby_31:
+    docker:
+      - image: cimg/ruby:3.1-node
+        environment:
+          MEMCACHED_HOST: '127.0.0.1:11211'
+          REDIS_URL: 'redis://127.0.0.1:6379'
+          DATABASE_URL: 'sqlite3::memory:'
+      - image: memcached
+      - image: redis
+      - image: amazon/dynamodb-local
+      - image: minio/minio:latest
+        command: ["server", "/data"]
+      - image: s12v/sns
+      - image: softwaremill/elasticmq-native
+      - image: mongo:5-focal
+  ruby_32:
+    docker:
+      - image: cimg/ruby:3.2-node
+        environment:
+          MEMCACHED_HOST: '127.0.0.1:11211'
+          REDIS_URL: 'redis://127.0.0.1:6379'
+          DATABASE_URL: 'sqlite3::memory:'
+      - image: memcached
+      - image: redis
+      - image: amazon/dynamodb-local
+      - image: minio/minio:latest
+        command: ["server", "/data"]
+      - image: s12v/sns
+      - image: softwaremill/elasticmq-native
+      - image: mongo:5-focal
 
 commands:
   setup:
@@ -199,6 +229,8 @@ workflows:
               stack:
                 - ruby_27
                 - ruby_30
+                - ruby_31
+                - ruby_32
               gemfile:
                 - "./gemfiles/aws_30.gemfile"
                 - "./gemfiles/cuba_30.gemfile"
@@ -231,11 +263,21 @@ workflows:
             # Currently rest-client 1.6 gemfile pulls in mime-types 2.99.3
             # and adaptation to mime-type 3.0 is only available in rest-client 2.0:
             # https://github.com/rest-client/rest-client/issues/464
-            # But mime-types 2.99.3 is too old for Ruby 3.0:
+            # But mime-types 2.99.3 is too old for Ruby 3.0 or newer:
             # https://stackoverflow.com/a/68433864
-            # so we should exclude this scenario
+            # so we should exclude thiese scenarios
             - stack: ruby_30
               gemfile: "./gemfiles/rest_client_16.gemfile"
+            - stack: ruby_31
+              gemfile: "./gemfiles/rest_client_16.gemfile"
+            - stack: ruby_32
+              gemfile: "./gemfiles/rest_client_16.gemfile"
+            # Sinatra 1.4 relies on the Fixnum class
+            # which has been removed from Ruby 3.2, see:
+            # https://bugs.ruby-lang.org/issues/12005
+            # https://www.ruby-lang.org/en/news/2022/11/11/ruby-3-2-0-preview3-released/
+            - stack: ruby_32
+              gemfile: "./gemfiles/sinatra_14.gemfile"
 
   rails:
     jobs:
