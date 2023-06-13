@@ -38,6 +38,21 @@ executors:
         environment:
           POSTGRES_PASSWORD: 'test'
           POSTGRES_DB: 'ci_test'
+  ruby_30:
+    docker:
+      - image: cimg/ruby:3.0-node
+        environment:
+          MEMCACHED_HOST: '127.0.0.1:11211'
+          REDIS_URL: 'redis://127.0.0.1:6379'
+          DATABASE_URL: 'sqlite3::memory:'
+      - image: memcached
+      - image: redis
+      - image: amazon/dynamodb-local
+      - image: minio/minio:latest
+        command: ["server", "/data"]
+      - image: s12v/sns
+      - image: softwaremill/elasticmq-native
+      - image: mongo:5-focal
 
 commands:
   setup:
@@ -183,6 +198,7 @@ workflows:
             parameters:
               stack:
                 - ruby_27
+                - ruby_30
               gemfile:
                 - "./gemfiles/aws_30.gemfile"
                 - "./gemfiles/cuba_30.gemfile"
