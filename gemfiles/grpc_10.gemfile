@@ -13,6 +13,6 @@ gem "puma"
 gem "rubocop", "~> 1.9"
 gem "rack-test"
 gem "simplecov", "~> 0.21.2"
-gem "grpc", ">= 1.0", "< 2.0"
+gem "grpc", ">= 1.55.0", "< 2.0"
 
 gemspec path: "../"
