@@ -227,6 +227,16 @@ workflows:
                 - "./gemfiles/sinatra_14.gemfile"
                 - "./gemfiles/shoryuken_50.gemfile"
                 - "./gemfiles/mongo_216.gemfile"
+            exclude:
+            # Currently rest-client 1.6 gemfile pulls in mime-types 2.99.3
+            # and adaptation to mime-type 3.0 is only available in rest-client 2.0:
+            # https://github.com/rest-client/rest-client/issues/464
+            # But mime-types 2.99.3 is too old for Ruby 3.0:
+            # https://stackoverflow.com/a/68433864
+            # so we should exclude this scenario
+            - stack: ruby_30
+              gemfile: "./gemfiles/rest_client_16.gemfile"
+
   rails:
     jobs:
       - test_apprisal:
