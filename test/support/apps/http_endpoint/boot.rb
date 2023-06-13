@@ -22,7 +22,7 @@ Thread.new do
     end
   }
 
-  Rack::Handler::Puma.run(app, {:Host => '127.0.0.1', :Port => 6511})
+  Rack::Handler::Puma.run(app, Host: '127.0.0.1', Port: 6511)
 end
 
 sleep(2)
