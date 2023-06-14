@@ -13,6 +13,18 @@ class RailsActionViewTest < Minitest::Test
 
   def setup
     clear_all!
+    @framework_version = Gem::Specification.find_by_name('rails').version
+    @supported_framework_version = @framework_version < Gem::Version.new('6.1')
+    @execute_test_if_framework_version_is_supported = lambda {
+      unless @supported_framework_version
+        skip "Skipping this test because Rails version #{@framework_version} is not yet supported!"
+      end
+    }
+    @execute_test_only_if_framework_version_is_not_supported = lambda {
+      if @supported_framework_version
+        skip "Skipping this test because Rails version #{@framework_version} is already supported!"
+      end
+    }
   end
 
   def test_config_defaults
@@ -21,7 +33,25 @@ class RailsActionViewTest < Minitest::Test
     assert_equal true, ::Instana.config[:action_view][:enabled]
   end
 
+  def test_no_tracing_if_unsupported_version_only_render_is_ok
+    @execute_test_only_if_framework_version_is_not_supported.call
+
+    ['/render_view', '/render_view_direct', '/render_partial', '/render_collection', '/render_file',
+     '/render_alternate_layout', '/render_json', '/render_xml',
+     '/render_rawbody', '/render_js'].each do |endpoint|
+      get endpoint
+      assert last_response.ok?
+    end
+
+    get '/render_partial_that_errors'
+    assert_equal false, last_response.ok?
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal [], spans
+  end
+
   def test_render_view
+    @execute_test_if_framework_version_is_supported.call
     get '/render_view'
     assert last_response.ok?
 
@@ -32,6 +62,7 @@ class RailsActionViewTest < Minitest::Test
   end
 
   def test_render_view_direct
+    @execute_test_if_framework_version_is_supported.call
     get '/render_view_direct'
     assert last_response.ok?
 
@@ -54,6 +85,7 @@ class RailsActionViewTest < Minitest::Test
   end
 
   def test_render_file
+    @execute_test_if_framework_version_is_supported.call
     get '/render_file'
     assert last_response.ok?
 
@@ -64,6 +96,7 @@ class RailsActionViewTest < Minitest::Test
   end
 
   def test_render_json
+    @execute_test_if_framework_version_is_supported.call
     get '/render_json'
     assert last_response.ok?
 
@@ -74,6 +107,7 @@ class RailsActionViewTest < Minitest::Test
   end
 
   def test_render_xml
+    @execute_test_if_framework_version_is_supported.call
     get '/render_xml'
     assert last_response.ok?
 
@@ -84,6 +118,7 @@ class RailsActionViewTest < Minitest::Test
   end
 
   def test_render_body
+    @execute_test_if_framework_version_is_supported.call
     get '/render_rawbody'
     assert last_response.ok?
 
@@ -94,6 +129,7 @@ class RailsActionViewTest < Minitest::Test
   end
 
   def test_render_js
+    @execute_test_if_framework_version_is_supported.call
     get '/render_js'
     assert last_response.ok?
 
@@ -104,6 +140,7 @@ class RailsActionViewTest < Minitest::Test
   end
 
   def test_render_alternate_layout
+    @execute_test_if_framework_version_is_supported.call
     get '/render_alternate_layout'
     assert last_response.ok?
 
@@ -114,6 +151,7 @@ class RailsActionViewTest < Minitest::Test
   end
 
   def test_render_partial
+    @execute_test_if_framework_version_is_supported.call
     get '/render_partial'
     assert last_response.ok?
 
@@ -124,6 +162,7 @@ class RailsActionViewTest < Minitest::Test
   end
 
   def test_render_partial_that_errors
+    @execute_test_if_framework_version_is_supported.call
     get '/render_partial_that_errors'
     refute last_response.ok?
 
@@ -139,6 +178,7 @@ class RailsActionViewTest < Minitest::Test
   end
 
   def test_render_collection
+    @execute_test_if_framework_version_is_supported.call
     get '/render_collection'
     assert last_response.ok?
 
