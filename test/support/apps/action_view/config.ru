@@ -4,6 +4,8 @@
 require 'rails'
 require 'action_controller/railtie'
 
+RAILS_VERSION = Gem::Specification.find_by_name('rails').version
+
 class TestViewApplication < Rails::Application
   config.eager_load = 'test'
   config.consider_all_requests_local = true
@@ -14,19 +16,36 @@ class TestViewApplication < Rails::Application
     config.hosts.clear
   end
 
-  routes.append do
-    get '/render_view' => 'test_view#render_view'
-    get '/render_view_direct' => 'test_view#render_view_direct'
-    get '/render_partial' => 'test_view#render_partial'
-    get '/render_partial_that_errors' => 'test_view#render_partial_that_errors'
-    get '/render_collection' => 'test_view#render_collection'
-    get '/render_file' => 'test_view#render_file'
-    get '/render_alternate_layout' => 'test_view#render_alternate_layout'
-    get '/render_nothing' => 'test_view#render_nothing'
-    get '/render_json' => 'test_view#render_json'
-    get '/render_xml' => 'test_view#render_xml'
-    get '/render_rawbody' => 'test_view#render_rawbody'
-    get '/render_js' => 'test_view#render_js'
+  if Gem::Version.new('6.1.0') > RAILS_VERSION
+    routes.append do
+      get '/render_view' => 'test_view#render_view'
+      get '/render_view_direct' => 'test_view#render_view_direct'
+      get '/render_partial' => 'test_view#render_partial'
+      get '/render_partial_that_errors' => 'test_view#render_partial_that_errors'
+      get '/render_collection' => 'test_view#render_collection'
+      get '/render_file' => 'test_view#render_file'
+      get '/render_alternate_layout' => 'test_view#render_alternate_layout'
+      get '/render_nothing' => 'test_view#render_nothing'
+      get '/render_json' => 'test_view#render_json'
+      get '/render_xml' => 'test_view#render_xml'
+      get '/render_rawbody' => 'test_view#render_rawbody'
+      get '/render_js' => 'test_view#render_js'
+    end
+  else
+    routes.draw do
+      get '/render_view', to: 'test_view#render_view'
+      get '/render_view_direct', to: 'test_view#render_view_direct'
+      get '/render_partial', to: 'test_view#render_partial'
+      get '/render_partial_that_errors', to: 'test_view#render_partial_that_errors'
+      get '/render_collection', to: 'test_view#render_collection'
+      get '/render_file', to: 'test_view#render_file'
+      get '/render_alternate_layout', to: 'test_view#render_alternate_layout'
+      get '/render_nothing', to: 'test_view#render_nothing'
+      get '/render_json', to: 'test_view#render_json'
+      get '/render_xml', to: 'test_view#render_xml'
+      get '/render_rawbody', to: 'test_view#render_rawbody'
+      get '/render_js', to: 'test_view#render_js'
+    end
   end
 end
 
@@ -104,6 +123,10 @@ class TestViewController < ActionController::Base
   end
 end
 
-TestViewApplication.initialize!
+# With 6.1 and above explicit initialisation is not possible anymore
+# but below that it is required
+unless Gem::Version.new('6.1.0') < RAILS_VERSION
+  TestViewApplication.initialize!
+end
 
 run TestViewApplication

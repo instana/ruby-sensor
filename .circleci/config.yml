@@ -375,3 +375,4 @@ workflows:
                 - ruby_32_mysql2
               gemfile:
                 - "./gemfiles/rails_61.gemfile"
+                - "./gemfiles/rails_70.gemfile"
