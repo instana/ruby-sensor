@@ -7,13 +7,24 @@ require 'action_mailer'
 class RailsActionMailerTest < Minitest::Test
   class TestMailer < ActionMailer::Base
     def sample_email
-      mail(
-        from: 'test@example.com',
-        to: 'test@example.com',
-        subject: 'Test Email',
-        body: 'Hello',
-        content_type: "text/html"
-      )
+      mail_version = Gem::Specification.find_by_name('mail').version
+      if mail_version >= Gem::Version.new('2.8.1')
+        Mail.new do
+          from 'test@example.com'
+          to 'test@example.com'
+          subject 'Test Email'
+          body 'Hello'
+          content_type "text/html"
+        end
+      else
+        mail(
+          from: 'test@example.com',
+          to: 'test@example.com',
+          subject: 'Test Email',
+          body: 'Hello',
+          content_type: "text/html"
+        )
+      end
     end
   end
 
