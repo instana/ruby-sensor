@@ -15,7 +15,7 @@ module Instana
     end
 
     module ActionCableChannel
-      def transmit(*args)
+      def transmit(data, via: nil)
         rpc_tags = {
           service: ::Instana::Util.get_app_name,
           rpc: {
@@ -28,7 +28,7 @@ module Instana
 
         context = connection.instana_trace_context
         ::Instana.tracer.start_or_continue_trace(:'rpc-server', rpc_tags, context) do
-          super(*args)
+          super(data, via: via)
         end
       end
 

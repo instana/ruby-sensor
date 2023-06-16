@@ -22,7 +22,7 @@ class RailsActionCableTest < Minitest::Test
 
     channel_klass
       .new(connection, :test)
-      .send(:transmit, 'action' => 'sample')
+      .send(:transmit, 'Sample message', via: nil)
 
     span, rest = Instana.processor.queued_spans
     data = span[:data]
@@ -47,7 +47,7 @@ class RailsActionCableTest < Minitest::Test
 
     channel_klass
       .new(connection, :test)
-      .send(:transmit, 'action' => 'sample')
+      .send(:transmit, 'Sample message', via: 'Important')
 
     span, rest = Instana.processor.queued_spans
     data = span[:data]
@@ -125,7 +125,7 @@ class RailsActionCableTest < Minitest::Test
       config: OpenStruct.new(log_tags: [])
     )
     connection = ActionCable::Connection::Base.new(server, {})
-    connection.define_singleton_method(:transmit) { |*_args| true }
+    connection.define_singleton_method(:transmit) { |*_args, **_kwargs| true }
     connection
   end
 end
