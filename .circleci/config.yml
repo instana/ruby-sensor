@@ -287,6 +287,9 @@ workflows:
             parameters:
               stack:
                 - ruby_27
+                - ruby_30
+                - ruby_31
+                - ruby_32
   libraries:
     jobs:
       - test_apprisal:
