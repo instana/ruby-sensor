@@ -305,6 +305,8 @@ workflows:
                 - "./gemfiles/cuba_30.gemfile"
                 - "./gemfiles/cuba_40.gemfile"
                 - "./gemfiles/dalli_20.gemfile"
+                - "./gemfiles/dalli_30.gemfile"
+                - "./gemfiles/dalli_32.gemfile"
                 - "./gemfiles/excon_02.gemfile"
                 - "./gemfiles/excon_079.gemfile"
                 - "./gemfiles/excon_100.gemfile"
