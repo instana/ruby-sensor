@@ -56,7 +56,7 @@ module Instana
       end
     end
 
-    module DalliServer
+    module DalliRequestHandler
       def self.included(klass)
         ::Instana::Util.method_alias(klass, :request)
       end
@@ -64,7 +64,7 @@ module Instana
       def request(op, *args)
         if ::Instana.tracer.tracing? || ::Instana.tracer.tracing_span?(:memcache)
           info_payload = { :memcache => {} }
-          info_payload[:memcache][:server] = "#{@hostname}:#{@port}"
+          info_payload[:memcache][:server] = "#{hostname}:#{port}"
           ::Instana.tracer.log_info(info_payload)
         end
         super(op, *args)
