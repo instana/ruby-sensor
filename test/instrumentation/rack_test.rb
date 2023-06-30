@@ -3,7 +3,13 @@
 
 require 'test_helper'
 require 'rack/test'
-require 'rack/lobster'
+
+framework_version = Gem::Specification.find_by_name('rack').version
+if framework_version < Gem::Version.new('3.0.0')
+  require 'rack/lobster'
+else
+  require 'rackup/lobster'
+end
 
 class RackTest < Minitest::Test
   include Rack::Test::Methods
@@ -34,11 +40,16 @@ class RackTest < Minitest::Test
   end
 
   def app
+    framework_version = Gem::Specification.find_by_name('rack').version
     @app = Rack::Builder.new do
       use Rack::CommonLogger
       use Rack::ShowExceptions
       use Instana::Rack
-      map("/mrlobster") { run Rack::Lobster.new }
+      if framework_version < Gem::Version.new('3.0.0')
+        map("/mrlobster") { run Rack::Lobster.new }
+      else
+        map("/mrlobster") { run Rackup::Lobster.new }
+      end
       map("/path_tpl") { run PathTemplateApp.new }
       map("/error") { run ErrorApp.new }
       map("/five_zero_one") { run FiveZeroOneApp.new }

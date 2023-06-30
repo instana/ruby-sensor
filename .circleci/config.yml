@@ -316,6 +316,7 @@ workflows:
                 - "./gemfiles/net_http_01.gemfile"
                 - "./gemfiles/rack_16.gemfile"
                 - "./gemfiles/rack_20.gemfile"
+                - "./gemfiles/rack_30.gemfile"
                 - "./gemfiles/redis_40.gemfile"
                 - "./gemfiles/rest_client_16.gemfile"
                 - "./gemfiles/rest_client_20.gemfile"
