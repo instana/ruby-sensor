@@ -1,5 +1,41 @@
 version: 2.1
 
+library_gemfile: &library_gemfile
+  gemfile:
+    - "./gemfiles/aws_30.gemfile"
+    - "./gemfiles/aws_60.gemfile"
+    - "./gemfiles/cuba_30.gemfile"
+    - "./gemfiles/cuba_40.gemfile"
+    - "./gemfiles/dalli_20.gemfile"
+    - "./gemfiles/dalli_30.gemfile"
+    - "./gemfiles/dalli_32.gemfile"
+    - "./gemfiles/excon_02.gemfile"
+    - "./gemfiles/excon_079.gemfile"
+    - "./gemfiles/excon_100.gemfile"
+    - "./gemfiles/graphql_10.gemfile"
+    - "./gemfiles/graphql_20.gemfile"
+    - "./gemfiles/grpc_10.gemfile"
+    - "./gemfiles/net_http_01.gemfile"
+    - "./gemfiles/rack_16.gemfile"
+    - "./gemfiles/rack_20.gemfile"
+    - "./gemfiles/rack_30.gemfile"
+    - "./gemfiles/redis_40.gemfile"
+    - "./gemfiles/rest_client_16.gemfile"
+    - "./gemfiles/rest_client_20.gemfile"
+    - "./gemfiles/resque_122.gemfile"
+    - "./gemfiles/resque_20.gemfile"
+    - "./gemfiles/roda_20.gemfile"
+    - "./gemfiles/roda_30.gemfile"
+    - "./gemfiles/sidekiq_42.gemfile"
+    - "./gemfiles/sidekiq_50.gemfile"
+    - "./gemfiles/sidekiq_60.gemfile"
+    - "./gemfiles/sidekiq_70.gemfile"
+    - "./gemfiles/sinatra_14.gemfile"
+    - "./gemfiles/sinatra_22.gemfile"
+    - "./gemfiles/sinatra_30.gemfile"
+    - "./gemfiles/shoryuken_50.gemfile"
+    - "./gemfiles/shoryuken_60.gemfile"
+    - "./gemfiles/mongo_216.gemfile"
 executors:
   ruby_27:
     docker:
@@ -290,51 +326,16 @@ workflows:
                 - ruby_30
                 - ruby_31
                 - ruby_32
-  libraries:
+  libraries_ruby_3:
     jobs:
       - test_apprisal:
           matrix:
             parameters:
               stack:
-                - ruby_27
                 - ruby_30
                 - ruby_31
                 - ruby_32
-              gemfile:
-                - "./gemfiles/aws_30.gemfile"
-                - "./gemfiles/aws_60.gemfile"
-                - "./gemfiles/cuba_30.gemfile"
-                - "./gemfiles/cuba_40.gemfile"
-                - "./gemfiles/dalli_20.gemfile"
-                - "./gemfiles/dalli_30.gemfile"
-                - "./gemfiles/dalli_32.gemfile"
-                - "./gemfiles/excon_02.gemfile"
-                - "./gemfiles/excon_079.gemfile"
-                - "./gemfiles/excon_100.gemfile"
-                - "./gemfiles/graphql_10.gemfile"
-                - "./gemfiles/graphql_20.gemfile"
-                - "./gemfiles/grpc_10.gemfile"
-                - "./gemfiles/net_http_01.gemfile"
-                - "./gemfiles/rack_16.gemfile"
-                - "./gemfiles/rack_20.gemfile"
-                - "./gemfiles/rack_30.gemfile"
-                - "./gemfiles/redis_40.gemfile"
-                - "./gemfiles/rest_client_16.gemfile"
-                - "./gemfiles/rest_client_20.gemfile"
-                - "./gemfiles/resque_122.gemfile"
-                - "./gemfiles/resque_20.gemfile"
-                - "./gemfiles/roda_20.gemfile"
-                - "./gemfiles/roda_30.gemfile"
-                - "./gemfiles/sidekiq_42.gemfile"
-                - "./gemfiles/sidekiq_50.gemfile"
-                - "./gemfiles/sidekiq_60.gemfile"
-                - "./gemfiles/sidekiq_70.gemfile"
-                - "./gemfiles/sinatra_14.gemfile"
-                - "./gemfiles/sinatra_22.gemfile"
-                - "./gemfiles/sinatra_30.gemfile"
-                - "./gemfiles/shoryuken_50.gemfile"
-                - "./gemfiles/shoryuken_60.gemfile"
-                - "./gemfiles/mongo_216.gemfile"
+              <<: *library_gemfile
             exclude:
             # Currently rest-client 1.6 gemfile pulls in mime-types 2.99.3
             # and adaptation to mime-type 3.0 is only available in rest-client 2.0:
@@ -354,7 +355,14 @@ workflows:
             # https://www.ruby-lang.org/en/news/2022/11/11/ruby-3-2-0-preview3-released/
             - stack: ruby_32
               gemfile: "./gemfiles/sinatra_14.gemfile"
-
+  libraries_ruby_2:
+    jobs:
+      - test_apprisal:
+          matrix:
+            parameters:
+              stack:
+                - ruby_27
+              <<: *library_gemfile
   rails_ruby_2:
     jobs:
       - test_apprisal:
