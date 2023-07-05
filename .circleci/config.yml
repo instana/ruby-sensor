@@ -332,6 +332,7 @@ workflows:
                 - "./gemfiles/sinatra_22.gemfile"
                 - "./gemfiles/sinatra_30.gemfile"
                 - "./gemfiles/shoryuken_50.gemfile"
+                - "./gemfiles/shoryuken_60.gemfile"
                 - "./gemfiles/mongo_216.gemfile"
             exclude:
             # Currently rest-client 1.6 gemfile pulls in mime-types 2.99.3
