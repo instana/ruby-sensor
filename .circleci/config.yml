@@ -36,6 +36,7 @@ library_gemfile: &library_gemfile
     - "./gemfiles/shoryuken_50.gemfile"
     - "./gemfiles/shoryuken_60.gemfile"
     - "./gemfiles/mongo_216.gemfile"
+    - "./gemfiles/mongo_219.gemfile"
 executors:
   ruby_27:
     docker:
