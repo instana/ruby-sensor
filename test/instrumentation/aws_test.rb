@@ -60,7 +60,7 @@ class AwsTest < Minitest::Test
     assert_equal entry_span[:s], s3_span[:p]
     assert_equal :s3, s3_span[:n]
     assert_equal 'get', s3_span[:data][:s3][:op]
-    assert_equal 'sample_bucket', s3_span[:data][:s3][:bucket]
+    assert_equal 'sample-bucket', s3_span[:data][:s3][:bucket]
     assert_equal 'sample_key', s3_span[:data][:s3][:key]
   end
 
