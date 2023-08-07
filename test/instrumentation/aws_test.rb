@@ -36,7 +36,7 @@ class AwsTest < Minitest::Test
   end
 
   def test_s3
-    dynamo = Aws::S3::Client.new(
+    s3_client = Aws::S3::Client.new(
       region: "local",
       access_key_id: "minioadmin",
       secret_access_key: "minioadmin",
@@ -45,7 +45,7 @@ class AwsTest < Minitest::Test
 
     assert_raises Aws::S3::Errors::NoSuchBucket do
       Instana::Tracer.start_or_continue_trace(:s3_test, {}) do
-        dynamo.get_object(
+        s3_client.get_object(
           bucket: 'sample-bucket',
           key: 'sample_key'
         )
