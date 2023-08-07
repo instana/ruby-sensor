@@ -40,6 +40,7 @@ class AwsTest < Minitest::Test
       region: "local",
       access_key_id: "minioadmin",
       secret_access_key: "minioadmin",
+      force_path_style: "true",
       endpoint: "http://localhost:9000"
     )
 
