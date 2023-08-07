@@ -46,7 +46,7 @@ class AwsTest < Minitest::Test
     assert_raises Aws::S3::Errors::NoSuchBucket do
       Instana::Tracer.start_or_continue_trace(:s3_test, {}) do
         dynamo.get_object(
-          bucket: 'sample_bucket',
+          bucket: 'sample-bucket',
           key: 'sample_key'
         )
       end
