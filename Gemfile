@@ -11,8 +11,8 @@ gem 'puma'
 
 gem 'rubocop', '~> 1.9'
 
-gem 'rack', '<3.0.0'
-# gem 'rackup'
+gem 'rack'
+gem 'rackup'
 gem 'rack-test'
 
 gem 'simplecov', '~> 0.21.2'

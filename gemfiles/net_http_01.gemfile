@@ -5,7 +5,8 @@
 
 source "https://rubygems.org"
 
-gem "rack", "<3.0.0"
+gem "rack"
+gem "rackup"
 gem "rake"
 gem "minitest", "5.18.1"
 gem "minitest-reporters"
