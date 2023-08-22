@@ -5,7 +5,7 @@ module Instana
   module Activators
     class AwsSdkSqs < Activator
       def can_instrument?
-        defined?(::Aws::SQS::Client) && ::Aws::SQS::Client.respond_to?(:add_plugin)
+        defined?(::Aws::SQS::Client) && ::Aws::SQS::Client.respond_to?(:add_plugin) && Instana.config[:aws_sqs][:enabled]
       end
 
       def instrument

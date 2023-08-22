@@ -5,7 +5,7 @@ module Instana
   module Activators
     class AwsSdkLambda < Activator
       def can_instrument?
-        defined?(::Aws::Lambda::Client) && ::Aws::Lambda::Client.respond_to?(:add_plugin)
+        defined?(::Aws::Lambda::Client) && ::Aws::Lambda::Client.respond_to?(:add_plugin) && Instana.config[:aws_lambda][:enabled]
       end
 
       def instrument

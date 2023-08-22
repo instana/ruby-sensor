@@ -7,7 +7,8 @@ module Instana
       def can_instrument?
         defined?(::Instana::Rack) &&
           defined?(::Rails) &&
-          defined?(::Rails::VERSION)
+          defined?(::Rails::VERSION) &&
+          Instana.config[:rails][:enabled]
       end
 
       def instrument

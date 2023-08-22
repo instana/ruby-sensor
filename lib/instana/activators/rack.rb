@@ -5,7 +5,7 @@ module Instana
   module Activators
     class Rack < Activator
       def can_instrument?
-        defined?(::Rack)
+        defined?(::Rack) && ::Instana.config[:rack][:enabled]
       end
 
       def instrument

@@ -8,6 +8,12 @@ class MongoTest < Minitest::Test
     clear_all!
   end
 
+  def test_config_defaults
+    assert ::Instana.config[:mongo].is_a?(Hash)
+    assert ::Instana.config[:mongo].key?(:enabled)
+    assert_equal true, ::Instana.config[:mongo][:enabled]
+  end
+
   def test_mongo
     Instana.tracer.start_or_continue_trace(:'mongo-test') do
       client = Mongo::Client.new('mongodb://127.0.0.1:27017/instana')

@@ -20,6 +20,12 @@ class RailsActiveJobTest < Minitest::Test
     clear_all!
   end
 
+  def test_config_defaults
+    assert ::Instana.config[:active_job].is_a?(Hash)
+    assert ::Instana.config[:active_job].key?(:enabled)
+    assert_equal true, ::Instana.config[:active_job][:enabled]
+  end
+
   def test_perform_now
     SampleJob.perform_now("test_perform_now")
     spans = ::Instana.processor.queued_spans

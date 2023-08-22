@@ -14,6 +14,12 @@ class RailsActionCableTest < Minitest::Test
     skip unless defined?(::ActionCable::Connection::Base)
   end
 
+  def test_config_defaults
+    assert ::Instana.config[:action_cable].is_a?(Hash)
+    assert ::Instana.config[:action_cable].key?(:enabled)
+    assert_equal true, ::Instana.config[:action_cable][:enabled]
+  end
+
   def test_transmit_no_parent
     clear_all!
 

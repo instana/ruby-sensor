@@ -5,7 +5,8 @@ module Instana
   module Activators
     class ActiveJob < Activator
       def can_instrument?
-        defined?(::ActiveJob::Base)
+        defined?(::ActiveJob::Base) &&
+          Instana.config[:active_job][:enabled]
       end
 
       def instrument

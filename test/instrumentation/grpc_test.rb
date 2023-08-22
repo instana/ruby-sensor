@@ -37,6 +37,12 @@ class GrpcTest < Minitest::Test
     end
   end
 
+  def test_config_defaults
+    assert ::Instana.config[:grpc].is_a?(Hash)
+    assert ::Instana.config[:grpc].key?(:enabled)
+    assert_equal true, ::Instana.config[:grpc][:enabled]
+  end
+
   def test_request_response
     clear_all!
     response = nil

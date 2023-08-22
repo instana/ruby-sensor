@@ -15,6 +15,12 @@ class CubaTest < Minitest::Test
     APP
   end
 
+  def test_config_defaults
+    assert ::Instana.config[:cuba].is_a?(Hash)
+    assert ::Instana.config[:cuba].key?(:enabled)
+    assert_equal true, ::Instana.config[:cuba][:enabled]
+  end
+
   def test_basic_get
     clear_all!
 

@@ -10,6 +10,12 @@ class ShoryukenTest < Minitest::Test
     @middleware = Instana::Instrumentation::Shoryuken.new
   end
 
+  def test_config_defaults
+    assert ::Instana.config[:shoryuken].is_a?(Hash)
+    assert ::Instana.config[:shoryuken].key?(:enabled)
+    assert_equal true, ::Instana.config[:shoryuken][:enabled]
+  end
+
   def test_start_trace_with_context
     id = Instana::Util.generate_id
     message = OpenStruct.new(

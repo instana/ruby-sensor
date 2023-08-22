@@ -5,7 +5,7 @@ module Instana
   module Activators
     class ActionCable < Activator
       def can_instrument?
-        defined?(::ActionCable::Connection::Base) && defined?(::ActionCable::Channel::Base)
+        defined?(::ActionCable::Connection::Base) && defined?(::ActionCable::Channel::Base) && Instana.config[:action_cable][:enabled]
       end
 
       def instrument

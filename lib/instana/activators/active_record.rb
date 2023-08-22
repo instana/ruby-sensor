@@ -5,7 +5,8 @@ module Instana
   module Activators
     class ActiveRecord < Activator
       def can_instrument?
-        defined?(::ActiveRecord::ConnectionAdapters::AbstractAdapter)
+        defined?(::ActiveRecord::ConnectionAdapters::AbstractAdapter) &&
+          Instana.config[:active_record][:enabled]
       end
 
       def instrument

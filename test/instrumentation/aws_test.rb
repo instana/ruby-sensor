@@ -8,6 +8,12 @@ class AwsTest < Minitest::Test
     clear_all!
   end
 
+  def test_dynamodb_config_defaults
+    assert ::Instana.config[:aws_dynamodb].is_a?(Hash)
+    assert ::Instana.config[:aws_dynamodb].key?(:enabled)
+    assert_equal true, ::Instana.config[:aws_dynamodb][:enabled]
+  end
+
   def test_dynamo_db
     dynamo = Aws::DynamoDB::Client.new(
       region: "local",
@@ -33,6 +39,12 @@ class AwsTest < Minitest::Test
     assert_equal :dynamodb, dynamo_span[:n]
     assert_equal 'get', dynamo_span[:data][:dynamodb][:op]
     assert_equal 'sample_table', dynamo_span[:data][:dynamodb][:table]
+  end
+
+  def test_s3_config_defaults
+    assert ::Instana.config[:aws_s3].is_a?(Hash)
+    assert ::Instana.config[:aws_s3].key?(:enabled)
+    assert_equal true, ::Instana.config[:aws_dynamodb][:enabled]
   end
 
   def test_s3
@@ -62,6 +74,12 @@ class AwsTest < Minitest::Test
     assert_equal 'get', s3_span[:data][:s3][:op]
     assert_equal 'sample-bucket', s3_span[:data][:s3][:bucket]
     assert_equal 'sample_key', s3_span[:data][:s3][:key]
+  end
+
+  def test_sns_config_defaults
+    assert ::Instana.config[:aws_sns].is_a?(Hash)
+    assert ::Instana.config[:aws_sns].key?(:enabled)
+    assert_equal true, ::Instana.config[:aws_sns][:enabled]
   end
 
   def test_sns_publish
@@ -116,6 +134,12 @@ class AwsTest < Minitest::Test
     assert_equal :"net-http", aws_span[:n]
   end
 
+  def test_sqs_config_defaults
+    assert ::Instana.config[:aws_sqs].is_a?(Hash)
+    assert ::Instana.config[:aws_sqs].key?(:enabled)
+    assert_equal true, ::Instana.config[:aws_sqs][:enabled]
+  end
+
   def test_sqs
     sqs = Aws::SQS::Client.new(
       region: "local",
@@ -158,6 +182,12 @@ class AwsTest < Minitest::Test
     assert_equal send_span[:t], message.message_attributes['X_INSTANA_T'].string_value
     assert_equal send_span[:s], message.message_attributes['X_INSTANA_S'].string_value
     assert_equal 'Sample', message.body
+  end
+
+  def test_lambda_config_defaults
+    assert ::Instana.config[:aws_lambda].is_a?(Hash)
+    assert ::Instana.config[:aws_lambda].key?(:enabled)
+    assert_equal true, ::Instana.config[:aws_lambda][:enabled]
   end
 
   def test_lambda

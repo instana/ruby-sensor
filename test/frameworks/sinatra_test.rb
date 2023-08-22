@@ -12,6 +12,12 @@ class SinatraTest < Minitest::Test
     APP
   end
 
+  def test_config_defaults
+    assert ::Instana.config[:sinatra].is_a?(Hash)
+    assert ::Instana.config[:sinatra].key?(:enabled)
+    assert_equal true, ::Instana.config[:sinatra][:enabled]
+  end
+
   def test_basic_get
     clear_all!
 

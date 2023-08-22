@@ -5,7 +5,7 @@ module Instana
   module Activators
     class AwsSdkSns < Activator
       def can_instrument?
-        defined?(::Aws::SNS::Client) && ::Aws::SNS::Client.respond_to?(:add_plugin)
+        defined?(::Aws::SNS::Client) && ::Aws::SNS::Client.respond_to?(:add_plugin) && Instana.config[:aws_sns][:enabled]
       end
 
       def instrument

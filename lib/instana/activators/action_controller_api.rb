@@ -5,7 +5,7 @@ module Instana
   module Activators
     class ActionControllerAPI < Activator
       def can_instrument?
-        defined?(::ActionController::API)
+        defined?(::ActionController::API) && Instana.config[:action_controller][:enabled]
       end
 
       def instrument

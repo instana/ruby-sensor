@@ -5,7 +5,7 @@ module Instana
   module Activators
     class ActionView < Activator
       def can_instrument?
-        defined?(::ActionView::PartialRenderer)
+        defined?(::ActionView::PartialRenderer) && Instana.config[:action_view][:enabled]
       end
 
       def instrument

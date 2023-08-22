@@ -5,7 +5,7 @@ module Instana
   module Activators
     class Shoryuken < Activator
       def can_instrument?
-        defined?(::Shoryuken) && ::Shoryuken.respond_to?(:configure_server)
+        defined?(::Shoryuken) && ::Shoryuken.respond_to?(:configure_server) && ::Instana.config[:shoryuken][:enabled]
       end
 
       def instrument

@@ -5,7 +5,7 @@ module Instana
   module Activators
     class Cuba < Activator
       def can_instrument?
-        defined?(::Instana::Rack) && defined?(::Cuba)
+        defined?(::Instana::Rack) && defined?(::Cuba) && Instana.config[:cuba][:enabled]
       end
 
       def instrument

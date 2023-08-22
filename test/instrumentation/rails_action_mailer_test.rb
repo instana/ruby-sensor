@@ -34,6 +34,12 @@ class RailsActionMailerTest < Minitest::Test
     clear_all!
   end
 
+  def test_config_defaults
+    assert ::Instana.config[:action_mailer].is_a?(Hash)
+    assert ::Instana.config[:action_mailer].key?(:enabled)
+    assert_equal true, ::Instana.config[:action_mailer][:enabled]
+  end
+
   def test_mailer
     Instana.tracer.start_or_continue_trace(:test) do
       TestMailer.sample_email.deliver_now

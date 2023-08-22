@@ -58,20 +58,40 @@ module Instana
 
       @config[:post_fork_proc] = proc { ::Instana.agent.spawn_background_thread }
 
+      # Individual enable/disable configuration for each and every activator
+      initialize_activator_configuration
+    end
+
+    def initialize_activator_configuration
+      @config[:action_cable]       = { :enabled => true }
       @config[:action_controller]  = { :enabled => true }
+      @config[:action_mailer]      = { :enabled => true }
       @config[:action_view]        = { :enabled => true }
+      @config[:active_job]         = { :enabled => true }
       @config[:active_record]      = { :enabled => true }
+      @config[:aws_dynamodb]       = { :enabled => true }
+      @config[:aws_lambda]         = { :enabled => true }
+      @config[:aws_s3]             = { :enabled => true }
+      @config[:aws_sns]            = { :enabled => true }
+      @config[:aws_sqs]            = { :enabled => true }
+      @config[:cuba]               = { :enabled => true }
       @config[:dalli]              = { :enabled => true }
       @config[:excon]              = { :enabled => true }
-      @config[:grpc]               = { :enabled => true }
       @config[:graphql]            = { :enabled => true }
+      @config[:grpc]               = { :enabled => true }
+      @config[:mongo]              = { :enabled => true }
       @config[:nethttp]            = { :enabled => true }
+      @config[:rack]               = { :enabled => true }
+      @config[:rails]              = { :enabled => true }
       @config[:redis]              = { :enabled => true }
       @config[:'resque-client']    = { :enabled => true, :propagate => true }
       @config[:'resque-worker']    = { :enabled => true, :'setup-fork' => true }
       @config[:'rest-client']      = { :enabled => true }
+      @config[:roda]               = { :enabled => true }
+      @config[:shoryuken]          = { :enabled => true }
       @config[:'sidekiq-client']   = { :enabled => true }
       @config[:'sidekiq-worker']   = { :enabled => true }
+      @config[:sinatra]            = { :enabled => true }
     end
 
     def [](key)

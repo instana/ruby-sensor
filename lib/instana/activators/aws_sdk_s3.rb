@@ -5,7 +5,7 @@ module Instana
   module Activators
     class AwsS3 < Activator
       def can_instrument?
-        defined?(::Aws::S3::Client) && ::Aws::S3::Client.respond_to?(:add_plugin)
+        defined?(::Aws::S3::Client) && ::Aws::S3::Client.respond_to?(:add_plugin) && Instana.config[:aws_s3][:enabled]
       end
 
       def instrument

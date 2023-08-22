@@ -5,7 +5,7 @@ module Instana
   module Activators
     class Mongo < Activator
       def can_instrument?
-        defined?(::Mongo::Client) && defined?(::Mongo::Monitoring::Global)
+        defined?(::Mongo::Client) && defined?(::Mongo::Monitoring::Global) && ::Instana.config[:mongo][:enabled]
       end
 
       def instrument

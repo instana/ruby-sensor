@@ -56,6 +56,12 @@ class RackTest < Minitest::Test
     end
   end
 
+  def test_config_defaults
+    assert ::Instana.config[:rack].is_a?(Hash)
+    assert ::Instana.config[:rack].key?(:enabled)
+    assert_equal true, ::Instana.config[:rack][:enabled]
+  end
+
   def test_basic_get
     clear_all!
     ::Instana.config[:collect_backtraces] = true
