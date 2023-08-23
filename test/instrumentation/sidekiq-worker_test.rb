@@ -25,9 +25,20 @@ class SidekiqServerTest < Minitest::Test
   end
 
   def test_config_defaults
+    @execute_test_if_framework_version_is_supported.call
     assert ::Instana.config[:'sidekiq-worker'].is_a?(Hash)
     assert ::Instana.config[:'sidekiq-worker'].key?(:enabled)
     assert_equal true, ::Instana.config[:'sidekiq-worker'][:enabled]
+
+    activator = ::Instana::Activators::SidekiqServer.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:'sidekiq-worker'][:enabled] = false
+
+    activator = ::Instana::Activators::SidekiqServer.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_no_sidekiq_tracing_if_unsupported_version_only_redis

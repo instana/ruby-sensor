@@ -41,6 +41,20 @@ class GrpcTest < Minitest::Test
     assert ::Instana.config[:grpc].is_a?(Hash)
     assert ::Instana.config[:grpc].key?(:enabled)
     assert_equal true, ::Instana.config[:grpc][:enabled]
+
+    client_activator = ::Instana::Activators::GrpcClient.new
+    server_activator = ::Instana::Activators::GrpcServer.new
+    assert_equal true, client_activator.can_instrument?
+    assert_equal true, server_activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:grpc][:enabled] = false
+
+    client_activator = ::Instana::Activators::GrpcClient.new
+    server_activator = ::Instana::Activators::GrpcServer.new
+    assert_equal false, client_activator.can_instrument?
+    assert_equal false, server_activator.can_instrument?
   end
 
   def test_request_response

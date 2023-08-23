@@ -13,6 +13,22 @@ class RedisTest < Minitest::Test
     @redis_client = Redis.new(url: @redis_url)
   end
 
+  def test_config_defaults
+    assert ::Instana.config[:redis].is_a?(Hash)
+    assert ::Instana.config[:redis].key?(:enabled)
+    assert_equal true, ::Instana.config[:redis][:enabled]
+
+    activator = ::Instana::Activators::Redis.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:redis][:enabled] = false
+
+    activator = ::Instana::Activators::Redis.new
+    assert_equal false, activator.can_instrument?
+  end
+
   def test_normal_call
     clear_all!
 

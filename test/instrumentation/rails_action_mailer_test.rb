@@ -38,6 +38,16 @@ class RailsActionMailerTest < Minitest::Test
     assert ::Instana.config[:action_mailer].is_a?(Hash)
     assert ::Instana.config[:action_mailer].key?(:enabled)
     assert_equal true, ::Instana.config[:action_mailer][:enabled]
+
+    activator = ::Instana::Activators::ActionMailer.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:action_mailer][:enabled] = false
+
+    activator = ::Instana::Activators::ActionMailer.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_mailer

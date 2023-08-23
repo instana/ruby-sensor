@@ -17,6 +17,22 @@ class ResqueClientTest < Minitest::Test
   def teardown
   end
 
+  def test_config_defaults
+    assert ::Instana.config[:'resque-client'].is_a?(Hash)
+    assert ::Instana.config[:'resque-client'].key?(:enabled)
+    assert_equal true, ::Instana.config[:'resque-client'][:enabled]
+
+    activator = ::Instana::Activators::ResqueClient.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:'resque-client'][:enabled] = false
+
+    activator = ::Instana::Activators::ResqueClient.new
+    assert_equal false, activator.can_instrument?
+  end
+
   def test_enqueue
     ::Instana.tracer.start_or_continue_trace(:'resque-client_test') do
       ::Resque.enqueue(FastJob)

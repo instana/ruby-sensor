@@ -15,6 +15,20 @@ class RailsActionControllerTest < Minitest::Test
     assert ::Instana.config[:action_controller].is_a?(Hash)
     assert ::Instana.config[:action_controller].key?(:enabled)
     assert_equal true, ::Instana.config[:action_controller][:enabled]
+
+    api_activator = ::Instana::Activators::ActionControllerAPI.new
+    base_activator = ::Instana::Activators::ActionControllerBase.new
+    assert_equal true, api_activator.can_instrument?
+    assert_equal true, base_activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:action_controller][:enabled] = false
+
+    api_activator = ::Instana::Activators::ActionControllerAPI.new
+    base_activator = ::Instana::Activators::ActionControllerBase.new
+    assert_equal false, api_activator.can_instrument?
+    assert_equal false, base_activator.can_instrument?
   end
 
   def test_controller_reporting

@@ -12,6 +12,16 @@ class MongoTest < Minitest::Test
     assert ::Instana.config[:mongo].is_a?(Hash)
     assert ::Instana.config[:mongo].key?(:enabled)
     assert_equal true, ::Instana.config[:mongo][:enabled]
+
+    activator = ::Instana::Activators::Mongo.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:mongo][:enabled] = false
+
+    activator = ::Instana::Activators::Mongo.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_mongo

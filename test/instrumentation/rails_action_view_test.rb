@@ -31,6 +31,16 @@ class RailsActionViewTest < Minitest::Test
     assert ::Instana.config[:action_view].is_a?(Hash)
     assert ::Instana.config[:action_view].key?(:enabled)
     assert_equal true, ::Instana.config[:action_view][:enabled]
+
+    activator = ::Instana::Activators::ActionView.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:action_view][:enabled] = false
+
+    activator = ::Instana::Activators::ActionView.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_no_tracing_if_unsupported_version_only_render_is_ok

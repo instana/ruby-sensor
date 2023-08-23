@@ -18,6 +18,16 @@ class RailsActionCableTest < Minitest::Test
     assert ::Instana.config[:action_cable].is_a?(Hash)
     assert ::Instana.config[:action_cable].key?(:enabled)
     assert_equal true, ::Instana.config[:action_cable][:enabled]
+
+    activator = ::Instana::Activators::ActionCable.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:action_cable][:enabled] = false
+
+    activator = ::Instana::Activators::ActionCable.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_transmit_no_parent

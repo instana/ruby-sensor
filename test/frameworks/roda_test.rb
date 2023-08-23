@@ -18,6 +18,16 @@ class RodaTest < Minitest::Test
     assert ::Instana.config[:roda].is_a?(Hash)
     assert ::Instana.config[:roda].key?(:enabled)
     assert_equal true, ::Instana.config[:roda][:enabled]
+
+    activator = ::Instana::Activators::Roda.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:roda][:enabled] = false
+
+    activator = ::Instana::Activators::Roda.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_basic_get

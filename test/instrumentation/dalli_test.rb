@@ -13,6 +13,16 @@ class DalliTest < Minitest::Test
     assert ::Instana.config[:dalli].is_a?(Hash)
     assert ::Instana.config[:dalli].key?(:enabled)
     assert_equal true, ::Instana.config[:dalli][:enabled]
+
+    activator = ::Instana::Activators::Dalli.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:dalli][:enabled] = false
+
+    activator = ::Instana::Activators::Dalli.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_basic_get

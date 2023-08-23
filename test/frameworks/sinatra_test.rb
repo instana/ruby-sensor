@@ -16,6 +16,16 @@ class SinatraTest < Minitest::Test
     assert ::Instana.config[:sinatra].is_a?(Hash)
     assert ::Instana.config[:sinatra].key?(:enabled)
     assert_equal true, ::Instana.config[:sinatra][:enabled]
+
+    activator = ::Instana::Activators::Sinatra.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:sinatra][:enabled] = false
+
+    activator = ::Instana::Activators::Sinatra.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_basic_get

@@ -60,6 +60,16 @@ class RackTest < Minitest::Test
     assert ::Instana.config[:rack].is_a?(Hash)
     assert ::Instana.config[:rack].key?(:enabled)
     assert_equal true, ::Instana.config[:rack][:enabled]
+
+    activator = ::Instana::Activators::Rack.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:rack][:enabled] = false
+
+    activator = ::Instana::Activators::Rack.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_basic_get

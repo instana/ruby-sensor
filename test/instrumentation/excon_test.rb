@@ -9,6 +9,16 @@ class ExconTest < Minitest::Test
     assert ::Instana.config[:excon].is_a?(Hash)
     assert ::Instana.config[:excon].key?(:enabled)
     assert_equal true, ::Instana.config[:excon][:enabled]
+
+    activator = ::Instana::Activators::Excon.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:excon][:enabled] = false
+
+    activator = ::Instana::Activators::Excon.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_basic_get

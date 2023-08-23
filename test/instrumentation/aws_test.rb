@@ -12,6 +12,16 @@ class AwsTest < Minitest::Test
     assert ::Instana.config[:aws_dynamodb].is_a?(Hash)
     assert ::Instana.config[:aws_dynamodb].key?(:enabled)
     assert_equal true, ::Instana.config[:aws_dynamodb][:enabled]
+
+    amodb_activator = ::Instana::Activators::AwsDynamoDB.new
+    assert_equal true, amodb_activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:aws_dynamodb][:enabled] = false
+
+    activator = ::Instana::Activators::AwsDynamoDB.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_dynamo_db

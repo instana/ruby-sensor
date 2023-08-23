@@ -9,6 +9,16 @@ class NetHTTPTest < Minitest::Test
     assert ::Instana.config[:nethttp].is_a?(Hash)
     assert ::Instana.config[:nethttp].key?(:enabled)
     assert_equal true, ::Instana.config[:nethttp][:enabled]
+
+    activator = ::Instana::Activators::NetHTTP.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:nethttp][:enabled] = false
+
+    activator = ::Instana::Activators::NetHTTP.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_get_with_query

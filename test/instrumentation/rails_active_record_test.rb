@@ -25,6 +25,16 @@ class RailsActiveRecordTest < Minitest::Test
     assert ::Instana.config[:active_record].is_a?(Hash)
     assert ::Instana.config[:active_record].key?(:enabled)
     assert_equal true, ::Instana.config[:active_record][:enabled]
+
+    activator = ::Instana::Activators::ActiveRecord.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:active_record][:enabled] = false
+
+    activator = ::Instana::Activators::ActiveRecord.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_create

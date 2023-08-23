@@ -24,6 +24,16 @@ class RailsActiveJobTest < Minitest::Test
     assert ::Instana.config[:active_job].is_a?(Hash)
     assert ::Instana.config[:active_job].key?(:enabled)
     assert_equal true, ::Instana.config[:active_job][:enabled]
+
+    activator = ::Instana::Activators::ActiveJob.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:active_job][:enabled] = false
+
+    activator = ::Instana::Activators::ActiveJob.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_perform_now

@@ -26,9 +26,20 @@ class SidekiqClientTest < Minitest::Test
   end
 
   def test_config_defaults
+    @execute_test_if_framework_version_is_supported.call
     assert ::Instana.config[:'sidekiq-client'].is_a?(Hash)
     assert ::Instana.config[:'sidekiq-client'].key?(:enabled)
     assert_equal true, ::Instana.config[:'sidekiq-client'][:enabled]
+
+    activator = ::Instana::Activators::SidekiqClient.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:'sidekiq-client'][:enabled] = false
+
+    activator = ::Instana::Activators::SidekiqClient.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_enqueue

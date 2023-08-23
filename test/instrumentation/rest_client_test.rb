@@ -14,6 +14,16 @@ class RestClientTest < Minitest::Test
     assert ::Instana.config[:'rest-client'].is_a?(Hash)
     assert ::Instana.config[:'rest-client'].key?(:enabled)
     assert_equal true, ::Instana.config[:'rest-client'][:enabled]
+
+    activator = ::Instana::Activators::RestClient.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:'rest-client'][:enabled] = false
+
+    activator = ::Instana::Activators::RestClient.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_basic_get

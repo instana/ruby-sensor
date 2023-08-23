@@ -19,6 +19,16 @@ class CubaTest < Minitest::Test
     assert ::Instana.config[:cuba].is_a?(Hash)
     assert ::Instana.config[:cuba].key?(:enabled)
     assert_equal true, ::Instana.config[:cuba][:enabled]
+
+    activator = ::Instana::Activators::Cuba.new
+    assert_equal true, activator.can_instrument?
+  end
+
+  def test_instrumentation_disabled
+    ::Instana.config[:cuba][:enabled] = false
+
+    activator = ::Instana::Activators::Cuba.new
+    assert_equal false, activator.can_instrument?
   end
 
   def test_basic_get
