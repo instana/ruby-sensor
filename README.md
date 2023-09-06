@@ -60,7 +60,7 @@ You can find more documentation covering supported components and minimum versio
 
 Instana provides deep end user monitoring that links server side traces with browser events to give you a complete view from server to browser.
 
-See the [End User Monitoring](/products/website_monitoring/#configuration) page for more information.
+See the [End User Monitoring](https://www.ibm.com/docs/en/instana-observability/current?topic=instana-monitoring-websites) page for more information.
 
 ## Development
 
