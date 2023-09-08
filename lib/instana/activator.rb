@@ -43,16 +43,27 @@ module Instana
   end
 end
 
-Dir["#{__dir__}/activators/*.rb"]
-  .sort
-  .select do |f|
-  # :nocov:
+DIRECTORY_OF_ACTIVATORS = "#{__dir__}/activators/".freeze
+
+def activated_set
+  all_activators = Set.new(
+    Dir["*.rb", base: DIRECTORY_OF_ACTIVATORS].map do |f|
+      File.basename(f, '.rb')
+    end
+  )
+
   if ENV['INSTANA_ACTIVATE_SET']
-    base = File.basename(f, '.rb')
-    ENV.fetch('INSTANA_ACTIVATE_SET', '').split(',').include?(base)
+    selected_activators = Set.new(ENV.fetch('INSTANA_ACTIVATE_SET', '').split(','))
+    all_activators & selected_activators
   else
-    true
+    all_activators
   end
-  # :nocov:
 end
-  .each { |f| require(f) }
+
+def require_selected_activator_files
+  activated_set.each do |f|
+    require("#{DIRECTORY_OF_ACTIVATORS}#{f}.rb")
+  end
+end
+
+require_selected_activator_files

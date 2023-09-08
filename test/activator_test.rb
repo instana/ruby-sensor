@@ -27,4 +27,24 @@ class ActivatorTest < Minitest::Test
     assert_equal 1, Instana::Activator.call.length
     assert subject.call
   end
+
+  def test_limited_activated_set
+    ENV['INSTANA_ACTIVATE_SET'] = 'rack,rails'
+    subject = activated_set
+    assert_instance_of Set, subject
+    assert_equal 2, subject.length
+    assert_includes subject, 'rack'
+    assert_includes subject, 'rails'
+  ensure
+    ENV.delete('INSTANA_ACTIVATE_SET')
+  end
+
+  def test_unlimited_activated_set
+    ENV.delete('INSTANA_ACTIVATE_SET')
+    subject = activated_set
+    assert_instance_of Set, subject
+    assert_equal 31, subject.length
+  ensure
+    ENV.delete('INSTANA_ACTIVATE_SET')
+  end
 end
