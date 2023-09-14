@@ -26,9 +26,12 @@ begin
       add_filter %r{lib/instana/(activators|frameworks|instrumentation)}
     end
 
-    if ENV['CI']
-      formatter SimpleCov::Formatter::JSONFormatter
-    end
+    formatter SimpleCov::Formatter::MultiFormatter.new(
+      [
+        SimpleCov::Formatter::HTMLFormatter,
+        SimpleCov::Formatter::JSONFormatter
+      ]
+    )
   end
 rescue LoadError => _e
   nil
