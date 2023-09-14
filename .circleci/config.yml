@@ -247,6 +247,8 @@ commands:
             bundle exec rake
       - store_test_results:
           path: ~/project/_junit
+      - store_artifacts:
+          path: coverage
   run_rubocop:
     steps:
       - run:
