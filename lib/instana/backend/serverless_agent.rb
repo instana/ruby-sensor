@@ -98,7 +98,7 @@ module Instana
             @logger.error(e.message)
             nil
           end
-        end.reject { |_, v| v.nil? }
+        end.reject { |v| v.nil? }
       end
 
       def host_name
