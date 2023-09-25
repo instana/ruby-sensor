@@ -7,8 +7,12 @@ begin
   require 'simplecov'
   require 'simplecov_json_formatter'
 
+  puts "in side test helper file"
+
   SimpleCov.start do
     enable_coverage :branch
+
+    puts "in side test helper file of SimpleCov.start"
 
     add_filter %r{^/test/}
 
