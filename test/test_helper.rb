@@ -5,6 +5,7 @@ ENV['INSTANA_TEST'] = 'true'
 
 begin
   require 'simplecov'
+  require 'simplecov_json_formatter'
 
   SimpleCov.start do
     enable_coverage :branch
