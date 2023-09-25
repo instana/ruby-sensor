@@ -5,12 +5,25 @@ ENV['INSTANA_TEST'] = 'true'
 
 begin
   require 'simplecov'
-  require 'simplecov_json_formatter'
-  require 'simplecov-json'
 
   SimpleCov.start do
-   
+    enable_coverage :branch
 
+    add_filter %r{^/test/}
+
+    add_group(
+      'In Process Collector',
+      [%r{lib/instana/(agent|backend|tracing|collectors|open_tracing|snapshot)}, %r{lib/instana/[^/]+\.rb}]
+    )
+
+    if ENV['APPRAISAL_INITIALIZED']
+      add_group(
+        'Instrumentation',
+        %r{lib/instana/(activators|frameworks|instrumentation)}
+      )
+    else
+      add_filter %r{lib/instana/(activators|frameworks|instrumentation)}
+    end
 
     formatter SimpleCov::Formatter::MultiFormatter.new(
       [
