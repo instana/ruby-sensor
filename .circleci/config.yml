@@ -279,6 +279,7 @@ jobs:
       - checkout
       - setup
       - run_tests
+      - run_sonarqube
   test_apprisal:
     parameters:
       stack:
@@ -301,7 +302,6 @@ jobs:
       - checkout
       - setup
       - run_rubocop
-      - run_sonarqube
   publish:
     executor: ruby_27
     steps:
