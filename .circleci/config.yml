@@ -248,7 +248,7 @@ commands:
       - store_test_results:
           path: ~/project/_junit
       - store_artifacts:
-          path: coverage
+          path: ~/project/coverage
   run_rubocop:
     steps:
       - run:
