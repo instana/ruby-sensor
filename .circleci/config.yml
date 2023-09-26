@@ -244,7 +244,7 @@ commands:
           name: Run Tests
           command: |
             mkdir _junit
-            bundle exec rake 
+            bundle exec rake
       - store_test_results:
           path: ~/project/_junit
       - store_artifacts:
@@ -278,6 +278,9 @@ jobs:
     steps:
       - checkout
       - setup
+      - run_sonarqube
+  sonar_run:
+    steps:
       - run_tests
       - run_sonarqube
   test_apprisal:
@@ -329,6 +332,7 @@ workflows:
                 - ruby_30
                 - ruby_31
                 - ruby_32
+      - sonar_run
   libraries_ruby_3:
     jobs:
       - test_apprisal:
