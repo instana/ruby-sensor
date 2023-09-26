@@ -280,6 +280,7 @@ jobs:
       - setup
       - run_sonarqube
   sonar_run:
+    executor: ruby_27
     steps:
       - run_tests
       - run_sonarqube
