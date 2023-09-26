@@ -278,10 +278,11 @@ jobs:
     steps:
       - checkout
       - setup
-      - run_sonarqube
   sonar_run:
     executor: ruby_27
     steps:
+      - checkout
+      - setup
       - run_tests
       - run_sonarqube
   test_apprisal:
