@@ -244,7 +244,7 @@ commands:
           name: Run Tests
           command: |
             mkdir _junit
-            bundle exec rake parallel:spec"[2]"
+            bundle exec rake 
       - store_test_results:
           path: ~/project/_junit
       - store_artifacts:
