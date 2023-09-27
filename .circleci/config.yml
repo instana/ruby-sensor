@@ -296,6 +296,7 @@ jobs:
       - run_tests
   lint:
     executor: ruby_27
+    parallelism: 3
     steps:
       - checkout
       - setup
