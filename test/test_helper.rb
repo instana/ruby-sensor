@@ -60,7 +60,7 @@ if ENV['CI']
                            ])
 else
   Minitest::Reporters.use!([
-                             MiniTest::Reporters::SpecReporter.new
+                             Minitest::Reporters::SpecReporter.new
                            ])
 end
 Minitest::Test.include(Instana::TestHelpers)
