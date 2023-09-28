@@ -239,6 +239,10 @@ commands:
                 -Dsonar.branch.name="${CIRCLE_BRANCH}"
             fi
   run_tests:
+    parameters:
+      customer:
+        type: string
+        default: mycompany
     steps:
       - run:
           name: Run Tests
@@ -248,7 +252,7 @@ commands:
       - store_test_results:
           path: ~/project/_junit
       - store_artifacts:
-          path: coverage_<< parameters.gemfile >>
+          path: coverage_<< parameters.customer >>
   run_rubocop:
     steps:
       - run:
@@ -294,7 +298,8 @@ jobs:
     steps:
       - checkout
       - setup
-      - run_tests
+      - run_tests:
+          customer: << parameters.gemfile >>
   lint:
     executor: ruby_27
     steps:
