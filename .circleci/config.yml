@@ -299,7 +299,7 @@ jobs:
       - checkout
       - setup
       - run_tests:
-          customer: << parameters.gemfile >>
+          customer: ${<< parameters.gemfile >>///}
   lint:
     executor: ruby_27
     steps:
