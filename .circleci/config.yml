@@ -248,7 +248,7 @@ commands:
       - store_test_results:
           path: ~/project/_junit
       - store_artifacts:
-          path: ~/project/coverage_<< parameters.gemfile >>
+          path: coverage_$(BUNDLE_GEMFILE)
   run_rubocop:
     steps:
       - run:
