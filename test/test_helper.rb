@@ -11,7 +11,13 @@ begin
     enable_coverage :branch
 
     add_filter %r{^/test/}
-    SimpleCov.coverage_dir('Coverage/'+ENV['BUNDLE_GEMFILE'])
+     appraised_group = File.basename(ENV['BUNDLE_GEMFILE']).split(/_[0-9]+\./).first
+       # suite_files = Dir['test/{instrumentation,frameworks}/*_test.rb']
+
+        #t.test_files = suite_files.select { |f| File.basename(f).start_with?(appraised_group) }
+
+
+    SimpleCov.coverage_dir('Coverage/'+appraised_group)
     add_group(
       'In Process Collector',
       [%r{lib/instana/(agent|backend|tracing|collectors|open_tracing|snapshot)}, %r{lib/instana/[^/]+\.rb}]
