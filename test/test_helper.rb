@@ -11,7 +11,12 @@ begin
     enable_coverage :branch
 
     add_filter %r{^/test/}
+
      appraised_group = File.basename(ENV['BUNDLE_GEMFILE'])
+     puts ENV['BUNDLE_GEMFILE']
+     puts ENV['TEMP']
+     #appraised_group1 = File.basename(ENV['TEMP'])
+
        # suite_files = Dir['test/{instrumentation,frameworks}/*_test.rb']
 
         #t.test_files = suite_files.select { |f| File.basename(f).start_with?(appraised_group) }
