@@ -13,9 +13,9 @@ begin
     add_filter %r{^/test/}
 
     appraised_group = File.basename(ENV['CIRCLE_BUILD_NUM'])
-    result = "#{'coverage/'} #{appraised_group}"
+    file_name = 'coverage/'
+    result = "#{file_name} #{appraised_group}"
     SimpleCov.coverage_dir(result)
-
     add_group(
       'In Process Collector',
       [%r{lib/instana/(agent|backend|tracing|collectors|open_tracing|snapshot)}, %r{lib/instana/[^/]+\.rb}]
