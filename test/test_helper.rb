@@ -11,10 +11,10 @@ begin
     enable_coverage :branch
 
     add_filter %r{^/test/}
-     appraised_group = File.basename(ENV['CIRCLE_BUILD_NUM'])
-     path_name='coverage/';
-     path_name_full= '#{path_name} #{appraised_group}'
-     SimpleCov.coverage_dir(path_name_full)
+
+    appraised_group = File.basename(ENV['CIRCLE_BUILD_NUM'])
+    SimpleCov.coverage_dir('coverage/'+appraised_group)
+
     add_group(
       'In Process Collector',
       [%r{lib/instana/(agent|backend|tracing|collectors|open_tracing|snapshot)}, %r{lib/instana/[^/]+\.rb}]
