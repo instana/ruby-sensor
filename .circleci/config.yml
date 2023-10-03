@@ -291,7 +291,6 @@ jobs:
     environment:
       APPRAISAL_INITIALIZED: "1"
       BUNDLE_GEMFILE: << parameters.gemfile >>
-      TEMP: << parameters.stack >>
     steps:
       - checkout
       - setup
