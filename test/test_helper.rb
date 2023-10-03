@@ -11,10 +11,10 @@ begin
     enable_coverage :branch
 
     add_filter %r{^/test/}
-    appraised_group = File.basename(ENV['CIRCLE_BUILD_NUM'])
-    file_name = 'coverage/'
-    result = "#{file_name} #{appraised_group}"
-    SimpleCov.coverage_dir(result)
+    build_num = File.basename(ENV['CIRCLE_BUILD_NUM'])
+    coverage_folder_name = 'coverage/'
+    cov_path = "#{coverage_folder_name} #{build_num}"
+    SimpleCov.coverage_dir(cov_path)
 
     add_group(
       'In Process Collector',
