@@ -13,7 +13,7 @@ begin
     add_filter %r{^/test/}
 
     appraised_group = File.basename(ENV['CIRCLE_BUILD_NUM'])
-    result = "#{"coverage/"} #{appraised_group}"
+    result = "#{'coverage/'} #{appraised_group}"
     SimpleCov.coverage_dir(result)
 
     add_group(
