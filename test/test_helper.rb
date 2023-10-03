@@ -11,7 +11,6 @@ begin
     enable_coverage :branch
 
     add_filter %r{^/test/}
-    appraised_group = File.basename(ENV['CIRCLE_BUILD_NUM'])
 
     add_group(
       'In Process Collector',
