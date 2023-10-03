@@ -243,8 +243,8 @@ commands:
       - run:
           name: Run Tests
           command: |
-            echo ${CIRCLE_WORKFLOW_JOB_ID}
-            echo ${CIRCLE_WORKFLOW_ID}
+            echo "CIRCLE_BUILD_NUM"
+            echo ${CIRCLE_BUILD_NUM}
             mkdir _junit
             bundle exec rake
       - store_test_results:

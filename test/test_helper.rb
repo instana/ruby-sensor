@@ -12,9 +12,9 @@ begin
 
     add_filter %r{^/test/}
 
-     appraised_group = File.basename(ENV['BUNDLE_GEMFILE'])
-     puts ENV['BUNDLE_GEMFILE']
-     puts ENV['TEMP']
+     appraised_group = File.basename(ENV['CIRCLE_BUILD_NUM'])
+     puts ENV['CIRCLE_BUILD_NUM']
+     
      #appraised_group1 = File.basename(ENV['TEMP'])
 
        # suite_files = Dir['test/{instrumentation,frameworks}/*_test.rb']
