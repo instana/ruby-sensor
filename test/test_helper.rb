@@ -14,7 +14,7 @@ begin
 
      appraised_group = File.basename(ENV['CIRCLE_BUILD_NUM'])
      puts ENV['CIRCLE_BUILD_NUM']
-     
+
      #appraised_group1 = File.basename(ENV['TEMP'])
 
        # suite_files = Dir['test/{instrumentation,frameworks}/*_test.rb']
@@ -22,7 +22,7 @@ begin
         #t.test_files = suite_files.select { |f| File.basename(f).start_with?(appraised_group) }
 
 
-    SimpleCov.coverage_dir('Coverage/'+appraised_group)
+    SimpleCov.coverage_dir('coverage/'+appraised_group)
     add_group(
       'In Process Collector',
       [%r{lib/instana/(agent|backend|tracing|collectors|open_tracing|snapshot)}, %r{lib/instana/[^/]+\.rb}]
