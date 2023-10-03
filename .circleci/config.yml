@@ -302,7 +302,7 @@ jobs:
     steps:
       - checkout
       - setup
-      - run_rubocop
+      - run_rubocop -d
       - run_sonarqube
   publish:
     executor: ruby_27
