@@ -1,6 +1,8 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2016
+
 ENV['INSTANA_TEST'] = 'true'
+
 begin
   require 'simplecov'
   require 'simplecov_json_formatter'
@@ -9,11 +11,7 @@ begin
     enable_coverage :branch
 
     add_filter %r{^/test/}
-
     appraised_group = File.basename(ENV['CIRCLE_BUILD_NUM'])
-    file_name = 'coverage/'
-    result = "#{file_name} #{appraised_group}"
-    SimpleCov.coverage_dir(result)
 
     add_group(
       'In Process Collector',
