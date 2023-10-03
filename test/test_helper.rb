@@ -1,8 +1,6 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2016
-
 ENV['INSTANA_TEST'] = 'true'
-
 begin
   require 'simplecov'
   require 'simplecov_json_formatter'
@@ -16,6 +14,7 @@ begin
     file_name = 'coverage/'
     result = "#{file_name} #{appraised_group}"
     SimpleCov.coverage_dir(result)
+
     add_group(
       'In Process Collector',
       [%r{lib/instana/(agent|backend|tracing|collectors|open_tracing|snapshot)}, %r{lib/instana/[^/]+\.rb}]
