@@ -256,7 +256,7 @@ commands:
       - run:
           name: Run Tests
           command: |
-            bundle exec rubocop
+            bundle exec rubocop -d
   publish_gem:
     steps:
       - run:
@@ -302,7 +302,7 @@ jobs:
     steps:
       - checkout
       - setup
-      - run_rubocop -d
+      - run_rubocop
       - run_sonarqube
   publish:
     executor: ruby_27
