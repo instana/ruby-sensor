@@ -37,7 +37,6 @@ begin
       ]
     )
   end
-
 rescue LoadError => _e
   nil
 end
