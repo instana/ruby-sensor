@@ -15,7 +15,7 @@ begin
     coverage_folder_name = 'coverage/'
     cov_path = "#{coverage_folder_name} #{build_num}"
     SimpleCov.coverage_dir(cov_path)
-    
+
     add_group(
       'In Process Collector',
       [%r{lib/instana/(agent|backend|tracing|collectors|open_tracing|snapshot)}, %r{lib/instana/[^/]+\.rb}]
