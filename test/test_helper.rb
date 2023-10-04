@@ -14,8 +14,7 @@ begin
     build_num = File.basename(ENV['CIRCLE_BUILD_NUM'])
     coverage_folder_name = 'coverage/'
     cov_path = "#{coverage_folder_name} #{build_num}"
-    SimpleCov.coverage_dir(cov_path)
-    SimpleCov.collate Dir["coverage/*/coverage.json"]
+
 
     add_group(
       'In Process Collector',
