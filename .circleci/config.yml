@@ -247,7 +247,11 @@ commands:
             echo ${CIRCLE_BUILD_NUM}
             mkdir _junit
             bundle exec rake
+            echo "current path"
+            pwd
+            echo "go to coverage path"
             cd /home/circleci/project/coverage/
+            echo "list all file and folder"
             ls -ltr
       - store_test_results:
           path: ~/project/_junit
