@@ -251,8 +251,9 @@ commands:
             pwd
             echo "go to coverage path"
             cd /home/circleci/project/coverage/
+            pwd
             echo "list all file and folder"
-            ls -ltr
+            ls
       - store_test_results:
           path: ~/project/_junit
       - store_artifacts:
