@@ -13,7 +13,7 @@ class RailsActiveRecordDatabaseMissingTest < Minitest::Test
     SQLite3::Database.new('/tmp/test.db')
     ENV['DATABASE_URL'] = 'sqlite3:///tmp/test.db'
 
-    @connection = ActiveRecord::Base.establish_connection(ENV['DATABASE_URL'])
+    @connection_pool = ActiveRecord::Base.establish_connection(ENV['DATABASE_URL'])
     c = ::ActiveRecord::Base.connection
     c.execute 'PRAGMA journal_mode=DELETE'
     c.execute 'PRAGMA locking_mode=NORMAL'
@@ -23,7 +23,7 @@ class RailsActiveRecordDatabaseMissingTest < Minitest::Test
   end
 
   def teardown
-    ActiveRecord::Base.remove_connection(@connection)
+    @connection_pool.disconnect
     ENV['DATABASE_URL'] = @old_url
   end
 
