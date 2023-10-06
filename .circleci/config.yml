@@ -397,3 +397,4 @@ workflows:
               gemfile:
                 - "./gemfiles/rails_61.gemfile"
                 - "./gemfiles/rails_70.gemfile"
+                - "./gemfiles/rails_71.gemfile"
