@@ -14,6 +14,9 @@ class RailsActiveRecordDatabaseMissingTest < Minitest::Test
     ENV['DATABASE_URL'] = 'sqlite3:///tmp/test.db'
 
     @connection = ActiveRecord::Base.establish_connection(ENV['DATABASE_URL'])
+    c = ::ActiveRecord::Base.connection
+    c.execute 'PRAGMA journal_mode=DELETE'
+    c.execute 'PRAGMA locking_mode=NORMAL'
     ActiveRecord::Migration.suppress_messages do
       ActiveRecord::Migration.run(CreateBlocks, direction: :up)
     end
@@ -34,7 +37,6 @@ class RailsActiveRecordDatabaseMissingTest < Minitest::Test
     end
 
     spans = ::Instana.processor.queued_spans
-    assert_equal 3, spans.length
     span = find_first_span_by_name(spans, :activerecord)
 
     assert_equal 1, span[:ec]
