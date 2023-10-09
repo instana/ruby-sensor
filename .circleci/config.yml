@@ -270,9 +270,9 @@ commands:
             pwd
             echo "list all file and folder inside ~"
             ls
-            cd ~/data
+            cd ~/bin
             pwd
-            echo "list all file and folder inside ~ -data"
+            echo "list all file and folder inside ~ -data "
             ls
 
       - store_test_results:
