@@ -270,11 +270,7 @@ commands:
             pwd
             echo "list all file and folder inside ~"
             ls
-            cd ~/bin
-            pwd
-            echo "list all file and folder inside ~ -data "
-            ls
-
+            docker ps
       - store_test_results:
           path: ~/project/_junit
       - store_artifacts:
