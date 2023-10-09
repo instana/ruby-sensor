@@ -252,7 +252,19 @@ commands:
             echo "go to coverage path"
             cd /home/circleci/project/coverage/
             pwd
-            echo "list all file and folder"
+            echo "list all file and folder inside coverage"
+            ls
+            cd /home/
+            pwd
+            echo "list all file and folder inside home"
+            ls
+            cd /home/circleci/
+            pwd
+            echo "list all file and folder inside home-circleci"
+            ls
+            cd /home/circleci/project
+            pwd
+            echo "list all file and folder inside home-circleci-project"
             ls
       - store_test_results:
           path: ~/project/_junit
