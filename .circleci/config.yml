@@ -266,6 +266,15 @@ commands:
             pwd
             echo "list all file and folder inside home-circleci-project"
             ls
+            cd ~
+            pwd
+            echo "list all file and folder inside ~"
+            ls
+            cd ~/data
+            pwd
+            echo "list all file and folder inside ~ -data"
+            ls
+
       - store_test_results:
           path: ~/project/_junit
       - store_artifacts:
