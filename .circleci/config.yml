@@ -266,11 +266,10 @@ commands:
             pwd
             echo "list all file and folder inside home-circleci-project"
             ls
-            cd ~
+            cd /
             pwd
             echo "list all file and folder inside ~"
             ls
-            docker ps
       - store_test_results:
           path: ~/project/_junit
       - store_artifacts:
