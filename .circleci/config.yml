@@ -268,8 +268,17 @@ commands:
             ls
             cd /
             pwd
-            echo "list all file and folder inside ~"
+            echo "list all file and folder inside slash"
             ls
+            cd /usr
+            pwd
+            echo "list all file and folder inside usr"
+            ls
+            cd /usr/local/bin/
+            pwd
+            echo "list all file and folder inside usr-local-bin-"
+            ls
+
       - store_test_results:
           path: ~/project/_junit
       - store_artifacts:
