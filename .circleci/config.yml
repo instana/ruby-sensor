@@ -270,13 +270,9 @@ commands:
             pwd
             echo "list all file and folder inside slash"
             ls
-            cd /usr
+            cd /var/
             pwd
-            echo "list all file and folder inside usr"
-            ls
-            cd /var/local/bin/
-            pwd
-            echo "list all file and folder inside usr-local-bin-"
+            echo "list all file and folder inside var "
             ls
             cd /var/lib/docker
             pwd
