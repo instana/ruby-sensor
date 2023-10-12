@@ -250,9 +250,9 @@ commands:
             echo "current path"
             pwd
       - persist_to_workspace:
-          root: ~/
+          root: /home/circleci/project/coverage/
           paths:
-            - job_output
+            - .
       - store_test_results:
           path: ~/project/_junit
       - store_artifacts:
