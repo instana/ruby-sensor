@@ -216,11 +216,15 @@ commands:
             bundle check || bundle install
   run_sonarqube:
     steps:
+      - attach_workspace:
+          at: ~/project/coverage
       - run:
           name: Install Java
           command: |
             sudo apt-get update
             sudo apt-get install openjdk-11-jdk
+            pwd
+            ls
       - run:
           name: Run SonarQube to capture coverage
           command: |
