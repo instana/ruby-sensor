@@ -226,7 +226,8 @@ commands:
       - run:
           name: Run SonarQube to capture coverage
           command: |
-            
+            pwd
+            ls
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip
             unzip -d /tmp /tmp/sonar-scanner-cli.zip
             if [[ -n "${CIRCLE_PR_NUMBER}" ]]; then
@@ -377,6 +378,8 @@ jobs:
   final_sonar:
     executor: ruby_27
     steps:
+      - checkout
+      - setup
       - run_sonarqube
 
 workflows:
