@@ -446,13 +446,4 @@ workflows:
               gemfile:
                 - "./gemfiles/rails_61.gemfile"
                 - "./gemfiles/rails_70.gemfile"
-      - final:
-          requires:
-            - publish
-            - lint
-            - test_core
-            - test_apprisal_libraries_ruby_3
-            - test_apprisal_libraries_ruby_2
-            - test_apprisal_rails_ruby_2
-            - test_apprisal_rails_ruby_3
 
