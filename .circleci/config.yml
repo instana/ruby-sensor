@@ -303,7 +303,6 @@ jobs:
       - checkout
       - setup
       - run_rubocop
-      - run_sonarqube
   publish:
     executor: ruby_27
     steps:
@@ -375,6 +374,10 @@ jobs:
       - checkout
       - setup
       - run_tests
+  final_sonar:
+    executor: ruby_27
+    steps:
+      - run_sonarqube
 
 workflows:
   main_job:
@@ -454,4 +457,13 @@ workflows:
               gemfile:
                 - "./gemfiles/rails_61.gemfile"
                 - "./gemfiles/rails_70.gemfile"
+      - final_sonar:
+          requires:
+            - publish
+            - lint
+            - test_core
+            - test_apprisal_libraries_ruby_3
+            - test_apprisal_libraries_ruby_2
+            - test_apprisal_rails_ruby_2
+            - test_apprisal_rails_ruby_3
 
