@@ -468,5 +468,5 @@ workflows:
             - test_apprisal_libraries_ruby_3
             - test_apprisal_libraries_ruby_2
             - test_apprisal_rails_ruby_2
-            #- test_apprisal_rails_ruby_3
+            - test_apprisal_rails_ruby_3
 
