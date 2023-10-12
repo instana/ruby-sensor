@@ -13,11 +13,11 @@ Rake::TestTask.new(:test) do |t|
 
   t.libs << "test"
   t.libs << "lib"
- 
+
   if ENV['APPRAISAL_INITIALIZED']
     appraised_group = File.basename(ENV['BUNDLE_GEMFILE']).split(/_[0-9]+\./).first
     suite_files = Dir['test/{instrumentation,frameworks}/*_test.rb']
-        
+
     t.test_files = suite_files.select { |f| File.basename(f).start_with?(appraised_group) }
   else
     t.test_files = Dir[
