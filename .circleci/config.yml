@@ -249,36 +249,6 @@ commands:
             bundle exec rake
             echo "current path"
             pwd
-            echo "go to coverage path"
-            cd /home/circleci/project/coverage/
-            pwd
-            echo "list all file and folder inside coverage"
-            ls
-            cd /home/
-            pwd
-            echo "list all file and folder inside home"
-            ls
-            cd /home/circleci/
-            pwd
-            echo "list all file and folder inside home-circleci"
-            ls
-            cd /home/circleci/project
-            pwd
-            echo "list all file and folder inside home-circleci-project"
-            ls
-            cd /
-            pwd
-            echo "list all file and folder inside slash"
-            ls
-            cd /var/
-            pwd
-            echo "list all file and folder inside var "
-            ls
-            cd /var/lib/
-            pwd
-            echo "list all file and folder inside var-lib-"
-            ls
-
       - store_test_results:
           path: ~/project/_junit
       - store_artifacts:
