@@ -251,7 +251,7 @@ commands:
             echo "list of files under  -project-coverage"
             ls
       - persist_to_workspace:
-          root: ~/project/coverage_${CIRCLE_BUILD_NUM}
+          root: ~/project/coverage
           paths:
             - .
       - store_test_results:
