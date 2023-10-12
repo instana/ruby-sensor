@@ -302,6 +302,8 @@ commands:
           command: |
             bundle exec rake release[origin]
 
+
+
 jobs:
   test_core:
     parameters:
@@ -309,22 +311,6 @@ jobs:
         type: executor
         default: ruby_27
     executor: << parameters.stack >>
-    steps:
-      - checkout
-      - setup
-      - run_tests
-  test_apprisal:
-    parameters:
-      stack:
-        type: executor
-        default: ruby_27
-      gemfile:
-        type: string
-        default: "./gemfiles/aws_30.gemfile"
-    executor: << parameters.stack >>
-    environment:
-      APPRAISAL_INITIALIZED: "1"
-      BUNDLE_GEMFILE: << parameters.gemfile >>
     steps:
       - checkout
       - setup
@@ -343,7 +329,155 @@ jobs:
       - setup
       - publish_gem
 
+  test_apprisal_rails_ruby_3:
+    parameters:
+      stack:
+        type: executor
+        default: ruby_27
+      gemfile:
+        type: string
+        default: "./gemfiles/aws_30.gemfile"
+    executor: << parameters.stack >>
+    environment:
+      APPRAISAL_INITIALIZED: "1"
+      BUNDLE_GEMFILE: << parameters.gemfile >>
+    steps:
+      - checkout
+      - setup
+      - run_tests
+  test_apprisal_rails_ruby_2:
+    parameters:
+      stack:
+        type: executor
+        default: ruby_27
+      gemfile:
+        type: string
+        default: "./gemfiles/aws_30.gemfile"
+    executor: << parameters.stack >>
+    environment:
+      APPRAISAL_INITIALIZED: "1"
+      BUNDLE_GEMFILE: << parameters.gemfile >>
+    steps:
+      - checkout
+      - setup
+      - run_tests
+  test_apprisal_libraries_ruby_2:
+    parameters:
+      stack:
+        type: executor
+        default: ruby_27
+      gemfile:
+        type: string
+        default: "./gemfiles/aws_30.gemfile"
+    executor: << parameters.stack >>
+    environment:
+      APPRAISAL_INITIALIZED: "1"
+      BUNDLE_GEMFILE: << parameters.gemfile >>
+    steps:
+      - checkout
+      - setup
+      - run_tests
+  test_apprisal_libraries_ruby_3:
+    parameters:
+      stack:
+        type: executor
+        default: ruby_27
+      gemfile:
+        type: string
+        default: "./gemfiles/aws_30.gemfile"
+    executor: << parameters.stack >>
+    environment:
+      APPRAISAL_INITIALIZED: "1"
+      BUNDLE_GEMFILE: << parameters.gemfile >>
+    steps:
+      - checkout
+      - setup
+      - run_tests
+
 workflows:
+  main_job:
+    jobs:
+      - publish:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
+      - lint
+      - test_core:
+          matrix:
+            parameters:
+              stack:
+                - ruby_27
+                - ruby_30
+                - ruby_31
+                - ruby_32
+      - test_apprisal_libraries_ruby_3:
+          matrix:
+            parameters:
+              stack:
+                - ruby_30
+                - ruby_31
+                - ruby_32
+              <<: *library_gemfile
+            exclude:
+              # Currently rest-client 1.6 gemfile pulls in mime-types 2.99.3
+              # and adaptation to mime-type 3.0 is only available in rest-client 2.0:
+              # https://github.com/rest-client/rest-client/issues/464
+              # But mime-types 2.99.3 is too old for Ruby 3.0 or newer:
+              # https://stackoverflow.com/a/68433864
+              # so we should exclude thiese scenarios
+              - stack: ruby_30
+                gemfile: "./gemfiles/rest_client_16.gemfile"
+              - stack: ruby_31
+                gemfile: "./gemfiles/rest_client_16.gemfile"
+              - stack: ruby_32
+                gemfile: "./gemfiles/rest_client_16.gemfile"
+              # Sinatra 1.4 relies on the Fixnum class
+              # which has been removed from Ruby 3.2, see:
+              # https://bugs.ruby-lang.org/issues/12005
+              # https://www.ruby-lang.org/en/news/2022/11/11/ruby-3-2-0-preview3-released/
+              - stack: ruby_32
+                gemfile: "./gemfiles/sinatra_14.gemfile"
+      - test_apprisal_libraries_ruby_2:
+          matrix:
+            parameters:
+              stack:
+                - ruby_27
+              <<: *library_gemfile
+      - test_apprisal_rails_ruby_2:
+        matrix:
+          parameters:
+            stack:
+              - ruby_27
+              - ruby_27_postgres
+              - ruby_27_mysql2
+            gemfile:
+              - "./gemfiles/rails_60.gemfile"
+              - "./gemfiles/rails_52.gemfile"
+              - "./gemfiles/rails_50.gemfile"
+      - test_apprisal_rails_ruby_3:
+          matrix:
+            parameters:
+              stack:
+                - ruby_30
+                - ruby_30_postgres
+                - ruby_30_mysql2
+                - ruby_31
+                - ruby_31_postgres
+                - ruby_31_mysql2
+                - ruby_32
+                - ruby_32_postgres
+                - ruby_32_mysql2
+              gemfile:
+                - "./gemfiles/rails_61.gemfile"
+                - "./gemfiles/rails_70.gemfile"
+
+
+
+
+
+
   publish:
     jobs:
       - publish:
@@ -374,24 +508,24 @@ workflows:
                 - ruby_32
               <<: *library_gemfile
             exclude:
-            # Currently rest-client 1.6 gemfile pulls in mime-types 2.99.3
-            # and adaptation to mime-type 3.0 is only available in rest-client 2.0:
-            # https://github.com/rest-client/rest-client/issues/464
-            # But mime-types 2.99.3 is too old for Ruby 3.0 or newer:
-            # https://stackoverflow.com/a/68433864
-            # so we should exclude thiese scenarios
-            - stack: ruby_30
-              gemfile: "./gemfiles/rest_client_16.gemfile"
-            - stack: ruby_31
-              gemfile: "./gemfiles/rest_client_16.gemfile"
-            - stack: ruby_32
-              gemfile: "./gemfiles/rest_client_16.gemfile"
-            # Sinatra 1.4 relies on the Fixnum class
-            # which has been removed from Ruby 3.2, see:
-            # https://bugs.ruby-lang.org/issues/12005
-            # https://www.ruby-lang.org/en/news/2022/11/11/ruby-3-2-0-preview3-released/
-            - stack: ruby_32
-              gemfile: "./gemfiles/sinatra_14.gemfile"
+              # Currently rest-client 1.6 gemfile pulls in mime-types 2.99.3
+              # and adaptation to mime-type 3.0 is only available in rest-client 2.0:
+              # https://github.com/rest-client/rest-client/issues/464
+              # But mime-types 2.99.3 is too old for Ruby 3.0 or newer:
+              # https://stackoverflow.com/a/68433864
+              # so we should exclude thiese scenarios
+              - stack: ruby_30
+                gemfile: "./gemfiles/rest_client_16.gemfile"
+              - stack: ruby_31
+                gemfile: "./gemfiles/rest_client_16.gemfile"
+              - stack: ruby_32
+                gemfile: "./gemfiles/rest_client_16.gemfile"
+              # Sinatra 1.4 relies on the Fixnum class
+              # which has been removed from Ruby 3.2, see:
+              # https://bugs.ruby-lang.org/issues/12005
+              # https://www.ruby-lang.org/en/news/2022/11/11/ruby-3-2-0-preview3-released/
+              - stack: ruby_32
+                gemfile: "./gemfiles/sinatra_14.gemfile"
   libraries_ruby_2:
     jobs:
       - test_apprisal:
