@@ -247,10 +247,11 @@ commands:
             echo ${CIRCLE_BUILD_NUM}
             mkdir _junit
             bundle exec rake
-            echo "current path"
-            pwd
+            cd ~/project
+            echo "list of files under  -project-coverage"
+            ls
       - persist_to_workspace:
-          root: /home/circleci/project/coverage/
+          root: ~/project/coverage_${CIRCLE_BUILD_NUM}
           paths:
             - .
       - store_test_results:
