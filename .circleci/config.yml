@@ -227,6 +227,7 @@ commands:
           name: Run SonarQube to capture coverage
           command: |
             echo "Run SonarQube path and dir"
+            cd ~/project/coverage
             pwd
             ls
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip
