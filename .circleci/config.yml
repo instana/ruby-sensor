@@ -224,7 +224,7 @@ commands:
             sudo apt-get update
             sudo apt-get install openjdk-11-jdk
       - run:
-          name: Run SonarQube to capture coverage
+          name: Run SonarQube to report the coverage
           command: |
             pwd
             ls
@@ -376,7 +376,7 @@ jobs:
       - setup
       - run_tests
   final_sonar:
-    executor: ruby_27
+    executor: ruby_32
     steps:
       - checkout
       - setup
