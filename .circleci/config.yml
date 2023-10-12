@@ -211,7 +211,7 @@ commands:
             bundler --version
             bundle config set path './vendor/bundle'
       - run:
-          name: Install Depdendecies
+          name: Install Dependencies
           command: |
             bundle check || bundle install
   run_sonarqube:
