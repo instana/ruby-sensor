@@ -258,9 +258,6 @@ commands:
             echo ${CIRCLE_BUILD_NUM}
             mkdir _junit
             bundle exec rake
-          # cd ~/project/coverage
-          #  echo "list of files under  -project-coverage"
-          #  ls
             mkdir coverage_results
             cp -R coverage/.resultset.json coverage_results/.resultset-${CIRCLE_BUILD_NUM}.json
 
