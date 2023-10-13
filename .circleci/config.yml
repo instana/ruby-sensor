@@ -226,6 +226,10 @@ commands:
       - run:
           name: Run SonarQube to report the coverage
           command: |
+            pwd
+            ls
+            cd ./coverage
+            ls
             bundle exec rake coverage:report
             pwd
             ls
