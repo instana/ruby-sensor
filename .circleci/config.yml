@@ -217,7 +217,7 @@ commands:
   run_sonarqube:
     steps:
       - attach_workspace:
-          at: ~/project/coverage
+          at: .
       - run:
           name: Install Java
           command: |
@@ -226,6 +226,7 @@ commands:
       - run:
           name: Run SonarQube to report the coverage
           command: |
+            bundle exec rake coverage:report
             pwd
             ls
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip
@@ -246,6 +247,8 @@ commands:
             cd ~/project/coverage
             pwd
             ls
+          store_artifacts:
+                path: coverage
   run_tests:
     steps:
       - run:
@@ -255,13 +258,16 @@ commands:
             echo ${CIRCLE_BUILD_NUM}
             mkdir _junit
             bundle exec rake
-            cd ~/project/coverage
-            echo "list of files under  -project-coverage"
-            ls
+          # cd ~/project/coverage
+          #  echo "list of files under  -project-coverage"
+          #  ls
+            mkdir coverage_results
+            cp -R coverage/.resultset.json coverage_results/.resultset-${CIRCLE_BUILD_NUM}.json
+
       - persist_to_workspace:
-          root: ~/project/coverage
+          root: .
           paths:
-            - .
+            - coverage_results
       - store_test_results:
           path: ~/project/_junit
       - store_artifacts:
