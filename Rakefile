@@ -35,6 +35,7 @@ namespace :coverage do
         [
           SimpleCov::Formatter::SimpleFormatter,
           SimpleCov::Formatter::HTMLFormatter
+          SimpleCov::Formatter::JSONFormatter
         ]
       )
     end
