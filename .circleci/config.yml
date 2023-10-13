@@ -260,6 +260,8 @@ commands:
             bundle exec rake
             mkdir coverage_results
             cp -R coverage/.resultset.json coverage_results/.resultset-${CIRCLE_BUILD_NUM}.json
+            pwd
+            ls
 
       - persist_to_workspace:
           root: .
