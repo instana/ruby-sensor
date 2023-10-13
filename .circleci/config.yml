@@ -228,11 +228,7 @@ commands:
           command: |
             pwd
             ls
-            cd /home/circleci/project/lib/tasks
-            ls
             bundle exec rake coverage:report
-            pwd
-            ls
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip
             unzip -d /tmp /tmp/sonar-scanner-cli.zip
             if [[ -n "${CIRCLE_PR_NUMBER}" ]]; then
