@@ -228,8 +228,7 @@ commands:
           command: |
             pwd
             ls
-            cd /home/circleci/project/coverage_results
-            echo "coverage results files"
+            cd /home/circleci/project/lib/tasks
             ls
             bundle exec rake coverage:report
             pwd
