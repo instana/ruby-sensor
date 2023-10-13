@@ -228,7 +228,7 @@ commands:
           command: |
             pwd
             ls
-            cd ./coverage
+            cd ./coverage_results
             ls
             bundle exec rake coverage:report
             pwd
