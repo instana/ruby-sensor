@@ -30,6 +30,7 @@ end
 namespace :coverage do
   task :report do
     require 'simplecov'
+    require 'simplecov_json_formatter'
     SimpleCov.collate Dir["coverage_results/.resultset-*.json"], 'rails' do
       formatter SimpleCov::Formatter::MultiFormatter.new(
         [
