@@ -46,15 +46,15 @@ The `instana` gem is a zero configuration tool that will automatically collect k
 
 ## Configuration
 
-Although the gem has no configuration required for out of the box metrics and tracing, components can be configured if needed.  See our [Configuration](https://docs.instana.io/ecosystem/ruby/configuration/) page.
+Although the gem has no configuration required for out of the box metrics and tracing, components can be configured if needed.  See our [Configuration](https://www.ibm.com/docs/en/instana-observability/current?topic=ruby-configuration-configuring-instana-gem) page.
 
 ## Tracing
 
-This Ruby gem provides a simple API for tracing and also supports [OpenTracing](http://opentracing.io/).  See the [Ruby Tracing SDK](https://docs.instana.io/ecosystem/ruby/tracing-sdk/) and [OpenTracing](https://docs.instana.io/ecosystem/ruby/opentracing/) pages for details.
+This Ruby gem provides a simple API for tracing and also supports [OpenTracing](http://opentracing.io/).  See the [Ruby Tracing SDK](https://www.ibm.com/docs/en/instana-observability/current?topic=ruby-tracing-sdk) and [OpenTracing](https://www.ibm.com/docs/en/instana-observability/current?topic=ruby-opentracing) pages for details.
 
 ## Documentation
 
-You can find more documentation covering supported components and minimum versions in the Instana [documentation portal](https://docs.instana.io/ecosystem/ruby/).
+You can find more documentation covering supported components and minimum versions in the Instana [documentation portal](https://www.ibm.com/docs/en/instana-observability/current?topic=technologies-monitoring-ruby).
 
 ## Want End User Monitoring (EUM)?
 
