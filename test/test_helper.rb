@@ -12,6 +12,7 @@ begin
 
     add_filter %r{^/test/}
 
+    command_name "Job #{ENV['CIRCLE_BUILD_NUM']}" if ENV['CIRCLE_BUILD_NUM']
     add_group(
       'In Process Collector',
       [%r{lib/instana/(agent|backend|tracing|collectors|open_tracing|snapshot)}, %r{lib/instana/[^/]+\.rb}]

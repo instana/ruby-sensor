@@ -27,4 +27,23 @@ Rake::TestTask.new(:test) do |t|
   end
 end
 
+namespace :coverage do
+  task :merge_reports do
+    require 'simplecov'
+    require 'simplecov_json_formatter'
+
+    SimpleCov.start do
+      enable_coverage :branch
+      SimpleCov.collate Dir["partial_coverage_results/.resultset-*.json"] do
+        formatter SimpleCov::Formatter::MultiFormatter.new(
+          [
+            SimpleCov::Formatter::SimpleFormatter,
+            SimpleCov::Formatter::JSONFormatter
+          ]
+        )
+      end
+    end
+  end
+end
+
 task :default => :test

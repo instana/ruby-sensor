@@ -217,27 +217,49 @@ commands:
   run_sonarqube:
     steps:
       - run:
-          name: Install Java
+          name: Install Java for the SonarQube tool
           command: |
             sudo apt-get update
             sudo apt-get install openjdk-11-jdk
       - run:
+          name: Install dependencies for coverage merge
+          command: |
+            bundler --version
+            bundle config set path './vendor/bundle'
+            bundle check || bundle install
+          environment:
+            BUNDLE_GEMFILE: './gemfiles/coverage_merge.gemfile'
+      - run:
+          name: Fetching partial coverage reports from workflow jobs
+          command: |
+            ./download.sh
+      - run:
+          name: Merging partial coverage reports for reporting
+          command: |
+            bundle exec rake coverage:merge_reports --trace
+          environment:
+            BUNDLE_GEMFILE: './gemfiles/coverage_merge.gemfile'
+      - run:
           name: Run SonarQube to capture coverage
           command: |
-            wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472.zip
+            wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.1.3023.zip
             unzip -d /tmp /tmp/sonar-scanner-cli.zip
             if [[ -n "${CIRCLE_PR_NUMBER}" ]]; then
-              /tmp/sonar-scanner-4.6.2.2472/bin/sonar-scanner \
+              /tmp/sonar-scanner-4.8.1.3023/bin/sonar-scanner \
                 -Dsonar.host.url="${SONARQUBE_URL}" \
                 -Dsonar.login="${SONARQUBE_LOGIN}" \
                 -Dsonar.pullrequest.key="${CIRCLE_PR_NUMBER}" \
                 -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}"
             else
-              /tmp/sonar-scanner-4.6.2.2472/bin/sonar-scanner \
+              /tmp/sonar-scanner-4.8.1.3023/bin/sonar-scanner \
                 -Dsonar.host.url="${SONARQUBE_URL}" \
                 -Dsonar.login="${SONARQUBE_LOGIN}" \
                 -Dsonar.branch.name="${CIRCLE_BRANCH}"
             fi
+      - store_artifacts:
+          path: partial_coverage_results
+      - store_artifacts:
+          path: coverage
   run_tests:
     steps:
       - run:
@@ -301,6 +323,10 @@ jobs:
       - checkout
       - setup
       - run_rubocop
+  report_coverage:
+    executor: ruby_32
+    steps:
+      - checkout
       - run_sonarqube
   publish:
     executor: ruby_27
@@ -398,3 +424,6 @@ workflows:
                 - "./gemfiles/rails_61.gemfile"
                 - "./gemfiles/rails_70.gemfile"
                 - "./gemfiles/rails_71.gemfile"
+  report_coverage:
+    jobs:
+      - report_coverage
