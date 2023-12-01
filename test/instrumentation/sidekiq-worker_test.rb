@@ -5,12 +5,6 @@ require 'test_helper'
 require 'support/apps/sidekiq/boot'
 
 class SidekiqServerTest < Minitest::Test
-  def setup
-    Sidekiq.configure_client do |config|
-      config.redis = { url: ENV["REDIS_URL"] }
-    end
-  end
-
   def test_config_defaults
     assert ::Instana.config[:'sidekiq-worker'].is_a?(Hash)
     assert ::Instana.config[:'sidekiq-worker'].key?(:enabled)

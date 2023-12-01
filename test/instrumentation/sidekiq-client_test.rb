@@ -6,9 +6,6 @@ require 'support/apps/sidekiq/boot'
 
 class SidekiqClientTest < Minitest::Test
   def setup
-    Sidekiq.configure_client do |config|
-      config.redis = { url: ENV["REDIS_URL"] }
-    end
     ::Sidekiq::Queue.new('some_random_queue').clear
   end
 
