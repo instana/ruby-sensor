@@ -5,8 +5,7 @@ module Instana
   module Activators
     class SidekiqWorker < Activator
       def can_instrument?
-        defined?(::Sidekiq) && ::Sidekiq.respond_to?(:configure_server) && ::Instana.config[:'sidekiq-worker'][:enabled] &&
-          Gem::Specification.find_by_name('sidekiq').version < Gem::Version.new('5.3')
+        defined?(::Sidekiq) && ::Sidekiq.respond_to?(:configure_server) && ::Instana.config[:'sidekiq-worker'][:enabled]
       end
 
       def instrument
