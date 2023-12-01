@@ -6,19 +6,6 @@ require 'support/apps/sidekiq/boot'
 
 class SidekiqServerTest < Minitest::Test
   def setup
-    @framework_version = Gem::Specification.find_by_name('sidekiq').version
-    @supported_framework_version = @framework_version < Gem::Version.new('5.3')
-    @execute_test_if_framework_version_is_supported = lambda {
-      unless @supported_framework_version
-        skip "Skipping this test because sidekiq version #{@framework_version} is not yet supported!"
-      end
-    }
-    @execute_test_only_if_framework_version_is_not_supported = lambda {
-      if @supported_framework_version
-        skip "Skipping this test because sidekiq version #{@framework_version} is already supported!"
-      end
-    }
-
     Sidekiq.configure_client do |config|
       config.redis = { url: ENV["REDIS_URL"] }
     end
@@ -30,30 +17,7 @@ class SidekiqServerTest < Minitest::Test
     assert_equal true, ::Instana.config[:'sidekiq-worker'][:enabled]
   end
 
-  def test_no_sidekiq_tracing_if_unsupported_version_only_redis
-    @execute_test_only_if_framework_version_is_not_supported.call
-    clear_all!
-    ::Sidekiq.redis_pool.with do |redis|
-      redis.sadd('queues'.freeze, 'important')
-      redis.lpush(
-        'queue:important',
-        <<-JSON
-        {
-          "class":"SidekiqJobOne",
-          "args":[1,2,3],
-          "queue":"important",
-          "jid":"123456789"
-        }
-        JSON
-      )
-    end
-
-    spans = Instana.processor.queued_spans
-    assert spans
-  end
-
   def test_successful_worker_starts_new_trace
-    @execute_test_if_framework_version_is_supported.call
     clear_all!
     $sidekiq_mode = :server
     inject_instrumentation
@@ -84,7 +48,6 @@ class SidekiqServerTest < Minitest::Test
   end
 
   def test_failed_worker_starts_new_trace
-    @execute_test_if_framework_version_is_supported.call
     clear_all!
     $sidekiq_mode = :server
     inject_instrumentation
@@ -116,7 +79,6 @@ class SidekiqServerTest < Minitest::Test
   end
 
   def test_successful_worker_continues_previous_trace
-    @execute_test_if_framework_version_is_supported.call
     clear_all!
     $sidekiq_mode = :server
     inject_instrumentation
@@ -150,7 +112,6 @@ class SidekiqServerTest < Minitest::Test
   end
 
   def test_failed_worker_continues_previous_trace
-    @execute_test_if_framework_version_is_supported.call
     clear_all!
     $sidekiq_mode = :server
     inject_instrumentation
