@@ -12,15 +12,15 @@ require_relative 'jobs/sidekiq_job_2'
 ::Instana.logger.info "Booting instrumented sidekiq worker for tests."
 ::Sidekiq.logger.level = ::Logger::FATAL
 
-properties = {queues: ['important'], concurrency: 2}
-
 sidekiq_version = Gem::Specification.find_by_name('sidekiq').version
-config_or_options =
-  if sidekiq_version >= Gem::Version.new('7.0.0')
-    ::Sidekiq::Config.new(Sidekiq.default_configuration.merge!(properties))
-  else
-    ::Sidekiq.options.merge(properties)
-  end
+cli = ::Sidekiq::CLI.instance
+cli.parse(['sidekiq', '-r', __FILE__, '-C', File.dirname(__FILE__) + "/config.yaml"])
+
+if sidekiq_version >= Gem::Version.new('6.5.0')
+  config_or_options = cli.config
+else
+  config_or_options = cli.send :options
+end
 
 sidekiq_thread = Thread.new do
   launcher = ::Sidekiq::Launcher.new(
