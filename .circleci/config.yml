@@ -29,6 +29,7 @@ library_gemfile: &library_gemfile
     - "./gemfiles/sidekiq_42.gemfile"
     - "./gemfiles/sidekiq_50.gemfile"
     - "./gemfiles/sidekiq_60.gemfile"
+    - "./gemfiles/sidekiq_65.gemfile"
     - "./gemfiles/sidekiq_70.gemfile"
     - "./gemfiles/sinatra_14.gemfile"
     - "./gemfiles/sinatra_22.gemfile"
