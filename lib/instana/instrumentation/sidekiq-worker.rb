@@ -14,8 +14,17 @@ module Instana
         # Temporary until we move connection collection to redis
         # instrumentation
         Sidekiq.redis_pool.with do |client|
-          opts = client.respond_to?(:connection) ? client.connection : client.client.options
-          kv_payload[:'sidekiq-worker'][:'redis-url'] = "#{opts[:host]}:#{opts[:port]}"
+          sidekiq_version = Gem::Specification.find_by_name('sidekiq').version
+          host, port = if sidekiq_version >= Gem::Version.new('7.0') && client.respond_to?(:config) && client.config.respond_to?(:host) && client.config.respond_to?(:port)
+                         [client.config.host, client.config.port]
+                       elsif client.respond_to?(:connection)
+                         [client.connection[:host], client.connection[:port]]
+                       elsif client.respond_to?(:client) && client.client.respond_to?(:options)
+                         [client.client.options[:host], client.client.options[:port]]
+                       else
+                         ['Unknown', 'Unknown']
+                       end
+          kv_payload[:'sidekiq-worker'][:'redis-url'] = "#{host}:#{port}"
         end
 
         context = {}
