@@ -12,5 +12,4 @@ gem "rack-test"
 gem "simplecov", "~> 0.21.2"
 gem "sidekiq", ">= 7.2.0"
 
-
 gemspec path: "../"
