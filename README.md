@@ -1,7 +1,3 @@
-<div align="center">
-<img src="https://disznc.s3.amazonaws.com/Ruby-Dashboard-2020-02-10-at-2.31.36-PM.png"/>
-</div>
-
 # Instana
 
 The `instana` gem provides Ruby metrics and traces (request, queue & cross-host) for [Instana](https://www.instana.com/).
