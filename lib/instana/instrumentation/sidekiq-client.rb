@@ -21,8 +21,8 @@ module Instana
                          [client.connection[:host], client.connection[:port]]
                        elsif client.respond_to?(:client) && client.client.respond_to?(:options)
                          [client.client.options[:host], client.client.options[:port]]
-                       else
-                         ['Unknown', 'Unknown']
+                       else # Unexpected version, continue without recording any redis-url
+                         break
                        end
           kv_payload[:'sidekiq-client'][:'redis-url'] = "#{host}:#{port}"
         end
