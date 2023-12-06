@@ -86,6 +86,7 @@ class SidekiqClientTest < Minitest::Test
     assert_equal 'some_random_queue', second_span[:data][:'sidekiq-client'][:queue]
     assert_equal 'SidekiqJobOne', second_span[:data][:'sidekiq-client'][:job]
     assert_equal "false", second_span[:data][:'sidekiq-client'][:retry]
+    assert       second_span[:data][:'sidekiq-client'][:'redis-url']
     assert_equal job['jid'], second_span[:data][:'sidekiq-client'][:job_id]
   end
 
@@ -106,6 +107,7 @@ class SidekiqClientTest < Minitest::Test
     assert_equal 'some_random_queue', second_span[:data][:'sidekiq-client'][:queue]
     assert_equal 'SidekiqJobTwo', second_span[:data][:'sidekiq-client'][:job]
     assert_equal "false", second_span[:data][:'sidekiq-client'][:retry]
+    assert       second_span[:data][:'sidekiq-client'][:'redis-url']
     assert_equal 'Fail to enqueue job', second_span[:data][:log][:message]
   end
 
