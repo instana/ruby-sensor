@@ -229,7 +229,7 @@ commands:
             bundle config set path './vendor/bundle'
             bundle check || bundle install
           environment:
-            BUNDLE_GEMFILE: './gemfiles/coverage_merge.gemfile'
+            BUNDLE_GEMFILE: './Gemfile'
       - run:
           name: Fetching partial coverage reports from workflow jobs
           command: |
@@ -239,7 +239,7 @@ commands:
           command: |
             bundle exec rake coverage:merge_reports --trace
           environment:
-            BUNDLE_GEMFILE: './gemfiles/coverage_merge.gemfile'
+            BUNDLE_GEMFILE: './Gemfile'
       - run:
           name: Run SonarQube to capture coverage
           command: |
