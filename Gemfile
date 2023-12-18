@@ -3,8 +3,6 @@
 
 source 'https://rubygems.org'
 
-gem 'rake'
-gem 'minitest', '5.20.0'
 gem 'minitest-reporters'
 gem 'webmock'
 gem 'puma'
