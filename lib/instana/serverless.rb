@@ -8,7 +8,9 @@ require 'zlib'
 begin
   require 'instana/instrumentation/instrumented_request'
 rescue LoadError => _e
-  Instana.logger.warn("Unable to Instana::InstrumentedRequest. HTTP based triggers won't generate spans.")
+  Instana.logger.warn("Unable to load Instana::InstrumentedRequest. "\
+                      "This is normal when the Rack gem is not installed. "\
+                      "HTTP based triggers won't generate spans.")
 end
 # :nocov:
 
