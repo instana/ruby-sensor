@@ -48,7 +48,7 @@ module Instana
         # See Rack Spec: https://www.rubydoc.info/github/rack/rack/file/SPEC#label-The+Status
         kvs[:http][:status] = status.to_i
 
-        if status.to_i.between?(500, 511)
+        if status.to_i >= 500
           # Because of the 5xx response, we flag this span as errored but
           # without a backtrace (no exception)
           ::Instana.tracer.log_error(nil)

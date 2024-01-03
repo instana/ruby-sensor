@@ -51,7 +51,7 @@ module Instana
         response = super(*args, &block)
 
         kv_payload[:http][:status] = response.code
-        if response.code.to_i.between?(500, 511)
+        if response.code.to_i >= 500
           # Because of the 5xx response, we flag this span as errored but
           # without a backtrace (no exception)
           ::Instana.tracer.log_error(nil)
