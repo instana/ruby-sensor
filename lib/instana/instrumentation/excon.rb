@@ -60,7 +60,7 @@ module Instana
           status = datum[:response][:status]
         end
 
-        if status.between?(500, 511)
+        if status >= 500
           # Because of the 5xx response, we flag this span as errored but
           # without a backtrace (no exception)
           ::Instana.tracer.log_error(nil)
