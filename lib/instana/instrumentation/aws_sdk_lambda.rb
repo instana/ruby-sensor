@@ -25,7 +25,20 @@ module Instana
             type: context.params[:invocation_type]
           }.reject { |_, v| v.nil? }
 
-          ::Instana.tracer.trace(:"aws.lambda.invoke", {aws: {lambda: {invoke: tags}}}) { @handler.call(context) }
+          span = ::Instana.tracer.log_entry(:"aws.lambda.invoke", {aws: {lambda: {invoke: tags}}})
+          begin
+            response = @handler.call(context)
+            if response.respond_to? :status_code
+              span.set_tags(:http => {:status => response.status_code })
+
+            end
+            response
+          rescue => e
+            ::Instana.tracer.log_error(e)
+            raise
+          ensure
+            ::Instana.tracer.log_exit(:"aws.lambda.invoke")
+          end
         end
       end
 
