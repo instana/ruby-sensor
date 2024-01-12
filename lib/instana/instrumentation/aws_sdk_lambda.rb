@@ -28,8 +28,7 @@ module Instana
           ::Instana.tracer.start_or_continue_trace(:"aws.lambda.invoke", {aws: {lambda: {invoke: tags}}}) do
             response = @handler.call(context)
             if response.respond_to? :status_code
-              span.set_tags(:http => {:status => response.status_code })
-
+              ::Instana.tracer.log_info(:http => {:status => response.status_code })
             end
             response
           end
