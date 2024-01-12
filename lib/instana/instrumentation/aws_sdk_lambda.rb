@@ -17,7 +17,7 @@ module Instana
               'X-INSTANA-L' => span_context.level.to_s
             }
 
-            context.params[:client_context] = JSON.dump(payload)
+            context.params[:client_context] = Base64.strict_encode64(JSON.dump(payload))
           end
 
           tags = {
