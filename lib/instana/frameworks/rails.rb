@@ -17,7 +17,11 @@ else
         # Configure the Instrumented Logger
         if ::Instana.config[:logging][:enabled] && !ENV.key?('INSTANA_TEST')
           logger = ::Instana::InstrumentedLogger.new('/dev/null')
-          Rails.logger.extend(ActiveSupport::Logger.broadcast(logger))
+          if ::Rails::VERSION::STRING < "7.1"
+            Rails.logger.extend(ActiveSupport::Logger.broadcast(logger))
+          else
+            Rails.logger.broadcast_to(logger)
+          end
         end
 
         if ::Instana.config[:tracing][:enabled]
