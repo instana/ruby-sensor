@@ -18,6 +18,7 @@ class TestControllerApplication < Rails::Application
     get '/base/world' => 'test_base#world'
     get '/base/raise_route_error' => 'test_base#raise_route_error'
     get '/base/error' => 'test_base#error'
+    get '/base/log_warning' => 'test_base#log_warning'
 
     if defined?(::ActionController::API)
       get '/api/world' => 'test_api#world'
@@ -38,6 +39,11 @@ class TestBaseController < ActionController::Base
 
   def error
     raise StandardError, "Warning: This is a simulated Error"
+  end
+
+  def log_warning
+    Rails.logger.warn "This is a test warning"
+    render plain: 'Test warning logged'
   end
 end
 
