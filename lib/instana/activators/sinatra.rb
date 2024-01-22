@@ -12,6 +12,9 @@ module Instana
         require 'instana/frameworks/sinatra'
 
         ::Sinatra::Base.use ::Instana::Rack
+        unless ::Sinatra::Base.respond_to?(:mustermann_opts)
+          ::Sinatra::Base.set :mustermann_opts, {}
+        end
         ::Sinatra::Base.register ::Instana::SinatraPathTemplateExtractor
 
         true
