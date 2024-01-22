@@ -8,6 +8,6 @@ gem "puma"
 gem "rubocop", "~> 1.9"
 gem "rack-test"
 gem "simplecov", "~> 0.21.2"
-gem "sinatra", ">= 3.0.6"
+gem "sinatra", ">= 3.0.6", "< 4.0"
 
 gemspec path: "../"
