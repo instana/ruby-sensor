@@ -188,7 +188,43 @@ executors:
         environment:
           POSTGRES_PASSWORD: 'test'
           POSTGRES_DB: 'ci_test'
-
+  ruby_33:
+    docker:
+      - image: cimg/ruby:3.3-node
+        environment:
+          MEMCACHED_HOST: '127.0.0.1:11211'
+          REDIS_URL: 'redis://127.0.0.1:6379'
+          DATABASE_URL: 'sqlite3::memory:'
+      - image: memcached
+      - image: redis
+      - image: amazon/dynamodb-local
+      - image: minio/minio:latest
+        command: ["server", "/data"]
+      - image: s12v/sns
+      - image: softwaremill/elasticmq-native
+      - image: mongo:5-focal
+  ruby_33_mysql2:
+    docker:
+      - image: cimg/ruby:3.3-node
+        environment:
+          DATABASE_URL: "mysql2://root@127.0.0.1:3306/ci_test"
+      - image: mariadb
+        environment:
+          MYSQL_DATABASE: 'ci_test'
+          MYSQL_USER: 'root'
+          MYSQL_PASSWORD: ''
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ROOT_HOST: '%'
+  ruby_33_postgres:
+    docker:
+      - image: cimg/ruby:3.3-node
+        environment:
+          DATABASE_URL: "postgres://postgres:test@127.0.0.1:5432/ci_test"
+      - image: postgres
+        environment:
+          POSTGRES_PASSWORD: 'test'
+          POSTGRES_DB: 'ci_test'
 commands:
   setup:
     steps:
@@ -357,6 +393,7 @@ workflows:
                 - ruby_30
                 - ruby_31
                 - ruby_32
+                - ruby_33
   libraries_ruby_3:
     jobs:
       - test_apprisal:
@@ -366,6 +403,7 @@ workflows:
                 - ruby_30
                 - ruby_31
                 - ruby_32
+                - ruby_33
               <<: *library_gemfile
             exclude:
             # Currently rest-client 1.6 gemfile pulls in mime-types 2.99.3
@@ -380,11 +418,15 @@ workflows:
               gemfile: "./gemfiles/rest_client_16.gemfile"
             - stack: ruby_32
               gemfile: "./gemfiles/rest_client_16.gemfile"
+            - stack: ruby_33
+              gemfile: "./gemfiles/rest_client_16.gemfile"
             # Sinatra 1.4 relies on the Fixnum class
             # which has been removed from Ruby 3.2, see:
             # https://bugs.ruby-lang.org/issues/12005
             # https://www.ruby-lang.org/en/news/2022/11/11/ruby-3-2-0-preview3-released/
             - stack: ruby_32
+              gemfile: "./gemfiles/sinatra_14.gemfile"
+            - stack: ruby_33
               gemfile: "./gemfiles/sinatra_14.gemfile"
   libraries_ruby_2:
     jobs:
@@ -422,6 +464,8 @@ workflows:
                 - ruby_32
                 - ruby_32_postgres
                 - ruby_32_mysql2
+                - ruby_33_postgres
+                - ruby_33_mysql2
               gemfile:
                 - "./gemfiles/rails_61.gemfile"
                 - "./gemfiles/rails_70.gemfile"
