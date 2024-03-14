@@ -47,7 +47,7 @@ class DalliTest < Minitest::Test
     assert second_span[:data][:memcache].key?(:namespace)
     assert_equal 'instana_test', second_span[:data][:memcache][:namespace]
     assert second_span[:data][:memcache].key?(:server)
-    assert_equal ENV['MEMCACHED_HOST'], second_span[:data][:memcache][:server]
+    assert_equal @memcached_host, second_span[:data][:memcache][:server]
   end
 
   def test_basic_set
@@ -80,7 +80,7 @@ class DalliTest < Minitest::Test
     assert second_span[:data][:memcache].key?(:namespace)
     assert_equal 'instana_test', second_span[:data][:memcache][:namespace]
     assert second_span[:data][:memcache].key?(:server)
-    assert_equal ENV['MEMCACHED_HOST'], second_span[:data][:memcache][:server]
+    assert_equal @memcached_host, second_span[:data][:memcache][:server]
   end
 
   def test_replace
@@ -114,7 +114,7 @@ class DalliTest < Minitest::Test
     assert second_span[:data][:memcache].key?(:namespace)
     assert_equal 'instana_test', second_span[:data][:memcache][:namespace]
     assert second_span[:data][:memcache].key?(:server)
-    assert_equal ENV['MEMCACHED_HOST'], second_span[:data][:memcache][:server]
+    assert_equal @memcached_host, second_span[:data][:memcache][:server]
   end
 
   def test_delete
@@ -148,7 +148,7 @@ class DalliTest < Minitest::Test
     assert second_span[:data][:memcache].key?(:namespace)
     assert_equal 'instana_test', second_span[:data][:memcache][:namespace]
     assert second_span[:data][:memcache].key?(:server)
-    assert_equal ENV['MEMCACHED_HOST'], second_span[:data][:memcache][:server]
+    assert_equal @memcached_host, second_span[:data][:memcache][:server]
   end
 
   def test_incr
@@ -182,7 +182,7 @@ class DalliTest < Minitest::Test
     assert second_span[:data][:memcache].key?(:namespace)
     assert_equal 'instana_test', second_span[:data][:memcache][:namespace]
     assert second_span[:data][:memcache].key?(:server)
-    assert_equal ENV['MEMCACHED_HOST'], second_span[:data][:memcache][:server]
+    assert_equal @memcached_host, second_span[:data][:memcache][:server]
   end
 
   def test_decr
@@ -216,7 +216,7 @@ class DalliTest < Minitest::Test
     assert second_span[:data][:memcache].key?(:namespace)
     assert_equal 'instana_test', second_span[:data][:memcache][:namespace]
     assert second_span[:data][:memcache].key?(:server)
-    assert_equal ENV['MEMCACHED_HOST'], second_span[:data][:memcache][:server]
+    assert_equal @memcached_host, second_span[:data][:memcache][:server]
   end
 
   def test_get_multi
@@ -249,7 +249,7 @@ class DalliTest < Minitest::Test
     assert second_span[:data][:memcache].key?(:namespace)
     assert_equal 'instana_test', second_span[:data][:memcache][:namespace]
     assert second_span[:data][:memcache].key?(:server)
-    assert_equal ENV['MEMCACHED_HOST'], second_span[:data][:memcache][:server]
+    assert_equal @memcached_host, second_span[:data][:memcache][:server]
     assert second_span[:data][:memcache].key?(:hits)
     assert_equal 2, second_span[:data][:memcache][:hits]
   end

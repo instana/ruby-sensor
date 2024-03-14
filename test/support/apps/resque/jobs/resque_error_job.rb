@@ -11,7 +11,7 @@ class ErrorJob
     if ENV.key?('REDIS_URL')
       redis = Redis.new(:url => ENV['REDIS_URL'])
     else
-      redis = Redis.new(:url => 'localhost:6379')
+      redis = Redis.new(:url => 'redis://localhost:6379')
     end
 
     dt = Time.now

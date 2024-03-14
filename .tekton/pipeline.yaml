@@ -1,0 +1,381 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: ruby-tracer-ci-pipeline
+spec:
+  params:
+  - name: revision
+    type: string
+  workspaces:
+    - name: ruby-tracer-ci-pipeline-pvc
+  tasks:
+    - name: clone
+      params:
+      - name: revision
+        value: $(params.revision)
+      taskRef:
+        name: ruby-tracer-clone-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: lint
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.3.0-bookworm
+            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+          - name: gemfile
+            value:
+            - "gemfiles/rubocop_162.gemfile"
+      taskRef:
+        name: ruby-tracer-lint-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-default-ruby-30
+      runAfter:
+        - lint
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.0.6-bullseye
+            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
+          - name: gemfile
+            value:
+            - "./gemfiles/cuba_30.gemfile"
+            - "./gemfiles/cuba_40.gemfile"
+            - "./gemfiles/excon_02.gemfile"
+            - "./gemfiles/excon_079.gemfile"
+            - "./gemfiles/excon_100.gemfile"
+            - "./gemfiles/graphql_10.gemfile"
+            - "./gemfiles/graphql_20.gemfile"
+            - "./gemfiles/grpc_10.gemfile"
+            - "./gemfiles/net_http_01.gemfile"
+            - "./gemfiles/rack_20.gemfile"
+            - "./gemfiles/rack_30.gemfile"
+            - "./gemfiles/rest_client_20.gemfile"
+            - "./gemfiles/roda_20.gemfile"
+            - "./gemfiles/roda_30.gemfile"
+            - "./gemfiles/sinatra_22.gemfile"
+            - "./gemfiles/sinatra_30.gemfile"
+            - "./gemfiles/sinatra_40.gemfile"
+            - "./gemfiles/shoryuken_50.gemfile"
+            - "./gemfiles/shoryuken_60.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-default-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-default-ruby-31
+      runAfter:
+        - unittest-default-ruby-30
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.1.4-bookworm
+            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
+          - name: gemfile
+            value:
+            - "./gemfiles/cuba_30.gemfile"
+            - "./gemfiles/cuba_40.gemfile"
+            - "./gemfiles/excon_02.gemfile"
+            - "./gemfiles/excon_079.gemfile"
+            - "./gemfiles/excon_100.gemfile"
+            - "./gemfiles/graphql_10.gemfile"
+            - "./gemfiles/graphql_20.gemfile"
+            - "./gemfiles/grpc_10.gemfile"
+            - "./gemfiles/net_http_01.gemfile"
+            - "./gemfiles/rack_20.gemfile"
+            - "./gemfiles/rack_30.gemfile"
+            - "./gemfiles/rest_client_20.gemfile"
+            - "./gemfiles/roda_20.gemfile"
+            - "./gemfiles/roda_30.gemfile"
+            - "./gemfiles/sinatra_22.gemfile"
+            - "./gemfiles/sinatra_30.gemfile"
+            - "./gemfiles/sinatra_40.gemfile"
+            - "./gemfiles/shoryuken_50.gemfile"
+            - "./gemfiles/shoryuken_60.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-default-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-default-ruby-32
+      runAfter:
+        - unittest-default-ruby-31
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.2.3-bookworm
+            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
+          - name: gemfile
+            value:
+            - "./gemfiles/cuba_30.gemfile"
+            - "./gemfiles/cuba_40.gemfile"
+            - "./gemfiles/excon_02.gemfile"
+            - "./gemfiles/excon_079.gemfile"
+            - "./gemfiles/excon_100.gemfile"
+            - "./gemfiles/graphql_10.gemfile"
+            - "./gemfiles/graphql_20.gemfile"
+            - "./gemfiles/grpc_10.gemfile"
+            - "./gemfiles/net_http_01.gemfile"
+            - "./gemfiles/rack_20.gemfile"
+            - "./gemfiles/rack_30.gemfile"
+            - "./gemfiles/rest_client_20.gemfile"
+            - "./gemfiles/roda_20.gemfile"
+            - "./gemfiles/roda_30.gemfile"
+            - "./gemfiles/sinatra_22.gemfile"
+            - "./gemfiles/sinatra_30.gemfile"
+            - "./gemfiles/sinatra_40.gemfile"
+            - "./gemfiles/shoryuken_50.gemfile"
+            - "./gemfiles/shoryuken_60.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-default-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-default-ruby-33
+      runAfter:
+        - unittest-default-ruby-32
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.3.0-bookworm
+            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+          - name: gemfile
+            value:
+            - "./gemfiles/cuba_30.gemfile"
+            - "./gemfiles/cuba_40.gemfile"
+            - "./gemfiles/excon_02.gemfile"
+            - "./gemfiles/excon_079.gemfile"
+            - "./gemfiles/excon_100.gemfile"
+            - "./gemfiles/graphql_10.gemfile"
+            - "./gemfiles/graphql_20.gemfile"
+            - "./gemfiles/grpc_10.gemfile"
+            - "./gemfiles/net_http_01.gemfile"
+            - "./gemfiles/rack_20.gemfile"
+            - "./gemfiles/rack_30.gemfile"
+            - "./gemfiles/rest_client_20.gemfile"
+            - "./gemfiles/roda_20.gemfile"
+            - "./gemfiles/roda_30.gemfile"
+            - "./gemfiles/sinatra_22.gemfile"
+            - "./gemfiles/sinatra_30.gemfile"
+            - "./gemfiles/sinatra_40.gemfile"
+            - "./gemfiles/shoryuken_50.gemfile"
+            - "./gemfiles/shoryuken_60.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-default-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-mongo
+      runAfter:
+        - unittest-default-ruby-33
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.0.6-bullseye
+            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
+            # 3.1.4-bookworm
+            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
+            # 3.2.3-bookworm
+            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
+            # 3.3.0-bookworm
+            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+          - name: gemfile
+            value:
+            - "./gemfiles/mongo_216.gemfile"
+            - "./gemfiles/mongo_219.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-mongo-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-memcached
+      runAfter:
+        - unittest-mongo
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.0.6-bullseye
+            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
+            # 3.1.4-bookworm
+            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
+            # 3.2.3-bookworm
+            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
+            # 3.3.0-bookworm
+            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+          - name: gemfile
+            value:
+            - "./gemfiles/dalli_20.gemfile"
+            - "./gemfiles/dalli_30.gemfile"
+            - "./gemfiles/dalli_32.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-memcached-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-aws
+      runAfter:
+        - unittest-memcached
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.0.6-bullseye
+            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
+            # 3.1.4-bookworm
+            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
+            # 3.2.3-bookworm
+            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
+            # 3.3.0-bookworm
+            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+          - name: gemfile
+            value:
+            - "./gemfiles/aws_30.gemfile"
+            - "./gemfiles/aws_60.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-aws-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-redis-ruby-30-31
+      runAfter:
+        - unittest-aws
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.0.6-bullseye
+            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
+            # 3.1.4-bookworm
+            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
+          - name: gemfile
+            value:
+            - "./gemfiles/redis_40.gemfile"
+            - "./gemfiles/redis_50.gemfile"
+            - "./gemfiles/redis_51.gemfile"
+            - "./gemfiles/resque_122.gemfile"
+            - "./gemfiles/resque_20.gemfile"
+            - "./gemfiles/sidekiq_42.gemfile"
+            - "./gemfiles/sidekiq_50.gemfile"
+            - "./gemfiles/sidekiq_60.gemfile"
+            - "./gemfiles/sidekiq_65.gemfile"
+            - "./gemfiles/sidekiq_70.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-redis-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-redis-ruby-32-33
+      runAfter:
+        - unittest-redis-ruby-30-31
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.2.3-bookworm
+            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
+            # 3.3.0-bookworm
+            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+          - name: gemfile
+            value:
+            - "./gemfiles/redis_40.gemfile"
+            - "./gemfiles/redis_50.gemfile"
+            - "./gemfiles/redis_51.gemfile"
+            - "./gemfiles/resque_122.gemfile"
+            - "./gemfiles/resque_20.gemfile"
+            - "./gemfiles/sidekiq_42.gemfile"
+            - "./gemfiles/sidekiq_50.gemfile"
+            - "./gemfiles/sidekiq_60.gemfile"
+            - "./gemfiles/sidekiq_65.gemfile"
+            - "./gemfiles/sidekiq_70.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-redis-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-rails-sqlite3
+      runAfter:
+        - unittest-redis-ruby-32-33
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.0.6-bullseye
+            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
+            # 3.1.4-bookworm
+            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
+            # 3.2.3-bookworm
+            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
+            # 3.3.0-bookworm
+            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+          - name: gemfile
+            value:
+            - "./gemfiles/rails_61.gemfile"
+            - "./gemfiles/rails_70.gemfile"
+            - "./gemfiles/rails_71.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-rails-sqlite3-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-rails-mysql2
+      runAfter:
+        - unittest-rails-sqlite3
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.0.6-bullseye
+            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
+            # 3.1.4-bookworm
+            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
+            # 3.2.3-bookworm
+            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
+            # 3.3.0-bookworm
+            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+          - name: gemfile
+            value:
+            - "./gemfiles/rails_61.gemfile"
+            - "./gemfiles/rails_70.gemfile"
+            - "./gemfiles/rails_71.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-rails-mysql2-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-rails-postgres
+      runAfter:
+        - unittest-rails-mysql2
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.0.6-bullseye
+            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
+            # 3.1.4-bookworm
+            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
+            # 3.2.3-bookworm
+            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
+            # 3.3.0-bookworm
+            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+          - name: gemfile
+            value:
+            - "./gemfiles/rails_61.gemfile"
+            - "./gemfiles/rails_70.gemfile"
+            - "./gemfiles/rails_71.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-rails-postgres-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc

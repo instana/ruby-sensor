@@ -1,14 +1,13 @@
-# (c) Copyright IBM Corp. 2023
+# (c) Copyright IBM Corp. 2024
 
 source "https://rubygems.org"
 
-gem "rack"
-gem "rackup"
 gem "minitest-reporters"
 gem "webmock"
 gem "puma"
 gem "rack-test"
 gem "simplecov", "~> 0.21.2"
-gem "excon", ">= 0.100.0", "< 1.0"
+gem "redis", ">= 5.1.0"
+gem "debug"
 
 gemspec path: "../"
