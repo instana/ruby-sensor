@@ -12,7 +12,11 @@ begin
 
     add_filter %r{^/test/}
 
-    command_name "Job #{ENV['CIRCLE_BUILD_NUM']}" if ENV['CIRCLE_BUILD_NUM']
+    if ENV['CIRCLE_BUILD_NUM']
+      command_name "Job #{ENV['CIRCLE_BUILD_NUM']}"
+    elsif ENV['COVERAGE_PATH']
+      coverage_dir ENV['COVERAGE_PATH']
+    end
     add_group(
       'In Process Collector',
       [%r{lib/instana/(agent|backend|tracing|collectors|open_tracing|snapshot)}, %r{lib/instana/[^/]+\.rb}]
@@ -54,14 +58,12 @@ WebMock.disable_net_connect!(
 
 Dir['test/support/*.rb'].each { |f| load(f) }
 
-if ENV['CI']
-  Minitest::Reporters.use!([
-                             Minitest::Reporters::JUnitReporter.new('_junit', false),
-                             Minitest::Reporters::SpecReporter.new
-                           ])
-else
-  Minitest::Reporters.use!([
-                             Minitest::Reporters::SpecReporter.new
-                           ])
+minitest_reporters_to_use = []
+if ENV['CIRCLE_BUILD_NUM']
+  minitest_reporters_to_use.append(Minitest::Reporters::JUnitReporter.new('_junit', false))
+elsif ENV['COVERAGE_PATH']
+  minitest_reporters_to_use.append(Minitest::Reporters::JUnitReporter.new("#{ENV['COVERAGE_PATH']}/_junit", false))
 end
+minitest_reporters_to_use.append(Minitest::Reporters::SpecReporter.new)
+Minitest::Reporters.use!(minitest_reporters_to_use)
 Minitest::Test.include(Instana::TestHelpers)

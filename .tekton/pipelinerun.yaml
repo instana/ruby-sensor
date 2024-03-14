@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: ruby-tracer-ci-pipeline-run
+spec:
+  params:
+  - name: revision
+    value: "tekton"
+  pipelineRef:
+    name: ruby-tracer-ci-pipeline
+  workspaces:
+  - name: ruby-tracer-ci-pipeline-pvc
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 100Mi
