@@ -183,6 +183,9 @@ executors:
         environment:
           POSTGRES_PASSWORD: 'test'
           POSTGRES_DB: 'ci_test'
+  ruby_33_lint:
+    docker:
+      - image: cimg/ruby:3.3-node
 commands:
   setup:
     steps:
@@ -314,10 +317,15 @@ jobs:
       - setup
       - run_tests
   lint:
-    executor: ruby_30
+    executor: ruby_33_lint
+    environment:
+      BUNDLE_GEMFILE: "./gemfiles/rubocop_162.gemfile"
     steps:
       - checkout
-      - setup
+      - run:
+          name: Install Dependencies
+          command: |
+            bundle check || bundle install
       - run_rubocop
   report_coverage:
     executor: ruby_32

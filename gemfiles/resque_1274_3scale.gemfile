@@ -5,11 +5,13 @@
 
 source "https://rubygems.org"
 
+gem "debug"
 gem "minitest-reporters"
 gem "webmock"
 gem "puma"
 gem "rack-test"
 gem "simplecov", "~> 0.21.2"
-gem "mongo", ">= 2.16", "< 2.19"
+gem "resque", :git => "https://github.com/3scale/resque.git", :ref => "db327e389cf2fc572a503c47b19871ed899356d1"
+gem "redis", "~> 3.3", ">= 3.3.5"
 
 gemspec path: "../"

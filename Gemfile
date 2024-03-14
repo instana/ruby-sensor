@@ -7,8 +7,6 @@ gem 'minitest-reporters'
 gem 'webmock'
 gem 'puma'
 
-gem 'rubocop', '~> 1.9'
-
 gem 'rack'
 gem 'rackup'
 gem 'rack-test'

@@ -1,0 +1,6 @@
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc. 2016
+
+source 'https://rubygems.org'
+
+gem 'rubocop', ">= 1.62.1"
