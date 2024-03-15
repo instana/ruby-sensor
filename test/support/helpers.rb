@@ -81,17 +81,5 @@ module Instana
       end
       raise StandardError, 'Span with qualifier not found'
     end
-
-    def has_postgres_database?
-      URI(ENV.fetch('DATABASE_URL', '')).scheme == 'postgres'
-    end
-
-    def has_mysql2_database?
-      URI(ENV.fetch('DATABASE_URL', '')).scheme == 'mysql2'
-    end
-
-    def has_mysql_database?
-      URI(ENV.fetch('DATABASE_URL', '')).scheme == 'mysql'
-    end
   end
 end
