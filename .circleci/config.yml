@@ -54,24 +54,23 @@ executors:
     docker:
       - image: cimg/ruby:2.7-node
         environment:
-          DATABASE_URL: "mysql2://root@127.0.0.1:3306/ci_test"
+          DATABASE_URL: "mysql2://root:passw0rd@127.0.0.1:3306/ci_test"
       - image: mariadb
         environment:
           MYSQL_DATABASE: 'ci_test'
           MYSQL_USER: 'root'
-          MYSQL_PASSWORD: ''
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ROOT_PASSWORD: 'passw0rd'
           MYSQL_ROOT_HOST: '%'
   ruby_27_postgres:
     docker:
       - image: cimg/ruby:2.7-node
         environment:
-          DATABASE_URL: "postgres://postgres:test@127.0.0.1:5432/ci_test"
+          DATABASE_URL: "postgres://root:passw0rd@127.0.0.1:5432/ci_test"
       - image: postgres
         environment:
-          POSTGRES_PASSWORD: 'test'
           POSTGRES_DB: 'ci_test'
+          POSTGRES_USER: 'root'
+          POSTGRES_PASSWORD: 'passw0rd'
   ruby_30:
     docker:
       - image: cimg/ruby:3.0-node
