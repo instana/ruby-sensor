@@ -86,8 +86,10 @@ module Instana
           end
         end
 
-        if defined?(::RailsLts) || defined?(::Rails)
-          return Rails.application.class.to_s.split('::')[0]
+        if defined?(::RailsLts) && ::Rails.respond_to?(:application_name)
+          return ::RailsLts.application_name
+        elsif defined?(::Rails) && ::Rails.respond_to?(:application_name)
+          return ::Rails.application_name
         end
 
         if $0.to_s.empty?
