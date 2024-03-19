@@ -86,10 +86,17 @@ module Instana
           end
         end
 
-        if defined?(::RailsLts) && ::Rails.respond_to?(:application_name)
-          return ::RailsLts.application_name
-        elsif defined?(::Rails) && ::Rails.respond_to?(:application_name)
-          return ::Rails.application_name
+        rails_module = if defined?(::RailsLts)
+                         then ::RailsLts
+                       elsif defined?(::Rails)
+                         then ::Rails
+                       end
+
+        if rails_module &&
+           rails_module.respond_to?(:application_name) &&
+           rails_module.instance_variables.include?(:@application) &&
+           rails_module.application
+          return rails_module.application_name
         end
 
         if $0.to_s.empty?
