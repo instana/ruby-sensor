@@ -28,11 +28,12 @@ class RailsActionCableTest < Minitest::Test
     data = span[:data]
 
     assert_nil rest
-    assert :"rpc-server", span[:n]
-    assert :actioncable, data[:rpc][:flavor]
-    assert channel_klass.to_s, data[:rpc][:call]
-    assert :transmit, data[:rpc][:call_type]
-    assert Socket.gethostname, data[:rpc][:host]
+    assert_equal :"rpc-server", span[:n]
+    assert_equal "rake_test_loader.rb", data[:service]
+    assert_equal :actioncable, data[:rpc][:flavor]
+    assert_equal channel_klass.to_s, data[:rpc][:call]
+    assert_equal :transmit, data[:rpc][:call_type]
+    assert_equal Socket.gethostname, data[:rpc][:host]
   end
 
   def test_transmit_parent
@@ -53,12 +54,13 @@ class RailsActionCableTest < Minitest::Test
     data = span[:data]
 
     assert_nil rest
-    assert 'ABC', span[:t]
-    assert :"rpc-server", span[:n]
-    assert :actioncable, data[:rpc][:flavor]
-    assert channel_klass.to_s, data[:rpc][:call]
-    assert :transmit, data[:rpc][:call_type]
-    assert Socket.gethostname, data[:rpc][:host]
+    assert_equal 'ABC', span[:t]
+    assert_equal :"rpc-server", span[:n]
+    assert_equal "rake_test_loader.rb", data[:service]
+    assert_equal :actioncable, data[:rpc][:flavor]
+    assert_equal channel_klass.to_s, data[:rpc][:call]
+    assert_equal :transmit, data[:rpc][:call_type]
+    assert_equal Socket.gethostname, data[:rpc][:host]
   end
 
   def test_action_no_parent
@@ -79,11 +81,12 @@ class RailsActionCableTest < Minitest::Test
     data = span[:data]
 
     assert_nil rest
-    assert :"rpc-server", span[:n]
-    assert :actioncable, data[:rpc][:flavor]
-    assert "#{channel_klass}#sample", data[:rpc][:call]
-    assert :action, data[:rpc][:call_type]
-    assert Socket.gethostname, data[:rpc][:host]
+    assert_equal :"rpc-server", span[:n]
+    assert_equal "rake_test_loader.rb", data[:service]
+    assert_equal :actioncable, data[:rpc][:flavor]
+    assert_equal "#{channel_klass}#sample", data[:rpc][:call]
+    assert_equal :action, data[:rpc][:call_type]
+    assert_equal Socket.gethostname, data[:rpc][:host]
   end
 
   def test_action_parent
@@ -108,12 +111,13 @@ class RailsActionCableTest < Minitest::Test
     data = span[:data]
 
     assert_nil rest
-    assert 'ABC', span[:t]
-    assert :"rpc-server", span[:n]
-    assert :actioncable, data[:rpc][:flavor]
-    assert "#{channel_klass}#sample", data[:rpc][:call]
-    assert :action, data[:rpc][:call_type]
-    assert Socket.gethostname, data[:rpc][:host]
+    assert_equal 'ABC', span[:t]
+    assert_equal :"rpc-server", span[:n]
+    assert_equal "rake_test_loader.rb", data[:service]
+    assert_equal :actioncable, data[:rpc][:flavor]
+    assert_equal "#{channel_klass}#sample", data[:rpc][:call]
+    assert_equal :action, data[:rpc][:call_type]
+    assert_equal Socket.gethostname, data[:rpc][:host]
   end
 
   private
