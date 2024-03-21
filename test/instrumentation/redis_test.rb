@@ -49,9 +49,9 @@ class RedisTest < Minitest::Test
     clear_all!
 
     Instana.tracer.start_or_continue_trace(:redis_test) do
-      @redis_client.pipelined do
-        @redis_client.set('hello', 'world')
-        @redis_client.set('other', 'world')
+      @redis_client.pipelined do |pipeline|
+        pipeline.set('hello', 'world')
+        pipeline.set('other', 'world')
       end
     end
 
@@ -63,9 +63,9 @@ class RedisTest < Minitest::Test
 
     Instana.tracer.start_or_continue_trace(:redis_test) do
       begin
-        @redis_client.pipelined do
-          @redis_client.set('other', 'world')
-          @redis_client.call('invalid')
+        @redis_client.pipelined do |pipeline|
+          pipeline.set('other', 'world')
+          pipeline.call('invalid')
         end
       rescue; end
     end
@@ -77,9 +77,9 @@ class RedisTest < Minitest::Test
     clear_all!
 
     Instana.tracer.start_or_continue_trace(:redis_test) do
-      @redis_client.multi do
-        @redis_client.set('hello', 'world')
-        @redis_client.set('other', 'world')
+      @redis_client.multi do |multi|
+        multi.set('hello', 'world')
+        multi.set('other', 'world')
       end
     end
 
@@ -91,9 +91,9 @@ class RedisTest < Minitest::Test
 
     Instana.tracer.start_or_continue_trace(:redis_test) do
       begin
-        @redis_client.multi do
-          @redis_client.set('other', 'world')
-          @redis_client.call('invalid')
+        @redis_client.multi do |multi|
+          multi.set('other', 'world')
+          multi.call('invalid')
         end
       rescue; end
     end
