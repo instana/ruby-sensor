@@ -5,7 +5,7 @@ module Instana
   module Activators
     class Redis < Activator
       def can_instrument?
-        defined?(::Redis) && defined?(::Redis::Client) && ::Instana.config[:redis][:enabled]
+        defined?(::Redis) && Gem::Specification.find_by_name('redis').version < Gem::Version.new('5.0') && defined?(::Redis::Client) && ::Instana.config[:redis][:enabled]
       end
 
       def instrument
