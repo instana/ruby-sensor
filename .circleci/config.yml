@@ -19,6 +19,7 @@ library_gemfile: &library_gemfile
     - "./gemfiles/rack_20.gemfile"
     - "./gemfiles/rack_30.gemfile"
     - "./gemfiles/redis_40.gemfile"
+    - "./gemfiles/redis_50.gemfile"
     - "./gemfiles/rest_client_20.gemfile"
     - "./gemfiles/resque_122.gemfile"
     - "./gemfiles/resque_20.gemfile"
