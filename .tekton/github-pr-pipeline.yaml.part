@@ -1,0 +1,38 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: github-pr-ruby-tracer-ci-pipeline
+spec:
+  params:
+  - name: revision
+    type: string
+  - name: git-commit-sha
+    type: string
+  workspaces:
+    - name: ruby-tracer-ci-pipeline-pvc
+  tasks:
+    - name: github-set-check-status-to-pending
+      taskRef:
+        kind: Task
+        name: github-set-status
+      params:
+      - name: SHA
+        value: $(params.git-commit-sha)
+      - name: STATE
+        value: pending
+      - name: REPO
+        value: instana/ruby-sensor
+    - name: github-set-check-status-to-success-or-failure
+      runAfter:
+      - github-set-check-status-to-pending
+      - unittest-rails-postgres
+      taskRef:
+        kind: Task
+        name: github-set-status
+      params:
+      - name: SHA
+        value: $(params.git-commit-sha)
+      - name: STATE
+        value: success
+      - name: REPO
+        value: instana/ruby-sensor
