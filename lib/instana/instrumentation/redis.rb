@@ -10,30 +10,27 @@ module Instana
         :multi => ::RedisClient.instance_method(:multi)
       }.freeze
 
-      def call_v(*args, &block)
+      def call_v(*args, **kwargs, &block)
         if skip_instrumentation?
-          super(*args, &block)
+          super(*args, **kwargs, &block)
         else
-          call_with_instana(args[0][0].to_s.upcase, ORIGINAL_METHODS[:call_v], *args, &block)
+          call_with_instana(args[0][0].to_s.upcase, ORIGINAL_METHODS[:call_v], args, kwargs, &block)
         end
       end
 
-      def pipelined(*args, &block)
+      def pipelined(*args, **kwargs, &block)
         if skip_instrumentation?
-          super(*args, &block)
+          super(*args, **kwargs, &block)
         else
-          call_with_instana('PIPELINE', ORIGINAL_METHODS[:pipelined], *args, &block)
+          call_with_instana('PIPELINE', ORIGINAL_METHODS[:pipelined], args, kwargs, &block)
         end
       end
 
-      # Since, starting with 5.1 redis/client.rb:114:multi takes an unused default argument `watch: nil`
-      # but calls redis_client.rb:442:multi, which doesn't take any argument,
-      # here we have to take arguments but we should not use it.
-      def multi(*_, &block)
+      def multi(*args, **kwargs, &block)
         if skip_instrumentation?
-          super(&block)
+          super(*args, **kwargs, &block)
         else
-          call_with_instana('MULTI', ORIGINAL_METHODS[:multi], &block)
+          call_with_instana('MULTI', ORIGINAL_METHODS[:multi], args, kwargs, &block)
         end
       end
 
@@ -43,19 +40,19 @@ module Instana
         :call_pipeline => ::Redis::Client.instance_method(:call_pipeline)
       }.freeze
 
-      def call(*args, &block)
+      def call(*args, **kwargs, &block)
         if skip_instrumentation?
-          super(*args, &block)
+          super(*args, **kwargs, &block)
         else
-          call_with_instana(args[0][0].to_s.upcase, ORIGINAL_METHODS[:call], *args, &block)
+          call_with_instana(args[0][0].to_s.upcase, ORIGINAL_METHODS[:call], args, kwargs, &block)
         end
       end
 
-      def call_pipeline(*args, &block)
+      def call_pipeline(*args, **kwargs, &block)
         if skip_instrumentation?
-          super(*args, &block)
+          super(*args, **kwargs, &block)
         else
-          call_with_instana(args.first.is_a?(::Redis::Pipeline::Multi) ? 'MULTI' : 'PIPELINE', ORIGINAL_METHODS[:call_pipeline], *args, &block)
+          call_with_instana(args.first.is_a?(::Redis::Pipeline::Multi) ? 'MULTI' : 'PIPELINE', ORIGINAL_METHODS[:call_pipeline], args, kwargs, &block)
         end
       end
     end
@@ -65,8 +62,7 @@ module Instana
       !Instana.tracer.tracing? || dnt_spans.include?(::Instana.tracer.current_span.name) || !Instana.config[:redis][:enabled]
     end
 
-    def call_with_instana(*args, &block)
-      command, original_super, *original_args = *args
+    def call_with_instana(command, original_super, args, kwargs, &block)
       kv_payload = { redis: {} }
 
       begin
@@ -79,7 +75,7 @@ module Instana
         rescue
           nil
         end
-        original_super.bind(self).call(*original_args, &block)
+        original_super.bind(self).call(*args, **kwargs, &block)
       rescue => e
         ::Instana.tracer.log_info({ redis: {error: true} })
         ::Instana.tracer.log_error(e)
