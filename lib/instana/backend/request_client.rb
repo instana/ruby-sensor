@@ -8,8 +8,10 @@ require 'json'
 # :nocov:
 begin
   require 'oj'
+  INSTANA_USE_OJ = true
 rescue LoadError => _e
   Instana.logger.warn("Unable to load Oj.")
+  INSTANA_USE_OJ = false
 end
 # :nocov:
 
@@ -66,7 +68,7 @@ module Instana
 
       def encode_body(data)
         # :nocov:
-        defined?(Oj) ? Oj.dump(data, mode: :strict) : JSON.dump(data)
+        INSTANA_USE_OJ ? Oj.dump(data, mode: :strict) : JSON.dump(data)
         # :nocov:
       end
     end
