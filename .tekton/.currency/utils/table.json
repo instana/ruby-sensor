@@ -1,0 +1,94 @@
+{
+    "table": [
+      {
+        "package_name": "Cuba",
+        "support_policy": "On demand",
+        "beta_version": "No",
+        "cloud_native": "No"
+      },
+      {
+        "package_name": "Rack",
+        "support_policy": "0-day",
+        "beta_version": "No",
+        "cloud_native": "No"
+      },
+      {
+        "package_name": "Rails",
+        "support_policy": "30-days",
+        "beta_version": "No",
+        "cloud_native": "No"
+      },
+      {
+        "package_name": "Rails::API",
+        "support_policy": "30-days",
+        "beta_version": "No",
+        "cloud_native": "No"
+      },
+      {
+        "package_name": "Rails LTS",
+        "support_policy": "On demand",
+        "beta_version": "No",
+        "cloud_native": "No"
+      },
+      {
+        "package_name": "Roda",
+        "support_policy": "30-days",
+        "beta_version": "No",
+        "cloud_native": "No"
+      },
+      {
+        "package_name": "Sinatra",
+        "support_policy": "30-days",
+        "beta_version": "No",
+        "cloud_native": "No"
+      },
+      {
+        "package_name": "Excon",
+        "support_policy": "30-days",
+        "beta_version": "No",
+        "cloud_native": "Yes"
+      },
+      {
+        "package_name": "gRPC",
+        "support_policy": "30-days",
+        "beta_version": "No",
+        "cloud_native": "No"
+      },
+      {
+        "package_name": "Net::HTTP",
+        "support_policy": "0-day",
+        "beta_version": "No",
+        "cloud_native": "No"
+      },
+      {
+        "package_name": "Rest-Client",
+        "support_policy": "30-days",
+        "beta_version": "No",
+        "cloud_native": "No"
+      },
+      {
+        "package_name": "Dalli",
+        "support_policy": "30-days",
+        "beta_version": "No",
+        "cloud_native": "No"
+      },
+      {
+        "package_name": "Resque",
+        "support_policy": "30-days",
+        "beta_version": "No",
+        "cloud_native": "Yes"
+      },
+      {
+        "package_name": "Sidekiq",
+        "support_policy": "30-days",
+        "beta_version": "No",
+        "cloud_native": "Yes"
+      },
+      {
+        "package_name": "GraphQL",
+        "support_policy": "30-days",
+        "beta_version": "No",
+        "cloud_native": "Yes"
+      }
+    ]
+}
