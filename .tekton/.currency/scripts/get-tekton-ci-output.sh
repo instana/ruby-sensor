@@ -5,25 +5,40 @@ TEKTON_CI_OUT_FILE=utils/tekton-ci-output.txt
 # Empty the file
 >$TEKTON_CI_OUT_FILE
 
-taskrun_list=$(tkn taskrun list)
+taskrun_list=$(kubectl get taskrun --sort-by=.metadata.creationTimestamp | grep -v "pr\|Failed\|currency")
 
-pattern_library_map=("1:cuba" "4:excon" "6:graphql" "7:grpc" "10:rack" "11:rest-client" "13:roda" "16:sinatra")
-for pattern_library in ${pattern_library_map[@]}
+declare -A pattern_map1=( ["cuba"]="1" ["excon"]="4" ["graphql"]="6" ["grpc"]="7" ["rack"]="10" ["rest-client"]="11" ["roda"]="13" ["sinatra"]="16" )
+
+for library in "${!pattern_map1[@]}"
 do
-    pattern=$(echo "${pattern_library}" | awk -F':' '{print $1}')
-    library=$(echo "${pattern_library}" | awk -F':' '{print $2}')
+    pattern=${pattern_map1[$library]}
 
-    latest_successful_taskrun=$(echo "${taskrun_list}" | grep "unittest-default-ruby-33-${pattern}\s" | head -n 1 | awk '{print $1}')
-    tkn taskrun logs ${latest_successful_taskrun} | grep -o "Installing ${library} [^ ]*" >> ${TEKTON_CI_OUT_FILE}
+    successful_taskruns=( $(echo "${taskrun_list}" | grep "unittest-default-ruby-33-${pattern}\s" | awk '{print $1}') )
+    for ((i=${#successful_taskruns[@]}-1; i>=0; i--)); do
+        pod_name=$(kubectl get taskrun "${successful_taskruns[$i]}" -o jsonpath='{.status.podName}')
+        ci_output=$(kubectl logs ${pod_name} -c step-unittest | grep -o "Installing ${library} [^ ]*")
+        if [ -n "${ci_output}" ]; then
+            latest_successful_taskrun_output=${ci_output}
+            break
+        fi
+    done
+    echo ${latest_successful_taskrun_output} >> ${TEKTON_CI_OUT_FILE}
 done
 
-library_pattern_map=("rails:rails-\w*-11" "dalli:memcached-11" "resque:unittest-redis-ruby-32-33-9" "sidekiq:unittest-redis-ruby-32-33-18")
+declare -A pattern_map2=( ["rails"]="rails-\w*-11" ["dalli"]="memcached-11" ["resque"]="unittest-redis-ruby-32-33-9" ["sidekiq"]="unittest-redis-ruby-32-33-18" )
 
-for library_pattern in ${library_pattern_map[@]}
+for library in "${!pattern_map2[@]}"
 do
-    library=$(echo "${library_pattern}" | awk -F':' '{print $1}')
-    pattern=$(echo "${library_pattern}" | awk -F':' '{print $2}')
+    pattern=${pattern_map2[$library]}
 
-    latest_successful_taskrun=$(echo "${taskrun_list}" | grep "${pattern}" | head -n 1 | awk '{print $1}')
-    tkn taskrun logs ${latest_successful_taskrun} | grep -o "Installing ${library} [^ ]*" >> ${TEKTON_CI_OUT_FILE}
+    successful_taskruns=( $(echo "${taskrun_list}" | grep "${pattern}" | awk '{print $1}') )
+    for ((i=${#successful_taskruns[@]}-1; i>=0; i--)); do
+        pod_name=$(kubectl get taskrun "${successful_taskruns[$i]}" -o jsonpath='{.status.podName}')
+        ci_output=$(kubectl logs ${pod_name} -c step-unittest | grep -o "Installing ${library} [^ ]*")
+        if [ -n "${ci_output}" ]; then
+            latest_successful_taskrun_output=${ci_output}
+            break
+        fi
+    done
+    echo ${latest_successful_taskrun_output} >> ${TEKTON_CI_OUT_FILE}
 done
