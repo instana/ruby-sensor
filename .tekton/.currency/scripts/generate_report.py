@@ -98,8 +98,17 @@ def main():
     df = DataFrame(items)
     df.insert(len(df.columns) - 1, "Cloud Native", df.pop("Cloud Native"))
 
-    # Save the DataFrame as Markdown
-    df.to_markdown(REPORT_FILE, index=False)
+    # Convert dataframe to markdown
+    markdown_table = df.to_markdown(index=False)
+
+    disclaimer = f"##### This page is auto-generated. Any change will be overwritten after the next sync. Please apply changes directly to the files in the [ruby tracer](https://github.com/instana/ruby-sensor) repo."
+    title = "## Ruby supported packages and versions"
+
+    # Combine disclaimer, title, and markdown table with line breaks
+    final_markdown = disclaimer + "\n" + title + "\n" + markdown_table
+
+    with open(REPORT_FILE, "w") as file:
+        file.write(final_markdown)
 
 if __name__ == "__main__":
     main()
