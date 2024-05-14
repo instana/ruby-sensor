@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: git-clone-task
+  name: ruby-git-clone-task
 spec:
   params:
   - name: revision
@@ -24,7 +24,7 @@ spec:
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: generate-currency-report-task
+  name: ruby-generate-currency-report-task
 spec:
   workspaces:
     - name: task-pvc
@@ -34,7 +34,7 @@ spec:
       # 3.10.13-bookworm
       image: python@sha256:c970ff53939772f47b0672e380328afb50d8fd1c0568ed4f82c22effc54244fc
       script: |
-        #!/bin/bash
+        #!/usr/bin/env bash
         /usr/bin/curl -LO https://storage.googleapis.com/kubernetes-release/release/$(/usr/bin/curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && \
         chmod +x ./kubectl && \
         mv ./kubectl /usr/local/bin/kubectl
@@ -44,15 +44,16 @@ spec:
 
         python -m venv /tmp/venv
         source /tmp/venv/bin/activate
-        pip install -r utils/requirements.txt
+        pip install -r resources/requirements.txt
 
+        chmod +x scripts/get-tekton-ci-output.sh && ./scripts/get-tekton-ci-output.sh
         python scripts/generate_report.py
-        echo "Generated report..."
+        cat docs/report.md
 ---
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: upload-currency-report-task
+  name: ruby-upload-currency-report-task
 spec:
   params:
     - name: github-token-secret
@@ -74,16 +75,17 @@ spec:
         #!/bin/sh
 
         cd /workspace        
-        git clone https://oauth2:$GH_ENTERPRISE_TOKEN@github.ibm.com/instana/tracer-reports.git tracer-reports
-        cd tracer-reports
-        git pull origin main
+        git clone https://oauth2:$GH_ENTERPRISE_TOKEN@github.ibm.com/instana/tracer-reports.git
+        if [ $? -eq 0 ]; then
+          cd tracer-reports
 
-        cp ../ruby-sensor/.tekton/.currency/docs/report.md ./automated/currency/ruby/report.md
+          cp ../ruby-sensor/.tekton/.currency/docs/report.md ./automated/currency/ruby/report.md
 
-        git config user.name "Instanacd PAT for GitHub Enterprise"
-        git config user.email instana.ibm.github.enterprise@ibm.com
-        
-        git add .
-        
-        git commit -m "chore: Updated ruby currency report"
-        git push origin main
+          git config user.name "Instanacd PAT for GitHub Enterprise"
+          git config user.email instana.ibm.github.enterprise@ibm.com
+          
+          git add .
+          
+          git commit -m "chore: Updated ruby currency report"
+          git push origin main
+        fi
