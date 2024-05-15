@@ -25,8 +25,8 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.3.0-bookworm
-            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+            # 3.3.1-bookworm
+            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
           - name: gemfile
             value:
             - "gemfiles/rubocop_162.gemfile"
@@ -147,8 +147,8 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.3.0-bookworm
-            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+            # 3.3.1-bookworm
+            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
           - name: gemfile
             value:
             - "./gemfiles/cuba_30.gemfile"
@@ -188,8 +188,8 @@ spec:
             - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
             # 3.2.3-bookworm
             - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.0-bookworm
-            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+            # 3.3.1-bookworm
+            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
           - name: gemfile
             value:
             - "./gemfiles/mongo_216.gemfile"
@@ -212,8 +212,8 @@ spec:
             - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
             # 3.2.3-bookworm
             - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.0-bookworm
-            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+            # 3.3.1-bookworm
+            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
           - name: gemfile
             value:
             - "./gemfiles/dalli_20.gemfile"
@@ -237,8 +237,8 @@ spec:
             - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
             # 3.2.3-bookworm
             - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.0-bookworm
-            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+            # 3.3.1-bookworm
+            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
           - name: gemfile
             value:
             - "./gemfiles/aws_30.gemfile"
@@ -285,8 +285,8 @@ spec:
             value:
             # 3.2.3-bookworm
             - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.0-bookworm
-            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+            # 3.3.1-bookworm
+            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
           - name: gemfile
             value:
             - "./gemfiles/redis_40.gemfile"
@@ -317,8 +317,8 @@ spec:
             - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
             # 3.2.3-bookworm
             - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.0-bookworm
-            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+            # 3.3.1-bookworm
+            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
           - name: gemfile
             value:
             - "./gemfiles/rails_61.gemfile"
@@ -342,8 +342,8 @@ spec:
             - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
             # 3.2.3-bookworm
             - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.0-bookworm
-            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+            # 3.3.1-bookworm
+            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
           - name: gemfile
             value:
             - "./gemfiles/rails_61.gemfile"
@@ -367,8 +367,8 @@ spec:
             - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
             # 3.2.3-bookworm
             - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.0-bookworm
-            - "sha256:67ccb9c63d2a2ae9fcc7df5448800b740e140691ac74534f9fc687dbf5ce0da2"
+            # 3.3.1-bookworm
+            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
           - name: gemfile
             value:
             - "./gemfiles/rails_61.gemfile"
