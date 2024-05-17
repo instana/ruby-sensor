@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ruby-tracer-prepuller
+spec:
+  selector:
+    matchLabels:
+      name: ruby-tracer-prepuller
+  template:
+    metadata:
+      labels:
+        name: ruby-tracer-prepuller
+    spec:
+      # Configure an init container for each image you want to pull
+      initContainers:
+        - name: prepuller-git
+          # alpine/git:2.43.0
+          image: alpine/git@sha256:6ff4de047dcc8f0c7d75d2efff63fbc189e87d2f458305f2cc8f165ff83309cf
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-dynamodb
+          # amazon/dynamodb-local:2.3.0
+          image: amazon/dynamodb-local@sha256:0e42a967205042118277be031a59f7aa035c2f90b1695b1b3250d0ce03a7c8f0
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-s3
+          # minio/minio:RELEASE.2024-03-07T00-43-48Z
+          image: minio/minio@sha256:9224601c529f424e5efac79f95606f0c7e1fe234f3f45344a49deaccd66d5bf5
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-sns
+          # s12v/sns:latest
+          image: s12v/sns@sha256:a80f1cd6318d22419cab38650ee6824f72cc2dc902d2b38e4f997d0530fe4e07
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-sqs
+          # softwaremill/elasticmq-native:1.5.7
+          image: softwaremill/elasticmq-native@sha256:9183333a9ea4666686c37dc83a2b1f8cee9c15ffd161a219a131e171039f1ac3
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-memcached
+          # memcached:1.6.24-bookworm
+          image: memcached@sha256:b2b562323463b6cda240a148fb2a5b7ea86e8017a8509e10a3c7f1681f259193
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-redis
+          # redis:7.2.4-bookworm
+          image: redis@sha256:fe98b2d39d462d06a7360e2860dd6ceff930745e3731eccb3c1406dd0dd7f744
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-mongo
+          # mongo:5.0.25-focal
+          image: mongo@sha256:d1b8a7b77424347397653ab8ff500c66b1e9979b4cebf826951d37b0d3966721
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-mariadb
+          # mariadb:11.3.2
+          image: mariadb@sha256:851f05fe1e4cb290442c1b12b7108436a33fd8f6a733d4989950322d06d45c65
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-postgres
+          # postgres:16.2-bookworm
+          image: postgres@sha256:6b841c8f6a819884207402f1209a8116844365df15fca8cf556fc54a24c70800
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-30
+          # 3.0.6-bullseye
+          image: ruby@sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-31
+          # 3.1.4-bookworm
+          image: ruby@sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-32
+          # 3.2.3-bookworm
+          image: ruby@sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed
+          command: ["sh", "-c", "'true'"]
+        - name: prepuller-33
+          # 3.3.1-bookworm
+          image: ruby@sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d
+          command: ["sh", "-c", "'true'"]
+      # Use the pause container to ensure the Pod goes into a `Running` phase
+      # but doesn't take up resource on the cluster
+      containers:
+        - name: pause
+          image: gcr.io/google_containers/pause:3.2
+          resources:
+            limits:
+              cpu: 1m
+              memory: 8Mi
+            requests:
+              cpu: 1m
+              memory: 8Mi
