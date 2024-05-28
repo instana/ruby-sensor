@@ -185,8 +185,8 @@ class NetHTTPTest < Minitest::Test
 
     assert_equal :sdk, sdk_span[:n]
     assert_equal :'net-http-error-test', sdk_span[:data][:sdk][:name]
-    assert_equal nil, sdk_span[:error]
-    assert_equal nil, sdk_span[:ec]
+    assert_nil sdk_span[:error]
+    assert_nil sdk_span[:ec]
 
     refute_nil http_span.key?(:data)
     refute_nil http_span[:data].key?(:http)
