@@ -50,6 +50,9 @@ echo    "with dependencies in '${BUNDLE_GEMFILE}'"
 gem update --system > /dev/null
 echo "Gem version $(gem --version)"
 
+# List the built-in gem "net-http"
+gem list | grep net-http
+
 # Configure Bundler
 bundler --version
 bundle config set path '/tmp/vendor/bundle'
