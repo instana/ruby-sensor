@@ -19,6 +19,8 @@ spec:
         # '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
         name: ruby-tracer-scheduled-ci-pipeline-$(tt.params.date-time-normalized)-$(tt.params.git-commit-short-sha)
       spec:
+        timeouts:
+          pipeline: "2h"
         params:
         - name: revision
           value: master
