@@ -4,8 +4,6 @@
 require 'test_helper'
 require 'support/apps/http_endpoint/boot'
 
-require 'net/http'
-
 class NetHTTPTest < Minitest::Test
   def test_config_defaults
     assert ::Instana.config[:nethttp].is_a?(Hash)
