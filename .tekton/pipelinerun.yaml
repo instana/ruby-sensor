@@ -3,6 +3,8 @@ kind: PipelineRun
 metadata:
   name: ruby-tracer-ci-pipeline-run
 spec:
+  timeouts:
+    pipeline: "2h"
   params:
   - name: revision
     value: "tekton"
