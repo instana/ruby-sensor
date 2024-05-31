@@ -11,7 +11,6 @@ from kubernetes import client, config
 JSON_FILE = "resources/table.json"
 REPORT_FILE = "docs/report.md"
 API_V1_ENDPOINT = "https://rubygems.org/api/v1/versions/"
-LATEST_SUPPORTED_RUBY_VERSION = "3.3.1"
 
 def filter_taskruns(taskrun_filter, taskruns):
     filtered_taskruns = list(filter(taskrun_filter, taskruns))
@@ -41,7 +40,7 @@ def get_taskruns(namespace, task_name):
 
 
 def process_taskrun_logs(
-    taskruns, core_v1_client, namespace, task_name, library, tekton_ci_output
+    taskruns, core_v1_client, namespace, library, tekton_ci_output, check_net_http=False
 ):
     for tr in taskruns:
         pod_name = tr["status"]["podName"]
@@ -49,22 +48,27 @@ def process_taskrun_logs(
         logs = core_v1_client.read_namespaced_pod_log(
             pod_name, namespace, container="step-unittest"
         )
-        if "Installing" in logs:
-            print(
-                f"Retrieving container logs from the successful taskrun pod {pod_name} of taskrun {taskrun_name}.."
-            )
-            match = re.search(f"Installing ({library} [^\s]+)", logs)
-            tekton_ci_output += f"{match[1]}\n"
-            break
-        else:
+        if "Installing" not in logs:
             print(
                 f"Unable to retrieve container logs from the successful taskrun pod {pod_name} of taskrun {taskrun_name}."
             )
+            continue
+
+        print(
+            f"Retrieving container logs from the successful taskrun pod {pod_name} of taskrun {taskrun_name}.."
+        )
+        if check_net_http:
+            version_match = re.search("(net-http) \([\w:]* ([\d.]+)\)", logs)
+            tekton_ci_output += f"{version_match[1]} {version_match[2]}\n"
+
+        match = re.search(f"Installing ({library} [^\s]+)", logs)
+        tekton_ci_output += f"{match[1]}\n"
+        break
+
     return tekton_ci_output
 
 
 def get_tekton_ci_output():
-    # config.load_kube_config()
     config.load_incluster_config()
 
     namespace = "default"
@@ -85,6 +89,8 @@ def get_tekton_ci_output():
     task_name = "ruby-tracer-unittest-default-libraries-task"
     default_taskruns = get_taskruns(namespace, task_name)
 
+    is_first_iteration=True
+
     for library, pattern in default_libraries_dict.items():
         taskrun_filter = (
             lambda tr: tr["metadata"]["name"].endswith(
@@ -98,10 +104,14 @@ def get_tekton_ci_output():
             filtered_default_taskruns,
             core_v1_client,
             namespace,
-            task_name,
             library,
             tekton_ci_output,
+            check_net_http=is_first_iteration
         )
+        
+        # Set is_first_iteration to False after the first iteration to fetch the net-http version only once
+        if is_first_iteration:
+            is_first_iteration = False
 
     other_libraries_dict = {
         "rails": {
@@ -136,22 +146,11 @@ def get_tekton_ci_output():
             filtered_other_taskruns,
             core_v1_client,
             namespace,
-            task_name,
             library,
-            tekton_ci_output,
+            tekton_ci_output
         )
 
     return tekton_ci_output
-
-
-def get_latest_stable_ruby_version():
-    url = "https://www.ruby-lang.org/en/downloads/"
-    page = get(url)
-    soup = BeautifulSoup(page.text, "html.parser")
-    text = soup.find(string=re.compile("The current stable version is")).text
-    pattern = "(\d+\.\d+\.?\d*)"
-    latest_stable_ruby_version = re.search(pattern, text)[1]
-    return latest_stable_ruby_version
 
 
 def get_upstream_version(dependency):
@@ -200,17 +199,12 @@ def main():
         package = item["Package name"]
         package = package.lower().replace("::", "-")
 
-        if package == "net-http":
-            last_supported_version = LATEST_SUPPORTED_RUBY_VERSION
-            latest_version = get_latest_stable_ruby_version()
+        latest_version = get_upstream_version(package)
 
+        if not package in ["rails lts", "rails-api"]:
+            last_supported_version = get_last_supported_version(tekton_ci_output, package)
         else:
-            latest_version = get_upstream_version(package)
-
-            if not package in ["rails lts", "rails-api"]:
-                last_supported_version = get_last_supported_version(tekton_ci_output, package)
-            else:
-                last_supported_version = latest_version
+            last_supported_version = latest_version
 
         up_to_date = isUptodate(last_supported_version, latest_version)
 
@@ -229,7 +223,7 @@ def main():
     # Convert dataframe to markdown
     markdown_table = df.to_markdown(index=False)
 
-    disclaimer = f"##### This page is auto-generated. Any change will be overwritten after the next sync. Please apply changes directly to the files in the [ruby tracer](https://github.com/instana/ruby-sensor) repo."
+    disclaimer = "##### This page is auto-generated. Any change will be overwritten after the next sync. Please apply changes directly to the files in the [ruby tracer](https://github.com/instana/ruby-sensor) repo."
     title = "## Ruby supported packages and versions"
 
     # Combine disclaimer, title, and markdown table with line breaks
