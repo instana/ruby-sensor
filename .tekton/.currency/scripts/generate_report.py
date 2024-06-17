@@ -40,7 +40,7 @@ def get_taskruns(namespace, task_name):
 
 
 def process_taskrun_logs(
-    taskruns, core_v1_client, namespace, library, tekton_ci_output, check_net_http=False
+    taskruns, core_v1_client, namespace, library, tekton_ci_output
 ):
     for tr in taskruns:
         pod_name = tr["status"]["podName"]
@@ -50,16 +50,13 @@ def process_taskrun_logs(
         )
         if "Installing" not in logs:
             print(
-                f"Unable to retrieve container logs from the successful taskrun pod {pod_name} of taskrun {taskrun_name}."
+                f"Unable to retrieve logs from taskrun pod {pod_name} of taskrun {taskrun_name} for gem {library}."
             )
             continue
 
         print(
-            f"Retrieving container logs from the successful taskrun pod {pod_name} of taskrun {taskrun_name}.."
+            f"Retrieving logs from taskrun pod {pod_name} of taskrun {taskrun_name} for gem {library}.."
         )
-        if check_net_http:
-            version_match = re.search("(net-http) \([\w:]* ([\d.]+)\)", logs)
-            tekton_ci_output += f"{version_match[1]} {version_match[2]}\n"
 
         match = re.search(f"Installing ({library} [^\s]+)", logs)
         tekton_ci_output += f"{match[1]}\n"
@@ -74,28 +71,28 @@ def get_tekton_ci_output():
     namespace = "default"
     core_v1_client = client.CoreV1Api()
 
+    ruby_33_prefix = "unittest-default-ruby-33-"
+    ruby_31_prefix = "unittest-default-ruby-31-"
+
     default_libraries_dict = {
-        "cuba": 1,
-        "excon": 4,
-        "graphql": 6,
-        "grpc": 7,
-        "rack": 10,
-        "rest-client": 11,
-        "roda": 13,
-        "sinatra": 16,
+        "cuba": f"{ruby_33_prefix}1",
+        "excon": f"{ruby_33_prefix}4",
+        "graphql": f"{ruby_33_prefix}6",
+        "grpc": f"{ruby_33_prefix}7",
+        "rack": f"{ruby_33_prefix}10",
+        "rest-client": f"{ruby_33_prefix}11",
+        "roda": f"{ruby_33_prefix}13",
+        "sinatra": f"{ruby_33_prefix}16",
+        "net-http": f"{ruby_31_prefix}8",
     }
 
     tekton_ci_output = ""
     task_name = "ruby-tracer-unittest-default-libraries-task"
     default_taskruns = get_taskruns(namespace, task_name)
 
-    is_first_iteration=True
-
     for library, pattern in default_libraries_dict.items():
         taskrun_filter = (
-            lambda tr: tr["metadata"]["name"].endswith(
-                f"unittest-default-ruby-33-{pattern}"
-            )
+            lambda tr: tr["metadata"]["name"].endswith(pattern)
             and tr["status"]["conditions"][0]["type"] == "Succeeded"
         )
         filtered_default_taskruns = filter_taskruns(taskrun_filter, default_taskruns)
@@ -106,12 +103,7 @@ def get_tekton_ci_output():
             namespace,
             library,
             tekton_ci_output,
-            check_net_http=is_first_iteration
         )
-        
-        # Set is_first_iteration to False after the first iteration to fetch the net-http version only once
-        if is_first_iteration:
-            is_first_iteration = False
 
     other_libraries_dict = {
         "rails": {
