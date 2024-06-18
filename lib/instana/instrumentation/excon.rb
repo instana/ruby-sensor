@@ -78,8 +78,10 @@ module Instana
       private
 
       def traceable?
-        ::Instana.tracer.tracing? &&
-          (!Instana.tracer.current_span.exit_span? || Instana.tracer.current_span.name == :excon)
+        ::Instana.tracer.tracing? && ::Instana.tracer.current_span.nil? ||
+          !::Instana.tracer.current_span.nil? &&
+            (!Instana.tracer.current_span.exit_span? ||
+             Instana.tracer.current_span.exit_span? && Instana.tracer.current_span.name == :excon)
       end
     end
   end

@@ -133,12 +133,12 @@ module Instana
     # @param kvs [Hash] list of key values to be reported in the span
     #
     def log_entry(name, kvs = nil, start_time = ::Instana::Util.now_in_ms, child_of = nil)
-      return unless self.current_span || child_of
+      return unless tracing? || child_of
 
-      new_span = if child_of.is_a?(::Instana::Span) || child_of.is_a?(::Instana::SpanContext)
-                   Span.new(name, parent_ctx: child_of, start_time: start_time)
-                 else
+      new_span = if child_of.nil? && !self.current_span.nil?
                    Span.new(name, parent_ctx: self.current_span, start_time: start_time)
+                 else
+                   Span.new(name, parent_ctx: child_of, start_time: start_time)
                  end
       new_span.set_tags(kvs) if kvs
       self.current_span = new_span
@@ -218,7 +218,7 @@ module Instana
     #   :span_id => 12345
     #
     def log_async_entry(name, kvs)
-      return unless self.current_span
+      return unless tracing?
 
       new_span = Span.new(name, parent_ctx: self.current_span)
       new_span.set_tags(kvs) unless kvs.empty?
@@ -268,7 +268,8 @@ module Instana
       # The non-nil value of this instance variable
       # indicates if we are currently tracing
       # in this thread or not.
-      self.current_span ? true : false
+      (self.current_span ? true : false) ||
+        (::Instana.config[:allow_exit_as_root] && ::Instana.config[:tracing][:enabled])
     end
 
     # Indicates if we're tracing and the current span name matches

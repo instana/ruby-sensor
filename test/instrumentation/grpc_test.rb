@@ -4,9 +4,13 @@
 require 'test_helper'
 require 'support/apps/grpc/boot'
 
-class GrpcTest < Minitest::Test
+class GrpcTest < Minitest::Test # rubocop:disable Metrics/ClassLength
   def client_stub
     PingPongService::Stub.new('127.0.0.1:50051', :this_channel_is_insecure)
+  end
+
+  def teardown
+    ::Instana.config[:allow_exit_as_root] = false
   end
 
   def assert_client_span(client_span, call: '', call_type: '', error: nil)
@@ -78,6 +82,41 @@ class GrpcTest < Minitest::Test
 
     assert_equal server_span[:p], client_span[:s]
     assert_equal client_span[:p], sdk_span[:s]
+  end
+
+  def test_request_response_as_root_exit_span
+    clear_all!
+    ::Instana.config[:allow_exit_as_root] = true
+
+    response = client_stub.ping(
+      PingPongService::PingRequest.new(message: 'Hello World')
+    )
+    sleep 1
+
+    assert 'Hello World', response.message
+
+    # Pause for a split second to allow traces to be queued
+    sleep 0.2
+
+    spans = ::Instana.processor.queued_spans
+    client_span = find_spans_by_name(spans, :'rpc-client').first
+    server_span = find_spans_by_name(spans, :'rpc-server').first
+
+    assert_client_span(
+        client_span,
+        call: '/PingPongService/Ping',
+        call_type: :request_response
+    )
+
+    assert_server_span(
+        server_span,
+        call: '/PingPongService/Ping',
+        call_type: :request_response
+    )
+
+    assert_equal client_span[:t], server_span[:t]
+    assert_equal client_span[:s], server_span[:p]
+    assert_nil client_span[:p]
   end
 
   def test_client_streamer

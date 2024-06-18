@@ -5,6 +5,10 @@ require 'test_helper'
 require 'support/apps/http_endpoint/boot'
 
 class NetHTTPTest < Minitest::Test
+  def teardown
+    ::Instana.config[:allow_exit_as_root] = false
+  end
+
   def test_config_defaults
     assert ::Instana.config[:nethttp].is_a?(Hash)
     assert ::Instana.config[:nethttp].key?(:enabled)
@@ -39,6 +43,22 @@ class NetHTTPTest < Minitest::Test
 
     spans = ::Instana.processor.queued_spans
     assert_equal 3, spans.length
+
+    http_span = find_first_span_by_name(spans, :'net-http')
+    assert_equal "http://127.0.0.1:6511/", http_span[:data][:http][:url]
+    assert_equal "200", http_span[:data][:http][:status]
+
+    WebMock.disable_net_connect!
+  end
+
+  def test_get_without_query_as_root_exit_span
+    clear_all!
+    ::Instana.config[:allow_exit_as_root] = true
+    WebMock.allow_net_connect!
+    Net::HTTP.get(URI('http://127.0.0.1:6511/'))
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length # 1 rack span from the endpoint is generated extra
 
     http_span = find_first_span_by_name(spans, :'net-http')
     assert_equal "http://127.0.0.1:6511/", http_span[:data][:http][:url]

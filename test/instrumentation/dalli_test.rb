@@ -9,6 +9,10 @@ class DalliTest < Minitest::Test
     @dc = Dalli::Client.new(@memcached_host, :namespace => "instana_test")
   end
 
+  def teardown
+    ::Instana.config[:allow_exit_as_root] = false
+  end
+
   def test_config_defaults
     assert ::Instana.config[:dalli].is_a?(Hash)
     assert ::Instana.config[:dalli].key?(:enabled)
@@ -48,6 +52,35 @@ class DalliTest < Minitest::Test
     assert_equal 'instana_test', second_span[:data][:memcache][:namespace]
     assert second_span[:data][:memcache].key?(:server)
     assert_equal @memcached_host, second_span[:data][:memcache][:server]
+  end
+
+  def test_basic_get_as_root_exit_span
+    clear_all!
+    @dc.set(:instana, :boom)
+
+    ::Instana.config[:allow_exit_as_root] = true
+    result = @dc.get(:instana)
+
+    assert_equal :boom, result
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
+
+    first_span = spans[0]
+
+    assert_equal :memcache, first_span[:n]
+    assert_equal false, first_span.key?(:error)
+    assert_nil first_span[:p]
+    assert first_span[:t] == first_span[:s]
+    assert first_span[:data].key?(:memcache)
+    assert first_span[:data][:memcache].key?(:command)
+    assert_equal :get, first_span[:data][:memcache][:command]
+    assert first_span[:data][:memcache].key?(:key)
+    assert_equal :instana, first_span[:data][:memcache][:key]
+    assert first_span[:data][:memcache].key?(:namespace)
+    assert_equal 'instana_test', first_span[:data][:memcache][:namespace]
+    assert first_span[:data][:memcache].key?(:server)
+    assert_equal @memcached_host, first_span[:data][:memcache][:server]
   end
 
   def test_basic_set

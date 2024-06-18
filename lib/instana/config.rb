@@ -27,6 +27,9 @@ module Instana
       # Enable/disable tracing (default: enabled)
       @config[:tracing] = { :enabled => true }
 
+      # Enable/disable tracing exit spans as root spans
+      @config[:allow_exit_as_root] = ENV['INSTANA_ALLOW_EXIT_AS_ROOT'] == '1'
+
       # Enable/Disable logging
       @config[:logging] = { :enabled => true }
 
