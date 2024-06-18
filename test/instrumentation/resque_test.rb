@@ -15,6 +15,7 @@ class ResqueClientTest < Minitest::Test
   end
 
   def teardown
+    ::Instana.config[:allow_exit_as_root] = false
   end
 
   def test_enqueue
@@ -30,6 +31,26 @@ class ResqueClientTest < Minitest::Test
     resque_span = find_first_span_by_name(spans, :'resque-client')
 
     assert_equal :'resque-client_test', sdk_span[:data][:sdk][:name]
+
+    assert_equal :"resque-client", resque_span[:n]
+    assert_equal "FastJob", resque_span[:data][:'resque-client'][:job]
+    assert_equal :critical, resque_span[:data][:'resque-client'][:queue]
+    assert_equal false, resque_span[:data][:'resque-client'].key?(:error)
+
+    assert_equal resque_job.args.first['trace_id'], resque_span[:t]
+    assert_equal resque_job.args.first['span_id'], resque_span[:s]
+  end
+
+  def test_enqueue_as_root_exit_span
+    ::Instana.config[:allow_exit_as_root] = true
+    ::Resque.enqueue(FastJob)
+    ::Instana.config[:allow_exit_as_root] = false
+
+    resque_job = Resque.reserve('critical')
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
+
+    resque_span = spans[0]
 
     assert_equal :"resque-client", resque_span[:n]
     assert_equal "FastJob", resque_span[:data][:'resque-client'][:job]

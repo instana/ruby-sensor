@@ -10,6 +10,10 @@ class RestClientTest < Minitest::Test
     OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:ciphers] = OpenSSL::SSL::SSLContext.new.ciphers
   end
 
+  def teardown
+    ::Instana.config[:allow_exit_as_root] = false
+  end
+
   def test_config_defaults
     assert ::Instana.config[:'rest-client'].is_a?(Hash)
     assert ::Instana.config[:'rest-client'].key?(:enabled)
@@ -50,6 +54,45 @@ class RestClientTest < Minitest::Test
     assert_equal trace_id, rack_span[:t]
 
     assert_equal sdk_span[:s], rest_span[:p]
+    assert_equal rest_span[:s], net_span[:p]
+    assert_equal net_span[:s], rack_span[:p]
+
+    # data keys/values
+    refute_nil net_span.key?(:data)
+    refute_nil net_span[:data].key?(:http)
+    assert_equal "http://127.0.0.1:6511/", net_span[:data][:http][:url]
+    assert_equal "200", net_span[:data][:http][:status]
+
+    WebMock.disable_net_connect!
+  end
+
+  def test_basic_get_as_root_exit_span
+    clear_all!
+    ::Instana.config[:allow_exit_as_root] = true
+    WebMock.allow_net_connect!
+
+    url = "http://127.0.0.1:6511/"
+
+    RestClient.get url
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 3, spans.length
+
+    rack_span = find_first_span_by_name(spans, :rack)
+    rest_span = find_first_span_by_name(spans, :'rest-client')
+    net_span = find_first_span_by_name(spans, :'net-http')
+
+    # Span name validation
+    assert_equal :rack, rack_span[:n]
+    assert_equal :sdk, rest_span[:n]
+    assert_equal :"net-http", net_span[:n]
+
+    # Trace IDs and relationships
+    trace_id = net_span[:t]
+    assert_equal trace_id, rest_span[:t]
+    assert_equal trace_id, rack_span[:t]
+
+    assert_nil rest_span[:p]
     assert_equal rest_span[:s], net_span[:p]
     assert_equal net_span[:s], rack_span[:p]
 

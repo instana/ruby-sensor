@@ -5,6 +5,10 @@ require 'test_helper'
 require 'support/apps/http_endpoint/boot'
 
 class ExconTest < Minitest::Test
+  def teardown
+    ::Instana.config[:allow_exit_as_root] = false
+  end
+
   def test_config_defaults
     assert ::Instana.config[:excon].is_a?(Hash)
     assert ::Instana.config[:excon].key?(:enabled)
@@ -50,6 +54,42 @@ class ExconTest < Minitest::Test
 
     assert_equal rack_span[:p], excon_span[:s]
     assert_equal excon_span[:p], sdk_span[:s]
+  end
+
+  def test_basic_get_as_root_exit_span
+    clear_all!
+
+    # A slight hack but webmock chokes with pipelined requests.
+    # Delete their excon middleware
+    Excon.defaults[:middlewares].delete ::WebMock::HttpLibAdapters::ExconAdapter
+    Excon.defaults[:middlewares].delete ::Excon::Middleware::Mock
+
+    url = "http://127.0.0.1:6511"
+
+    ::Instana.config[:allow_exit_as_root] = true
+    connection = Excon.new(url)
+    connection.get(:path => '/?basic_get')
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
+
+    excon_span = find_first_span_by_name(spans, :excon)
+    rack_span = find_first_span_by_name(spans, :rack)
+
+    # data keys/values
+    refute_nil excon_span.key?(:data)
+    refute_nil excon_span[:data].key?(:http)
+    assert_equal "http://127.0.0.1:6511/", excon_span[:data][:http][:url]
+    assert_equal 200, excon_span[:data][:http][:status]
+    assert_equal 'basic_get', excon_span[:data][:http][:params]
+
+    # excon backtrace not included by default check
+    assert !excon_span.key?(:stack)
+
+    assert_equal rack_span[:t], excon_span[:t]
+
+    assert_equal rack_span[:p], excon_span[:s]
+    assert_nil excon_span[:p]
   end
 
   def test_basic_get_with_error

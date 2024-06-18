@@ -9,6 +9,10 @@ class SidekiqClientTest < Minitest::Test
     ::Sidekiq::Queue.new('some_random_queue').clear
   end
 
+  def teardown
+    ::Instana.config[:allow_exit_as_root] = false
+  end
+
   def test_config_defaults
     assert ::Instana.config[:'sidekiq-client'].is_a?(Hash)
     assert ::Instana.config[:'sidekiq-client'].key?(:enabled)
@@ -33,6 +37,36 @@ class SidekiqClientTest < Minitest::Test
 
     assert_job_enqueued(job)
     assert_normal_trace_recorded(job)
+  end
+
+  def test_enqueue_as_root_exit_span
+    clear_all!
+    ::Instana.config[:allow_exit_as_root] = true
+    disable_redis_instrumentation
+    ::Sidekiq::Client.push(
+      'queue' => 'some_random_queue',
+      'class' => ::SidekiqJobOne,
+      'args' => [1, 2, 3],
+      'retry' => false
+    )
+    ::Instana.config[:allow_exit_as_root] = false
+    enable_redis_instrumentation
+
+    queue = ::Sidekiq::Queue.new('some_random_queue')
+    job = queue.first
+
+    assert_job_enqueued(job)
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
+
+    first_span = spans[0]
+
+    assert_equal :'sidekiq-client', first_span[:n]
+    assert_equal 'some_random_queue', first_span[:data][:'sidekiq-client'][:queue]
+    assert_equal 'SidekiqJobOne', first_span[:data][:'sidekiq-client'][:job]
+    assert_equal "false", first_span[:data][:'sidekiq-client'][:retry]
+    assert first_span[:data][:'sidekiq-client'][:'redis-url']
+    assert_equal job['jid'], first_span[:data][:'sidekiq-client'][:job_id]
   end
 
   def test_enqueue_failure

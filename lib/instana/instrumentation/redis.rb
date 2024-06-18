@@ -59,7 +59,7 @@ module Instana
 
     def skip_instrumentation?
       dnt_spans = [:redis, :'resque-client', :'sidekiq-client']
-      !Instana.tracer.tracing? || dnt_spans.include?(::Instana.tracer.current_span.name) || !Instana.config[:redis][:enabled]
+      !Instana.tracer.tracing? || (!::Instana.tracer.current_span.nil? && dnt_spans.include?(::Instana.tracer.current_span.name)) || !Instana.config[:redis][:enabled]
     end
 
     def call_with_instana(command, original_super, args, kwargs, &block)

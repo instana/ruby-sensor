@@ -23,6 +23,29 @@ class RedisTest < Minitest::Test
     assert_redis_trace('SET')
   end
 
+  def test_normal_call_as_root_exit_span
+    clear_all!
+
+    ::Instana.config[:allow_exit_as_root] = true
+
+    @redis_client.set('hello', 'world')
+
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
+    redis_span = spans[0]
+
+    # first_span is the parent of second_span
+    assert_equal :redis, redis_span[:n]
+
+    data = redis_span[:data]
+
+    uri = URI.parse(@redis_url)
+    assert_equal "#{uri.host}:#{uri.port}", data[:redis][:connection]
+
+    assert_equal "0", data[:redis][:db]
+    assert_equal "SET", data[:redis][:command]
+  end
+
   def test_georadius
     clear_all!
 

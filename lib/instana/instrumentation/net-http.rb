@@ -7,7 +7,7 @@ module Instana
   module Instrumentation
     module NetHTTPInstrumentation
       def request(*args, &block)
-        if !Instana.tracer.tracing? || Instana.tracer.current_span.exit_span? || !started?
+        if skip_instrumentation?
           do_skip = true
           return super(*args, &block)
         end
@@ -63,6 +63,12 @@ module Instana
         raise
       ensure
         ::Instana.tracer.log_exit(:'net-http', kv_payload) unless do_skip
+      end
+
+      def skip_instrumentation?
+        dnt_spans = [:dynamodb, :sqs, :sns, :s3]
+        !Instana.tracer.tracing? || !started? || !Instana.config[:nethttp][:enabled] ||
+          (!::Instana.tracer.current_span.nil? && dnt_spans.include?(::Instana.tracer.current_span.name))
       end
     end
   end
