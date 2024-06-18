@@ -18,7 +18,7 @@ class RailsActionViewTest < Minitest::Test
   def setup
     clear_all!
     @framework_version = Gem::Specification.find_by_name('rails').version
-    @supported_framework_version = @framework_version < Gem::Version.new('6.1')
+    @supported_framework_version = @framework_version < Gem::Version.new('7.1')
     @execute_test_if_framework_version_is_supported = lambda {
       unless @supported_framework_version
         skip "Skipping this test because Rails version #{@framework_version} is not yet supported!"
