@@ -12,8 +12,11 @@ module Instana
         require 'instana/instrumentation/action_view'
 
         ::ActionView::PartialRenderer
-          .prepend(Instana::Instrumentation::ActionView)
-
+          .prepend(Instana::Instrumentation::ActionView::PartialRenderer)
+        if ::Rails::VERSION::STRING > "6.0" && defined?(::ActionView::CollectionRenderer)
+          ::ActionView::CollectionRenderer
+            .prepend(Instrumentation::ActionView::CollectionRenderer)
+        end
         true
       end
     end
