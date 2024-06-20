@@ -18,7 +18,7 @@ class RailsActionViewTest < Minitest::Test
   def setup
     clear_all!
     @framework_version = Gem::Specification.find_by_name('rails').version
-    @supported_framework_version = @framework_version < Gem::Version.new('7.1')
+    @supported_framework_version = @framework_version < Gem::Version.new('7.2')
     @execute_test_if_framework_version_is_supported = lambda {
       unless @supported_framework_version
         skip "Skipping this test because Rails version #{@framework_version} is not yet supported!"
@@ -188,7 +188,6 @@ class RailsActionViewTest < Minitest::Test
 
     spans = ::Instana.processor.queued_spans
     span = find_first_span_by_name(spans, :render)
-
     assert_equal :collection, span[:data][:render][:type]
     assert_equal 'blocks/block', span[:data][:render][:name]
   end
