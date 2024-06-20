@@ -31,13 +31,14 @@ module Instana
           call_payload = {
             render: {
               type: :partial,
-              name:  @options.is_a?(Hash) ? @options[:partial].to_s : 'Unknown'
+              name: @options.is_a?(Hash) ? @options[:partial].to_s : 'Unknown'
             }
           }
 
           ::Instana::Tracer.trace(:render, call_payload) { super(*args) }
         end
       end
+
       module CollectionRenderer
         def render_collection(*args)
           call_payload = {
