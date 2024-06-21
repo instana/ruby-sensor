@@ -6,15 +6,27 @@ require 'test_helper'
 class HostAgentTest < Minitest::Test
   def test_spawn_background_thread
     ENV['INSTANA_TEST'] = nil
-    ::Instana.config[:agent_host] = '10.10.10.10'
+    agent_host = '10.10.10.10'
+    ::Instana.config[:agent_host] = agent_host
 
-    if File.exist?('/sbin/ip')
-      addr = `/sbin/ip route | awk '/default/ { print $3 }'`.strip
+    if File.exist?('/proc/net/route')
+      default_gateway_hex = lambda {
+        File.open('/proc/net/route', 'r') do |file|
+          file.each_line do |line|
+            columns = line.split("\t")
+            if columns[1] == '00000000' && columns[1] == columns[7]
+              return columns[2]
+            end
+          end
+        end
+      }.call
+
+      addr = default_gateway_hex.scan(/.{2}/).map(&:hex).reverse.join('.')
       stub_request(:get, "http://#{addr}:42699/")
         .to_timeout
     end
 
-    stub_request(:get, "http://10.10.10.10:42699/")
+    stub_request(:get, "http://#{agent_host}:42699/")
       .to_timeout.times(3).then
       .to_return(status: 200, body: "", headers: {})
 
