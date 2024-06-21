@@ -187,13 +187,6 @@ executors:
     docker:
       - image: cimg/ruby:3.3-node
 commands:
-  setup_iproute2:
-    steps:
-      - run:
-          name: Install iproute2
-          command: |
-            sudo apt-get update
-            sudo apt-get install iproute2
   setup:
     steps:
       - run:
@@ -296,7 +289,6 @@ jobs:
     executor: << parameters.stack >>
     steps:
       - checkout
-      - setup_iproute2
       - setup
       - run_tests
   test_apprisal:
