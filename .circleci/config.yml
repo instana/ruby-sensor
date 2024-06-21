@@ -187,17 +187,15 @@ executors:
     docker:
       - image: cimg/ruby:3.3-node
 commands:
-  setup:
+  setup_iproute2:
     steps:
       - run:
           name: Install iproute2
           command: |
             sudo apt-get update
             sudo apt-get install iproute2
-      - run:
-          name: Install Java
-          command: |
-            sudo apt-get install openjdk-11-jdk
+  setup:
+    steps:
       - run:
           name: Update RubyGems
           command: |
@@ -239,7 +237,7 @@ commands:
           environment:
             BUNDLE_GEMFILE: './Gemfile'
       - run:
-          name: Run SonarQube to capture coverage
+          name: Run SonarQube to report the coverage
           command: |
             wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.1.3023.zip
             unzip -d /tmp /tmp/sonar-scanner-cli.zip
@@ -298,6 +296,7 @@ jobs:
     executor: << parameters.stack >>
     steps:
       - checkout
+      - setup_iproute2
       - setup
       - run_tests
   test_apprisal:
