@@ -273,6 +273,8 @@ spec:
   params:
   - name: imageDigest
     type: string
+  - name: configuration
+    type: string
   - name: gemfile
     type: string
   workspaces:
@@ -283,32 +285,7 @@ spec:
       image: ruby@$(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
-          value: libraries
-        - name: BUNDLE_GEMFILE
-          value: $(params.gemfile)
-      workingDir: /workspace/ruby-sensor/
-      command:
-      - /workspace/ruby-sensor/.tekton/run_unittests.sh
----
-apiVersion: tekton.dev/v1
-kind: Task
-metadata:
-  name: ruby-tracer-lint-task
-spec:
-  params:
-  - name: imageDigest
-    type: string
-  - name: gemfile
-    type: string
-  workspaces:
-    - name: task-pvc
-      mountPath: /workspace
-  steps:
-    - name: lint
-      image: ruby@$(params.imageDigest)
-      env:
-        - name: TEST_CONFIGURATION
-          value: lint
+          value: $(params.configuration)
         - name: BUNDLE_GEMFILE
           value: $(params.gemfile)
       workingDir: /workspace/ruby-sensor/
