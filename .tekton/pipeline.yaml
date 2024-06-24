@@ -30,14 +30,44 @@ spec:
           - name: gemfile
             value:
             - "gemfiles/rubocop_162.gemfile"
+          - name: configuration
+            value:
+            - "lint"
       taskRef:
-        name: ruby-tracer-lint-task
+        name: ruby-tracer-unittest-default-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: core
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.0.6-bullseye
+            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
+            # 3.1.4-bookworm
+            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
+            # 3.2.3-bookworm
+            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
+            # 3.3.1-bookworm
+            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+          - name: gemfile
+            value:
+            - "./Gemfile"
+          - name: configuration
+            value:
+            - "core"
+      taskRef:
+        name: ruby-tracer-unittest-default-libraries-task
       workspaces:
         - name: task-pvc
           workspace: ruby-tracer-ci-pipeline-pvc
     - name: unittest-default-ruby-30
       runAfter:
         - lint
+        - core
       matrix:
         params:
           - name: imageDigest
@@ -65,6 +95,9 @@ spec:
             - "./gemfiles/sinatra_40.gemfile"
             - "./gemfiles/shoryuken_50.gemfile"
             - "./gemfiles/shoryuken_60.gemfile"
+          - name: configuration
+            value:
+            - "libraries"
       taskRef:
         name: ruby-tracer-unittest-default-libraries-task
       workspaces:
@@ -100,6 +133,9 @@ spec:
             - "./gemfiles/sinatra_40.gemfile"
             - "./gemfiles/shoryuken_50.gemfile"
             - "./gemfiles/shoryuken_60.gemfile"
+          - name: configuration
+            value:
+            - "libraries"
       taskRef:
         name: ruby-tracer-unittest-default-libraries-task
       workspaces:
@@ -135,6 +171,9 @@ spec:
             - "./gemfiles/sinatra_40.gemfile"
             - "./gemfiles/shoryuken_50.gemfile"
             - "./gemfiles/shoryuken_60.gemfile"
+          - name: configuration
+            value:
+            - "libraries"
       taskRef:
         name: ruby-tracer-unittest-default-libraries-task
       workspaces:
@@ -170,6 +209,9 @@ spec:
             - "./gemfiles/sinatra_40.gemfile"
             - "./gemfiles/shoryuken_50.gemfile"
             - "./gemfiles/shoryuken_60.gemfile"
+          - name: configuration
+            value:
+            - "libraries"
       taskRef:
         name: ruby-tracer-unittest-default-libraries-task
       workspaces:
