@@ -21,6 +21,8 @@ spec:
         # '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
         name: ruby-tracer-pr-$(tt.params.git-branch-normalized)-$(tt.params.git-commit-short-sha)
       spec:
+        timeouts:
+          pipeline: "2h"
         params:
         - name: revision
           value: $(tt.params.git-branch)
