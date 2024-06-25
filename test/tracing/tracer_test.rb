@@ -121,7 +121,7 @@ class TracerTest < Minitest::Test
     sdk_span = find_first_span_by_name(spans, :sub_block)
 
     assert_equal rack_span[:n], :rack
-    assert_equal rack_span[:p], nil
+    assert_nil rack_span[:p]
     assert_equal rack_span[:t], rack_span[:s]
     assert_equal rack_span[:data][:one], 1
 
@@ -151,7 +151,7 @@ class TracerTest < Minitest::Test
     assert_equal root_span[:data][:sdk][:name], :root_span
     assert_equal root_span[:data][:sdk][:type], :entry
     assert_equal root_span[:k], 1
-    assert_equal root_span[:p], nil
+    assert_nil root_span[:p]
     assert_equal root_span[:t], root_span[:s]
     assert_equal root_span[:data][:sdk][:custom][:tags][:one], 1
 
