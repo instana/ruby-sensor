@@ -34,12 +34,30 @@ class RailsActionMailerTest < Minitest::Test
     clear_all!
   end
 
+  def teardown
+    ::Instana.config[:allow_exit_as_root] = false
+  end
+
   def test_mailer
     Instana.tracer.start_or_continue_trace(:test) do
       TestMailer.sample_email.deliver_now
     end
 
     mail_span, = *::Instana.processor.queued_spans
+
+    assert_equal :"mail.actionmailer", mail_span[:n]
+    assert_equal 'RailsActionMailerTest::TestMailer', mail_span[:data][:actionmailer][:class]
+    assert_equal 'sample_email', mail_span[:data][:actionmailer][:method]
+  end
+
+  def test_mailer_as_root_exit_span
+    ::Instana.config[:allow_exit_as_root] = true
+    TestMailer.sample_email.deliver_now
+    ::Instana.config[:allow_exit_as_root] = false
+
+    queued_spans = Instana.processor.queued_spans
+    assert_equal 1, queued_spans.length
+    mail_span = queued_spans[0]
 
     assert_equal :"mail.actionmailer", mail_span[:n]
     assert_equal 'RailsActionMailerTest::TestMailer', mail_span[:data][:actionmailer][:class]

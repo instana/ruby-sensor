@@ -83,6 +83,10 @@ class GraphqlTest < Minitest::Test
     mutation MutationType
   end
 
+  def teardown
+    ::Instana.config[:allow_exit_as_root] = false
+  end
+
   def test_it_works
     assert defined?(GraphQL)
   end
@@ -123,6 +127,43 @@ class GraphqlTest < Minitest::Test
 
     assert_equal expected_results, results.to_h
     assert_equal :sdk, root_span[:n]
+    assert_equal :'graphql.server', query_span[:n]
+    assert_equal expected_data, query_span[:data][:graphql]
+  end
+
+  def test_query_as_root_exit_span
+    clear_all!
+
+    query = "query FirstTwoTaskSamples {
+      tasks(after: \"\", first: 2) {
+        nodes {
+          action
+        }
+      }
+    }"
+
+    expected_data = {
+      :operationName => "FirstTwoTaskSamples",
+      :operationType => "query",
+      :arguments => { "tasks" => ["after", "first"] },
+      :fields => { "tasks" => ["nodes"], "nodes" => ["action"] }
+    }
+    expected_results = {
+      "data" => {
+        "tasks" => {
+          "nodes" => [{"action" => "Sample 00"}, {"action" => "Sample 01"}]
+        }
+      }
+    }
+
+    ::Instana.config[:allow_exit_as_root] = true
+    results = Schema.execute(query)
+    ::Instana.config[:allow_exit_as_root] = false
+    queued_spans = Instana.processor.queued_spans
+    assert_equal 1, queued_spans.length
+    query_span = queued_spans[0]
+
+    assert_equal expected_results, results.to_h
     assert_equal :'graphql.server', query_span[:n]
     assert_equal expected_data, query_span[:data][:graphql]
   end
