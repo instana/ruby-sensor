@@ -68,8 +68,8 @@ class SidekiqClientTest < Minitest::Test
     assert_equal 'SidekiqJobOne', job_message['class']
     assert_equal [1, 2, 3], job_message['args']
     assert_equal false, job_message['retry']
-    assert_equal false, job_message['X-Instana-T'].nil?
-    assert_equal false, job_message['X-Instana-S'].nil?
+    refute_nil   job_message['X-Instana-T']
+    refute_nil   job_message['X-Instana-S']
   end
 
   def assert_normal_trace_recorded(job)
@@ -102,7 +102,7 @@ class SidekiqClientTest < Minitest::Test
 
     assert_equal :'sidekiq-client', second_span[:n]
     assert_equal true, second_span[:error]
-    assert_equal false, second_span[:stack].nil?
+    refute_nil   second_span[:stack]
 
     assert_equal 'some_random_queue', second_span[:data][:'sidekiq-client'][:queue]
     assert_equal 'SidekiqJobTwo', second_span[:data][:'sidekiq-client'][:job]

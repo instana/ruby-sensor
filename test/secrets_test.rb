@@ -94,7 +94,7 @@ class SecretsTest < Minitest::Test
       "list"=>["stan"]
     }
 
-    assert_equal @subject.remove_from_query(nil, sample_config), nil
+    assert_nil @subject.remove_from_query(nil, sample_config)
   end
 
   private

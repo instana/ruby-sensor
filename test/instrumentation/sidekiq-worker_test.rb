@@ -156,7 +156,7 @@ class SidekiqServerTest < Minitest::Test
     assert_equal 'important', worker_span[:data][:'sidekiq-worker'][:queue]
     assert_equal 'SidekiqJobOne', worker_span[:data][:'sidekiq-worker'][:job]
     assert       worker_span[:data][:'sidekiq-worker'][:'redis-url']
-    assert_equal false, worker_span[:data][:'sidekiq-worker'][:job_id].nil?
+    refute_nil   worker_span[:data][:'sidekiq-worker'][:job_id]
   end
 
   def assert_failed_worker_span(worker_span)
@@ -165,7 +165,7 @@ class SidekiqServerTest < Minitest::Test
     assert_equal 'important', worker_span[:data][:'sidekiq-worker'][:queue]
     assert_equal 'SidekiqJobTwo', worker_span[:data][:'sidekiq-worker'][:job]
     assert       worker_span[:data][:'sidekiq-worker'][:'redis-url']
-    assert_equal false, worker_span[:data][:'sidekiq-worker'][:job_id].nil?
+    refute_nil   worker_span[:data][:'sidekiq-worker'][:job_id]
 
     assert_equal true, worker_span[:data][:'sidekiq-worker'][:error]
     assert_equal 'Fail to execute the job', worker_span[:data][:log][:message]
