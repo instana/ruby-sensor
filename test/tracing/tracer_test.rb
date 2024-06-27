@@ -51,9 +51,7 @@ class TracerTest < Minitest::Test
 
     assert_equal false, ::Instana.tracer.tracing?
 
-    require 'resolv'
-    r = Resolv::DNS.new
-    ipv4 = r.getaddress("www.pwpush.com")
+    ipv4 = '111.111.111.111'
 
     ::Instana.tracer.start_or_continue_trace(:rack, {:ipaddr => ipv4}) do
       assert_equal true, ::Instana.tracer.tracing?
