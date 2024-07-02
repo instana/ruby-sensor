@@ -8,7 +8,7 @@
       },
       {
         "Package name": "Rack",
-        "Support Policy": "0-day",
+        "Support Policy": "30-days",
         "Beta version": "No",
         "Cloud Native": "No"
       },
@@ -57,7 +57,7 @@
       {
         "Package name": "Net::HTTP",
         "Support Policy": "0-day",
-        "Beta version": "No",
+        "Beta version": "Yes",
         "Cloud Native": "No"
       },
       {
