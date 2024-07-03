@@ -8,6 +8,7 @@ gem "puma"
 gem "rack-test"
 gem "simplecov", "~> 0.21.2"
 gem "mail", ">= 2.8.1"
+gem "mutex_m" # mutex_m is not part of the default gems since Ruby 3.4.0
 gem "rails", "7.0.3"
 gem "mysql2", "0.5.5"
 gem "pg"

@@ -53,6 +53,8 @@ spec:
             - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
             # 3.3.1-bookworm
             - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+            # 3.4.0-preview1-bookworm
+            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
           - name: gemfile
             value:
             - "./Gemfile"
@@ -217,9 +219,47 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: ruby-tracer-ci-pipeline-pvc
-    - name: unittest-mongo
+    - name: unittest-default-ruby-34
       runAfter:
         - unittest-default-ruby-33
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.4.0-preview1-bookworm
+            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
+          - name: gemfile
+            value:
+            - "./gemfiles/cuba_30.gemfile"
+            - "./gemfiles/cuba_40.gemfile"
+            - "./gemfiles/excon_02.gemfile"
+            - "./gemfiles/excon_079.gemfile"
+            - "./gemfiles/excon_100.gemfile"
+            - "./gemfiles/graphql_10.gemfile"
+            - "./gemfiles/graphql_20.gemfile"
+            - "./gemfiles/grpc_10.gemfile"
+            - "./gemfiles/net_http_01.gemfile"
+            - "./gemfiles/rack_20.gemfile"
+            - "./gemfiles/rack_30.gemfile"
+            - "./gemfiles/rest_client_20.gemfile"
+            - "./gemfiles/roda_20.gemfile"
+            - "./gemfiles/roda_30.gemfile"
+            - "./gemfiles/sinatra_22.gemfile"
+            - "./gemfiles/sinatra_30.gemfile"
+            - "./gemfiles/sinatra_40.gemfile"
+            - "./gemfiles/shoryuken_50.gemfile"
+            - "./gemfiles/shoryuken_60.gemfile"
+          - name: configuration
+            value:
+            - "libraries"
+      taskRef:
+        name: ruby-tracer-unittest-default-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-mongo
+      runAfter:
+        - unittest-default-ruby-34
       matrix:
         params:
           - name: imageDigest
@@ -232,6 +272,8 @@ spec:
             - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
             # 3.3.1-bookworm
             - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+            # 3.4.0-preview1-bookworm
+            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
           - name: gemfile
             value:
             - "./gemfiles/mongo_216.gemfile"
@@ -256,6 +298,8 @@ spec:
             - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
             # 3.3.1-bookworm
             - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+            # 3.4.0-preview1-bookworm
+            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
           - name: gemfile
             value:
             - "./gemfiles/dalli_20.gemfile"
@@ -281,6 +325,8 @@ spec:
             - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
             # 3.3.1-bookworm
             - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+            # 3.4.0-preview1-bookworm
+            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
           - name: gemfile
             value:
             - "./gemfiles/aws_30.gemfile"
@@ -346,9 +392,35 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: ruby-tracer-ci-pipeline-pvc
-    - name: unittest-rails-sqlite3
+    - name: unittest-redis-ruby-34
       runAfter:
         - unittest-redis-ruby-32-33
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.4.0-preview1-bookworm
+            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
+          - name: gemfile
+            value:
+            - "./gemfiles/redis_40.gemfile"
+            - "./gemfiles/redis_50.gemfile"
+            - "./gemfiles/redis_51.gemfile"
+            - "./gemfiles/resque_122.gemfile"
+            - "./gemfiles/resque_20.gemfile"
+            - "./gemfiles/sidekiq_42.gemfile"
+            - "./gemfiles/sidekiq_50.gemfile"
+            - "./gemfiles/sidekiq_60.gemfile"
+            - "./gemfiles/sidekiq_65.gemfile"
+            - "./gemfiles/sidekiq_70.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-redis-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-rails-sqlite3
+      runAfter:
+        - unittest-redis-ruby-34
       matrix:
         params:
           - name: imageDigest
@@ -361,6 +433,8 @@ spec:
             - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
             # 3.3.1-bookworm
             - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+            # 3.4.0-preview1-bookworm
+            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
           - name: gemfile
             value:
             - "./gemfiles/rails_61.gemfile"
@@ -386,6 +460,8 @@ spec:
             - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
             # 3.3.1-bookworm
             - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+            # 3.4.0-preview1-bookworm
+            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
           - name: gemfile
             value:
             - "./gemfiles/rails_61.gemfile"
@@ -411,6 +487,8 @@ spec:
             - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
             # 3.3.1-bookworm
             - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+            # 3.4.0-preview1-bookworm
+            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
           - name: gemfile
             value:
             - "./gemfiles/rails_61.gemfile"
