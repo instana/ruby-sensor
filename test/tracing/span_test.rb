@@ -9,8 +9,8 @@ class SpanTest < Minitest::Test
 
     assert_equal span[:s], span.id
     assert_equal span[:t], span.trace_id
-    assert_equal span[:p], span.parent_id
-    assert_equal span[:d], span.duration
+    assert_nil span[:p] # parent_id of a root span is nil
+    assert_nil span[:d] # duration of an open span is nil
 
     span.parent_id = 'test'
     assert_equal 'test', span.parent_id
