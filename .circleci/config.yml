@@ -183,6 +183,43 @@ executors:
         environment:
           POSTGRES_PASSWORD: 'test'
           POSTGRES_DB: 'ci_test'
+  ruby_34:
+    docker:
+      - image: ruby:3.4.0-preview1-bookworm
+        environment:
+          MEMCACHED_HOST: '127.0.0.1:11211'
+          REDIS_URL: 'redis://127.0.0.1:6379'
+          DATABASE_URL: 'sqlite3::memory:'
+      - image: memcached
+      - image: redis
+      - image: amazon/dynamodb-local
+      - image: minio/minio:latest
+        command: ["server", "/data"]
+      - image: s12v/sns
+      - image: softwaremill/elasticmq-native
+      - image: mongo:5-focal
+  ruby_34_mysql2:
+    docker:
+      - image: ruby:3.4.0-preview1-bookworm
+        environment:
+          DATABASE_URL: "mysql2://root@127.0.0.1:3306/ci_test"
+      - image: mariadb
+        environment:
+          MYSQL_DATABASE: 'ci_test'
+          MYSQL_USER: 'root'
+          MYSQL_PASSWORD: ''
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ROOT_HOST: '%'
+  ruby_34_postgres:
+    docker:
+      - image: ruby:3.4.0-preview1-bookworm
+        environment:
+          DATABASE_URL: "postgres://postgres:test@127.0.0.1:5432/ci_test"
+      - image: postgres
+        environment:
+          POSTGRES_PASSWORD: 'test'
+          POSTGRES_DB: 'ci_test'
   ruby_33_lint:
     docker:
       - image: cimg/ruby:3.3-node
@@ -319,12 +356,12 @@ jobs:
             bundle check || bundle install
       - run_rubocop
   report_coverage:
-    executor: ruby_32
+    executor: ruby_33
     steps:
       - checkout
       - run_sonarqube
   publish:
-    executor: ruby_30
+    executor: ruby_33
     steps:
       - checkout
       - setup
@@ -350,7 +387,8 @@ workflows:
                 - ruby_31
                 - ruby_32
                 - ruby_33
-  libraries_ruby_3:
+                - ruby_34
+  libraries_ruby_30_32:
     jobs:
       - test_apprisal:
           matrix:
@@ -359,8 +397,26 @@ workflows:
                 - ruby_30
                 - ruby_31
                 - ruby_32
-                - ruby_33
               <<: *library_gemfile
+  libraries_ruby_33_34:
+    jobs:
+      - test_apprisal:
+          matrix:
+            parameters:
+              stack:
+                - ruby_33
+                - ruby_34
+              <<: *library_gemfile
+            # Currently compiling the native extensions for `grpc`
+            # exceeds an internal RAM and/or CPU limit of CircleCI executor,
+            # and the job gets terminated with:
+            # `Received "killed" signal`
+            # Hence we exclude it here for the time being.
+            # TODO: Remove this exclusion as soon as pre-built binaries are available
+            # on https://rubygems.org/gems/grpc/versions
+            exclude:
+            - stack: ruby_34
+              gemfile: "./gemfiles/grpc_10.gemfile"
   rails_ruby_3:
     jobs:
       - test_apprisal:
@@ -376,8 +432,12 @@ workflows:
                 - ruby_32
                 - ruby_32_postgres
                 - ruby_32_mysql2
+                - ruby_33
                 - ruby_33_postgres
                 - ruby_33_mysql2
+                - ruby_34
+                - ruby_34_postgres
+                - ruby_34_mysql2
               gemfile:
                 - "./gemfiles/rails_61.gemfile"
                 - "./gemfiles/rails_70.gemfile"
