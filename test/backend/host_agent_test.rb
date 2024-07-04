@@ -32,6 +32,8 @@ class HostAgentTest < Minitest::Test
 
     discovery = Minitest::Mock.new
     discovery.expect(:delete_observers, discovery, [])
+    discovery.expect(:observers, discovery, [])
+    discovery.expect(:notify_and_delete_observers, discovery, [Object, nil, nil])
     discovery.expect(:with_observer, discovery, [Instana::Backend::HostAgentActivationObserver])
     discovery.expect(:with_observer, discovery, [Instana::Backend::HostAgentReportingObserver])
     discovery.expect(:swap, discovery, [])
