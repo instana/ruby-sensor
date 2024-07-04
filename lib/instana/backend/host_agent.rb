@@ -28,7 +28,11 @@ module Instana
 
       def announce
         @client = until_not_nil { HostAgentLookup.new.call }
-        @discovery.delete_observers
+        begin
+          @discovery.send(:observers)&.send(:notify_and_delete_observers, Time.now, nil, nil)
+        ensure
+          @discovery.delete_observers
+        end
         @discovery
           .with_observer(HostAgentActivationObserver.new(@client, @discovery))
           .with_observer(HostAgentReportingObserver.new(@client, @discovery))
