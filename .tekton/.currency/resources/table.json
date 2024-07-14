@@ -8,19 +8,19 @@
       },
       {
         "Package name": "Rack",
-        "Support Policy": "30-days",
+        "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "No"
       },
       {
         "Package name": "Rails",
-        "Support Policy": "30-days",
+        "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "No"
       },
       {
         "Package name": "Rails::API",
-        "Support Policy": "30-days",
+        "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "No"
       },
@@ -32,25 +32,25 @@
       },
       {
         "Package name": "Roda",
-        "Support Policy": "30-days",
+        "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "No"
       },
       {
         "Package name": "Sinatra",
-        "Support Policy": "30-days",
+        "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "No"
       },
       {
         "Package name": "Excon",
-        "Support Policy": "30-days",
+        "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "Yes"
       },
       {
         "Package name": "gRPC",
-        "Support Policy": "30-days",
+        "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "No"
       },
@@ -62,31 +62,31 @@
       },
       {
         "Package name": "Rest-Client",
-        "Support Policy": "30-days",
+        "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "No"
       },
       {
         "Package name": "Dalli",
-        "Support Policy": "30-days",
+        "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "No"
       },
       {
         "Package name": "Resque",
-        "Support Policy": "30-days",
+        "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "Yes"
       },
       {
         "Package name": "Sidekiq",
-        "Support Policy": "30-days",
+        "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "Yes"
       },
       {
         "Package name": "GraphQL",
-        "Support Policy": "30-days",
+        "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "Yes"
       }
