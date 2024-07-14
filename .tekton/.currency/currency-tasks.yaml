@@ -44,7 +44,7 @@ spec:
 
         python scripts/generate_report.py
         if [ $? -ne 0 ]; then
-            echo "Error occured while generating the ruby tracer currency report." >&2
+            echo "Error occurred while generating the ruby tracer currency report." >&2
             exit 1
         fi
         cat docs/report.md
@@ -90,5 +90,5 @@ spec:
         
         git add .
         
-        git commit -m "chore: Updated ruby currency report"
+        git commit -m "chore: Updated Ruby currency report"
         git push origin main
