@@ -55,7 +55,10 @@ bundler --version
 bundle config set path '/tmp/vendor/bundle'
 
 # Install Dependencies
-bundle check || bundle install
+while ! (bundle check || bundle install); do
+  echo "Bundle install failed, retrying in a minute"
+  sleep 60
+done
 
 # Run tests
 if [[ "${TEST_CONFIGURATION}" = "lint" ]]; then
