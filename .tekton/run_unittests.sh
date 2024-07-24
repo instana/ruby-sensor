@@ -46,6 +46,13 @@ esac
 echo -n "Configuration is '${TEST_CONFIGURATION}' on Ruby ${RUBY_VERSION} "
 echo    "with dependencies in '${BUNDLE_GEMFILE}'"
 
+# The gemfiles folder is under the tekton shared workspace
+# but we have to prevent the sharing, and the concurrent writing
+# of the gemfiles/*.lock files
+# so here we create a container-local, non-shared copy, of the sources and use that.
+cp --recursive ../ruby-sensor/ /tmp/
+pushd /tmp/ruby-sensor/
+
 # Update RubyGems
 gem update --system > /dev/null
 echo "Gem version $(gem --version)"
