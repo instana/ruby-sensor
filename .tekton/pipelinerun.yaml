@@ -7,7 +7,7 @@ spec:
     pipeline: "2h"
   params:
   - name: revision
-    value: "tekton"
+    value: "master"
   pipelineRef:
     name: ruby-tracer-ci-pipeline
   workspaces:
