@@ -74,3 +74,7 @@ else
   mkdir --parents "${COVERAGE_PATH}/_junit"
   bundle exec rake
 fi
+
+# Put back the coverage results to the shared workspace
+popd
+cp --recursive "${OLDPWD}/${COVERAGE_PATH}" ./
