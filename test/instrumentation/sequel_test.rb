@@ -1,5 +1,6 @@
 # (c) Copyright IBM Corp. 2024
 # (c) Copyright Instana Inc. 2024
+
 require 'test_helper'
 require 'sequel'
 Sequel.extension :migration
@@ -7,7 +8,8 @@ Sequel.extension :migration
 class SequelTest < Minitest::Test
   def setup
     skip unless ENV['DATABASE_URL']
-    @db = Sequel.connect(ENV['DATABASE_URL'])
+    db_url = ENV['DATABASE_URL'].sub("sqlite3","sqlite")
+    @db = Sequel.connect(db_url)
 
     DummyMigration.apply(@db, :up)
     @model = @db[:blocks]
@@ -50,11 +52,9 @@ class SequelTest < Minitest::Test
 
   def test_update
     @model.insert(name: 'core', color: 'blue')
-    b = @model.find(name: 'core')
 
     Instana::Tracer.start_or_continue_trace(:sequel_test, {}) do
-      b.color = 'red'
-      b.save
+      @model.where(name: 'core').update(color: 'red')
     end
 
     spans = ::Instana.processor.queued_spans
@@ -65,10 +65,10 @@ class SequelTest < Minitest::Test
   end
 
   def test_delete
-    b = @model.insert(name: 'core', color: 'blue')
+    @model.insert(name: 'core', color: 'blue')
 
     Instana::Tracer.start_or_continue_trace(:sequel_test, {}) do
-      b.delete
+      @model.where(name: 'core').delete
     end
 
     spans = ::Instana.processor.queued_spans
