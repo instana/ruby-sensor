@@ -8,7 +8,7 @@ Sequel.extension :migration
 class SequelTest < Minitest::Test
   def setup
     skip unless ENV['DATABASE_URL']
-    db_url = ENV['DATABASE_URL'].sub("sqlite3","sqlite")
+    db_url = ENV['DATABASE_URL'].sub("sqlite3", "sqlite")
     @db = Sequel.connect(db_url)
 
     DummyMigration.apply(@db, :up)
@@ -103,12 +103,11 @@ class SequelTest < Minitest::Test
 
     assert_equal 1, span[:ec]
   end
-
 end
 
 class DummyMigration < Sequel::Migration
   def up
-    create_table! (:blocks) do
+    create_table!(:blocks) do
       String :name
       String :color
     end
