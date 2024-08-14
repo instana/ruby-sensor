@@ -17,7 +17,7 @@ class RailsActiveRecordTest < Minitest::Test
     ActiveRecord::Migration.suppress_messages do
       ActiveRecord::Migration.run(CreateBlocks, direction: :down)
     end
-    ActiveRecord::Base.remove_connection(@connection)
+    ActiveRecord::Base.remove_connection
   end
 
   def test_config_defaults
