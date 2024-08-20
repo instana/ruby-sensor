@@ -1,9 +1,7 @@
 # (c) Copyright IBM Corp. 2024
-# (c) Copyright Instana Inc. 2024
 
 require 'test_helper'
 require 'sequel'
-Sequel.extension :migration
 
 class SequelTest < Minitest::Test
   def setup
@@ -11,11 +9,15 @@ class SequelTest < Minitest::Test
     db_url = ENV['DATABASE_URL'].sub("sqlite3", "sqlite")
     @db = Sequel.connect(db_url)
 
-    DummyMigration.apply(@db, :up)
+    @db.create_table!(:blocks) do
+      String :name
+      String :color
+    end
     @model = @db[:blocks]
   end
 
   def teardown
+    @db.drop_table(:blocks)
     @db.disconnect
   end
 
@@ -39,77 +41,65 @@ class SequelTest < Minitest::Test
 
   def test_read
     @model.insert(name: 'core', color: 'blue')
-    Instana::Tracer.start_or_continue_trace(:ar_test, {}) do
-      @model.find(name: 'core')
+    Instana::Tracer.start_or_continue_trace(:sequel_test, {}) do
+      @model.where(name: 'core').first
     end
-
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
     span = find_first_span_by_name(spans, :sequel)
     data = span[:data][:sequel]
     assert data[:sql].start_with?('SELECT')
+    assert_nil span[:ec]
   end
 
   def test_update
     @model.insert(name: 'core', color: 'blue')
-
     Instana::Tracer.start_or_continue_trace(:sequel_test, {}) do
       @model.where(name: 'core').update(color: 'red')
     end
-
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
     span = find_first_span_by_name(spans, :sequel)
     data = span[:data][:sequel]
     assert data[:sql].start_with?('UPDATE')
+    assert_nil span[:ec]
   end
 
   def test_delete
     @model.insert(name: 'core', color: 'blue')
-
     Instana::Tracer.start_or_continue_trace(:sequel_test, {}) do
       @model.where(name: 'core').delete
     end
-
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
     span = find_first_span_by_name(spans, :sequel)
     data = span[:data][:sequel]
     assert data[:sql].start_with?('DELETE')
+    assert_nil span[:ec]
   end
 
   def test_raw
     Instana::Tracer.start_or_continue_trace(:sequel_test, {}) do
-      @db.execute('SELECT 1')
+      @db.run('SELECT 1')
     end
-
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
     span = find_first_span_by_name(spans, :sequel)
     data = span[:data][:sequel]
     assert 'SELECT 1', data[:sql]
+    assert_nil span[:ec]
   end
 
   def test_raw_error
     assert_raises Sequel::DatabaseError do
       Instana::Tracer.start_or_continue_trace(:sequel_test, {}) do
-        @db.execute('INVALID')
+        @db.run('INVALID')
       end
     end
-
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
     span = find_first_span_by_name(spans, :sequel)
 
     assert_equal 1, span[:ec]
-  end
-end
-
-class DummyMigration < Sequel::Migration
-  def up
-    create_table!(:blocks) do
-      String :name
-      String :color
-    end
   end
 end
