@@ -73,6 +73,7 @@ module Instana
       @config[:'resque-client']    = { :enabled => true, :propagate => true }
       @config[:'resque-worker']    = { :enabled => true, :'setup-fork' => true }
       @config[:'rest-client']      = { :enabled => true }
+      @config[:sequel] = { :enabled => true }
       @config[:'sidekiq-client']   = { :enabled => true }
       @config[:'sidekiq-worker']   = { :enabled => true }
     end
