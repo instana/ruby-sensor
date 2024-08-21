@@ -81,6 +81,18 @@ spec:
             - name: "filter"
               # We should not trigger on 'closed', 'assigned', 'unassigned', 'converted_to_draft'
               value: "body.action in ['opened', 'synchronize', 'reopened']"
+        - name: only-allow-github-owners-to-trigger
+          ref:
+            name: "githubOwners"
+          params:
+            - name: "enabled"
+              value: "true"
+            - name: "personalAccessToken"
+              value:
+                secretName: github-interceptor-secret
+                secretKey: secretToken
+            - name: "checkType"
+              value: "repoMembers"
         - name: add-truncated-sha
           ref:
             name: "cel"
