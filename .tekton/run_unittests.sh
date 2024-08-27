@@ -21,7 +21,7 @@ fi
 
 case "${TEST_CONFIGURATION}" in
 libraries)
-  export COVERAGE_PATH="cov_$(basename ${BUNDLE_GEMFILE%.gemfile})_ruby_${RUBY_VERSION}"
+  export TEST_SETUP="$(basename ${BUNDLE_GEMFILE%.gemfile})_ruby_${RUBY_VERSION}"
   export APPRAISAL_INITIALIZED=1 ;;
 rails)
   if [[ -z "${DATABASE_URL}" ]]; then
@@ -31,17 +31,20 @@ rails)
   else
     echo "DATABASE_URL is '${DATABASE_URL}'"
   fi
-  export COVERAGE_PATH="cov_$(basename ${BUNDLE_GEMFILE%.gemfile})_${DATABASE_URL%:[:/]*}_ruby_${RUBY_VERSION}"
+  export TEST_SETUP="$(basename ${BUNDLE_GEMFILE%.gemfile})_${DATABASE_URL%:[:/]*}_ruby_${RUBY_VERSION}"
   export APPRAISAL_INITIALIZED=1 ;;
 core)
-  export COVERAGE_PATH="cov_core_ruby_${RUBY_VERSION}" ;;
+  export TEST_SETUP="core_ruby_${RUBY_VERSION}" ;;
 lint)
-  unset APPRAISAL_INITIALIZED ;;
+  export TEST_SETUP="lint_ruby_${RUBY_VERSION}" ;;
 *)
   echo "ERROR \$TEST_CONFIGURATION='${TEST_CONFIGURATION}' is unsupported " \
        "not in (libraries|rails|core|lint)" >&2
   exit 5 ;;
 esac
+
+export COVERAGE_PATH="cov_${TEST_SETUP}"
+export DEPENDENCY_PATH="dep_${TEST_SETUP}"
 
 echo -n "Configuration is '${TEST_CONFIGURATION}' on Ruby ${RUBY_VERSION} "
 echo    "with dependencies in '${BUNDLE_GEMFILE}'"
@@ -54,7 +57,10 @@ cp --recursive ../ruby-sensor/ /tmp/
 pushd /tmp/ruby-sensor/
 
 # Update RubyGems
-gem update --system > /dev/null
+while ! gem update --system > /dev/null; do
+  echo "Updating Gem with 'gem update --system' failed, retrying in a minute"
+  sleep 60
+done
 echo "Gem version $(gem --version)"
 
 # Configure Bundler
@@ -62,7 +68,7 @@ bundler --version
 bundle config set path '/tmp/vendor/bundle'
 
 # Install Dependencies
-while ! (bundle check || bundle install); do
+while ! (bundle check || bundle install) | tee "${DEPENDENCY_PATH}"; do
   echo "Bundle install failed, retrying in a minute"
   sleep 60
 done
@@ -73,8 +79,9 @@ if [[ "${TEST_CONFIGURATION}" = "lint" ]]; then
 else
   mkdir --parents "${COVERAGE_PATH}/_junit"
   bundle exec rake
+  cp --recursive "${COVERAGE_PATH}" "${OLDPWD}/"
 fi
 
-# Put back the coverage results to the shared workspace
+# Put back the dependency insallation results to the shared workspace
+cp --recursive "${DEPENDENCY_PATH}" "${OLDPWD}/"
 popd
-cp --recursive "${OLDPWD}/${COVERAGE_PATH}" ./

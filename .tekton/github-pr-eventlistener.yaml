@@ -38,7 +38,7 @@ spec:
                 - ReadWriteOnce
               resources:
                 requests:
-                  storage: 100Mi
+                  storage: 200Mi
 ---
 apiVersion: triggers.tekton.dev/v1beta1
 kind: TriggerBinding
