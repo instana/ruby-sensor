@@ -499,3 +499,19 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: ruby-tracer-ci-pipeline-pvc
+    - name: generate-currency-report
+      runAfter:
+        - unittest-rails-postgres
+      taskRef:
+        name: ruby-generate-currency-report-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: upload-currency-report
+      runAfter:
+        - generate-currency-report
+      taskRef:
+        name: ruby-upload-currency-report-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc

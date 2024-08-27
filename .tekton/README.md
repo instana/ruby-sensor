@@ -65,7 +65,7 @@ http://localhost:8001/api/v1/namespaces/tekton-pipelines/services/tekton-dashboa
           - ReadWriteOnce
         resources:
           requests:
-            storage: 100Mi
+            storage: 200Mi
 
 ````
 7. Click `Create` at the bottom of the page
@@ -170,7 +170,8 @@ This is done in a `Task` called `github-set-status`, create it as such:
 #### Create the GitHub PR pipeline
 
 Create the new pipeline, which executes the previously created `ruby-tracer-ci-pipeline`,
-wrapped around with GitHub Check status reporting tasks. As long as [Pipelines in Pipelines](
+removes the currency report tasks and wraps the unittest jobs with GitHub Check status reporting tasks.
+As long as [Pipelines in Pipelines](
 https://tekton.dev/docs/pipelines/pipelines-in-pipelines/), remains an
 unimplemented `alpha` feature in Tekton,
 we will need the [yq](https://github.com/mikefarah/yq) (at least `4.0`)
@@ -178,7 +179,7 @@ to pull the tasks from our previous `ruby-tracer-ci-pipeline` into the
 new pipeline `github-pr-ruby-tracer-ci-pipeline`.
 
 ````bash
-   (cat github-pr-pipeline.yaml.part && yq '{"a": {"b": .spec.tasks}}' pipeline.yaml| tail --lines=+3) | kubectl apply -f -
+   (cat github-pr-pipeline.yaml.part && yq '{"a": {"b": .spec.tasks}}' pipeline.yaml| tail --lines=+3| head --lines=-16) | kubectl apply -f -
 ````
 
 #### Create the GitHub PR Event Listener, TriggerTemplate and TriggerBinding

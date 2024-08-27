@@ -1,4 +1,5 @@
 # Standard Libraries
+import glob
 import re
 from json import load
 
@@ -6,143 +7,49 @@ from json import load
 from requests import get
 from pandas import DataFrame
 from bs4 import BeautifulSoup
-from kubernetes import client, config
 
 JSON_FILE = "resources/table.json"
 REPORT_FILE = "docs/report.md"
 API_V1_ENDPOINT = "https://rubygems.org/api/v1/versions/"
 
-def filter_taskruns(taskrun_filter, taskruns):
-    filtered_taskruns = list(filter(taskrun_filter, taskruns))
-    filtered_taskruns.sort(
-        key=lambda tr: tr["metadata"]["creationTimestamp"], reverse=True
-    )
+def get_bundle_install_output():
 
-    return filtered_taskruns
+    libraries_from_logs = {
+        "cuba": "cuba_40_ruby_3.3.",
+        "excon": "excon_100_ruby_3.3.",
+        "graphql": "graphql_20_ruby_3.3.",
+        "grpc": "grpc_10_ruby_3.3.",
+        "rack": "rack_30_ruby_3.3.",
+        "rest-client": "rest_client_20_ruby_3.3.",
+        "roda": "roda_30_ruby_3.3.",
+        "sinatra": "sinatra_40_ruby_3.3.",
+        "net-http": "net_http_01_ruby_3.1.",
+        "rails": "rails_71_sqlite3_ruby_3.3.",
+        "dalli": "dalli_32_ruby_3.3.",
+        "resque": "resque_20_ruby_3.3.",
+        "sidekiq": "sidekiq_70_ruby_3.3."
+    }
 
+    bundle_install_output = ""
 
-def get_taskruns(namespace, task_name):
-    group = "tekton.dev"
-    version = "v1"
-    plural = "taskruns"
-
-    # access the custom resource from tekton
-    tektonV1 = client.CustomObjectsApi()
-    taskruns = tektonV1.list_namespaced_custom_object(
-        group,
-        version,
-        namespace,
-        plural,
-        label_selector=f"{group}/task={task_name}, triggers.tekton.dev/trigger=ruby-tracer-scheduled-pipeline-triggger",
-    )["items"]
-
-    return taskruns
-
-
-def process_taskrun_logs(
-    taskruns, core_v1_client, namespace, library, tekton_ci_output
-):
-    for tr in taskruns:
-        pod_name = tr["status"]["podName"]
-        taskrun_name = tr["metadata"]["name"]
-        logs = core_v1_client.read_namespaced_pod_log(
-            pod_name, namespace, container="step-unittest"
-        )
-        if "Installing" not in logs:
-            print(
-                f"Unable to retrieve logs from taskrun pod {pod_name} of taskrun {taskrun_name} for gem {library}."
-            )
+    for library, pattern in libraries_from_logs.items():
+        glob_result = glob.glob(f"../../dep_{pattern}*")
+        if not glob_result:
+            print(f"Could not find bundle install log for gem '{library}'.")
             continue
 
-        print(
-            f"Retrieving logs from taskrun pod {pod_name} of taskrun {taskrun_name} for gem {library}.."
-        )
+        with open(glob_result[0], 'r') as file:
+            logs = file.read().replace('\n', ' ')
 
+        if "Installing" not in logs:
+            print( f"Unable to retrieve logs from for gem '{library}'.")
+            continue
+
+        print(f"Retrieving currency for gem '{library}'.")
         match = re.search(f"Installing ({library} [^\s]+)", logs)
-        tekton_ci_output += f"{match[1]}\n"
-        break
+        bundle_install_output += f"{match[1]}\n"
 
-    return tekton_ci_output
-
-
-def get_tekton_ci_output():
-    config.load_incluster_config()
-
-    namespace = "default"
-    core_v1_client = client.CoreV1Api()
-
-    ruby_33_prefix = "unittest-default-ruby-33-"
-    ruby_31_prefix = "unittest-default-ruby-31-"
-
-    default_libraries_dict = {
-        "cuba": f"{ruby_33_prefix}1",
-        "excon": f"{ruby_33_prefix}4",
-        "graphql": f"{ruby_33_prefix}6",
-        "grpc": f"{ruby_33_prefix}7",
-        "rack": f"{ruby_33_prefix}10",
-        "rest-client": f"{ruby_33_prefix}11",
-        "roda": f"{ruby_33_prefix}13",
-        "sinatra": f"{ruby_33_prefix}16",
-        "net-http": f"{ruby_31_prefix}8",
-    }
-
-    tekton_ci_output = ""
-    task_name = "ruby-tracer-unittest-default-libraries-task"
-    default_taskruns = get_taskruns(namespace, task_name)
-
-    for library, pattern in default_libraries_dict.items():
-        taskrun_filter = (
-            lambda tr: tr["metadata"]["name"].endswith(pattern)
-            and tr["status"]["conditions"][0]["type"] == "Succeeded"
-        )
-        filtered_default_taskruns = filter_taskruns(taskrun_filter, default_taskruns)
-
-        tekton_ci_output = process_taskrun_logs(
-            filtered_default_taskruns,
-            core_v1_client,
-            namespace,
-            library,
-            tekton_ci_output,
-        )
-
-    other_libraries_dict = {
-        "rails": {
-            "pattern": "rails-postgres-11",
-            "task_name": "ruby-tracer-unittest-rails-postgres-task",
-        },
-        "dalli": {
-            "pattern": "memcached-11",
-            "task_name": "ruby-tracer-unittest-memcached-libraries-task",
-        },
-        "resque": {
-            "pattern": "unittest-redis-ruby-32-33-9",
-            "task_name": "ruby-tracer-unittest-redis-libraries-task",
-        },
-        "sidekiq": {
-            "pattern": "unittest-redis-ruby-32-33-18",
-            "task_name": "ruby-tracer-unittest-redis-libraries-task",
-        },
-    }
-
-    for library, inner_dict in other_libraries_dict.items():
-        pattern = inner_dict["pattern"]
-        task_name = inner_dict["task_name"]
-        taskrun_filter = (
-            lambda tr: tr["metadata"]["name"].endswith(pattern)
-            and tr["status"]["conditions"][0]["type"] == "Succeeded"
-        )
-        other_taskruns = get_taskruns(namespace, task_name)
-        filtered_other_taskruns = filter_taskruns(taskrun_filter, other_taskruns)
-
-        tekton_ci_output = process_taskrun_logs(
-            filtered_other_taskruns,
-            core_v1_client,
-            namespace,
-            library,
-            tekton_ci_output
-        )
-
-    return tekton_ci_output
+    return bundle_install_output
 
 
 def get_upstream_version(dependency):
@@ -161,11 +68,11 @@ def get_upstream_version(dependency):
     return latest_version
 
 
-def get_last_supported_version(tekton_ci_output, dependency):
+def get_last_supported_version(bundle_install_output, dependency):
     """get up-to-date supported version"""
     pattern = r" ([^\s]+)"
 
-    last_supported_version = re.search(dependency + pattern, tekton_ci_output, flags=re.I | re.M)
+    last_supported_version = re.search(dependency + pattern, bundle_install_output, flags=re.I | re.M)
 
     return last_supported_version[1]
 
@@ -183,7 +90,7 @@ def main():
     with open(JSON_FILE) as file:
         data = load(file)
 
-    tekton_ci_output = get_tekton_ci_output()
+    bundle_install_output = get_bundle_install_output()
 
     items = data["table"]
 
@@ -194,7 +101,7 @@ def main():
         latest_version = get_upstream_version(package)
 
         if not package in ["rails lts", "rails-api"]:
-            last_supported_version = get_last_supported_version(tekton_ci_output, package)
+            last_supported_version = get_last_supported_version(bundle_install_output, package)
         else:
             last_supported_version = latest_version
 
