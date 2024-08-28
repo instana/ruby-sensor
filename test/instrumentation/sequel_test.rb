@@ -8,7 +8,6 @@ class SequelTest < Minitest::Test
     skip unless ENV['DATABASE_URL']
     db_url = ENV['DATABASE_URL'].sub("sqlite3", "sqlite")
     @db = Sequel.connect(db_url)
-
     @db.create_table!(:blocks) do
       String :name
       String :color
@@ -63,6 +62,7 @@ class SequelTest < Minitest::Test
     data = span[:data][:sequel]
     assert data[:sql].start_with?('UPDATE')
     assert_nil span[:ec]
+    assert_equal 'red', @model.where(name: 'core').first[:color]
   end
 
   def test_delete
@@ -76,6 +76,7 @@ class SequelTest < Minitest::Test
     data = span[:data][:sequel]
     assert data[:sql].start_with?('DELETE')
     assert_nil span[:ec]
+    assert_nil @model.where(name: 'core').first
   end
 
   def test_raw
@@ -99,7 +100,6 @@ class SequelTest < Minitest::Test
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
     span = find_first_span_by_name(spans, :sequel)
-
     assert_equal 1, span[:ec]
   end
 end

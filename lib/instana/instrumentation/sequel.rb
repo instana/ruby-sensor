@@ -4,6 +4,7 @@ module Instana
   module Instrumentation
     module Sequel
       IGNORED_SQL = %w[BEGIN COMMIT SET].freeze
+      VERSION_SELECT_STATEMENT = "SELECT VERSION()".freeze
       SANITIZE_REGEXP = /('[\s\S][^']*'|\d*\.\d+|\d+|NULL)/i.freeze
 
       def log_connection_yield(sql, conn, *args)
@@ -34,7 +35,7 @@ module Instana
       end
 
       def ignored?(call_payload)
-        IGNORED_SQL.any? { |s| call_payload[:sequel][:sql].upcase.start_with?(s) }
+        IGNORED_SQL.any? { |s| call_payload[:sequel][:sql].upcase.start_with?(s) } || call_payload[:sequel][:sql].upcase == VERSION_SELECT_STATEMENT
       end
     end
   end
