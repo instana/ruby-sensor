@@ -30,7 +30,6 @@ library_gemfile: &library_gemfile
     - "./gemfiles/sinatra_22.gemfile"
     - "./gemfiles/sinatra_30.gemfile"
     - "./gemfiles/sinatra_40.gemfile"
-    - "./gemfiles/sequel_50.gemfile"
     - "./gemfiles/shoryuken_50.gemfile"
     - "./gemfiles/shoryuken_60.gemfile"
     - "./gemfiles/mongo_216.gemfile"
@@ -443,6 +442,24 @@ workflows:
                 - "./gemfiles/rails_61.gemfile"
                 - "./gemfiles/rails_70.gemfile"
                 - "./gemfiles/rails_71.gemfile"
+  sequel:
+      jobs:
+      - test_apprisal:
+          matrix:
+            parameters:
+              stack:
+                - ruby_30
+                - ruby_30_mysql2
+                - ruby_31
+                - ruby_31_mysql2
+                - ruby_32
+                - ruby_32_mysql2
+                - ruby_33
+                - ruby_33_mysql2
+                - ruby_34
+                - ruby_34_mysql2
+              gemfile:
+                - "./gemfiles/sequel_50.gemfile"
   report_coverage:
     jobs:
       - report_coverage
