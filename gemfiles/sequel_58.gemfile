@@ -9,7 +9,7 @@ gem "webmock"
 gem "puma"
 gem "rack-test"
 gem "simplecov", "~> 0.21.2"
-gem "sequel", ">= 5.0"
+gem "sequel", ">= 5.80"
 gem "sqlite3", "~> 1.4"
 gem "mysql2", "0.5.5"
 

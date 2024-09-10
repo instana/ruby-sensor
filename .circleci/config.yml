@@ -459,7 +459,9 @@ workflows:
                 - ruby_34
                 - ruby_34_mysql2
               gemfile:
-                - "./gemfiles/sequel_50.gemfile"
+                - "./gemfiles/sequel_56.gemfile"
+                - "./gemfiles/sequel_57.gemfile"
+                - "./gemfiles/sequel_58.gemfile"
   report_coverage:
     jobs:
       - report_coverage
