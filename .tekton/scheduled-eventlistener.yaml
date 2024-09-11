@@ -24,10 +24,8 @@ spec:
         params:
         - name: revision
           value: master
-        - name: git-commit-sha
-          value: $(tt.params.git-commit-sha)
         pipelineRef:
-          name: github-pr-ruby-tracer-ci-pipeline
+          name: ruby-tracer-ci-pipeline
         workspaces:
         - name: ruby-tracer-ci-pipeline-pvc
           volumeClaimTemplate:
