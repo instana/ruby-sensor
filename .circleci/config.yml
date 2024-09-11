@@ -359,7 +359,7 @@ jobs:
     executor: ruby_33
     steps:
       - checkout
-      - run_sonarqube
+      # - run_sonarqube
   publish:
     executor: ruby_33
     steps:
