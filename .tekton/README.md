@@ -199,8 +199,8 @@ https://github.com/tektoncd/triggers/blob/main/docs/interceptors.md#owners-valid
 After this ensure that there is a pod and a service created:
 
 ````bash
-   kubectl get pod | grep -i el-github-pr-eventlistener
-   kubectl get svc | grep -i el-github-pr-eventlistener
+   kubectl get pod | grep -i el-github-pr-ruby-eventlistener
+   kubectl get svc | grep -i el-github-pr-ruby-eventlistener
 ````
 
 Do not continue if any of these missing.
