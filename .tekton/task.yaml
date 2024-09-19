@@ -295,6 +295,70 @@ spec:
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
+  name: ruby-tracer-unittest-sequel-sqlite3-task
+spec:
+  params:
+  - name: imageDigest
+    type: string
+  - name: gemfile
+    type: string
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: unittest
+      image: ruby@$(params.imageDigest)
+      env:
+        - name: TEST_CONFIGURATION
+          value: libraries
+        - name: BUNDLE_GEMFILE
+          value: $(params.gemfile)
+        - name: DATABASE_URL
+          value: "sqlite3::memory:"
+      workingDir: /workspace/ruby-sensor/
+      command:
+      - /workspace/ruby-sensor/.tekton/run_unittests.sh
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: ruby-tracer-unittest-sequel-mysql2-task
+spec:
+  sidecars:
+  # MySQL (compatible Mariadb)
+  - name: mariadb
+    # mariadb:11.3.2
+    image: mariadb@sha256:851f05fe1e4cb290442c1b12b7108436a33fd8f6a733d4989950322d06d45c65
+    env:
+      - name: MYSQL_ROOT_PASSWORD # or MARIADB_ROOT_PASSWORD
+        value: passw0rd
+      - name: MYSQL_DATABASE # or MARIADB_DATABASE
+        value: ci_test
+  params:
+  - name: imageDigest
+    type: string
+  - name: gemfile
+    type: string
+  workspaces:
+    - name: task-pvc
+      mountPath: /workspace
+  steps:
+    - name: unittest
+      image: ruby@$(params.imageDigest)
+      env:
+        - name: TEST_CONFIGURATION
+          value: libraries
+        - name: BUNDLE_GEMFILE
+          value: $(params.gemfile)
+        - name: DATABASE_URL
+          value: "mysql2://root:passw0rd@127.0.0.1:3306/ci_test"
+      workingDir: /workspace/ruby-sensor/
+      command:
+      - /workspace/ruby-sensor/.tekton/run_unittests.sh
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
   name: ruby-generate-currency-report-task
 spec:
   workspaces:

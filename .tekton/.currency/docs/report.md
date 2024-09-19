@@ -17,3 +17,4 @@
 | Resque         | 30-days          | No             | 2.6.0                    | 2.6.0            | Yes          | Yes            |
 | Sidekiq        | 30-days          | No             | 7.2.4                    | 7.2.4            | Yes          | Yes            |
 | GraphQL        | 30-days          | No             | 2.3.5                    | 2.3.5            | Yes          | Yes            |
+| Sequel         | 30-days          | No             | 5.60.0                   | 5.84.0           | Yes          | No             |
