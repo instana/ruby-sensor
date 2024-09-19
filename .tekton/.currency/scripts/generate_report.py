@@ -27,7 +27,8 @@ def get_bundle_install_output():
         "rails": "rails_71_sqlite3_ruby_3.3.",
         "dalli": "dalli_32_ruby_3.3.",
         "resque": "resque_20_ruby_3.3.",
-        "sidekiq": "sidekiq_70_ruby_3.3."
+        "sidekiq": "sidekiq_70_ruby_3.3.",
+        "sequel": "sequel_58_ruby_3.3."
     }
 
     bundle_install_output = ""

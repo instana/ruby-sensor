@@ -499,6 +499,60 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-sequel-sqlite3
+      runAfter:
+        - unittest-rails-postgres
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.0.6-bullseye
+            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
+            # 3.1.4-bookworm
+            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
+            # 3.2.3-bookworm
+            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
+            # 3.3.1-bookworm
+            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+            # 3.4.0-preview1-bookworm
+            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
+          - name: gemfile
+            value:
+            - "./gemfiles/sequel_56.gemfile"
+            - "./gemfiles/sequel_57.gemfile"
+            - "./gemfiles/sequel_58.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-sequel-sqlite3-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-sequel-mysql2
+      runAfter:
+        - unittest-sequel-sqlite3
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            # 3.0.6-bullseye
+            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
+            # 3.1.4-bookworm
+            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
+            # 3.2.3-bookworm
+            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
+            # 3.3.1-bookworm
+            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+            # 3.4.0-preview1-bookworm
+            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
+          - name: gemfile
+            value:
+            - "./gemfiles/sequel_56.gemfile"
+            - "./gemfiles/sequel_57.gemfile"
+            - "./gemfiles/sequel_58.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-sequel-mysql2-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
     - name: generate-currency-report
       runAfter:
         - unittest-rails-postgres

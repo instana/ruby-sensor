@@ -89,6 +89,12 @@
         "Support Policy": "45-days",
         "Beta version": "No",
         "Cloud Native": "Yes"
+      },
+      {
+        "Package name": "Sequel",
+        "Support Policy": "45-days",
+        "Beta version": "No",
+        "Cloud Native": "Yes"
       }
     ]
 }
