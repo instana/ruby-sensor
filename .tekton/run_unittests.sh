@@ -68,7 +68,7 @@ bundler --version
 bundle config set path '/tmp/vendor/bundle'
 
 # Install Dependencies
-while ! (bundle check || bundle install) | tee "${DEPENDENCY_PATH}"; do
+while ! (bundle check || time MAKE="make --jobs 8" bundle install) | tee "${DEPENDENCY_PATH}"; do
   echo "Bundle install failed, retrying in a minute"
   sleep 60
 done
