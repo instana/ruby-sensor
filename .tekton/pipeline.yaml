@@ -555,7 +555,7 @@ spec:
           workspace: ruby-tracer-ci-pipeline-pvc
     - name: generate-currency-report
       runAfter:
-        - unittest-rails-postgres
+        - unittest-sequel-mysql2
       taskRef:
         name: ruby-generate-currency-report-task
       workspaces:
