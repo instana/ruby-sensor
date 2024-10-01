@@ -57,6 +57,10 @@ spec:
   - name: mariadb
     # mariadb:11.3.2
     image: mariadb@sha256:851f05fe1e4cb290442c1b12b7108436a33fd8f6a733d4989950322d06d45c65
+    startupProbe:
+      initialDelaySeconds: 10
+      tcpSocket:
+        port: 3306
     env:
       - name: MYSQL_ROOT_PASSWORD # or MARIADB_ROOT_PASSWORD
         value: passw0rd
@@ -93,6 +97,10 @@ spec:
   - name: postgres
     # postgres:16.2-bookworm
     image: postgres@sha256:6b841c8f6a819884207402f1209a8116844365df15fca8cf556fc54a24c70800
+    startupProbe:
+      initialDelaySeconds: 10
+      tcpSocket:
+        port: 5432
     env:
       - name: POSTGRES_DB
         value: 'ci_test'
@@ -182,6 +190,10 @@ spec:
   - name: redis
     # redis:7.2.4-bookworm
     image: redis@sha256:fe98b2d39d462d06a7360e2860dd6ceff930745e3731eccb3c1406dd0dd7f744
+    startupProbe:
+      initialDelaySeconds: 10
+      tcpSocket:
+        port: 6379
   params:
   - name: imageDigest
     type: string
@@ -245,6 +257,10 @@ spec:
   - name: mongo
     # mongo:5.0.25-focal
     image: mongo@sha256:d1b8a7b77424347397653ab8ff500c66b1e9979b4cebf826951d37b0d3966721
+    startupProbe:
+      initialDelaySeconds: 10
+      tcpSocket:
+        port: 27017
   params:
   - name: imageDigest
     type: string
@@ -329,6 +345,10 @@ spec:
   - name: mariadb
     # mariadb:11.3.2
     image: mariadb@sha256:851f05fe1e4cb290442c1b12b7108436a33fd8f6a733d4989950322d06d45c65
+    startupProbe:
+      initialDelaySeconds: 10
+      tcpSocket:
+        port: 3306
     env:
       - name: MYSQL_ROOT_PASSWORD # or MARIADB_ROOT_PASSWORD
         value: passw0rd
