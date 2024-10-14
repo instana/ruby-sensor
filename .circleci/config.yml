@@ -186,7 +186,7 @@ executors:
           POSTGRES_DB: 'ci_test'
   ruby_34:
     docker:
-      - image: ruby:3.4.0-preview1-bookworm
+      - image: ruby:3.4.0-preview2-bookworm
         environment:
           MEMCACHED_HOST: '127.0.0.1:11211'
           REDIS_URL: 'redis://127.0.0.1:6379'
@@ -201,7 +201,7 @@ executors:
       - image: mongo:5-focal
   ruby_34_mysql2:
     docker:
-      - image: ruby:3.4.0-preview1-bookworm
+      - image: ruby:3.4.0-preview2-bookworm
         environment:
           DATABASE_URL: "mysql2://root@127.0.0.1:3306/ci_test"
       - image: mariadb
@@ -214,7 +214,7 @@ executors:
           MYSQL_ROOT_HOST: '%'
   ruby_34_postgres:
     docker:
-      - image: ruby:3.4.0-preview1-bookworm
+      - image: ruby:3.4.0-preview2-bookworm
         environment:
           DATABASE_URL: "postgres://postgres:test@127.0.0.1:5432/ci_test"
       - image: postgres
