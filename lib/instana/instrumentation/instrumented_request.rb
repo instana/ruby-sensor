@@ -9,8 +9,8 @@ require 'rack/request'
 
 module Instana
   class InstrumentedRequest < Rack::Request
-    W3C_TRACE_PARENT_FORMAT = /[0-9a-f][0-9a-e]-(?<trace>[0-9a-f]{32})-(?<parent>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})/.freeze
-    INSTANA_TRACE_STATE = /in=(?<trace>[0-9a-f]+);(?<span>[0-9a-f]+)/.freeze
+    W3C_TRACE_PARENT_FORMAT = /[0-9a-f][0-9a-e]-(?<trace>[0-9a-f]{32})-(?<parent>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})/
+    INSTANA_TRACE_STATE = /in=(?<trace>[0-9a-f]+);(?<span>[0-9a-f]+)/
 
     def skip_trace?
       # Honor X-Instana-L
