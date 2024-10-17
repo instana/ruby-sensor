@@ -5,7 +5,7 @@ module Instana
     module Sequel
       IGNORED_SQL = %w[BEGIN COMMIT SET].freeze
       VERSION_SELECT_STATEMENT = "SELECT VERSION()".freeze
-      SANITIZE_REGEXP = /('[\s\S][^']*'|\d*\.\d+|\d+|NULL)/i.freeze
+      SANITIZE_REGEXP = /('[\s\S][^']*'|\d*\.\d+|\d+|NULL)/i
 
       def log_connection_yield(sql, conn, *args)
         call_payload = {
