@@ -12,6 +12,6 @@ gem "webmock"
 gem "puma"
 gem "rack-test"
 gem "simplecov", "~> 0.21.2"
-gem "excon", ">= 0.79.0", "< 1.0"
+gem "excon", "0.79.0"
 
 gemspec path: "../"
