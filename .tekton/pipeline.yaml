@@ -80,7 +80,6 @@ spec:
             value:
             - "./gemfiles/cuba_30.gemfile"
             - "./gemfiles/cuba_40.gemfile"
-            - "./gemfiles/excon_021.gemfile"
             - "./gemfiles/excon_079.gemfile"
             - "./gemfiles/excon_0100.gemfile"
             - "./gemfiles/excon_100.gemfile"
@@ -119,7 +118,6 @@ spec:
             value:
             - "./gemfiles/cuba_30.gemfile"
             - "./gemfiles/cuba_40.gemfile"
-            - "./gemfiles/excon_021.gemfile"
             - "./gemfiles/excon_079.gemfile"
             - "./gemfiles/excon_0100.gemfile"
             - "./gemfiles/excon_100.gemfile"
@@ -158,7 +156,6 @@ spec:
             value:
             - "./gemfiles/cuba_30.gemfile"
             - "./gemfiles/cuba_40.gemfile"
-            - "./gemfiles/excon_021.gemfile"
             - "./gemfiles/excon_079.gemfile"
             - "./gemfiles/excon_0100.gemfile"
             - "./gemfiles/excon_100.gemfile"
@@ -197,7 +194,6 @@ spec:
             value:
             - "./gemfiles/cuba_30.gemfile"
             - "./gemfiles/cuba_40.gemfile"
-            - "./gemfiles/excon_021.gemfile"
             - "./gemfiles/excon_079.gemfile"
             - "./gemfiles/excon_0100.gemfile"
             - "./gemfiles/excon_100.gemfile"
@@ -236,7 +232,6 @@ spec:
             value:
             - "./gemfiles/cuba_30.gemfile"
             - "./gemfiles/cuba_40.gemfile"
-            - "./gemfiles/excon_021.gemfile"
             - "./gemfiles/excon_079.gemfile"
             - "./gemfiles/excon_0100.gemfile"
             - "./gemfiles/excon_100.gemfile"
