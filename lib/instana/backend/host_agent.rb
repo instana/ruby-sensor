@@ -12,6 +12,8 @@ module Instana
         @logger = logger
         @future = nil
         @client = nil
+        # Timer task to poll for agent liveliness
+        @agent_connection_task = Concurrent::TimerTask.new(execution_interval: 75) { announce }
       end
 
       def setup; end
@@ -27,7 +29,11 @@ module Instana
       alias start spawn_background_thread
 
       def announce
-        @client = until_not_nil { HostAgentLookup.new.call }
+        @client = with_timeout { HostAgentLookup.new.call }
+        # Shuts down the connection task based on agent connection client.
+        @client ? @agent_connection_task.shutdown : @agent_connection_task.execute
+        # Do not continue further if the agent is down/connection to the agent is unsuccessfull
+        return nil unless @client
         begin
           @discovery.send(:observers)&.send(:notify_and_delete_observers, Time.now, nil, nil)
         ensure
@@ -74,14 +80,16 @@ module Instana
 
       private
 
-      def until_not_nil
-        loop do
+      def with_timeout
+        15.times do
           result = yield
           return result unless result.nil?
 
           @logger.debug("Waiting on a connection to the agent.")
           sleep(1)
         end
+        @logger.debug("Agent connection timed out retrying after 60 seconds")
+        return nil
       end
 
       def discovery_value
