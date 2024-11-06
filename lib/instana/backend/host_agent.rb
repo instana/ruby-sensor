@@ -34,6 +34,7 @@ module Instana
         @client ? @agent_connection_task.shutdown : @agent_connection_task.execute
         # Do not continue further if the agent is down/connection to the agent is unsuccessfull
         return nil unless @client
+
         begin
           @discovery.send(:observers)&.send(:notify_and_delete_observers, Time.now, nil, nil)
         ensure
@@ -89,7 +90,7 @@ module Instana
           sleep(1)
         end
         @logger.debug("Agent connection timed out retrying after 60 seconds")
-        return nil
+        nil
       end
 
       def discovery_value
