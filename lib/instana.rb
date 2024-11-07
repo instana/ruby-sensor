@@ -17,6 +17,6 @@ unless ENV.fetch('INSTANA_DISABLE', false)
   ::Instana::Activator.start
   ::Instana.agent.spawn_background_thread
 
-  ::Instana.logger.info "Stan is on the scene.  Starting Instana instrumentation version #{::Instana::VERSION}" if ::Instana.agent.ready?
+  ::Instana.logger.info "Stan is on the scene.  Starting Instana instrumentation version #{::Instana::VERSION}"
 end
 # :nocov:
