@@ -89,7 +89,7 @@ module Instana
           @logger.debug("Waiting on a connection to the agent.")
           sleep(1)
         end
-        @logger.debug("Agent connection timed out retrying after 60 seconds")
+        @logger.info("Agent connection timed out retrying after 60 seconds")
         nil
       end
 
