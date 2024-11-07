@@ -1,7 +1,8 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2016
-
-require 'instana/setup'
+if ENV.fetch('INSTANA_DISABLE', false)
+  Object.send(:remove_const, :Instana)
+end
 
 # Boot the instana agent background thread.  If you wish to have greater
 # control on the where and which thread this is run in, instead use
@@ -14,6 +15,7 @@ require 'instana/setup'
 
 # :nocov:
 unless ENV.fetch('INSTANA_DISABLE', false)
+  require 'instana/setup'
   ::Instana::Activator.start
   ::Instana.agent.spawn_background_thread
 
