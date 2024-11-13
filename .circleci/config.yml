@@ -443,6 +443,7 @@ workflows:
                 - "./gemfiles/rails_61.gemfile"
                 - "./gemfiles/rails_70.gemfile"
                 - "./gemfiles/rails_71.gemfile"
+                - "./gemfiles/rails_80.gemfile"
   sequel:
       jobs:
       - test_apprisal:
