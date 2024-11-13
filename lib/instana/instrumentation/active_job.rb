@@ -17,9 +17,9 @@ module Instana
 
           ::Instana::Tracer.trace(:activejob, tags) do
             context = ::Instana.tracer.context
-            if job.arguments.is_a?(Array) && job.arguments.last.is_a?(Hash)
-              job.arguments.last[:instana_context] = context ? context.to_hash : nil
-            end
+            job.arguments.append({
+                                   instana_context: context ? context.to_hash : nil
+                                 })
 
             block.call
           end
@@ -34,10 +34,9 @@ module Instana
               job_id: job.job_id
             }
           }
-
-          incoming_context = if job.arguments.is_a?(Array) && job.arguments.last.is_a?(Hash)
+          incoming_context = if job.arguments.is_a?(Array) && job.arguments.last.is_a?(Hash) && job.arguments.last.key?(:instana_context)
                                instana_context = job.arguments.last[:instana_context]
-                               job.arguments.last.delete(:instana_context)
+                               job.arguments.pop
                                instana_context ? ::Instana::SpanContext.new(instana_context[:trace_id], instana_context[:span_id]) : nil
                              end
 
