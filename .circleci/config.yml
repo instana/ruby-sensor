@@ -443,6 +443,22 @@ workflows:
                 - "./gemfiles/rails_61.gemfile"
                 - "./gemfiles/rails_70.gemfile"
                 - "./gemfiles/rails_71.gemfile"
+  rails8_ruby_33_34:
+    jobs:
+      - test_apprisal:
+          matrix:
+            parameters:
+              stack:
+                - ruby_32
+                - ruby_32_postgres
+                - ruby_32_mysql2
+                - ruby_33
+                - ruby_33_postgres
+                - ruby_33_mysql2
+                - ruby_34
+                - ruby_34_postgres
+                - ruby_34_mysql2
+              gemfile:
                 - "./gemfiles/rails_80.gemfile"
   sequel:
       jobs:
