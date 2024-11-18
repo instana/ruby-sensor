@@ -23,7 +23,7 @@ def get_bundle_install_output():
         "rest-client": "rest_client_20_ruby_3.3.",
         "roda": "roda_30_ruby_3.3.",
         "sinatra": "sinatra_40_ruby_3.3.",
-        "net-http": "net_http_01_ruby_3.1.",
+        "net-http": "net_http_01_ruby_3.3.",
         "rails": "rails_71_sqlite3_ruby_3.3.",
         "dalli": "dalli_32_ruby_3.3.",
         "resque": "resque_20_ruby_3.3.",
