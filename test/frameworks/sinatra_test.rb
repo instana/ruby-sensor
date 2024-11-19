@@ -3,11 +3,11 @@
 
 require 'test_helper'
 require 'rack/test'
-require 'byebug'
+
 class SinatraTest < Minitest::Test
   include Rack::Test::Methods
   APP = Rack::Builder.parse_file('test/support/apps/sinatra/config.ru')
-  byebug
+
   sinatra_version = Gem::Specification.find_by_name('sinatra').version
   if sinatra_version < Gem::Version.new('4.0.0')
     APP = APP.first
@@ -19,12 +19,8 @@ class SinatraTest < Minitest::Test
 
   def test_basic_get
     clear_all!
-    byebug
     r = get '/'
-    # , nil, {
-    #   "HTTP_FORWARDED" => "localhost",
-    #   "action_dispatch.show_detailed_exceptions" => true
-    # }
+
     assert last_response.ok?
 
 
