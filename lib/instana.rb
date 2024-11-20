@@ -1,6 +1,6 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2016
-if ENV.fetch('INSTANA_DISABLE', false)
+if ENV.fetch('INSTANA_DISABLE', false) && defined?(::Instana)
   Object.send(:remove_const, :Instana)
 end
 

@@ -7,6 +7,7 @@ require 'rack/test'
 class SinatraTest < Minitest::Test
   include Rack::Test::Methods
   APP = Rack::Builder.parse_file('test/support/apps/sinatra/config.ru')
+
   sinatra_version = Gem::Specification.find_by_name('sinatra').version
   if sinatra_version < Gem::Version.new('4.0.0')
     APP = APP.first
@@ -18,8 +19,8 @@ class SinatraTest < Minitest::Test
 
   def test_basic_get
     clear_all!
-
     r = get '/'
+
     assert last_response.ok?
 
 
