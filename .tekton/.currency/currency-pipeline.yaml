@@ -1,0 +1,132 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: ruby-tracer-currency-pipeline
+spec:
+  params:
+  - name: revision
+    type: string
+  - name: ruby_3_3_image_digest
+    type: string
+    description: Ruby 3.3 image digest
+    default: "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+  workspaces:
+    - name: ruby-tracer-currency-pipeline-pvc
+  tasks:
+    - name: clone
+      params:
+      - name: revision
+        value: $(params.revision)
+      taskRef:
+        name: ruby-tracer-clone-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-currency-pipeline-pvc
+    - name: ruby-tracer-default-libraries-currency-required
+      runAfter:
+        - clone
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            - $(params.ruby_3_3_image_digest)
+          - name: gemfile
+            value:
+            - "./gemfiles/cuba_40.gemfile"
+            - "./gemfiles/excon_100.gemfile"
+            - "./gemfiles/graphql_20.gemfile"
+            - "./gemfiles/grpc_10.gemfile"
+            - "./gemfiles/net_http_01.gemfile"
+            - "./gemfiles/rack_30.gemfile"
+            - "./gemfiles/rest_client_20.gemfile"
+            - "./gemfiles/roda_30.gemfile"
+            - "./gemfiles/sinatra_40.gemfile"
+          - name: configuration
+            value:
+            - "libraries"
+      taskRef:
+        name: ruby-tracer-unittest-default-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-currency-pipeline-pvc
+    - name: unittest-rails-sqlite3-currency-required
+      runAfter:
+        - ruby-tracer-default-libraries-currency-required
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            - $(params.ruby_3_3_image_digest)
+          - name: gemfile
+            value:
+            - "./gemfiles/rails_80.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-rails-sqlite3-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-currency-pipeline-pvc
+    - name: unittest-sequel-sqlite3-currency-required
+      runAfter:
+        - unittest-rails-sqlite3-currency-required
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            - $(params.ruby_3_3_image_digest)
+          - name: gemfile
+            value:
+            - "./gemfiles/sequel_58.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-sequel-sqlite3-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-currency-pipeline-pvc
+    - name: unittest-redis-currency-required
+      runAfter:
+        - unittest-sequel-sqlite3-currency-required
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            - $(params.ruby_3_3_image_digest)
+          - name: gemfile
+            value:
+            - "./gemfiles/sidekiq_70.gemfile"
+            - "./gemfiles/resque_20.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-redis-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-currency-pipeline-pvc
+    - name: unittest-memcached-currency-required
+      runAfter:
+        - unittest-redis-currency-required
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            - $(params.ruby_3_3_image_digest)
+          - name: gemfile
+            value:
+            - "./gemfiles/dalli_32.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-memcached-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-currency-pipeline-pvc
+    - name: generate-currency-report
+      runAfter:
+        - unittest-memcached-currency-required
+      taskRef:
+        name: ruby-generate-currency-report-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-currency-pipeline-pvc
+    - name: upload-currency-report
+      runAfter:
+        - generate-currency-report
+      taskRef:
+        name: ruby-upload-currency-report-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-currency-pipeline-pvc
