@@ -6,27 +6,46 @@ spec:
   params:
   - name: revision
     type: string
+  - name: ruby_30_image_digest
+    type: string
+    # 3.0.7-bullseye
+    default: "ruby@sha256:dcb8a8a6ee981f949da505cb9f4f15cde696e7bcb088955bc1f92f23a4cd7a72"
+  - name: ruby_31_image_digest
+    type: string
+    # 3.1.4-bookworm
+    default: "ruby@sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
+  - name: ruby_32_image_digest
+    type: string
+    # 3.2.3-bookworm
+    default: "ruby@sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
+  - name: ruby_33_image_digest
+    type: string
+    # 3.3.1-bookworm
+    default: "ruby@sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+  - name: ruby_34_image_digest
+    type: string
+    # 3.4.0-preview1-bookworm
+    default: "ruby@sha256:ac4f8074376743a56db23139238bd642a6249a25d4aaa250ca7e93332d11681c"
   workspaces:
     - name: ruby-tracer-ci-pipeline-pvc
   tasks:
-    - name: clone
-      params:
-      - name: revision
-        value: $(params.revision)
-      taskRef:
-        name: ruby-tracer-clone-task
-      workspaces:
-        - name: task-pvc
-          workspace: ruby-tracer-ci-pipeline-pvc
+    # - name: clone
+    #   params:
+    #   - name: revision
+    #     value: $(params.revision)
+    #   taskRef:
+    #     name: ruby-tracer-clone-task
+    #   workspaces:
+    #     - name: task-pvc
+    #       workspace: ruby-tracer-ci-pipeline-pvc
     - name: lint
-      runAfter:
-        - clone
+      # runAfter:
+      #   - clone
       matrix:
         params:
           - name: imageDigest
             value:
-            # 3.3.1-bookworm
-            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+            - $(params.ruby_33_image_digest)
           - name: gemfile
             value:
             - "gemfiles/rubocop_162.gemfile"
@@ -40,21 +59,16 @@ spec:
           workspace: ruby-tracer-ci-pipeline-pvc
     - name: core
       runAfter:
-        - clone
+        - lint
       matrix:
         params:
           - name: imageDigest
             value:
-            # 3.0.6-bullseye
-            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
-            # 3.1.4-bookworm
-            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
-            # 3.2.3-bookworm
-            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.1-bookworm
-            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
-            # 3.4.0-preview1-bookworm
-            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
+            - $(params.ruby_30_image_digest)
+            - $(params.ruby_31_image_digest)
+            - $(params.ruby_32_image_digest)
+            - $(params.ruby_33_image_digest)
+            - $(params.ruby_34_image_digest)
           - name: gemfile
             value:
             - "./Gemfile"
@@ -74,8 +88,7 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.0.6-bullseye
-            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
+            - $(params.ruby_30_image_digest)
           - name: gemfile
             value:
             - "./gemfiles/cuba_30.gemfile"
@@ -112,8 +125,7 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.1.4-bookworm
-            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
+            - $(params.ruby_31_image_digest)
           - name: gemfile
             value:
             - "./gemfiles/cuba_30.gemfile"
@@ -150,8 +162,7 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.2.3-bookworm
-            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
+            - $(params.ruby_32_image_digest)
           - name: gemfile
             value:
             - "./gemfiles/cuba_30.gemfile"
@@ -188,8 +199,7 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.3.1-bookworm
-            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+            - $(params.ruby_33_image_digest)
           - name: gemfile
             value:
             - "./gemfiles/cuba_30.gemfile"
@@ -226,8 +236,7 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.4.0-preview1-bookworm
-            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
+            - $(params.ruby_34_image_digest)
           - name: gemfile
             value:
             - "./gemfiles/cuba_30.gemfile"
@@ -257,49 +266,39 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: ruby-tracer-ci-pipeline-pvc
-    - name: unittest-mongo
+    # - name: unittest-mongo
+    #   runAfter:
+    #     - unittest-default-ruby-34
+    #   matrix:
+    #     params:
+    #       - name: imageDigest
+    #         value:
+    #         - $(params.ruby_30_image_digest)
+    #         - $(params.ruby_31_image_digest)
+    #         - $(params.ruby_32_image_digest)
+    #         - $(params.ruby_33_image_digest)
+    #         - $(params.ruby_34_image_digest)
+    #       - name: gemfile
+    #         value:
+    #         - "./gemfiles/mongo_216.gemfile"
+    #         - "./gemfiles/mongo_219.gemfile"
+    #   taskRef:
+    #     name: ruby-tracer-unittest-mongo-libraries-task
+    #   workspaces:
+    #     - name: task-pvc
+    #       workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-memcached
       runAfter:
         - unittest-default-ruby-34
       matrix:
         params:
           - name: imageDigest
             value:
-            # 3.0.6-bullseye
-            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
-            # 3.1.4-bookworm
-            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
-            # 3.2.3-bookworm
-            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.1-bookworm
-            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
-            # 3.4.0-preview1-bookworm
-            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
-          - name: gemfile
-            value:
-            - "./gemfiles/mongo_216.gemfile"
-            - "./gemfiles/mongo_219.gemfile"
-      taskRef:
-        name: ruby-tracer-unittest-mongo-libraries-task
-      workspaces:
-        - name: task-pvc
-          workspace: ruby-tracer-ci-pipeline-pvc
-    - name: unittest-memcached
-      runAfter:
-        - unittest-mongo
-      matrix:
-        params:
-          - name: imageDigest
-            value:
-            # 3.0.6-bullseye
-            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
-            # 3.1.4-bookworm
-            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
-            # 3.2.3-bookworm
-            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.1-bookworm
-            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
-            # 3.4.0-preview1-bookworm
-            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
+            - $(params.ruby_30_image_digest)
+            - $(params.ruby_31_image_digest)
+            - $(params.ruby_32_image_digest)
+            - $(params.ruby_33_image_digest)
+            - $(params.ruby_34_image_digest)
           - name: gemfile
             value:
             - "./gemfiles/dalli_20.gemfile"
@@ -317,16 +316,11 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.0.6-bullseye
-            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
-            # 3.1.4-bookworm
-            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
-            # 3.2.3-bookworm
-            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.1-bookworm
-            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
-            # 3.4.0-preview1-bookworm
-            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
+            - $(params.ruby_30_image_digest)
+            - $(params.ruby_31_image_digest)
+            - $(params.ruby_32_image_digest)
+            - $(params.ruby_33_image_digest)
+            - $(params.ruby_34_image_digest)
           - name: gemfile
             value:
             - "./gemfiles/aws_30.gemfile"
@@ -343,10 +337,8 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.0.6-bullseye
-            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
-            # 3.1.4-bookworm
-            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
+            - $(params.ruby_30_image_digest)
+            - $(params.ruby_31_image_digest)
           - name: gemfile
             value:
             - "./gemfiles/redis_40.gemfile"
@@ -371,10 +363,8 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.2.3-bookworm
-            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.1-bookworm
-            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+            - $(params.ruby_32_image_digest)
+            - $(params.ruby_33_image_digest)
           - name: gemfile
             value:
             - "./gemfiles/redis_40.gemfile"
@@ -399,8 +389,7 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.4.0-preview1-bookworm
-            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
+            - $(params.ruby_34_image_digest)
           - name: gemfile
             value:
             - "./gemfiles/redis_40.gemfile"
@@ -425,16 +414,11 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.0.6-bullseye
-            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
-            # 3.1.4-bookworm
-            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
-            # 3.2.3-bookworm
-            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.1-bookworm
-            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
-            # 3.4.0-preview1-bookworm
-            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
+            - $(params.ruby_30_image_digest)
+            - $(params.ruby_31_image_digest)
+            - $(params.ruby_32_image_digest)
+            - $(params.ruby_33_image_digest)
+            - $(params.ruby_34_image_digest)
           - name: gemfile
             value:
             - "./gemfiles/rails_61.gemfile"
@@ -452,16 +436,11 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.0.6-bullseye
-            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
-            # 3.1.4-bookworm
-            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
-            # 3.2.3-bookworm
-            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.1-bookworm
-            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
-            # 3.4.0-preview1-bookworm
-            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
+            - $(params.ruby_30_image_digest)
+            - $(params.ruby_31_image_digest)
+            - $(params.ruby_32_image_digest)
+            - $(params.ruby_33_image_digest)
+            - $(params.ruby_34_image_digest)
           - name: gemfile
             value:
             - "./gemfiles/rails_61.gemfile"
@@ -479,16 +458,11 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.0.6-bullseye
-            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
-            # 3.1.4-bookworm
-            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
-            # 3.2.3-bookworm
-            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.1-bookworm
-            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
-            # 3.4.0-preview1-bookworm
-            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
+            - $(params.ruby_30_image_digest)
+            - $(params.ruby_31_image_digest)
+            - $(params.ruby_32_image_digest)
+            - $(params.ruby_33_image_digest)
+            - $(params.ruby_34_image_digest)
           - name: gemfile
             value:
             - "./gemfiles/rails_61.gemfile"
@@ -506,16 +480,11 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.0.6-bullseye
-            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
-            # 3.1.4-bookworm
-            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
-            # 3.2.3-bookworm
-            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.1-bookworm
-            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
-            # 3.4.0-preview1-bookworm
-            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
+            - $(params.ruby_30_image_digest)
+            - $(params.ruby_31_image_digest)
+            - $(params.ruby_32_image_digest)
+            - $(params.ruby_33_image_digest)
+            - $(params.ruby_34_image_digest)
           - name: gemfile
             value:
             - "./gemfiles/sequel_56.gemfile"
@@ -533,16 +502,11 @@ spec:
         params:
           - name: imageDigest
             value:
-            # 3.0.6-bullseye
-            - "sha256:3166618469ad8a3190d80f43b322818fafb4bfac0b4882255eee3346af2a0a35"
-            # 3.1.4-bookworm
-            - "sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
-            # 3.2.3-bookworm
-            - "sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
-            # 3.3.1-bookworm
-            - "sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
-            # 3.4.0-preview1-bookworm
-            - "sha256:2690af2a931469abe513b22a083b5ae0b56d4feffc0d3496eb6378723ab203e7"
+            - $(params.ruby_30_image_digest)
+            - $(params.ruby_31_image_digest)
+            - $(params.ruby_32_image_digest)
+            - $(params.ruby_33_image_digest)
+            - $(params.ruby_34_image_digest)
           - name: gemfile
             value:
             - "./gemfiles/sequel_56.gemfile"
