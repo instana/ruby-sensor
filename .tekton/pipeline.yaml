@@ -266,28 +266,28 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: ruby-tracer-ci-pipeline-pvc
-    # - name: unittest-mongo
-    #   runAfter:
-    #     - unittest-default-ruby-34
-    #   matrix:
-    #     params:
-    #       - name: imageDigest
-    #         value:
-    #         - $(params.ruby_30_image_digest)
-    #         - $(params.ruby_31_image_digest)
-    #         - $(params.ruby_32_image_digest)
-    #         - $(params.ruby_33_image_digest)
-    #         - $(params.ruby_34_image_digest)
-    #       - name: gemfile
-    #         value:
-    #         - "./gemfiles/mongo_216.gemfile"
-    #         - "./gemfiles/mongo_219.gemfile"
-    #   taskRef:
-    #     name: ruby-tracer-unittest-mongo-libraries-task
-    #   workspaces:
-    #     - name: task-pvc
-    #       workspace: ruby-tracer-ci-pipeline-pvc
-    - name: unittest-memcached
+    - name: unittest-mongo
+      runAfter:
+        - unittest-default-ruby-34
+      matrix:
+        params:
+          - name: imageDigest
+            value:
+            - $(params.ruby_30_image_digest)
+            - $(params.ruby_31_image_digest)
+            - $(params.ruby_32_image_digest)
+            - $(params.ruby_33_image_digest)
+            - $(params.ruby_34_image_digest)
+          - name: gemfile
+            value:
+            - "./gemfiles/mongo_216.gemfile"
+            - "./gemfiles/mongo_219.gemfile"
+      taskRef:
+        name: ruby-tracer-unittest-mongo-libraries-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
+    - name: unittest-mongo
       runAfter:
         - unittest-default-ruby-34
       matrix:
