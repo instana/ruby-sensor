@@ -29,18 +29,18 @@ spec:
   workspaces:
     - name: ruby-tracer-ci-pipeline-pvc
   tasks:
-    # - name: clone
-    #   params:
-    #   - name: revision
-    #     value: $(params.revision)
-    #   taskRef:
-    #     name: ruby-tracer-clone-task
-    #   workspaces:
-    #     - name: task-pvc
-    #       workspace: ruby-tracer-ci-pipeline-pvc
+    - name: clone
+      params:
+      - name: revision
+        value: $(params.revision)
+      taskRef:
+        name: ruby-tracer-clone-task
+      workspaces:
+        - name: task-pvc
+          workspace: ruby-tracer-ci-pipeline-pvc
     - name: lint
-      # runAfter:
-      #   - clone
+      runAfter:
+        - clone
       matrix:
         params:
           - name: imageDigest
@@ -287,9 +287,9 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: ruby-tracer-ci-pipeline-pvc
-    - name: unittest-mongo
+    - name: unittest-memcached
       runAfter:
-        - unittest-default-ruby-34
+        - unittest-mongo
       matrix:
         params:
           - name: imageDigest
