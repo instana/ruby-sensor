@@ -55,11 +55,12 @@ echo    "with dependencies in '${BUNDLE_GEMFILE}'"
 # so here we create a container-local, non-shared copy, of the sources and use that.
 cp --recursive ../ruby-sensor/ /tmp/
 pushd /tmp/ruby-sensor/
-
+export WORKSPACE_PATH='/workspace/ruby-sensor'
 # Update RubyGems
+
 while ! gem update --system > /dev/null; do
   echo "Updating Gem with 'gem update --system' failed, retrying in a minute"
-  sleep 60
+  break
 done
 echo "Gem version $(gem --version)"
 
@@ -67,11 +68,15 @@ echo "Gem version $(gem --version)"
 bundler --version
 bundle config set path '/tmp/vendor/bundle'
 
+ruby -r "${WORKSPACE_PATH}/.tekton/ibmcloud.rb" -e "IbmCloudStorageUtil.new.download_gem_bundle" || echo "failed to load gem bundle cache"
+
 # Install Dependencies
-while ! (bundle check || bundle install) | tee "${DEPENDENCY_PATH}"; do
+while ! (bundle install) | tee "${DEPENDENCY_PATH}"; do
   echo "Bundle install failed, retrying in a minute"
   sleep 60
 done
+
+ruby -r "${WORKSPACE_PATH}/.tekton/ibmcloud.rb" -e "IbmCloudStorageUtil.new.upload_gem_bundle" || echo "failed to upload gem bundle cache"
 
 # Run tests
 if [[ "${TEST_CONFIGURATION}" = "lint" ]]; then
