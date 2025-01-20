@@ -84,9 +84,9 @@ if [[ "${TEST_CONFIGURATION}" = "lint" ]]; then
 else
   mkdir --parents "${COVERAGE_PATH}/_junit"
   bundle exec rake
-  cp --recursive "${COVERAGE_PATH}" "${OLDPWD}/"
+  # cp --recursive "${COVERAGE_PATH}" "${OLDPWD}/"
 fi
 
 # Put back the dependency insallation results to the shared workspace
-cp --recursive "${DEPENDENCY_PATH}" "${OLDPWD}/"
+# cp --recursive "${DEPENDENCY_PATH}" "${OLDPWD}/"
 popd
