@@ -43,8 +43,8 @@ lint)
   exit 5 ;;
 esac
 
-export COVERAGE_PATH="cov_${TEST_SETUP}"
-export DEPENDENCY_PATH="dep_${TEST_SETUP}"
+export COVERAGE_PATH="/workspace/cov_${TEST_SETUP}"
+export DEPENDENCY_PATH="/workspace/dep_${TEST_SETUP}"
 
 echo -n "Configuration is '${TEST_CONFIGURATION}' on Ruby ${RUBY_VERSION} "
 echo    "with dependencies in '${BUNDLE_GEMFILE}'"
