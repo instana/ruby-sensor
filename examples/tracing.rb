@@ -1,5 +1,6 @@
 # This file outlines the Instana Ruby Tracing API.
 #
+# Replace the below line once otel based standards are implemended
 # This same tracer also supports OpenTracing.  See `opentracing.rb` for
 # separate documentation.
 

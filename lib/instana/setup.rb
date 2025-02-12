@@ -43,9 +43,6 @@ require 'instana/backend/agent'
 ::Instana.setup
 ::Instana.agent.setup
 
-# Require supported OpenTracing interfaces
-require "opentracing"
-
 # The Instana agent is now setup.  The only remaining
 # task for a complete boot is to call
 # `Instana.agent.start` in the thread of your choice.
