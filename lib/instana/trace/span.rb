@@ -2,7 +2,6 @@
 # (c) Copyright Instana Inc. 2025
 
 require 'opentelemetry'
-require 'byebug'
 require 'instana/trace/span_kind'
 
 module Instana
