@@ -93,16 +93,16 @@ class SpanTest < Minitest::Test
     span = Instana::Span.new(:activerecord)
     span.set_tag(:activerecord, {})
 
-    span.add_error(StandardError.new('Test1'))
-    span.add_error(StandardError.new('Test2'))
+    span.record_exception(StandardError.new('Test1'))
+    span.record_exception(StandardError.new('Test2'))
 
     assert_equal 2, span[:ec]
     assert_equal 'Test2', span[:data][:activerecord][:error]
   end
 
-  def test_add_error_nil
+  def test_record_exception_nil
     span = Instana::Span.new(:activerecord)
-    span.add_error(nil)
+    span.record_exception(nil)
 
     assert_equal 1, span[:ec]
   end

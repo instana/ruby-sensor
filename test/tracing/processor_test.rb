@@ -17,8 +17,8 @@ class ProcessorTest < Minitest::Test
     span = Instana::Span.new(:rack, parent_ctx: span_context)
     span2 = Instana::Span.new(:"net-http")
 
-    subject.add_span(span)
-    subject.add_span(span2)
+    subject.on_finish(span)
+    subject.on_finish(span2)
 
     spans = subject.queued_spans
     valid_span, = spans
@@ -29,7 +29,7 @@ class ProcessorTest < Minitest::Test
 
   def test_queued_spans_invalid_type
     subject = Instana::Processor.new
-    subject.add_span(false)
+    subject.on_finish(false)
 
     assert_equal [], subject.queued_spans
   end
@@ -39,7 +39,7 @@ class ProcessorTest < Minitest::Test
 
     subject = Instana::Processor.new
     span = Instana::Span.new(:rack)
-    subject.add_span(span)
+    subject.on_finish(span)
 
     was_invoked = false
 
