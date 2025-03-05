@@ -22,6 +22,7 @@ module Instana
     attr_accessor :parent, :baggage, :is_root, :context
 
     def initialize(name, parent_ctx: nil, start_time: ::Instana::Util.now_in_ms)
+      super()
       @data = {}
       @ended = false
       if parent_ctx.is_a?(::Instana::Span)
@@ -106,7 +107,7 @@ module Instana
     #
     # @param e [Exception] The exception to be logged
     #
-    def record_exception(e)
+    def record_exception(error)
       @data[:error] = true
 
       @data[:ec] = if @data.key?(:ec)
@@ -124,11 +125,11 @@ module Instana
         end
 
         if HTTP_SPANS.include?(@data[:n])
-          set_tags(:http => { :error => "#{e.class}: #{e.message}" })
+          set_tags(:http => { :error => "#{error.class}: #{error.message}" })
         elsif @data[:n] == :activerecord
-          @data[:data][:activerecord][:error] = e.message
+          @data[:data][:activerecord][:error] = error.message
         else
-          log(:error, Time.now, message: e.message, parameters: e.class.to_s)
+          log(:error, Time.now, message: error.message, parameters: error.class.to_s)
         end
         e.instance_variable_set(:@instana_logged, true)
       end
@@ -188,7 +189,7 @@ module Instana
     #
     # @return [Instana::SpanContext]
     #
-    def context
+    def context # rubocop:disable Lint/DuplicateMethods
       @context ||= ::Instana::SpanContext.new(@data[:t], @data[:s], @level, @baggage)
     end
 
@@ -235,11 +236,11 @@ module Instana
     #
     # @params name [String] or [Symbol]
     #
-    def name=(n)
+    def name=(name)
       if custom?
-        @data[:data][:sdk][:name] = n
+        @data[:data][:sdk][:name] = name
       else
-        @data[:n] = n
+        @data[:n] = name
       end
     end
 
@@ -264,8 +265,8 @@ module Instana
 
     # Hash key query to the internal @data hash
     #
-    def key?(k)
-      @data.key?(k.to_sym)
+    def key?(key)
+      @data.key?(key.to_sym)
     end
 
     # Get the raw @data hash that summarizes this span
@@ -350,7 +351,7 @@ module Instana
     # @params tags [Hash]
     # @return [Span]
     #
-    def set_tags(tags)
+    def set_tags(tags) # rubocop:disable Naming
       return unless tags.is_a?(Hash)
 
       tags.each do |k, v|
@@ -512,7 +513,7 @@ module Instana
     # @param [optional Time] timestamp Optional timestamp for the event.
     #
     # @return [self] returns itself
-    def add_event(_name, attributes: nil, timestamp: nil)
+    def add_event(_name, attributes: nil, timestamp: nil) # rubocop:disable Lint/UnusedMethodArgument
       self
     end
 
