@@ -8,7 +8,7 @@ require "instana/trace/span_context"
 module Instana
   class Tracer < OpenTelemetry::Trace::Tracer
     class << self
-      def method_missing(method, *args, &block)
+      def method_missing(method, *args, &block) # rubocop:disable Style/MissingRespondToMissing
         if ::Instana.tracer.respond_to?(method)
           ::Instana.tracer.send(method, *args, &block)
         else
@@ -36,8 +36,8 @@ module Instana
 
     # @param [Instana::Span, NilClas] v the new current span
     # Set the value of the current span
-    def current_span=(v)
-      @current_span.value = v
+    def current_span=(value)
+      @current_span.value = value
     end
 
     #######################################
@@ -58,7 +58,7 @@ module Instana
     def start_or_continue_trace(name, kvs = {}, incoming_context = nil)
       span = log_start_or_continue(name, kvs, incoming_context)
       yield(span)
-    rescue Exception => e
+    rescue Exception => e # rubocop:disable Lint/RescueException
       log_error(e)
       raise
     ensure
@@ -79,7 +79,7 @@ module Instana
     def trace(name, kvs = {})
       span = log_entry(name, kvs)
       yield(span)
-    rescue Exception => e
+    rescue Exception => e # rubocop:disable Lint/RescueException
       log_error(e)
       raise
     ensure
@@ -165,10 +165,10 @@ module Instana
     #
     # @param e [Exception] Add exception to the current span
     #
-    def log_error(e)
+    def log_error(error)
       return unless current_span
 
-      current_span.record_exception(e)
+      current_span.record_exception(error)
     end
 
     # Closes out the current span
@@ -248,8 +248,8 @@ module Instana
     # @param e [Exception] Add exception to the current span
     # @param span [Span] the span for this Async op (previously returned from `log_async_entry`)
     #
-    def log_async_error(e, span)
-      span.record_exception(e)
+    def log_async_error(error, span)
+      span.record_exception(error)
     end
 
     # Closes out an asynchronous span
