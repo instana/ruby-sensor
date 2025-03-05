@@ -21,8 +21,7 @@ module Instana
 
     attr_accessor :parent, :baggage, :is_root, :context
 
-    def initialize(name, parent_ctx: nil, start_time: ::Instana::Util.now_in_ms)
-      super()
+    def initialize(name, parent_ctx: nil, start_time: ::Instana::Util.now_in_ms) # rubocop:disable Lint/MissingSuper
       @data = {}
       @ended = false
       if parent_ctx.is_a?(::Instana::Span)
@@ -119,9 +118,9 @@ module Instana
       # If a valid exception has been passed in, log the information about it
       # In case of just logging an error for things such as HTTP client 5xx
       # responses, an exception/backtrace may not exist.
-      if e
-        if e.backtrace.is_a?(Array)
-          add_stack(stack: e.backtrace)
+      if error
+        if error.backtrace.is_a?(Array)
+          add_stack(stack: error.backtrace)
         end
 
         if HTTP_SPANS.include?(@data[:n])
@@ -131,7 +130,7 @@ module Instana
         else
           log(:error, Time.now, message: error.message, parameters: error.class.to_s)
         end
-        e.instance_variable_set(:@instana_logged, true)
+        error.instance_variable_set(:@instana_logged, true)
       end
       self
     end
