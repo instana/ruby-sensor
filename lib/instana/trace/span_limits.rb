@@ -37,7 +37,7 @@ module OpenTelemetry
         #
         # @return [SpanLimits] with the desired values.
         # @raise [ArgumentError] if any of the max numbers are not positive.
-        def initialize(attribute_count_limit: Integer(OpenTelemetry::Common::Utilities.config_opt('OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT', 'OTEL_ATTRIBUTE_COUNT_LIMIT', default: 128)),
+        def initialize(attribute_count_limit: Integer(OpenTelemetry::Common::Utilities.config_opt('OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT', 'OTEL_ATTRIBUTE_COUNT_LIMIT', default: 128)), # rubocop:disable Metrics/ParameterLists
                        attribute_length_limit: OpenTelemetry::Common::Utilities.config_opt('OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT', 'OTEL_RUBY_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT',
                                                                                            'OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT'),
                        event_count_limit: Integer(OpenTelemetry::Common::Utilities.config_opt('OTEL_SPAN_EVENT_COUNT_LIMIT', default: 128)),
