@@ -2,7 +2,7 @@
 # (c) Copyright Instana Inc. 2017
 
 module Instana
-  class SpanContext
+  class SpanContext < OpenTelemetry::Trace::SpanContext
     attr_accessor :trace_id, :span_id, :baggage
     attr_reader :level
 
@@ -13,9 +13,20 @@ module Instana
     # @param level [Integer] default 1
     # @param baggage [Hash] baggage applied to this trace
     #
-    def initialize(tid, sid, level = 1, baggage = {})
-      @trace_id = tid
-      @span_id = sid
+    def initialize(
+      trace_id: Trace.generate_trace_id,
+      span_id: Trace.generate_span_id,
+      trace_flags: nil, #Todo - implement traceflags
+      tracestate: nil,# Todo - implement tracestates
+      remote: false,
+      level: 1,
+      baggage: {}
+      )
+      @trace_id = trace_id
+      @span_id = trace_id
+      @trace_flags = trace_flags
+      @tracestate = tracestate
+      @remote = remote
       @level = Integer(level || 1)
       @baggage = baggage || {}
     end
