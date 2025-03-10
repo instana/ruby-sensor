@@ -10,7 +10,7 @@ module Instana
     attr_accessor :parent, :baggage, :is_root, :context
 
     def initialize(name, parent_ctx: nil, start_time: ::Instana::Util.now_in_ms) # rubocop:disable Lint/MissingSuper
-      @data = {}
+      @attributes = {}
       @ended = false
       if parent_ctx.is_a?(::Instana::Span)
         @parent = parent_ctx
@@ -22,13 +22,13 @@ module Instana
 
         # If we have a parent trace, link to it
         if parent_ctx.trace_id
-          @data[:t] = parent_ctx.trace_id       # Trace ID
-          @data[:p] = parent_ctx.span_id        # Parent ID
+          @attributes[:t] = parent_ctx.trace_id       # Trace ID
+          @attributes[:p] = parent_ctx.span_id        # Parent ID
         else
-          @data[:t] = ::Instana::Trace.generate_trace_id
+          @attributes[:t] = ::Instana::Trace.generate_trace_id
         end
 
-        @data[:s] = ::Instana::Trace.generate_span_id # Span ID
+        @attributes[:s] = ::Instana::Trace.generate_span_id # Span ID
 
         @baggage = parent_ctx.baggage.dup
         @level = parent_ctx.level
@@ -38,20 +38,20 @@ module Instana
         @level = 1
 
         id = ::Instana::Trace.generate_span_id
-        @data[:t] = id                    # Trace ID
-        @data[:s] = id                    # Span ID
+        @attributes[:t] = id                    # Trace ID
+        @attributes[:s] = id                    # Span ID
       end
 
-      @data[:data] = {}
+      @attributes[:data] = {}
 
       if ENV.key?('INSTANA_SERVICE_NAME')
-        @data[:data][:service] = ENV['INSTANA_SERVICE_NAME']
+        @attributes[:data][:service] = ENV['INSTANA_SERVICE_NAME']
       end
 
       # Entity Source
-      @data[:f] = ::Instana.agent.source
+      @attributes[:f] = ::Instana.agent.source
       # Start time
-      @data[:ts] = if start_time.is_a?(Time)
+      @attributes[:ts] = if start_time.is_a?(Time)
                      ::Instana::Util.time_to_ms(start_time)
                    else
                      start_time
@@ -59,7 +59,7 @@ module Instana
 
       # Check for custom tracing
       if REGISTERED_SPANS.include?(name.to_sym)
-        @data[:n] = name.to_sym
+        @attributes[:n] = name.to_sym
       else
         configure_custom(name)
       end
@@ -78,7 +78,7 @@ module Instana
       cleaner = ::Instana.config[:backtrace_cleaner]
       stack = cleaner.call(stack) if cleaner
 
-      @data[:stack] = stack
+      @attributes[:stack] = stack
                       .map do |call|
         file, line, *method = call.split(':')
 
@@ -95,10 +95,10 @@ module Instana
     # @param e [Exception] The exception to be logged
     #
     def record_exception(error)
-      @data[:error] = true
+      @attributes[:error] = true
 
-      @data[:ec] = if @data.key?(:ec)
-                     @data[:ec] + 1
+      @attributes[:ec] = if @attributes.key?(:ec)
+                     @attributes[:ec] + 1
                    else
                      1
                    end
@@ -111,10 +111,10 @@ module Instana
           add_stack(stack: error.backtrace)
         end
 
-        if HTTP_SPANS.include?(@data[:n])
+        if HTTP_SPANS.include?(@attributes[:n])
           set_tags(:http => { :error => "#{error.class}: #{error.message}" })
-        elsif @data[:n] == :activerecord
-          @data[:data][:activerecord][:error] = error.message
+        elsif @attributes[:n] == :activerecord
+          @attributes[:data][:activerecord][:error] = error.message
         else
           log(:error, Time.now, message: error.message, parameters: error.class.to_s)
         end
@@ -133,17 +133,17 @@ module Instana
     # @param kvs [Hash] list of key values to be reported in the span
     #
     def configure_custom(name)
-      @data[:n] = :sdk
-      @data[:data] = { :sdk => { :name => name.to_sym } }
-      @data[:data][:sdk][:custom] = { :tags => {}, :logs => {} }
+      @attributes[:n] = :sdk
+      @attributes[:data] = { :sdk => { :name => name.to_sym } }
+      @attributes[:data][:sdk][:custom] = { :tags => {}, :logs => {} }
 
       if @is_root
         # For custom root spans (via SDK or opentracing), default to entry type
-        @data[:k] = 1
-        @data[:data][:sdk][:type] = :entry
+        @attributes[:k] = 1
+        @attributes[:data][:sdk][:type] = :entry
       else
-        @data[:k] = 3
-        @data[:data][:sdk][:type] = :intermediate
+        @attributes[:k] = 3
+        @attributes[:data][:sdk][:type] = :intermediate
       end
       self
     end
@@ -160,7 +160,7 @@ module Instana
         end_time = ::Instana::Util.time_to_ms(end_time)
       end
 
-      @data[:d] = end_time - @data[:ts]
+      @attributes[:d] = end_time - @attributes[:ts]
       @ended = true
       # Add this span to the queue for reporting
       ::Instana.processor.on_finish(self)
@@ -177,35 +177,35 @@ module Instana
     # @return [Instana::SpanContext]
     #
     def context # rubocop:disable Lint/DuplicateMethods
-      @context ||= ::Instana::SpanContext.new(@data[:t], @data[:s], @level, @baggage)
+      @context ||= ::Instana::SpanContext.new(@attributes[:t], @attributes[:s], @level, @baggage)
     end
 
     # Retrieve the ID for this span
     #
     # @return [Integer] the span ID
     def id
-      @data[:s]
+      @attributes[:s]
     end
 
     # Retrieve the Trace ID for this span
     #
     # @return [Integer] the Trace ID
     def trace_id
-      @data[:t]
+      @attributes[:t]
     end
 
     # Retrieve the parent ID of this span
     #
     # @return [Integer] parent span ID
     def parent_id
-      @data[:p]
+      @attributes[:p]
     end
 
     # Set the parent ID of this span
     #
     # @return [Integer] parent span ID
     def parent_id=(id)
-      @data[:p] = id
+      @attributes[:p] = id
     end
 
     # Get the name (operation) of this Span
@@ -213,9 +213,9 @@ module Instana
     # @return [String] or [Symbol] representing the span name
     def name
       if custom?
-        @data[:data][:sdk][:name]
+        @attributes[:data][:sdk][:name]
       else
-        @data[:n]
+        @attributes[:n]
       end
     end
 
@@ -225,9 +225,9 @@ module Instana
     #
     def name=(name)
       if custom?
-        @data[:data][:sdk][:name] = name
+        @attributes[:data][:sdk][:name] = name
       else
-        @data[:n] = name
+        @attributes[:n] = name
       end
     end
 
@@ -235,46 +235,46 @@ module Instana
     #
     # @return [Integer] the duration in milliseconds
     def duration
-      @data[:d]
+      @attributes[:d]
     end
 
-    # Hash accessor to the internal @data hash
+    # Hash accessor to the internal @attributes hash
     #
     def [](key)
-      @data[key.to_sym]
+      @attributes[key.to_sym]
     end
 
-    # Hash setter to the internal @data hash
+    # Hash setter to the internal @attributes hash
     #
     def []=(key, value)
-      @data[key.to_sym] = value
+      @attributes[key.to_sym] = value
     end
 
-    # Hash key query to the internal @data hash
+    # Hash key query to the internal @attributes hash
     #
     def key?(key)
-      @data.key?(key.to_sym)
+      @attributes.key?(key.to_sym)
     end
 
-    # Get the raw @data hash that summarizes this span
+    # Get the raw @attributes hash that summarizes this span
     #
     def raw
-      @data
+      @attributes
     end
 
     # Indicates whether this span is a custom or registered Span
     def custom?
-      @data[:n] == :sdk
+      @attributes[:n] == :sdk
     end
 
     def inspect
-      @data.inspect
+      @attributes.inspect
     end
 
     # Check to see if the current span indicates an exit from application
     # code and into an external service
     def exit_span?
-      EXIT_SPANS.include?(@data[:n])
+      EXIT_SPANS.include?(@attributes[:n])
     end
 
     #############################################################
@@ -287,7 +287,7 @@ module Instana
     # @params name [String] or [Symbol]
     #
     def operation_name=(name)
-      @data[:n] = name
+      @attributes[:n] = name
     end
 
     # Set a tag value on this span
@@ -308,27 +308,27 @@ module Instana
       end
 
       if custom?
-        @data[:data][:sdk][:custom] ||= {}
-        @data[:data][:sdk][:custom][:tags] ||= {}
-        @data[:data][:sdk][:custom][:tags][key] = value
+        @attributes[:data][:sdk][:custom] ||= {}
+        @attributes[:data][:sdk][:custom][:tags] ||= {}
+        @attributes[:data][:sdk][:custom][:tags][key] = value
 
         if key.to_sym == :'span.kind'
           case value.to_sym
           when ENTRY, SERVER, CONSUMER
-            @data[:data][:sdk][:type] = ENTRY
-            @data[:k] = 1
+            @attributes[:data][:sdk][:type] = ENTRY
+            @attributes[:k] = 1
           when EXIT, CLIENT, PRODUCER
-            @data[:data][:sdk][:type] = EXIT
-            @data[:k] = 2
+            @attributes[:data][:sdk][:type] = EXIT
+            @attributes[:k] = 2
           else
-            @data[:data][:sdk][:type] = INTERMEDIATE
-            @data[:k] = 3
+            @attributes[:data][:sdk][:type] = INTERMEDIATE
+            @attributes[:k] = 3
           end
         end
-      elsif value.is_a?(Hash) && @data[:data][key].is_a?(Hash)
-        @data[:data][key].merge!(value)
+      elsif value.is_a?(Hash) && @attributes[:data][key].is_a?(Hash)
+        @attributes[:data][key].merge!(value)
       else
-        @data[:data][key] = value
+        @attributes[:data][key] = value
       end
       self
     end
@@ -360,7 +360,7 @@ module Instana
       if @context
         @context.baggage = @baggage
       else
-        @context ||= ::Instana::SpanContext.new(@data[:t], @data[:s], @level, @baggage)
+        @context ||= ::Instana::SpanContext.new(@attributes[:t], @attributes[:s], @level, @baggage)
       end
       self
     end
@@ -379,9 +379,9 @@ module Instana
     #
     def tags(key = nil)
       tags = if custom?
-               @data[:data][:sdk][:custom][:tags]
+        @attributes[:data][:sdk][:custom][:tags]
              else
-               @data[:data]
+              @attributes[:data]
              end
       key ? tags[key] : tags
     end
@@ -396,8 +396,8 @@ module Instana
     def log(event = nil, timestamp = Time.now, **fields)
       ts = ::Instana::Util.time_to_ms(timestamp).to_s
       if custom?
-        @data[:data][:sdk][:custom][:logs][ts] = fields
-        @data[:data][:sdk][:custom][:logs][ts][:event] = event
+        @attributes[:data][:sdk][:custom][:logs][ts] = fields
+        @attributes[:data][:sdk][:custom][:logs][ts][:event] = event
       else
         set_tags(:log => fields)
       end
@@ -434,8 +434,8 @@ module Instana
     #
     # @return [self] returns itself
     def set_attribute(key, value)
-      @data ||= {}
-      @data[key] = value
+      @attributes ||= {}
+      @attributes[key] = value
       self
     end
     # alias []= set_attribute
@@ -454,8 +454,8 @@ module Instana
     #
     # @return [self] returns itself
     def add_attributes(attributes)
-      @data ||= {}
-      @data.merge!(attributes)
+      @attributes ||= {}
+      @attributes.merge!(attributes)
       self
     end
 
