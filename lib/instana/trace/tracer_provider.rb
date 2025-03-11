@@ -130,10 +130,10 @@ module Instana
 
       # @api private
       def internal_start_span(name, kind, attributes, links, start_timestamp, parent_context, instrumentation_scope) # rubocop:disable Metrics/ParameterLists
-        parent_span = Instana::Trace.current_span(parent_context)
-        parent_span_context = parent_span.context
+        parent_span = Instana.tracer.current_span
+        parent_span_context = parent_span.context if parent_span
 
-        if parent_span_context.valid?
+        if parent_span_context&.valid?
           parent_span_id = parent_span_context.span_id
           trace_id = parent_span_context.trace_id
         end
@@ -143,18 +143,18 @@ module Instana
           span_id = parent_span_id || @id_generator.generate_span_id
           return OpenTelemetry::Trace.non_recording_span(OpenTelemetry::Trace::SpanContext.new(trace_id: trace_id, span_id: span_id))
         end
-
-        result = @sampler.should_sample?(trace_id: trace_id, parent_context: parent_context, links: links, name: name, kind: kind, attributes: attributes)
+        # Todo add dummy samplers to always turn off sampling, also enable the user to send cutom samplers
+        # result = @sampler.should_sample?(trace_id: trace_id, parent_context: parent_context, links: links, name: name, kind: kind, attributes: attributes)
         span_id = @id_generator.generate_span_id
-        if result.recording? && !@stopped
-          trace_flags = result.sampled? ? OpenTelemetry::Trace::TraceFlags::SAMPLED : OpenTelemetry::Trace::TraceFlags::DEFAULT
-          context = OpenTelemetry::Trace::SpanContext.new(trace_id: trace_id, span_id: span_id, trace_flags: trace_flags, tracestate: result.tracestate)
-          attributes = attributes&.merge(result.attributes) || result.attributes.dup
-          Span.new(
-            context,
-            parent_context,
-            parent_span,
+        if !@stopped # && result.recording? &&
+          trace_flags = OpenTelemetry::Trace::TraceFlags::SAMPLED # Todo Add InstanaTraceFlags module
+          context = Instana::SpanContext.new(trace_id: trace_id, span_id: span_id), #trace_flags: trace_flags#, tracestate: result.tracestate)
+          # attributes = attributes&.merge(result.attributes) || result.attributes.dup
+          Instana::Span.new(
             name,
+            parent_context,
+            context,
+            parent_span,
             kind,
             parent_span_id,
             @span_limits,
