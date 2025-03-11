@@ -3,6 +3,7 @@
 require 'opentelemetry/trace/tracer'
 require 'instana/trace/span'
 require "instana/trace/span_context"
+require 'opentelemetry/context'
 
 module Instana
   class Tracer < OpenTelemetry::Trace::Tracer
@@ -304,6 +305,14 @@ module Instana
     #
     def clear!
       self.current_span = nil
+    end
+
+    def start_span(name, with_parent: nil, attributes: nil, links: nil, start_timestamp: nil, kind: nil)
+      with_parent ||= OpenTelemetry::Context.current
+      name ||= 'empty'
+      kind ||= :internal
+
+      @tracer_provider.internal_start_span(name, kind, attributes, links, start_timestamp, with_parent, @instrumentation_scope)
     end
   end
 end
