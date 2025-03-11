@@ -9,8 +9,9 @@ module Instana
 
     attr_accessor :parent, :baggage, :is_root, :context
 
-    def initialize(name, parent_ctx: nil, start_time: ::Instana::Util.now_in_ms) # rubocop:disable Lint/MissingSuper
+    def initialize(name,parent_ctx=nil,context=nil, parent_span=nil, kind=nil, parent_span_id=nil, span_limits=nil, span_processors=nil, attributes=nil, links=nil, start_timestamp=::Instana::Util.now_in_ms, resource=nil, instrumentation_scope=nil) # rubocop:disable Lint/MissingSuper
       @attributes = {}
+      start_timestamp=::Instana::Util.now_in_ms # Todo figure out a way to restructure arguments to pass proper timestamp and re-arrange the arguments
       @ended = false
       if parent_ctx.is_a?(::Instana::Span)
         @parent = parent_ctx
@@ -51,25 +52,24 @@ module Instana
       # Entity Source
       @attributes[:f] = ::Instana.agent.source
       # Start time
-      @attributes[:ts] = if start_time.is_a?(Time)
-                     ::Instana::Util.time_to_ms(start_time)
+      @attributes[:ts] = if start_timestamp.is_a?(Time)
+                     ::Instana::Util.time_to_ms(start_timestamp)
                    else
-                     start_time
+                    start_timestamp
                    end
 
       # Check for custom tracing
-      if REGISTERED_SPANS.include?(name.to_sym)
+      if REGISTERED_SPANS.include?(name&.to_sym) # Todo remove the safe & operator once all the tests are adapted to new init structure
         @attributes[:n] = name.to_sym
       else
         configure_custom(name)
       end
 
       ::Instana.processor.on_start(self)
-
+      # super(span_context: context) #Todo check if there is need of parent class methods else this line can be removed
       # Attach a backtrace to all exit spans
       add_stack if ::Instana.config[:collect_backtraces] && exit_span?
     end
-
     # Adds a backtrace to this span
     #
     # @param limit [Integer] Limit the backtrace to the top <limit> frames
@@ -134,7 +134,7 @@ module Instana
     #
     def configure_custom(name)
       @attributes[:n] = :sdk
-      @attributes[:data] = { :sdk => { :name => name.to_sym } }
+      @attributes[:data] = { :sdk => { :name => name&.to_sym } } # Todo remove safe operator once other tests adapt to new init structure
       @attributes[:data][:sdk][:custom] = { :tags => {}, :logs => {} }
 
       if @is_root
@@ -177,7 +177,7 @@ module Instana
     # @return [Instana::SpanContext]
     #
     def context # rubocop:disable Lint/DuplicateMethods
-      @context ||= ::Instana::SpanContext.new(@attributes[:t], @attributes[:s], @level, @baggage)
+      @context ||= ::Instana::SpanContext.new(trace_id: @attributes[:t], span_id: @attributes[:s], level: @level, baggage: @baggage)
     end
 
     # Retrieve the ID for this span
