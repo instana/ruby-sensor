@@ -39,15 +39,15 @@ class SpanTest < Minitest::Test
   end
 
   def test_span_from_contetx
-    context = Instana::SpanContext.new('test', 'test', 0)
-    span = Instana::Span.new(:test, parent_ctx: context)
+    context = Instana::SpanContext.new(trace_id: 'test', span_id: 'test', level: 0)
+    span = Instana::Span.new(:test, context)
 
     assert_equal 'test', span.parent_id
     assert_equal 'test', span.trace_id
   end
 
   def test_span_from_contetx_invalid
-    context = Instana::SpanContext.new(nil, nil, 1)
+    context = Instana::SpanContext.new(trace_id: nil, span_id: nil, level: 1)
     span = Instana::Span.new(:test, parent_ctx: context)
 
     assert_nil span.parent_id
