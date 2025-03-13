@@ -13,4 +13,11 @@ class TracerProviderTest < Minitest::Test
     # This tests the global tracer is the same as tracer from tracer_provider
     assert_equal Instana.tracer, @tracer_provider.tracer("instana_tracer")
   end
+
+  def test_donot_commit
+    # span = Instana.tracer_provider.tracer("instana_tracer").in_span("sdk") do
+    #   print("abc")
+    # end
+    # Instana.processor
+  end
 end
