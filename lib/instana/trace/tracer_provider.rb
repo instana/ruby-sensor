@@ -2,6 +2,7 @@
 
 require 'opentelemetry/trace/tracer_provider'
 require 'instana/samplers'
+require 'instana/trace/span_limits'
 
 module Instana
   module Trace
@@ -32,7 +33,7 @@ module Instana
       def initialize(sampler: sampler_from_environment(Samplers.parent_based(root: Samplers::ALWAYS_ON)),
                      resource: nil, # Instana::Resources::Resource.create
                      id_generator: ::Instana::Trace,
-                     span_limits: nil) # SpanLimits::DEFAULT)
+                     span_limits: SpanLimits::DEFAULT)
         super()
         @mutex = Mutex.new
         @registry = {}
@@ -148,23 +149,23 @@ module Instana
         span_id = @id_generator.generate_span_id
         if !@stopped # && result.recording? &&
           trace_flags = OpenTelemetry::Trace::TraceFlags::SAMPLED # Todo Add InstanaTraceFlags module
-          context = Instana::SpanContext.new(trace_id: trace_id, span_id: span_id), #trace_flags: trace_flags#, tracestate: result.tracestate)
-          # attributes = attributes&.merge(result.attributes) || result.attributes.dup
-          Instana::Span.new(
-            name,
-            parent_context,
-            context,
-            parent_span,
-            kind,
-            parent_span_id,
-            @span_limits,
-            @span_processors,
-            attributes,
-            links,
-            start_timestamp,
-            @resource,
-            instrumentation_scope
-          )
+          Instana::SpanContext.new(trace_id: trace_id, span_id: span_id) # trace_flags: trace_flags#, tracestate: result.tracestate)
+                    # attributes = attributes&.merge(result.attributes) || result.attributes.dup
+                    Instana::Span.new(
+                      name,
+                      parent_context,
+                      context,
+                      parent_span,
+                      kind,
+                      parent_span_id,
+                      @span_limits,
+                      @span_processors,
+                      attributes,
+                      links,
+                      start_timestamp,
+                      @resource,
+                      instrumentation_scope
+                    )
         else
           Instana::Trace.non_recording_span(OpenTelemetry::Trace::SpanContext.new(trace_id: trace_id, span_id: span_id, tracestate: result.tracestate))
         end
