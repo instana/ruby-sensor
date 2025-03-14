@@ -104,10 +104,10 @@ module Instana
         if incoming_context.is_a?(Hash)
           unless incoming_context.empty?
             parent_context = SpanContext.new(
-              incoming_context[:trace_id],
-              incoming_context[:span_id],
-              incoming_context[:level],
-              {
+              trace_id: incoming_context[:trace_id],
+              span_id: incoming_context[:span_id],
+              level: incoming_context[:level],
+              baggage: {
                 external_trace_id: incoming_context[:external_trace_id],
                 external_state: incoming_context[:external_state]
               }
@@ -119,7 +119,7 @@ module Instana
       end
 
       self.current_span = if parent_context
-                            Span.new(name, parent_ctx: parent_context)
+                            Span.new(name, parent_context)
                           else
                             Span.new(name)
                           end
@@ -134,13 +134,13 @@ module Instana
     # @param name [String, Symbol] the name of the span to create
     # @param kvs [Hash] list of key values to be reported in the span
     #
-    def log_entry(name, kvs = nil, start_time = ::Instana::Util.now_in_ms, child_of = nil)
+    def log_entry(name, kvs = nil, _start_time = ::Instana::Util.now_in_ms, child_of = nil)
       return unless tracing? || child_of
 
       new_span = if child_of.nil? && !current_span.nil?
-                   Span.new(name, parent_ctx: current_span, start_time: start_time)
+                   Span.new(name, current_span)
                  else
-                   Span.new(name, parent_ctx: child_of, start_time: start_time)
+                   Span.new(name, child_of)
                  end
       new_span.set_tags(kvs) if kvs
       self.current_span = new_span
@@ -224,7 +224,7 @@ module Instana
     def log_async_entry(name, kvs)
       return unless tracing?
 
-      new_span = Span.new(name, parent_ctx: current_span)
+      new_span = Span.new(name, current_span)
       new_span.set_tags(kvs) unless kvs.empty?
       new_span
     end
