@@ -9,9 +9,9 @@ module Instana
 
     attr_accessor :parent, :baggage, :is_root, :context
 
-    def initialize(name,parent_ctx=nil,context=nil, parent_span=nil, kind=nil, parent_span_id=nil, span_limits=nil, span_processors=nil, attributes=nil, links=nil, start_timestamp=::Instana::Util.now_in_ms, resource=nil, instrumentation_scope=nil) # rubocop:disable Lint/MissingSuper
+    def initialize(name, parent_ctx = nil, _context = nil, _parent_span = nil, _kind = nil, _parent_span_id = nil, _span_limits = nil, _span_processors = nil, _attributes = nil, _links = nil, start_timestamp = ::Instana::Util.now_in_ms, _resource = nil, _instrumentation_scope = nil) # rubocop:disable Lint/MissingSuper
       @attributes = {}
-      start_timestamp=::Instana::Util.now_in_ms # Todo figure out a way to restructure arguments to pass proper timestamp and re-arrange the arguments
+      start_timestamp = ::Instana::Util.now_in_ms # Todo figure out a way to restructure arguments to pass proper timestamp and re-arrange the arguments
       @ended = false
       if parent_ctx.is_a?(::Instana::Span)
         @parent = parent_ctx
@@ -53,10 +53,10 @@ module Instana
       @attributes[:f] = ::Instana.agent.source
       # Start time
       @attributes[:ts] = if start_timestamp.is_a?(Time)
-                     ::Instana::Util.time_to_ms(start_timestamp)
-                   else
-                    start_timestamp
-                   end
+                           ::Instana::Util.time_to_ms(start_timestamp)
+                         else
+                           start_timestamp
+                         end
 
       # Check for custom tracing
       if REGISTERED_SPANS.include?(name&.to_sym) # Todo remove the safe & operator once all the tests are adapted to new init structure
@@ -70,6 +70,7 @@ module Instana
       # Attach a backtrace to all exit spans
       add_stack if ::Instana.config[:collect_backtraces] && exit_span?
     end
+
     # Adds a backtrace to this span
     #
     # @param limit [Integer] Limit the backtrace to the top <limit> frames
@@ -79,7 +80,7 @@ module Instana
       stack = cleaner.call(stack) if cleaner
 
       @attributes[:stack] = stack
-                      .map do |call|
+                            .map do |call|
         file, line, *method = call.split(':')
 
         {
@@ -98,10 +99,10 @@ module Instana
       @attributes[:error] = true
 
       @attributes[:ec] = if @attributes.key?(:ec)
-                     @attributes[:ec] + 1
-                   else
-                     1
-                   end
+                           @attributes[:ec] + 1
+                         else
+                           1
+                         end
 
       # If a valid exception has been passed in, log the information about it
       # In case of just logging an error for things such as HTTP client 5xx
@@ -360,7 +361,7 @@ module Instana
       if @context
         @context.baggage = @baggage
       else
-        @context ||= ::Instana::SpanContext.new(@attributes[:t], @attributes[:s], @level, @baggage)
+        @context ||= ::Instana::SpanContext.new(trace_id: @attributes[:t], span_id: @attributes[:s], level: @level, baggage: @baggage)
       end
       self
     end
@@ -379,9 +380,9 @@ module Instana
     #
     def tags(key = nil)
       tags = if custom?
-        @attributes[:data][:sdk][:custom][:tags]
+               @attributes[:data][:sdk][:custom][:tags]
              else
-              @attributes[:data]
+               @attributes[:data]
              end
       key ? tags[key] : tags
     end
