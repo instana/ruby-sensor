@@ -35,7 +35,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: unittest
-      image: ruby@$(params.imageDigest)
+      image: $(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
           value: rails
@@ -76,7 +76,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: unittest
-      image: ruby@$(params.imageDigest)
+      image: $(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
           value: rails
@@ -118,7 +118,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: unittest
-      image: ruby@$(params.imageDigest)
+      image: $(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
           value: rails
@@ -170,7 +170,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: unittest
-      image: ruby@$(params.imageDigest)
+      image: $(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
           value: libraries
@@ -204,7 +204,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: unittest
-      image: ruby@$(params.imageDigest)
+      image: $(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
           value: libraries
@@ -238,7 +238,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: unittest
-      image: ruby@$(params.imageDigest)
+      image: $(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
           value: libraries
@@ -271,7 +271,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: unittest
-      image: ruby@$(params.imageDigest)
+      image: $(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
           value: libraries
@@ -298,7 +298,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: unittest
-      image: ruby@$(params.imageDigest)
+      image: $(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
           value: $(params.configuration)
@@ -323,7 +323,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: unittest
-      image: ruby@$(params.imageDigest)
+      image: $(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
           value: libraries
@@ -364,7 +364,7 @@ spec:
       mountPath: /workspace
   steps:
     - name: unittest
-      image: ruby@$(params.imageDigest)
+      image: $(params.imageDigest)
       env:
         - name: TEST_CONFIGURATION
           value: libraries
