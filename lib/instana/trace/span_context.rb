@@ -16,14 +16,14 @@ module Instana
     def initialize(
       trace_id: Trace.generate_trace_id,
       span_id: Trace.generate_span_id,
-      trace_flags: nil, #Todo - implement traceflags
-      tracestate: nil,# Todo - implement tracestates
+      trace_flags: nil, # Todo - implement traceflags
+      tracestate: nil,  # Todo - implement tracestates
       remote: false,
       level: 1,
       baggage: {}
-      )
+    )
       @trace_id = trace_id
-      @span_id = trace_id
+      @span_id = span_id
       @trace_flags = trace_flags
       @tracestate = tracestate
       @remote = remote
