@@ -1,5 +1,4 @@
 # (c) Copyright IBM Corp. 2025
-# (c) Copyright Instana Inc. 2025
 
 require 'opentelemetry/trace/tracer'
 require 'instana/trace/span'
@@ -16,11 +15,6 @@ module Instana
         end
       end
     end
-
-    # def initialize(name: nil, version: nil, tracer_provider: nil, logger: Instana.logger)
-    #   @current_span = Concurrent::ThreadLocalVar.new
-    #   @logger = logger
-    # end
 
     def initialize(_name, _version, tracer_provider, logger = Instana.logger)
       super()
