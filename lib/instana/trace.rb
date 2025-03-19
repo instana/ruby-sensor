@@ -1,5 +1,4 @@
 # (c) Copyright IBM Corp. 2025
-# (c) Copyright Instana Inc. 2025
 
 module Instana
   # The Trace API allows recording a set of events, triggered as a result of a
