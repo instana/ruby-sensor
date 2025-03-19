@@ -1,11 +1,4 @@
-# frozen_string_literal: true
-
-# Copyright The OpenTelemetry Authors
-#
-# SPDX-License-Identifier: Apache-2.0
-
 # (c) Copyright IBM Corp. 2025
-# (c) Copyright Instana Inc. 2025
 
 module OpenTelemetry
   module SDK
