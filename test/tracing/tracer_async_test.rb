@@ -139,8 +139,8 @@ class TracerAsyncTest < Minitest::Test
     span3.set_tags({ :info_kv => 3 })
 
     # Log out of order errors to the async spans
-    span3.add_error(Exception.new("Async span 3"))
-    span2.add_error(Exception.new("Async span 3"))
+    span3.record_exception(Exception.new("Async span 3"))
+    span2.record_exception(Exception.new("Async span 3"))
 
     # End two out of order asynchronous spans
     span3.set_tags({ :exit_kv => 3 })
@@ -155,7 +155,7 @@ class TracerAsyncTest < Minitest::Test
     ::Instana.tracer.log_end(:rack, {:rack_end_kv => 1})
 
     # Log an error to and close out the remaining async span after the parent trace has finished
-    span1.add_error(Exception.new("Async span 1"))
+    span1.record_exception(Exception.new("Async span 1"))
     span1.set_tags({ :exit_kv => 1 })
     span1.close
 

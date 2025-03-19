@@ -1,28 +1,17 @@
-# (c) Copyright IBM Corp. 2021
-# (c) Copyright Instana Inc. 2016
+# (c) Copyright IBM Corp. 2025
+
+require 'opentelemetry'
+require 'instana/trace/span_kind'
 
 module Instana
-  class Span
-    REGISTERED_SPANS = [ :actioncontroller, :actionview, :activerecord, :excon,
-                         :memcache, :'net-http', :rack, :render, :'rpc-client',
-                         :'rpc-server', :'sidekiq-client', :'sidekiq-worker',
-                         :redis, :'resque-client', :'resque-worker', :'graphql.server', :dynamodb, :s3, :sns, :sqs, :'aws.lambda.entry', :activejob, :log, :"mail.actionmailer",
-                         :"aws.lambda.invoke", :mongo, :sequel ].freeze
-    ENTRY_SPANS = [ :rack, :'resque-worker', :'rpc-server', :'sidekiq-worker', :'graphql.server', :sqs,
-                    :'aws.lambda.entry' ].freeze
-    EXIT_SPANS = [ :activerecord, :excon, :'net-http', :'resque-client',
-                   :'rpc-client', :'sidekiq-client', :redis, :dynamodb, :s3, :sns, :sqs, :log, :"mail.actionmailer",
-                   :"aws.lambda.invoke", :mongo, :sequel ].freeze
-    HTTP_SPANS = [ :rack, :excon, :'net-http' ].freeze
+  class Span < OpenTelemetry::Trace::Span
+    include SpanKind
 
-    attr_accessor :parent
-    attr_accessor :baggage
-    attr_accessor :is_root
-    attr_accessor :context
+    attr_accessor :parent, :baggage, :is_root, :context
 
-    def initialize(name, parent_ctx: nil, start_time: ::Instana::Util.now_in_ms)
+    def initialize(name, parent_ctx: nil, start_time: ::Instana::Util.now_in_ms) # rubocop:disable Lint/MissingSuper
       @data = {}
-
+      @ended = false
       if parent_ctx.is_a?(::Instana::Span)
         @parent = parent_ctx
         parent_ctx = parent_ctx.context
@@ -36,10 +25,10 @@ module Instana
           @data[:t] = parent_ctx.trace_id       # Trace ID
           @data[:p] = parent_ctx.span_id        # Parent ID
         else
-          @data[:t] = ::Instana::Util.generate_id
+          @data[:t] = ::Instana::Trace.generate_trace_id
         end
 
-        @data[:s] = ::Instana::Util.generate_id # Span ID
+        @data[:s] = ::Instana::Trace.generate_span_id # Span ID
 
         @baggage = parent_ctx.baggage.dup
         @level = parent_ctx.level
@@ -48,7 +37,7 @@ module Instana
         @is_root = true
         @level = 1
 
-        id = ::Instana::Util.generate_id
+        id = ::Instana::Trace.generate_span_id
         @data[:t] = id                    # Trace ID
         @data[:s] = id                    # Span ID
       end
@@ -62,11 +51,11 @@ module Instana
       # Entity Source
       @data[:f] = ::Instana.agent.source
       # Start time
-      if start_time.is_a?(Time)
-        @data[:ts] = ::Instana::Util.time_to_ms(start_time)
-      else
-        @data[:ts] = start_time
-      end
+      @data[:ts] = if start_time.is_a?(Time)
+                     ::Instana::Util.time_to_ms(start_time)
+                   else
+                     start_time
+                   end
 
       # Check for custom tracing
       if REGISTERED_SPANS.include?(name.to_sym)
@@ -75,7 +64,7 @@ module Instana
         configure_custom(name)
       end
 
-      ::Instana.processor.start_span(self)
+      ::Instana.processor.on_start(self)
 
       # Attach a backtrace to all exit spans
       add_stack if ::Instana.config[:collect_backtraces] && exit_span?
@@ -105,35 +94,34 @@ module Instana
     #
     # @param e [Exception] The exception to be logged
     #
-    def add_error(e)
+    def record_exception(error)
       @data[:error] = true
 
-      if @data.key?(:ec)
-        @data[:ec] = @data[:ec] + 1
-      else
-        @data[:ec] = 1
-      end
+      @data[:ec] = if @data.key?(:ec)
+                     @data[:ec] + 1
+                   else
+                     1
+                   end
 
       # If a valid exception has been passed in, log the information about it
       # In case of just logging an error for things such as HTTP client 5xx
       # responses, an exception/backtrace may not exist.
-      if e
-        if e.backtrace.is_a?(Array)
-          add_stack(stack: e.backtrace)
+      if error
+        if error.backtrace.is_a?(Array)
+          add_stack(stack: error.backtrace)
         end
 
         if HTTP_SPANS.include?(@data[:n])
-          set_tags(:http => { :error => "#{e.class}: #{e.message}" })
+          set_tags(:http => { :error => "#{error.class}: #{error.message}" })
         elsif @data[:n] == :activerecord
-          @data[:data][:activerecord][:error] = e.message
+          @data[:data][:activerecord][:error] = error.message
         else
-          log(:error, Time.now, message: e.message, parameters: e.class.to_s)
+          log(:error, Time.now, message: error.message, parameters: error.class.to_s)
         end
-        e.instance_variable_set(:@instana_logged, true)
+        error.instance_variable_set(:@instana_logged, true)
       end
       self
     end
-
 
     # Configure this span to be a custom span per the
     # SDK generic span type.
@@ -173,9 +161,9 @@ module Instana
       end
 
       @data[:d] = end_time - @data[:ts]
-
+      @ended = true
       # Add this span to the queue for reporting
-      ::Instana.processor.add_span(self)
+      ::Instana.processor.on_finish(self)
 
       self
     end
@@ -188,7 +176,7 @@ module Instana
     #
     # @return [Instana::SpanContext]
     #
-    def context
+    def context # rubocop:disable Lint/DuplicateMethods
       @context ||= ::Instana::SpanContext.new(@data[:t], @data[:s], @level, @baggage)
     end
 
@@ -235,11 +223,11 @@ module Instana
     #
     # @params name [String] or [Symbol]
     #
-    def name=(n)
+    def name=(name)
       if custom?
-        @data[:data][:sdk][:name] = n
+        @data[:data][:sdk][:name] = name
       else
-        @data[:n] = n
+        @data[:n] = name
       end
     end
 
@@ -264,8 +252,8 @@ module Instana
 
     # Hash key query to the internal @data hash
     #
-    def key?(k)
-      @data.key?(k.to_sym)
+    def key?(key)
+      @data.key?(key.to_sym)
     end
 
     # Get the raw @data hash that summarizes this span
@@ -310,7 +298,7 @@ module Instana
     # a String, Numeric, or Boolean it will be encoded with to_s
     #
     def set_tag(key, value)
-      if ![Symbol, String].include?(key.class)
+      unless [Symbol, String].include?(key.class)
         key = key.to_s
       end
 
@@ -326,23 +314,21 @@ module Instana
 
         if key.to_sym == :'span.kind'
           case value.to_sym
-          when :entry, :server, :consumer
-            @data[:data][:sdk][:type] = :entry
+          when ENTRY, SERVER, CONSUMER
+            @data[:data][:sdk][:type] = ENTRY
             @data[:k] = 1
-          when :exit, :client, :producer
-            @data[:data][:sdk][:type] = :exit
+          when EXIT, CLIENT, PRODUCER
+            @data[:data][:sdk][:type] = EXIT
             @data[:k] = 2
           else
-            @data[:data][:sdk][:type] = :intermediate
+            @data[:data][:sdk][:type] = INTERMEDIATE
             @data[:k] = 3
           end
         end
+      elsif value.is_a?(Hash) && @data[:data][key].is_a?(Hash)
+        @data[:data][key].merge!(value)
       else
-        if value.is_a?(Hash) && @data[:data][key].is_a?(Hash)
-          @data[:data][key].merge!(value)
-        else
-          @data[:data][key] = value
-        end
+        @data[:data][key] = value
       end
       self
     end
@@ -352,9 +338,10 @@ module Instana
     # @params tags [Hash]
     # @return [Span]
     #
-    def set_tags(tags)
+    def set_tags(tags) # rubocop:disable Naming
       return unless tags.is_a?(Hash)
-      tags.each do |k,v|
+
+      tags.each do |k, v|
         set_tag(k, v)
       end
       self
@@ -391,11 +378,11 @@ module Instana
     # Retrieve the hash of tags for this span
     #
     def tags(key = nil)
-      if custom?
-        tags = @data[:data][:sdk][:custom][:tags]
-      else
-        tags = @data[:data]
-      end
+      tags = if custom?
+               @data[:data][:sdk][:custom][:tags]
+             else
+               @data[:data]
+             end
       key ? tags[key] : tags
     end
 
@@ -427,5 +414,107 @@ module Instana
       close(end_time)
       self
     end
+
+    def recording?
+      !@ended
+    end
+
+    # Set attribute
+    #
+    # Note that the OpenTelemetry project
+    # {https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-semantic-conventions.md
+    # documents} certain "standard attributes" that have prescribed semantic
+    # meanings.
+    #
+    # @param [String] key
+    # @param [String, Boolean, Numeric, Array<String, Numeric, Boolean>] value
+    #   Values must be non-nil and (array of) string, boolean or numeric type.
+    #   Array values must not contain nil elements and all elements must be of
+    #   the same basic type (string, numeric, boolean).
+    #
+    # @return [self] returns itself
+    def set_attribute(key, value)
+      @data ||= {}
+      @data[key] = value
+      self
+    end
+    # alias []= set_attribute
+
+    # Add attributes
+    #
+    # Note that the OpenTelemetry project
+    # {https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-semantic-conventions.md
+    # documents} certain "standard attributes" that have prescribed semantic
+    # meanings.
+    #
+    # @param [Hash{String => String, Numeric, Boolean, Array<String, Numeric, Boolean>}] attributes
+    #   Values must be non-nil and (array of) string, boolean or numeric type.
+    #   Array values must not contain nil elements and all elements must be of
+    #   the same basic type (string, numeric, boolean).
+    #
+    # @return [self] returns itself
+    def add_attributes(attributes)
+      @data ||= {}
+      @data.merge!(attributes)
+      self
+    end
+
+    # Add a link to a {Span}.
+    #
+    # Adding links at span creation using the `links` option is preferred
+    # to calling add_link later, because head sampling decisions can only
+    # consider information present during span creation.
+    #
+    # Example:
+    #
+    #   span.add_link(OpenTelemetry::Trace::Link.new(span_to_link_from.context))
+    #
+    # Note that the OpenTelemetry project
+    # {https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-semantic-conventions.md
+    # documents} certain "standard attributes" that have prescribed semantic
+    # meanings.
+    #
+    # @param [OpenTelemetry::Trace::Link] the link object to add on the {Span}.
+    #
+    # @return [self] returns itself
+    def add_link(_link)
+      self
+    end
+
+    # Add an event to a {Span}.
+    #
+    # Example:
+    #
+    #   span.add_event('event', attributes: {'eager' => true})
+    #
+    # Note that the OpenTelemetry project
+    # {https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-semantic-conventions.md
+    # documents} certain "standard event names and keys" which have
+    # prescribed semantic meanings.
+    #
+    # @param [String] name Name of the event.
+    # @param [optional Hash{String => String, Numeric, Boolean, Array<String, Numeric, Boolean>}]
+    #   attributes One or more key:value pairs, where the keys must be
+    #   strings and the values may be (array of) string, boolean or numeric
+    #   type.
+    # @param [optional Time] timestamp Optional timestamp for the event.
+    #
+    # @return [self] returns itself
+    def add_event(_name, attributes: nil, timestamp: nil) # rubocop:disable Lint/UnusedMethodArgument
+      self
+    end
+
+    # Sets the Status to the Span
+    #
+    # If used, this will override the default Span status. Default status is unset.
+    #
+    # Only the value of the last call will be recorded, and implementations
+    # are free to ignore previous calls.
+    #
+    # @param [Status] status The new status, which overrides the default Span
+    #   status, which is OK.
+    #
+    # @return [void]
+    def status=(status); end
   end
 end

@@ -14,6 +14,7 @@ module Instana
     attr_accessor :pid
     attr_reader :secrets
     attr_reader :serverless
+    attr_accessor :tracer_provider
 
     ##
     # setup
@@ -22,8 +23,9 @@ module Instana
     # to run" state.
     #
     def setup
-      @agent  = ::Instana::Backend::Agent.new
-      @tracer = ::Instana::Tracer.new
+      @agent = ::Instana::Backend::Agent.new
+      @tracer_provider = ::Instana::Trace::TracerProvider.new
+      @tracer = @tracer_provider.tracer('instana_tracer')
       @processor = ::Instana::Processor.new
       @secrets = ::Instana::Secrets.new
       @serverless = ::Instana::Serverless.new

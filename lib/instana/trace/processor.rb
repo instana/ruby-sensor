@@ -1,7 +1,6 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2016
 
-require 'thread'
 require 'forwardable'
 
 module Instana
@@ -25,10 +24,13 @@ module Instana
       @spans_closed = Concurrent::AtomicFixnum.new(0)
     end
 
-    # Adds a span to the span queue
-    #
-    # @param [Trace] - the trace to be added to the queue
-    def add_span(span)
+    # Note that we've started a new span. Used to
+    # generate monitoring metrics.
+    def on_start(_)
+      @spans_opened.increment
+    end
+
+    def on_finish(span)
       # :nocov:
       if @pid != Process.pid
         @logger.info("Proces `#{@pid}` has forked into #{Process.pid}. Running post fork hook.")
@@ -39,12 +41,6 @@ module Instana
 
       @spans_closed.increment
       @queue.push(span)
-    end
-
-    # Note that we've started a new span. Used to
-    # generate monitoring metrics.
-    def start_span(_)
-      @spans_opened.increment
     end
 
     # Clears and retrieves metrics associated with span creation and submission
@@ -94,9 +90,13 @@ module Instana
       return [] if @queue.empty?
 
       spans = []
-      until @queue.empty? do
+      until @queue.empty?
         # Non-blocking pop; ignore exception
-        span = @queue.pop(true) rescue nil
+        span = begin
+          @queue.pop(true)
+        rescue
+          nil
+        end
         spans << span.raw if span.is_a?(Span) && span.context.level == 1
       end
 
@@ -110,9 +110,13 @@ module Instana
       @spans_opened.value = 0
       @spans_closed.value = 0
 
-      until @queue.empty? do
+      until @queue.empty?
         # Non-blocking pop; ignore exception
-        @queue.pop(true) rescue nil
+        begin
+          @queue.pop(true)
+        rescue
+          nil
+        end
       end
     end
   end

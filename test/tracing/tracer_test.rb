@@ -301,7 +301,7 @@ class TracerTest < Minitest::Test
   def test_log_exit_warn_span_name
     logger = Minitest::Mock.new
     logger.expect(:warn, true, [String])
-    subject = Instana::Tracer.new(logger: logger)
+    subject = Instana::Tracer.new(nil, nil, nil, logger)
 
     subject.log_start_or_continue(:sample)
     subject.log_exit(:roda)
@@ -314,7 +314,7 @@ class TracerTest < Minitest::Test
 
     logger = Minitest::Mock.new
     logger.expect(:warn, true, [String])
-    subject = Instana::Tracer.new(logger: logger)
+    subject = Instana::Tracer.new(nil, nil, nil, logger)
 
     subject.log_start_or_continue(:sample)
     subject.log_end(:roda)
@@ -325,7 +325,7 @@ class TracerTest < Minitest::Test
   def test_log_entry_span
     clear_all!
 
-    subject = Instana::Tracer.new
+    subject = Instana::Tracer.new(nil, nil, nil)
     span = Instana::Span.new(:rack)
 
     subject.log_entry(:sample, {}, ::Instana::Util.now_in_ms, span)
@@ -336,7 +336,7 @@ class TracerTest < Minitest::Test
   def test_log_entry_span_context
     clear_all!
 
-    subject = Instana::Tracer.new
+    subject = Instana::Tracer.new(nil, nil, nil)
     span_context = Instana::SpanContext.new('test', 'test')
 
     subject.log_entry(:sample, {}, ::Instana::Util.now_in_ms, span_context)

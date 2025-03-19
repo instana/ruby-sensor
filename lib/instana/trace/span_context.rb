@@ -3,9 +3,7 @@
 
 module Instana
   class SpanContext
-    attr_accessor :trace_id
-    attr_accessor :span_id
-    attr_accessor :baggage
+    attr_accessor :trace_id, :span_id, :baggage
     attr_reader :level
 
     # Create a new SpanContext
