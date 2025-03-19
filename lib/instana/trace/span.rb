@@ -1,5 +1,4 @@
 # (c) Copyright IBM Corp. 2025
-# (c) Copyright Instana Inc. 2025
 
 require 'opentelemetry'
 require 'instana/trace/span_kind'
@@ -7,17 +6,6 @@ require 'instana/trace/span_kind'
 module Instana
   class Span < OpenTelemetry::Trace::Span
     include SpanKind
-    REGISTERED_SPANS = [:actioncontroller, :actionview, :activerecord, :excon,
-                        :memcache, :'net-http', :rack, :render, :'rpc-client',
-                        :'rpc-server', :'sidekiq-client', :'sidekiq-worker',
-                        :redis, :'resque-client', :'resque-worker', :'graphql.server', :dynamodb, :s3, :sns, :sqs, :'aws.lambda.entry', :activejob, :log, :"mail.actionmailer",
-                        :"aws.lambda.invoke", :mongo, :sequel].freeze
-    ENTRY_SPANS = [:rack, :'resque-worker', :'rpc-server', :'sidekiq-worker', :'graphql.server', :sqs,
-                   :'aws.lambda.entry'].freeze
-    EXIT_SPANS = [:activerecord, :excon, :'net-http', :'resque-client',
-                  :'rpc-client', :'sidekiq-client', :redis, :dynamodb, :s3, :sns, :sqs, :log, :"mail.actionmailer",
-                  :"aws.lambda.invoke", :mongo, :sequel].freeze
-    HTTP_SPANS = [:rack, :excon, :'net-http'].freeze
 
     attr_accessor :parent, :baggage, :is_root, :context
 

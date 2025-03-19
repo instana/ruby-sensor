@@ -1,5 +1,4 @@
 # (c) Copyright IBM Corp. 2025
-# (c) Copyright Instana Inc. 2025
 
 module Instana
   # Type of span. Can be used to specify additional relationships between spans in addition to a
@@ -8,6 +7,19 @@ module Instana
   #
   #   span = tracer.on_start('op', kind: :client)
   module SpanKind
+    # Instana specific spans
+    REGISTERED_SPANS = [:actioncontroller, :actionview, :activerecord, :excon,
+                        :memcache, :'net-http', :rack, :render, :'rpc-client',
+                        :'rpc-server', :'sidekiq-client', :'sidekiq-worker',
+                        :redis, :'resque-client', :'resque-worker', :'graphql.server', :dynamodb, :s3, :sns, :sqs, :'aws.lambda.entry', :activejob, :log, :"mail.actionmailer",
+                        :"aws.lambda.invoke", :mongo, :sequel].freeze
+    ENTRY_SPANS = [:rack, :'resque-worker', :'rpc-server', :'sidekiq-worker', :'graphql.server', :sqs,
+                   :'aws.lambda.entry'].freeze
+    EXIT_SPANS = [:activerecord, :excon, :'net-http', :'resque-client',
+                  :'rpc-client', :'sidekiq-client', :redis, :dynamodb, :s3, :sns, :sqs, :log, :"mail.actionmailer",
+                  :"aws.lambda.invoke", :mongo, :sequel].freeze
+    HTTP_SPANS = [:rack, :excon, :'net-http'].freeze
+
     # Default value. Indicates that the span is used internally.
     INTERNAL = :internal
 
