@@ -37,7 +37,7 @@ module Instana
           incoming_context = if job.arguments.is_a?(Array) && job.arguments.last.is_a?(Hash) && job.arguments.last.key?(:instana_context)
                                instana_context = job.arguments.last[:instana_context]
                                job.arguments.pop
-                               instana_context ? ::Instana::SpanContext.new(instana_context[:trace_id], instana_context[:span_id]) : nil
+                               instana_context ? ::Instana::SpanContext.new(trace_id: instana_context[:trace_id], span_id: instana_context[:span_id]) : nil
                              end
 
           ::Instana::Tracer.start_or_continue_trace(:activejob, tags, incoming_context) do
