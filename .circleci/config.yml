@@ -36,43 +36,6 @@ library_gemfile: &library_gemfile
     - "./gemfiles/mongo_216.gemfile"
     - "./gemfiles/mongo_219.gemfile"
 executors:
-  ruby_30:
-    docker:
-      - image: cimg/ruby:3.0-node
-        environment:
-          MEMCACHED_HOST: '127.0.0.1:11211'
-          REDIS_URL: 'redis://127.0.0.1:6379'
-          DATABASE_URL: 'sqlite3::memory:'
-      - image: memcached
-      - image: redis
-      - image: amazon/dynamodb-local
-      - image: minio/minio:latest
-        command: ["server", "/data"]
-      - image: s12v/sns
-      - image: softwaremill/elasticmq-native
-      - image: mongo:5-focal
-  ruby_30_mysql2:
-    docker:
-      - image: cimg/ruby:3.0-node
-        environment:
-          DATABASE_URL: "mysql2://root@127.0.0.1:3306/ci_test"
-      - image: mariadb
-        environment:
-          MYSQL_DATABASE: 'ci_test'
-          MYSQL_USER: 'root'
-          MYSQL_PASSWORD: ''
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-          MYSQL_ROOT_PASSWORD: ''
-          MYSQL_ROOT_HOST: '%'
-  ruby_30_postgres:
-    docker:
-      - image: cimg/ruby:3.0-node
-        environment:
-          DATABASE_URL: "postgres://postgres:test@127.0.0.1:5432/ci_test"
-      - image: postgres
-        environment:
-          POSTGRES_PASSWORD: 'test'
-          POSTGRES_DB: 'ci_test'
   ruby_31:
     docker:
       - image: cimg/ruby:3.1-node
@@ -323,7 +286,7 @@ jobs:
     parameters:
       stack:
         type: executor
-        default: ruby_30
+        default: ruby_31
     executor: << parameters.stack >>
     steps:
       - checkout
@@ -333,7 +296,7 @@ jobs:
     parameters:
       stack:
         type: executor
-        default: ruby_30
+        default: ruby_31
       gemfile:
         type: string
         default: "./gemfiles/aws_30.gemfile"
@@ -384,18 +347,16 @@ workflows:
           matrix:
             parameters:
               stack:
-                - ruby_30
                 - ruby_31
                 - ruby_32
                 - ruby_33
                 - ruby_34
-  libraries_ruby_30_32:
+  libraries_ruby_31_32:
     jobs:
       - test_apprisal:
           matrix:
             parameters:
               stack:
-                - ruby_30
                 - ruby_31
                 - ruby_32
               <<: *library_gemfile
@@ -418,15 +379,12 @@ workflows:
             exclude:
             - stack: ruby_34
               gemfile: "./gemfiles/grpc_10.gemfile"
-  rails_ruby_3:
+  rails_ruby_31_34:
     jobs:
       - test_apprisal:
           matrix:
             parameters:
               stack:
-                - ruby_30
-                - ruby_30_postgres
-                - ruby_30_mysql2
                 - ruby_31
                 - ruby_31_postgres
                 - ruby_31_mysql2
@@ -466,8 +424,6 @@ workflows:
           matrix:
             parameters:
               stack:
-                - ruby_30
-                - ruby_30_mysql2
                 - ruby_31
                 - ruby_31_mysql2
                 - ruby_32
