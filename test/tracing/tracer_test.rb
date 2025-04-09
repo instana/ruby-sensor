@@ -337,7 +337,7 @@ class TracerTest < Minitest::Test
     clear_all!
 
     subject = Instana::Tracer.new(nil, nil, nil)
-    span_context = Instana::SpanContext.new('test', 'test')
+    span_context = Instana::SpanContext.new(trace_id: 'test', span_id: 'test')
 
     subject.log_entry(:sample, {}, ::Instana::Util.now_in_ms, span_context)
     assert subject.tracing?

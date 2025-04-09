@@ -13,8 +13,8 @@ class ProcessorTest < Minitest::Test
     clear_all!
     subject = Instana::Processor.new
 
-    span_context = Instana::SpanContext.new('9', '8', 0)
-    span = Instana::Span.new(:rack, parent_ctx: span_context)
+    span_context = Instana::SpanContext.new(trace_id: '9', span_id: '8', level: 0)
+    span = Instana::Span.new(:rack, span_context)
     span2 = Instana::Span.new(:"net-http")
 
     subject.on_finish(span)

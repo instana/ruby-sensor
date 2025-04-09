@@ -42,7 +42,7 @@ class RailsActionCableTest < Minitest::Test
     connection = mock_connection
     connection.instance_variable_set(
       :@instana_trace_context,
-      Instana::SpanContext.new('ABC', 'ABC')
+      Instana::SpanContext.new(trace_id: 'ABC', span_id: 'ABC')
     )
     channel_klass = Class.new(ActionCable::Channel::Base)
 
@@ -95,7 +95,7 @@ class RailsActionCableTest < Minitest::Test
     connection = mock_connection
     connection.instance_variable_set(
       :@instana_trace_context,
-      Instana::SpanContext.new('ABC', 'ABC')
+      Instana::SpanContext.new(trace_id: 'ABC', span_id: 'ABC')
     )
     channel_klass = Class.new(ActionCable::Channel::Base) do
       def sample
