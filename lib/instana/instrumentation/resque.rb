@@ -78,8 +78,8 @@ module Instana
         trace_context = if ::Instana.config[:'resque-client'][:propagate] && job.payload['args'][-1].is_a?(Hash) && job.payload['args'][-1].keys.include?('trace_id')
                           context_from_wire = job.payload['args'].pop
                           ::Instana::SpanContext.new(
-                            context_from_wire['trace_id'],
-                            context_from_wire['span_id']
+                            trace_id: context_from_wire['trace_id'],
+                            span_id: context_from_wire['span_id']
                           )
                         end
 
