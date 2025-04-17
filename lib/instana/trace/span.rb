@@ -10,6 +10,7 @@ module Instana
     attr_accessor :parent, :baggage, :is_root, :context
 
     def initialize(name, parent_ctx = nil, _context = nil, _parent_span = nil, _kind = nil, _parent_span_id = nil, _span_limits = nil, _span_processors = nil, _attributes = nil, _links = nil, start_timestamp = ::Instana::Util.now_in_ms, _resource = nil, _instrumentation_scope = nil) # rubocop:disable Lint/MissingSuper
+      # super(span_context: _context)
       @attributes = {}
       start_timestamp = ::Instana::Util.now_in_ms # Todo figure out a way to restructure arguments to pass proper timestamp and re-arrange the arguments
       @ended = false
@@ -23,8 +24,8 @@ module Instana
 
         # If we have a parent trace, link to it
         if parent_ctx.trace_id
-          @attributes[:t] = parent_ctx.trace_id       # Trace ID
-          @attributes[:p] = parent_ctx.span_id        # Parent ID
+          @attributes[:t] = parent_ctx.trace_id # Trace ID
+          @attributes[:p] = _parent_span_id || parent_ctx.span_id # Parent ID
         else
           @attributes[:t] = ::Instana::Trace.generate_trace_id
         end
@@ -64,7 +65,7 @@ module Instana
       else
         configure_custom(name)
       end
-
+      set_tags(_attributes)
       ::Instana.processor.on_start(self)
       # super(span_context: context) #Todo check if there is need of parent class methods else this line can be removed
       # Attach a backtrace to all exit spans
