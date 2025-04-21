@@ -65,6 +65,18 @@ module Instana
       def self.trace_id_ratio_based(_)
         self
       end
+
+      def should_sample?(trace_id:, parent_context:, links:, name:, kind:, attributes:)
+        parent_span_context = OpenTelemetry::Trace.current_span(parent_context).context
+        delegate = if !parent_span_context.valid?
+                      @root
+                    elsif parent_span_context.remote?
+                      parent_span_context.trace_flags.sampled? ? @remote_parent_sampled : @remote_parent_not_sampled
+                    else
+                      parent_span_context.trace_flags.sampled? ? @local_parent_sampled : @local_parent_not_sampled
+                    end
+        delegate.should_sample?(trace_id: trace_id, parent_context: parent_context, links: links, name: name, kind: kind, attributes: attributes)
+      end
     end
   end
 end
