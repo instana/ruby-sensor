@@ -354,6 +354,7 @@ module Instana
     #
     # @param key [String] the key of the baggage item
     # @param value [String] the value of the baggage item
+    # Todo Evalute if baggage is used anywhere in instana
     def set_baggage_item(key, value)
       @baggage ||= {}
       @baggage[key] = value
@@ -417,6 +418,12 @@ module Instana
       self
     end
 
+
+    # Return the flag whether this span is recording events
+    #
+    # @return [Boolean] true if this Span is active and recording information
+    #   like events with the #add_event operation and attributes using
+    #   #set_attribute.
     def recording?
       !@ended
     end
@@ -479,6 +486,7 @@ module Instana
     # @param [OpenTelemetry::Trace::Link] the link object to add on the {Span}.
     #
     # @return [self] returns itself
+    # Todo add link logic later
     def add_link(_link)
       self
     end
@@ -502,6 +510,7 @@ module Instana
     # @param [optional Time] timestamp Optional timestamp for the event.
     #
     # @return [self] returns itself
+    # Todo Add the vent logic later
     def add_event(_name, attributes: nil, timestamp: nil) # rubocop:disable Lint/UnusedMethodArgument
       self
     end
