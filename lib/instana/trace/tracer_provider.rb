@@ -129,7 +129,8 @@ module Instana
         end
       end
 
-      # @api private
+      # This method serves as the primary entry point for span creation. It initializes
+      # an Instana span, handles context, and manages sampling before returning the created span.
       def internal_start_span(name, kind, attributes, links, start_timestamp, parent_context, instrumentation_scope) # rubocop:disable Metrics/ParameterLists
         parent_span = OpenTelemetry::Trace.current_span(parent_context)
         parent_span_context = parent_span.context if parent_span
