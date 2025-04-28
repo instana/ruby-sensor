@@ -9,10 +9,9 @@ module Instana
 
     attr_accessor :parent, :baggage, :is_root, :context
 
-    def initialize(name, parent_ctx = nil, context = nil, parent_span = nil, kind = nil, parent_span_id = nil, span_limits = nil, span_processors = nil, attributes = nil, links = nil, start_timestamp = ::Instana::Util.now_in_ms, resource = nil, instrumentation_scope = nil) # rubocop:disable Lint/MissingSuper
-      # super(span_context: _context)
+    def initialize(name, parent_ctx = nil, _context = nil, _parent_span = nil, _kind = nil, parent_span_id = nil, _span_limits = nil, _span_processors = nil, attributes = nil, _links = nil, start_timestamp = ::Instana::Util.now_in_ms, _resource = nil, _instrumentation_scope = nil) # rubocop:disable Lint/MissingSuper, Metrics/ParameterLists
       @attributes = {}
-      start_timestamp = ::Instana::Util.now_in_ms # Todo figure out a way to restructure arguments to pass proper timestamp and re-arrange the arguments
+
       @ended = false
       if parent_ctx.is_a?(::Instana::Span)
         @parent = parent_ctx
@@ -417,7 +416,6 @@ module Instana
       close(end_time)
       self
     end
-
 
     # Return the flag whether this span is recording events
     #
