@@ -1,8 +1,9 @@
 # (c) Copyright IBM Corp. 2025
 
 require 'opentelemetry/trace/tracer_provider'
-require 'instana/samplers'
+require 'instana/samplers/samplers'
 require 'instana/trace/span_limits'
+require 'instana/trace/export'
 
 module Instana
   module Trace
@@ -149,7 +150,7 @@ module Instana
         span_id = @id_generator.generate_span_id
         if !@stopped && result.recording? && !@stopped
           trace_flags = result.sampled? ? OpenTelemetry::Trace::TraceFlags::SAMPLED : OpenTelemetry::Trace::TraceFlags::DEFAULT
-          context = Instana::SpanContext.new(trace_id: trace_id, span_id: span_id ,trace_flags: trace_flags, tracestate: result.tracestate)
+          context = Instana::SpanContext.new(trace_id: trace_id, span_id: span_id, trace_flags: trace_flags, tracestate: result.tracestate)
           attributes = attributes&.merge(result.attributes) || result.attributes.dup
           Instana::Span.new(
             name,
@@ -167,7 +168,7 @@ module Instana
             instrumentation_scope
           )
         else
-          Instana::Trace.non_recording_span(OpenTelemetry::Trace::SpanContext.new(trace_id: trace_id, span_id: span_id, tracestate: result.tracestate))
+          Instana::Trace.non_recording_span(Instana::Trace::SpanContext.new(trace_id: trace_id, span_id: span_id, tracestate: result.tracestate)) # Todo add tracestate so that the trcing doesnot happen for this span # rubocop:disable Layout/LineLength
         end
       end
 
