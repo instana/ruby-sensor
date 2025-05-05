@@ -109,12 +109,12 @@ class TracerAsyncTest < Minitest::Test
 
     # Validate linkage
     # All spans have the same trace ID
-    assert rack_span[:t]==async_span1[:t] && async_span1[:t]==async_span2[:t]
+    assert rack_span[:t] == async_span1[:t] && async_span1[:t] == async_span2[:t]
 
     assert_equal async_span2[:p], async_span1[:s]
     assert_equal async_span1[:p], rack_span[:s]
 
-    assert rack_span[:t]  == rack_span[:s]
+    assert rack_span[:t] == rack_span[:s]
     assert async_span1[:t] != async_span1[:s]
     assert async_span2[:t] != async_span2[:s]
   end
