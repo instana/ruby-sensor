@@ -36,157 +36,58 @@ library_gemfile: &library_gemfile
     - "./gemfiles/mongo_216.gemfile"
     - "./gemfiles/mongo_219.gemfile"
 executors:
-  ruby_31:
-    docker:
-      - image: cimg/ruby:3.1-node
-        environment:
-          MEMCACHED_HOST: '127.0.0.1:11211'
-          REDIS_URL: 'redis://127.0.0.1:6379'
-          DATABASE_URL: 'sqlite3::memory:'
-      - image: memcached
-      - image: redis
-      - image: amazon/dynamodb-local
-      - image: minio/minio:latest
-        command: ["server", "/data"]
-      - image: s12v/sns
-      - image: softwaremill/elasticmq-native
-      - image: mongo:5-focal
-  ruby_31_mysql2:
-    docker:
-      - image: cimg/ruby:3.1-node
-        environment:
-          DATABASE_URL: "mysql2://root@127.0.0.1:3306/ci_test"
-      - image: mariadb
-        environment:
-          MYSQL_DATABASE: 'ci_test'
-          MYSQL_USER: 'root'
-          MYSQL_PASSWORD: ''
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-          MYSQL_ROOT_PASSWORD: ''
-          MYSQL_ROOT_HOST: '%'
-  ruby_31_postgres:
-    docker:
-      - image: cimg/ruby:3.1-node
-        environment:
-          DATABASE_URL: "postgres://postgres:test@127.0.0.1:5432/ci_test"
-      - image: postgres
-        environment:
-          POSTGRES_PASSWORD: 'test'
-          POSTGRES_DB: 'ci_test'
-  ruby_32:
-    docker:
-      - image: cimg/ruby:3.2-node
-        environment:
-          MEMCACHED_HOST: '127.0.0.1:11211'
-          REDIS_URL: 'redis://127.0.0.1:6379'
-          DATABASE_URL: 'sqlite3::memory:'
-      - image: memcached
-      - image: redis
-      - image: amazon/dynamodb-local
-      - image: minio/minio:latest
-        command: ["server", "/data"]
-      - image: s12v/sns
-      - image: softwaremill/elasticmq-native
-      - image: mongo:5-focal
-  ruby_32_mysql2:
-    docker:
-      - image: cimg/ruby:3.2-node
-        environment:
-          DATABASE_URL: "mysql2://root@127.0.0.1:3306/ci_test"
-      - image: mariadb
-        environment:
-          MYSQL_DATABASE: 'ci_test'
-          MYSQL_USER: 'root'
-          MYSQL_PASSWORD: ''
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-          MYSQL_ROOT_PASSWORD: ''
-          MYSQL_ROOT_HOST: '%'
-  ruby_32_postgres:
-    docker:
-      - image: cimg/ruby:3.2-node
-        environment:
-          DATABASE_URL: "postgres://postgres:test@127.0.0.1:5432/ci_test"
-      - image: postgres
-        environment:
-          POSTGRES_PASSWORD: 'test'
-          POSTGRES_DB: 'ci_test'
-  ruby_33:
-    docker:
-      - image: cimg/ruby:3.3-node
-        environment:
-          MEMCACHED_HOST: '127.0.0.1:11211'
-          REDIS_URL: 'redis://127.0.0.1:6379'
-          DATABASE_URL: 'sqlite3::memory:'
-      - image: memcached
-      - image: redis
-      - image: amazon/dynamodb-local
-      - image: minio/minio:latest
-        command: ["server", "/data"]
-      - image: s12v/sns
-      - image: softwaremill/elasticmq-native
-      - image: mongo:5-focal
-  ruby_33_mysql2:
-    docker:
-      - image: cimg/ruby:3.3-node
-        environment:
-          DATABASE_URL: "mysql2://root@127.0.0.1:3306/ci_test"
-      - image: mariadb
-        environment:
-          MYSQL_DATABASE: 'ci_test'
-          MYSQL_USER: 'root'
-          MYSQL_PASSWORD: ''
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-          MYSQL_ROOT_PASSWORD: ''
-          MYSQL_ROOT_HOST: '%'
-  ruby_33_postgres:
-    docker:
-      - image: cimg/ruby:3.3-node
-        environment:
-          DATABASE_URL: "postgres://postgres:test@127.0.0.1:5432/ci_test"
-      - image: postgres
-        environment:
-          POSTGRES_PASSWORD: 'test'
-          POSTGRES_DB: 'ci_test'
-  ruby_34:
-    docker:
-      - image: ruby:3.4.1-bookworm
-        environment:
-          MEMCACHED_HOST: '127.0.0.1:11211'
-          REDIS_URL: 'redis://127.0.0.1:6379'
-          DATABASE_URL: 'sqlite3::memory:'
-      - image: memcached
-      - image: redis
-      - image: amazon/dynamodb-local
-      - image: minio/minio:latest
-        command: ["server", "/data"]
-      - image: s12v/sns
-      - image: softwaremill/elasticmq-native
-      - image: mongo:5-focal
-  ruby_34_mysql2:
-    docker:
-      - image: ruby:3.4.1-bookworm
-        environment:
-          DATABASE_URL: "mysql2://root@127.0.0.1:3306/ci_test"
-      - image: mariadb
-        environment:
-          MYSQL_DATABASE: 'ci_test'
-          MYSQL_USER: 'root'
-          MYSQL_PASSWORD: ''
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-          MYSQL_ROOT_PASSWORD: ''
-          MYSQL_ROOT_HOST: '%'
-  ruby_34_postgres:
-    docker:
-      - image: ruby:3.4.1-bookworm
-        environment:
-          DATABASE_URL: "postgres://postgres:test@127.0.0.1:5432/ci_test"
-      - image: postgres
-        environment:
-          POSTGRES_PASSWORD: 'test'
-          POSTGRES_DB: 'ci_test'
   ruby_33_lint:
     docker:
       - image: cimg/ruby:3.3-node
+  base:
+    parameters:
+      ruby_version:
+        type: string
+        default: "3.1"
+    docker:
+      - image: cimg/ruby:<<parameters.ruby_version>>
+        environment:
+          MEMCACHED_HOST: '127.0.0.1:11211'
+          REDIS_URL: 'redis://127.0.0.1:6379'
+          DATABASE_URL: 'sqlite3::memory:'
+      - image: memcached
+      - image: redis
+      - image: amazon/dynamodb-local
+      - image: minio/minio:latest
+        command: ["server", "/data"]
+      - image: s12v/sns
+      - image: softwaremill/elasticmq-native
+      - image: mongo:5-focal
+  mysql2:
+    parameters:
+      ruby_version:
+        type: string
+        default: "3.1"
+    docker:
+      - image: cimg/ruby:<<parameters.ruby_version>>
+        environment:
+          DATABASE_URL: "mysql2://root@127.0.0.1:3306/ci_test"
+      - image: mariadb
+        environment:
+          MYSQL_DATABASE: 'ci_test'
+          MYSQL_USER: 'root'
+          MYSQL_PASSWORD: ''
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ROOT_HOST: '%'
+  postgres:
+    parameters:
+      ruby_version:
+        type: string
+        default: "3.1"
+    docker:
+      - image: cimg/ruby:<<parameters.ruby_version>>
+        environment:
+          DATABASE_URL: "postgres://postgres:test@127.0.0.1:5432/ci_test"
+      - image: postgres
+        environment:
+          POSTGRES_PASSWORD: 'test'
+          POSTGRES_DB: 'ci_test'
 commands:
   setup:
     steps:
@@ -280,14 +181,18 @@ commands:
           name: Publish Gem
           command: |
             bundle exec rake release[origin]
-
 jobs:
   test_core:
     parameters:
       stack:
-        type: executor
-        default: ruby_31
-    executor: << parameters.stack >>
+        type: string
+        default: "base"
+      ruby_version:
+        type: string
+        default: "3.1"
+    executor: 
+      name: <<parameters.stack>>
+      ruby_version: <<parameters.ruby_version>>
     steps:
       - checkout
       - setup
@@ -295,12 +200,17 @@ jobs:
   test_apprisal:
     parameters:
       stack:
-        type: executor
-        default: ruby_31
+        type: string
+        default: "base"
       gemfile:
         type: string
         default: "./gemfiles/aws_30.gemfile"
-    executor: << parameters.stack >>
+      ruby_version:
+        type: string
+        default: "3.1"
+    executor: 
+      name: <<parameters.stack>>
+      ruby_version: <<parameters.ruby_version>>
     environment:
       APPRAISAL_INITIALIZED: "1"
       BUNDLE_GEMFILE: << parameters.gemfile >>
@@ -320,12 +230,14 @@ jobs:
             bundle check || bundle install
       - run_rubocop
   report_coverage:
-    executor: ruby_33
+    executor: base
     steps:
       - checkout
       # - run_sonarqube
   publish:
-    executor: ruby_33
+    executor: 
+      name: "base"
+      ruby_version: "3.4"
     steps:
       - checkout
       - setup
@@ -347,28 +259,34 @@ workflows:
           matrix:
             parameters:
               stack:
-                - ruby_31
-                - ruby_32
-                - ruby_33
-                - ruby_34
+                - base
+              ruby_version:
+                - "3.1"
+                - "3.2"
+                - "3.3"
+                - "3.4"
   libraries_ruby_31_32:
     jobs:
       - test_apprisal:
           matrix:
             parameters:
               stack:
-                - ruby_31
-                - ruby_32
+                - base
               <<: *library_gemfile
+              ruby_version:
+                - "3.1"
+                - "3.2"
   libraries_ruby_33_34:
     jobs:
       - test_apprisal:
           matrix:
             parameters:
               stack:
-                - ruby_33
-                - ruby_34
+                - base
               <<: *library_gemfile
+              ruby_version:
+                - "3.3"
+                - "3.4"
             # Currently compiling the native extensions for `grpc`
             # exceeds an internal RAM and/or CPU limit of CircleCI executor,
             # and the job gets terminated with:
@@ -377,65 +295,61 @@ workflows:
             # TODO: Remove this exclusion as soon as pre-built binaries are available
             # on https://rubygems.org/gems/grpc/versions
             exclude:
-            - stack: ruby_34
+            - stack: base
               gemfile: "./gemfiles/grpc_10.gemfile"
+
   rails_ruby_31_34:
     jobs:
       - test_apprisal:
           matrix:
             parameters:
               stack:
-                - ruby_31
-                - ruby_31_postgres
-                - ruby_31_mysql2
-                - ruby_32
-                - ruby_32_postgres
-                - ruby_32_mysql2
-                - ruby_33
-                - ruby_33_postgres
-                - ruby_33_mysql2
-                - ruby_34
-                - ruby_34_postgres
-                - ruby_34_mysql2
+                - base
+                - mysql2
+                - postgres
               gemfile:
                 - "./gemfiles/rails_61.gemfile"
                 - "./gemfiles/rails_70.gemfile"
                 - "./gemfiles/rails_71.gemfile"
+              ruby_version:
+                - "3.1"
+                - "3.2"
+                - "3.3"
+                - "3.4"
+              
   rails8_ruby_33_34:
     jobs:
       - test_apprisal:
           matrix:
             parameters:
               stack:
-                - ruby_32
-                - ruby_32_postgres
-                - ruby_32_mysql2
-                - ruby_33
-                - ruby_33_postgres
-                - ruby_33_mysql2
-                - ruby_34
-                - ruby_34_postgres
-                - ruby_34_mysql2
+                - base
+                - mysql2
+                - postgres
               gemfile:
                 - "./gemfiles/rails_80.gemfile"
+              ruby_version:
+                - "3.2"
+                - "3.3"
+                - "3.4"
   sequel:
       jobs:
       - test_apprisal:
           matrix:
             parameters:
               stack:
-                - ruby_31
-                - ruby_31_mysql2
-                - ruby_32
-                - ruby_32_mysql2
-                - ruby_33
-                - ruby_33_mysql2
-                - ruby_34
-                - ruby_34_mysql2
+                - base
+                - mysql2
+                - postgres
               gemfile:
                 - "./gemfiles/sequel_56.gemfile"
                 - "./gemfiles/sequel_57.gemfile"
                 - "./gemfiles/sequel_58.gemfile"
+              ruby_version:
+                - "3.1"
+                - "3.2"
+                - "3.3"
+                - "3.4"
   report_coverage:
     jobs:
       - report_coverage
