@@ -242,7 +242,6 @@ jobs:
       - checkout
       - setup
       - publish_gem
-
 workflows:
   publish:
     jobs:
@@ -256,6 +255,7 @@ workflows:
     jobs:
       - lint
       - test_core:
+          name: "test_core-ruby-<<matrix.stack>>-<<matrix.ruby_version>>"
           matrix:
             parameters:
               stack:
@@ -268,6 +268,7 @@ workflows:
   libraries_ruby_31_32:
     jobs:
       - test_apprisal:
+          name: "test_apprisal-ruby-<<matrix.stack>>-<<matrix.ruby_version>>-<<matrix.gemfile>>"
           matrix:
             parameters:
               stack:
@@ -279,6 +280,7 @@ workflows:
   libraries_ruby_33_34:
     jobs:
       - test_apprisal:
+          name: "test_apprisal-ruby-<<matrix.stack>>-<<matrix.ruby_version>>-<<matrix.gemfile>>"
           matrix:
             parameters:
               stack:
@@ -297,10 +299,10 @@ workflows:
             exclude:
             - stack: base
               gemfile: "./gemfiles/grpc_10.gemfile"
-
   rails_ruby_31_34:
     jobs:
       - test_apprisal:
+          name: "test_apprisal-rails-ruby-<<matrix.stack>>-<<matrix.ruby_version>>-<<matrix.gemfile>>"
           matrix:
             parameters:
               stack:
@@ -315,11 +317,11 @@ workflows:
                 - "3.1"
                 - "3.2"
                 - "3.3"
-                - "3.4"
-              
+                - "3.4"             
   rails8_ruby_33_34:
     jobs:
       - test_apprisal:
+          name: "test_apprisal-rails-8-ruby-<<matrix.stack>>-<<matrix.ruby_version>>-<<matrix.gemfile>>"
           matrix:
             parameters:
               stack:
@@ -335,12 +337,12 @@ workflows:
   sequel:
       jobs:
       - test_apprisal:
+          name: "test_apprisal-rails-8-ruby-<<matrix.stack>>-<<matrix.ruby_version>>-<<matrix.gemfile>>"
           matrix:
             parameters:
               stack:
                 - base
                 - mysql2
-                - postgres
               gemfile:
                 - "./gemfiles/sequel_56.gemfile"
                 - "./gemfiles/sequel_57.gemfile"
