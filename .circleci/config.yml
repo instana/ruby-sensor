@@ -38,36 +38,36 @@ library_gemfile: &library_gemfile
 executors:
   ruby_33_lint:
     docker:
-      - image: cimg/ruby:3.3-node
+      - image: public.ecr.aws/docker/library/ruby:3.4
   base:
     parameters:
       ruby_version:
         type: string
         default: "3.1"
     docker:
-      - image: cimg/ruby:<<parameters.ruby_version>>
+      - image: public.ecr.aws/docker/library/ruby:<<parameters.ruby_version>>
         environment:
           MEMCACHED_HOST: '127.0.0.1:11211'
           REDIS_URL: 'redis://127.0.0.1:6379'
           DATABASE_URL: 'sqlite3::memory:'
-      - image: memcached
-      - image: redis
-      - image: amazon/dynamodb-local
-      - image: minio/minio:latest
+      - image: public.ecr.aws/docker/library/memcached
+      - image: public.ecr.aws/docker/library/redis
+      - image: public.ecr.aws/aws-dynamodb-local/aws-dynamodb-local
+      - image: public.ecr.aws/bitnami/minio:latest
         command: ["server", "/data"]
-      - image: s12v/sns
-      - image: softwaremill/elasticmq-native
-      - image: mongo:5-focal
+      - image: public.ecr.aws/redbox-public/s12v/sns:latest
+      - image: public.ecr.aws/redbox-public/softwaremill/elasticmq-native
+      - image: public.ecr.aws/docker/library/mongo:5-focal
   mysql2:
     parameters:
       ruby_version:
         type: string
         default: "3.1"
     docker:
-      - image: cimg/ruby:<<parameters.ruby_version>>
+      - image: public.ecr.aws/docker/library/ruby:<<parameters.ruby_version>>
         environment:
           DATABASE_URL: "mysql2://root@127.0.0.1:3306/ci_test"
-      - image: mariadb
+      - image: public.ecr.aws/docker/library/mariadb
         environment:
           MYSQL_DATABASE: 'ci_test'
           MYSQL_USER: 'root'
@@ -81,10 +81,10 @@ executors:
         type: string
         default: "3.1"
     docker:
-      - image: cimg/ruby:<<parameters.ruby_version>>
+      - image: public.ecr.aws/docker/library/ruby:<<parameters.ruby_version>>
         environment:
           DATABASE_URL: "postgres://postgres:test@127.0.0.1:5432/ci_test"
-      - image: postgres
+      - image: public.ecr.aws/docker/library/postgres
         environment:
           POSTGRES_PASSWORD: 'test'
           POSTGRES_DB: 'ci_test'
