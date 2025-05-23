@@ -53,7 +53,7 @@ executors:
       - image: public.ecr.aws/docker/library/memcached
       - image: public.ecr.aws/docker/library/redis
       - image: public.ecr.aws/aws-dynamodb-local/aws-dynamodb-local
-      - image: public.ecr.aws/bitnami/minio:latest
+      - image: quay.io/minio/minio
         command: ["server", "/data"]
       - image: public.ecr.aws/redbox-public/s12v/sns:latest
       - image: public.ecr.aws/redbox-public/softwaremill/elasticmq-native
