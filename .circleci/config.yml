@@ -56,7 +56,7 @@ executors:
       - image: quay.io/minio/minio
         command: ["server", "/data"]
       - image: public.ecr.aws/redbox-public/s12v/sns:latest
-      - image: public.ecr.aws/redbox-public/softwaremill/elasticmq-native
+      - image: public.ecr.aws/sprig/elasticmq-native
       - image: public.ecr.aws/docker/library/mongo:5-focal
   mysql2:
     parameters:
