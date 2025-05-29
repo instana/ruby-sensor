@@ -6,26 +6,22 @@ spec:
   params:
   - name: revision
     type: string
-  - name: ruby_30_image_digest
-    type: string
-    # 3.0.7-bullseye
-    default: "ruby@sha256:dcb8a8a6ee981f949da505cb9f4f15cde696e7bcb088955bc1f92f23a4cd7a72"
   - name: ruby_31_image_digest
     type: string
-    # 3.1.4-bookworm
-    default: "ruby@sha256:ec69284bcbceb0a23ffc070ef2e0e8eb0fe495c20efbd51846b103338c3da1e4"
+    # ruby-3.1
+    default: "public.ecr.aws/docker/library/ruby:3.1"
   - name: ruby_32_image_digest
     type: string
-    # 3.2.3-bookworm
-    default: "ruby@sha256:007d2edd515f9cfc8c5c571486aca4fc4a25c903d004decee302961bb8c636ed"
+    # ruby-3.2
+    default: "public.ecr.aws/docker/library/ruby:3.2"
   - name: ruby_33_image_digest
     type: string
-    # 3.3.1-bookworm
-    default: "ruby@sha256:5cf0004738f54bd67e4c4316394208ca38a6726eda7a1b0586d95601aad86e5d"
+    # ruby-3.3
+    default: "public.ecr.aws/docker/library/ruby:3.3"
   - name: ruby_34_image_digest
     type: string
-    # 3.4.0-preview1-bookworm
-    default: "ruby@sha256:ac4f8074376743a56db23139238bd642a6249a25d4aaa250ca7e93332d11681c"
+    # ruby-3.4
+    default: "public.ecr.aws/docker/library/ruby:3.4"
   workspaces:
     - name: ruby-tracer-ci-pipeline-pvc
   tasks:
@@ -64,7 +60,6 @@ spec:
         params:
           - name: imageDigest
             value:
-            - $(params.ruby_30_image_digest)
             - $(params.ruby_31_image_digest)
             - $(params.ruby_32_image_digest)
             - $(params.ruby_33_image_digest)
@@ -80,47 +75,10 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: ruby-tracer-ci-pipeline-pvc
-    - name: unittest-default-ruby-30
+    - name: unittest-default-ruby-31
       runAfter:
         - lint
         - core
-      matrix:
-        params:
-          - name: imageDigest
-            value:
-            - $(params.ruby_30_image_digest)
-          - name: gemfile
-            value:
-            - "./gemfiles/cuba_30.gemfile"
-            - "./gemfiles/cuba_40.gemfile"
-            - "./gemfiles/excon_079.gemfile"
-            - "./gemfiles/excon_0100.gemfile"
-            - "./gemfiles/excon_100.gemfile"
-            - "./gemfiles/graphql_10.gemfile"
-            - "./gemfiles/graphql_20.gemfile"
-            - "./gemfiles/grpc_10.gemfile"
-            - "./gemfiles/net_http_01.gemfile"
-            - "./gemfiles/rack_20.gemfile"
-            - "./gemfiles/rack_30.gemfile"
-            - "./gemfiles/rest_client_20.gemfile"
-            - "./gemfiles/roda_20.gemfile"
-            - "./gemfiles/roda_30.gemfile"
-            - "./gemfiles/sinatra_22.gemfile"
-            - "./gemfiles/sinatra_30.gemfile"
-            - "./gemfiles/sinatra_40.gemfile"
-            - "./gemfiles/shoryuken_50.gemfile"
-            - "./gemfiles/shoryuken_60.gemfile"
-          - name: configuration
-            value:
-            - "libraries"
-      taskRef:
-        name: ruby-tracer-unittest-default-libraries-task
-      workspaces:
-        - name: task-pvc
-          workspace: ruby-tracer-ci-pipeline-pvc
-    - name: unittest-default-ruby-31
-      runAfter:
-        - unittest-default-ruby-30
       matrix:
         params:
           - name: imageDigest
@@ -273,7 +231,6 @@ spec:
         params:
           - name: imageDigest
             value:
-            - $(params.ruby_30_image_digest)
             - $(params.ruby_31_image_digest)
             - $(params.ruby_32_image_digest)
             - $(params.ruby_33_image_digest)
@@ -294,7 +251,6 @@ spec:
         params:
           - name: imageDigest
             value:
-            - $(params.ruby_30_image_digest)
             - $(params.ruby_31_image_digest)
             - $(params.ruby_32_image_digest)
             - $(params.ruby_33_image_digest)
@@ -316,7 +272,6 @@ spec:
         params:
           - name: imageDigest
             value:
-            - $(params.ruby_30_image_digest)
             - $(params.ruby_31_image_digest)
             - $(params.ruby_32_image_digest)
             - $(params.ruby_33_image_digest)
@@ -330,14 +285,13 @@ spec:
       workspaces:
         - name: task-pvc
           workspace: ruby-tracer-ci-pipeline-pvc
-    - name: unittest-redis-ruby-30-31
+    - name: unittest-redis-ruby-31
       runAfter:
         - unittest-aws
       matrix:
         params:
           - name: imageDigest
             value:
-            - $(params.ruby_30_image_digest)
             - $(params.ruby_31_image_digest)
           - name: gemfile
             value:
@@ -358,7 +312,7 @@ spec:
           workspace: ruby-tracer-ci-pipeline-pvc
     - name: unittest-redis-ruby-32-33
       runAfter:
-        - unittest-redis-ruby-30-31
+        - unittest-redis-ruby-31
       matrix:
         params:
           - name: imageDigest
@@ -414,7 +368,6 @@ spec:
         params:
           - name: imageDigest
             value:
-            - $(params.ruby_30_image_digest)
             - $(params.ruby_31_image_digest)
             - $(params.ruby_32_image_digest)
             - $(params.ruby_33_image_digest)
@@ -436,7 +389,6 @@ spec:
         params:
           - name: imageDigest
             value:
-            - $(params.ruby_30_image_digest)
             - $(params.ruby_31_image_digest)
             - $(params.ruby_32_image_digest)
             - $(params.ruby_33_image_digest)
@@ -458,7 +410,6 @@ spec:
         params:
           - name: imageDigest
             value:
-            - $(params.ruby_30_image_digest)
             - $(params.ruby_31_image_digest)
             - $(params.ruby_32_image_digest)
             - $(params.ruby_33_image_digest)
@@ -480,7 +431,6 @@ spec:
         params:
           - name: imageDigest
             value:
-            - $(params.ruby_30_image_digest)
             - $(params.ruby_31_image_digest)
             - $(params.ruby_32_image_digest)
             - $(params.ruby_33_image_digest)
@@ -502,7 +452,6 @@ spec:
         params:
           - name: imageDigest
             value:
-            - $(params.ruby_30_image_digest)
             - $(params.ruby_31_image_digest)
             - $(params.ruby_32_image_digest)
             - $(params.ruby_33_image_digest)

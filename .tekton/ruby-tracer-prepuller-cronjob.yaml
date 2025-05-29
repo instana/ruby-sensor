@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: deploy-daemonset
+spec:
+  schedule: "0 0 * * Mon-Fri"  # Run every weekday at 12AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: prepuller-restart
+          containers:
+            - name: kubectl
+              image: bitnami/kubectl
+              command:
+                - 'kubectl'
+                - 'rollout'
+                - 'restart'
+                - 'daemonset/ruby-tracer-prepuller'
+          restartPolicy: OnFailure
