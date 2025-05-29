@@ -265,10 +265,11 @@ workflows:
                 - "3.2"
                 - "3.3"
                 - "3.4"
+                - "3.5"
   libraries_ruby_31_32:
     jobs:
       - test_apprisal:
-          name: "test_apprisal-ruby-<<matrix.stack>>-<<matrix.ruby_version>>-<<matrix.gemfile>>"
+          name: "test_apprisal-<<matrix.gemfile>>-ruby-<<matrix.stack>>-<<matrix.ruby_version>>"
           matrix:
             parameters:
               stack:
@@ -277,10 +278,10 @@ workflows:
               ruby_version:
                 - "3.1"
                 - "3.2"
-  libraries_ruby_33_34:
+  libraries_ruby_33_35:
     jobs:
       - test_apprisal:
-          name: "test_apprisal-ruby-<<matrix.stack>>-<<matrix.ruby_version>>-<<matrix.gemfile>>"
+          name: "test_apprisal-<<matrix.gemfile>>-ruby-<<matrix.stack>>-<<matrix.ruby_version>>"
           matrix:
             parameters:
               stack:
@@ -289,6 +290,7 @@ workflows:
               ruby_version:
                 - "3.3"
                 - "3.4"
+                - "3.5"
             # Currently compiling the native extensions for `grpc`
             # exceeds an internal RAM and/or CPU limit of CircleCI executor,
             # and the job gets terminated with:
@@ -299,10 +301,10 @@ workflows:
             exclude:
             - stack: base
               gemfile: "./gemfiles/grpc_10.gemfile"
-  rails_ruby_31_34:
+  rails_ruby_31_35:
     jobs:
       - test_apprisal:
-          name: "test_apprisal-rails-ruby-<<matrix.stack>>-<<matrix.ruby_version>>-<<matrix.gemfile>>"
+          name: "test_apprisal-rails-<<matrix.gemfile>>-ruby-<<matrix.stack>>-<<matrix.ruby_version>>"
           matrix:
             parameters:
               stack:
@@ -317,11 +319,12 @@ workflows:
                 - "3.1"
                 - "3.2"
                 - "3.3"
-                - "3.4"             
-  rails8_ruby_33_34:
+                - "3.4"
+                - "3.5"             
+  rails8_ruby_33_35:
     jobs:
       - test_apprisal:
-          name: "test_apprisal-rails-8-ruby-<<matrix.stack>>-<<matrix.ruby_version>>-<<matrix.gemfile>>"
+          name: "test_apprisal-rails-8-<<matrix.gemfile>>-ruby-<<matrix.stack>>-<<matrix.ruby_version>>"
           matrix:
             parameters:
               stack:
@@ -337,7 +340,7 @@ workflows:
   sequel:
       jobs:
       - test_apprisal:
-          name: "test_apprisal-rails-8-ruby-<<matrix.stack>>-<<matrix.ruby_version>>-<<matrix.gemfile>>"
+          name: "test_apprisal-sequel-<<matrix.gemfile>>-ruby-<<matrix.stack>>-<<matrix.ruby_version>>"
           matrix:
             parameters:
               stack:
@@ -351,7 +354,7 @@ workflows:
                 - "3.1"
                 - "3.2"
                 - "3.3"
-                - "3.4"
+                - "3.5"
   report_coverage:
     jobs:
       - report_coverage
