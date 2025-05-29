@@ -39,8 +39,10 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "minitest", "~> 5.20"
   spec.add_development_dependency "appraisal"
   spec.add_development_dependency "fakefs"
+  spec.add_development_dependency "irb"
 
   spec.add_runtime_dependency('base64', '>= 0.1')
+  spec.add_runtime_dependency('logger')
   spec.add_runtime_dependency('concurrent-ruby', '>= 1.1')
   spec.add_runtime_dependency('csv', '>= 0.1')
   spec.add_runtime_dependency('sys-proctable', '>= 1.2.2')
