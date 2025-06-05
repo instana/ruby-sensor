@@ -299,7 +299,7 @@ workflows:
             # TODO: Remove this exclusion as soon as pre-built binaries are available
             # on https://rubygems.org/gems/grpc/versions
             exclude:
-            - stack: base
+            - ruby_version: "3.5.0-preview1"
               gemfile: "./gemfiles/grpc_10.gemfile"
   rails_ruby_31_35:
     jobs:
