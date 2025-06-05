@@ -429,7 +429,9 @@ spec:
               key: "GH_ENTERPRISE_TOKEN"
       script: |
         #!/bin/sh
-
+        echo "Installing git"
+        apk fix && apk --no-cache --update add git gpg less openssh patch
+        
         cd /workspace        
         git clone https://oauth2:$GH_ENTERPRISE_TOKEN@github.ibm.com/instana/tracer-reports.git
 
