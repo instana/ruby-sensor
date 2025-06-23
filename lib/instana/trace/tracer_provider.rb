@@ -145,8 +145,8 @@ module Instana
           span_id = parent_span_id || @id_generator.generate_span_id
           return OpenTelemetry::Trace.non_recording_span(OpenTelemetry::Trace::SpanContext.new(trace_id: trace_id, span_id: span_id))
         end
-
-        result = @sampler.should_sample?(trace_id: trace_id, parent_context: parent_context, links: links, name: name, kind: kind, attributes: attributes)
+        # Todo add dummy samplers to always turn off sampling, also enable the user to send cutom samplers
+        # result = @sampler.should_sample?(trace_id: trace_id, parent_context: parent_context, links: links, name: name, kind: kind, attributes: attributes)
         span_id = @id_generator.generate_span_id
         if !@stopped && result.recording? && !@stopped
           trace_flags = result.sampled? ? OpenTelemetry::Trace::TraceFlags::SAMPLED : OpenTelemetry::Trace::TraceFlags::DEFAULT

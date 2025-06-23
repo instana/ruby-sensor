@@ -51,6 +51,7 @@ module Instana
           incoming_context = if job.arguments.is_a?(Array) && job.arguments.last.is_a?(Hash) && job.arguments.last.key?(:instana_context)
                                instana_context = job.arguments.last[:instana_context]
                                job.arguments.pop
+                               instana_context ? ::Instana::SpanContext.new(trace_id: instana_context[:trace_id], span_id: instana_context[:span_id]) : nil
                              end
           OpenTelemetry::Context.with_current(instana_context ? OpenTelemetry::Trace::Propagation::TraceContext.text_map_propagator.extract(instana_context) : OpenTelemetry::Context.current) do
             ::Instana.tracer.in_span(:activejob, attributes: tags) do
