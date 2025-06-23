@@ -1,8 +1,9 @@
 # (c) Copyright IBM Corp. 2025
 
 require 'opentelemetry/trace/tracer_provider'
-require 'instana/samplers'
+require 'instana/samplers/samplers'
 require 'instana/trace/span_limits'
+require 'instana/trace/export'
 
 module Instana
   module Trace
@@ -129,11 +130,11 @@ module Instana
         end
       end
 
-      # @api private
+      # This method serves as the primary entry point for span creation. It initializes
+      # an Instana span, handles context, and manages sampling before returning the created span.
       def internal_start_span(name, kind, attributes, links, start_timestamp, parent_context, instrumentation_scope) # rubocop:disable Metrics/ParameterLists
-        parent_span = Instana.tracer.current_span
+        parent_span = OpenTelemetry::Trace.current_span(parent_context)
         parent_span_context = parent_span.context if parent_span
-
         if parent_span_context&.valid?
           parent_span_id = parent_span_context.span_id
           trace_id = parent_span_context.trace_id
@@ -147,27 +148,27 @@ module Instana
         # Todo add dummy samplers to always turn off sampling, also enable the user to send cutom samplers
         # result = @sampler.should_sample?(trace_id: trace_id, parent_context: parent_context, links: links, name: name, kind: kind, attributes: attributes)
         span_id = @id_generator.generate_span_id
-        if !@stopped # && result.recording? &&
-          trace_flags = OpenTelemetry::Trace::TraceFlags::SAMPLED # Todo Add InstanaTraceFlags module
-          Instana::SpanContext.new(trace_id: trace_id, span_id: span_id) # trace_flags: trace_flags#, tracestate: result.tracestate)
-                    # attributes = attributes&.merge(result.attributes) || result.attributes.dup
-                    Instana::Span.new(
-                      name,
-                      parent_context,
-                      context,
-                      parent_span,
-                      kind,
-                      parent_span_id,
-                      @span_limits,
-                      @span_processors,
-                      attributes,
-                      links,
-                      start_timestamp,
-                      @resource,
-                      instrumentation_scope
-                    )
+        if !@stopped && result.recording? && !@stopped
+          trace_flags = result.sampled? ? OpenTelemetry::Trace::TraceFlags::SAMPLED : OpenTelemetry::Trace::TraceFlags::DEFAULT
+          context = Instana::SpanContext.new(trace_id: trace_id, span_id: span_id, trace_flags: trace_flags, tracestate: result.tracestate)
+          attributes = attributes&.merge(result.attributes) || result.attributes.dup
+          Instana::Span.new(
+            name,
+            parent_context,
+            context,
+            parent_span,
+            kind,
+            parent_span_id,
+            @span_limits,
+            @span_processors,
+            attributes,
+            links,
+            start_timestamp,
+            @resource,
+            instrumentation_scope
+          )
         else
-          Instana::Trace.non_recording_span(OpenTelemetry::Trace::SpanContext.new(trace_id: trace_id, span_id: span_id, tracestate: result.tracestate))
+          Instana::Trace.non_recording_span(Instana::Trace::SpanContext.new(trace_id: trace_id, span_id: span_id, tracestate: result.tracestate)) # Todo add tracestate so that the trcing doesnot happen for this span # rubocop:disable Layout/LineLength
         end
       end
 
