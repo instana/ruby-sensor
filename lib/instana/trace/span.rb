@@ -9,9 +9,9 @@ module Instana
 
     attr_accessor :parent, :baggage, :is_root, :context
 
-    def initialize(name, parent_ctx = nil, _context = nil, _parent_span = nil, _kind = nil, _parent_span_id = nil, _span_limits = nil, _span_processors = nil, _attributes = nil, _links = nil, start_timestamp = ::Instana::Util.now_in_ms, _resource = nil, _instrumentation_scope = nil) # rubocop:disable Lint/MissingSuper
+    def initialize(name, parent_ctx = nil, _context = nil, _parent_span = nil, _kind = nil, parent_span_id = nil, _span_limits = nil, _span_processors = nil, attributes = nil, _links = nil, start_timestamp = ::Instana::Util.now_in_ms, _resource = nil, _instrumentation_scope = nil) # rubocop:disable Lint/MissingSuper, Metrics/ParameterLists
       @attributes = {}
-      start_timestamp = ::Instana::Util.now_in_ms # Todo figure out a way to restructure arguments to pass proper timestamp and re-arrange the arguments
+
       @ended = false
       if parent_ctx.is_a?(::Instana::Span)
         @parent = parent_ctx
@@ -23,8 +23,8 @@ module Instana
 
         # If we have a parent trace, link to it
         if parent_ctx.trace_id
-          @attributes[:t] = parent_ctx.trace_id       # Trace ID
-          @attributes[:p] = parent_ctx.span_id        # Parent ID
+          @attributes[:t] = parent_ctx.trace_id # Trace ID
+          @attributes[:p] = parent_span_id || parent_ctx.span_id # Parent ID
         else
           @attributes[:t] = ::Instana::Trace.generate_trace_id
         end
@@ -64,7 +64,7 @@ module Instana
       else
         configure_custom(name)
       end
-
+      set_tags(attributes)
       ::Instana.processor.on_start(self)
       # super(span_context: context) #Todo check if there is need of parent class methods else this line can be removed
       # Attach a backtrace to all exit spans
@@ -353,6 +353,7 @@ module Instana
     #
     # @param key [String] the key of the baggage item
     # @param value [String] the value of the baggage item
+    # Todo Evalute if baggage is used anywhere in instana
     def set_baggage_item(key, value)
       @baggage ||= {}
       @baggage[key] = value
@@ -416,6 +417,11 @@ module Instana
       self
     end
 
+    # Return the flag whether this span is recording events
+    #
+    # @return [Boolean] true if this Span is active and recording information
+    #   like events with the #add_event operation and attributes using
+    #   #set_attribute.
     def recording?
       !@ended
     end
@@ -478,6 +484,7 @@ module Instana
     # @param [OpenTelemetry::Trace::Link] the link object to add on the {Span}.
     #
     # @return [self] returns itself
+    # Todo add link logic later
     def add_link(_link)
       self
     end
@@ -501,6 +508,7 @@ module Instana
     # @param [optional Time] timestamp Optional timestamp for the event.
     #
     # @return [self] returns itself
+    # Todo Add the vent logic later
     def add_event(_name, attributes: nil, timestamp: nil) # rubocop:disable Lint/UnusedMethodArgument
       self
     end
