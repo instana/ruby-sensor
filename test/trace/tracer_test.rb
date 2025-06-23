@@ -78,7 +78,7 @@ class TracerTest < Minitest::Test
     exception_raised = false
     begin
       ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do
-        raise Exception.new('Error in block - this should continue to propogate outside of tracing')
+        raise StandardError, 'Error in block - this should continue to propogate outside of tracing'
       end
     rescue Exception
       exception_raised = true
@@ -92,7 +92,7 @@ class TracerTest < Minitest::Test
     first_span = spans.first
     assert_equal :rack, first_span[:n]
     assert first_span[:ts].is_a?(Integer)
-    assert first_span[:ts] > 0
+    assert (first_span[:ts]).positive?
     assert first_span[:d].is_a?(Integer)
     assert first_span[:d].between?(0, 5)
     assert first_span.key?(:data)
@@ -229,7 +229,7 @@ class TracerTest < Minitest::Test
     begin
       ::Instana.tracer.start_or_continue_trace(:test_trace, {:one => 1}) do
         ::Instana.tracer.trace(:test_trace_two) do
-          raise Exception.new("Block exception test error")
+          raise StandardError, "Block exception test error"
         end
       end
     rescue Exception

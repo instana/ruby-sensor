@@ -23,7 +23,7 @@ class CustomTracingTest < Minitest::Test
     assert_equal :sdk, first_span[:n]
 
     assert first_span[:ts].is_a?(Integer)
-    assert first_span[:ts] > 0
+    assert (first_span[:ts]).positive?
     assert first_span[:d].is_a?(Integer)
     assert first_span[:d].between?(0, 5)
 
@@ -50,7 +50,7 @@ class CustomTracingTest < Minitest::Test
 
     kvs = {}
     kvs[:on_entry_kv] = 1
-    kvs[:arguments] = [[1,2,3], "test_arg", :ok]
+    kvs[:arguments] = [[1, 2, 3], "test_arg", :ok]
     kvs[:return] = true
 
     # Start tracing
@@ -116,7 +116,7 @@ class CustomTracingTest < Minitest::Test
 
     kvs = {}
     kvs[:on_entry_kv] = 1
-    kvs[:arguments] = [[1,2,3], "test_arg", :ok]
+    kvs[:arguments] = [[1, 2, 3], "test_arg", :ok]
     kvs[:return] = true
 
     ::Instana.tracer.log_entry(:custom_span, kvs)
@@ -134,7 +134,7 @@ class CustomTracingTest < Minitest::Test
     second_span = find_first_span_by_name(spans, :custom_span)
 
     assert first_span[:ts].is_a?(Integer)
-    assert first_span[:ts] > 0
+    assert (first_span[:ts]).positive?
     assert first_span[:d].is_a?(Integer)
     assert first_span[:d].between?(0, 5)
 
@@ -170,7 +170,7 @@ class CustomTracingTest < Minitest::Test
     begin
       kvs = {}
       kvs[:on_entry_kv] = 1
-      kvs[:arguments] = [[1,2,3], "test_arg", :ok]
+      kvs[:arguments] = [[1, 2, 3], "test_arg", :ok]
       kvs[:return] = true
 
       ::Instana.tracer.log_entry(:custom_span, kvs)
@@ -190,7 +190,7 @@ class CustomTracingTest < Minitest::Test
     second_span = find_first_span_by_name(spans, :custom_span)
 
     assert first_span[:ts].is_a?(Integer)
-    assert first_span[:ts] > 0
+    assert (first_span[:ts]).positive?
     assert first_span[:d].is_a?(Integer)
     assert first_span[:d].between?(0, 5)
 
@@ -202,7 +202,7 @@ class CustomTracingTest < Minitest::Test
     assert_equal 1, first_span[:data][:on_trace_end]
 
     assert second_span[:ts].is_a?(Integer)
-    assert second_span[:ts] > 0
+    assert (second_span[:ts]).positive?
     assert second_span[:d].is_a?(Integer)
     assert second_span[:d].between?(0, 5)
 

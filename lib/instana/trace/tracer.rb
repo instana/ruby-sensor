@@ -307,12 +307,12 @@ module Instana
       self.current_span = nil
     end
 
-    def start_span(name, with_parent: nil, attributes: nil, links: nil, start_timestamp: nil, kind: nil)
+    def start_span(name, with_parent: nil, attributes: nil, links: nil, start_timestamp: ::Instana::Util.now_in_ms, kind: nil) # rubocop:disable Metrics/ParameterLists
       with_parent ||= OpenTelemetry::Context.current
       name ||= 'empty'
       kind ||= :internal
-
-      @tracer_provider.internal_start_span(name, kind, attributes, links, start_timestamp, with_parent, @instrumentation_scope)
+      start_timestamp ||= ::Instana::Util.now_in_ms
+      self.current_span = @tracer_provider.internal_start_span(name, kind, attributes, links, start_timestamp, with_parent, @instrumentation_scope)
     end
   end
 end

@@ -1,5 +1,5 @@
 # (c) Copyright IBM Corp. 2025
-
+require 'instana/samplers/result'
 module Instana
   module Trace
     # The Samplers module contains the sampling logic for OpenTelemetry. The
@@ -64,6 +64,12 @@ module Instana
       # @raise [ArgumentError] if ratio is out of range
       def self.trace_id_ratio_based(_)
         self
+      end
+
+      def self.should_sample?(trace_id:, parent_context:, links:, name:, kind:, attributes:) # rubocop:disable Metrics/ParameterLists, Lint/UnusedMethodArgument:
+        parent_span_context = OpenTelemetry::Trace.current_span(parent_context).context
+        tracestate = parent_span_context&.tracestate
+        Result.new(decision: :__record_only__, tracestate: tracestate)
       end
     end
   end

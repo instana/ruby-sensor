@@ -16,8 +16,8 @@ module Instana
     def initialize(
       trace_id: Trace.generate_trace_id,
       span_id: Trace.generate_span_id,
-      trace_flags: nil, # Todo - implement traceflags
-      tracestate: nil,  # Todo - implement tracestates
+      trace_flags: OpenTelemetry::Trace::TraceFlags::DEFAULT, # Todo - implement traceflags
+      tracestate: OpenTelemetry::Trace::Tracestate::DEFAULT,  # Todo - implement tracestates
       remote: false,
       level: 1,
       baggage: {}
@@ -64,7 +64,7 @@ module Instana
     end
 
     def valid?
-      @baggage && @trace_id && !@trace_id.emtpy?
+      @baggage && @trace_id && !@trace_id.empty?
     end
 
     def active?
