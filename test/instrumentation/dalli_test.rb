@@ -25,7 +25,7 @@ class DalliTest < Minitest::Test
     @dc.set(:instana, :boom)
 
     result = nil
-    ::Instana.tracer.start_or_continue_trace(:dalli_test) do
+    ::Instana.tracer.in_span(:dalli_test) do
       result = @dc.get(:instana)
     end
 
@@ -87,7 +87,7 @@ class DalliTest < Minitest::Test
     clear_all!
 
     result = nil
-    ::Instana.tracer.start_or_continue_trace(:dalli_test) do
+    ::Instana.tracer.in_span(:dalli_test) do
       result = @dc.set(:instana, :rocks)
     end
 
@@ -121,7 +121,7 @@ class DalliTest < Minitest::Test
 
     @dc.set(:instana, :rocks)
     result = nil
-    ::Instana.tracer.start_or_continue_trace(:dalli_test) do
+    ::Instana.tracer.in_span(:dalli_test) do
       result = @dc.replace(:instana, :rocks)
     end
 
@@ -155,7 +155,7 @@ class DalliTest < Minitest::Test
 
     @dc.set(:instana, :rocks)
     result = nil
-    ::Instana.tracer.start_or_continue_trace(:dalli_test) do
+    ::Instana.tracer.in_span(:dalli_test) do
       result = @dc.delete(:instana)
     end
 
@@ -189,7 +189,7 @@ class DalliTest < Minitest::Test
 
     result = nil
     @dc.set(:counter, 0, nil, :raw => true)
-    ::Instana.tracer.start_or_continue_trace(:dalli_test) do
+    ::Instana.tracer.in_span(:dalli_test) do
       result = @dc.incr(:counter, 1, nil, 0)
     end
 
@@ -223,7 +223,7 @@ class DalliTest < Minitest::Test
 
     result = nil
     @dc.set(:counter, 0, nil, :raw => true)
-    ::Instana.tracer.start_or_continue_trace(:dalli_test) do
+    ::Instana.tracer.in_span(:dalli_test) do
       result = @dc.decr(:counter, 1, nil, 0)
     end
 
@@ -258,7 +258,7 @@ class DalliTest < Minitest::Test
     @dc.set(:one, 1)
     @dc.set(:three, 3)
 
-    ::Instana.tracer.start_or_continue_trace(:dalli_test) do
+    ::Instana.tracer.in_span(:dalli_test) do
       @dc.get_multi(:one, :two, :three, :four)
     end
 
@@ -295,7 +295,7 @@ class DalliTest < Minitest::Test
 
     result = nil
     begin
-      ::Instana.tracer.start_or_continue_trace(:dalli_test) do
+      ::Instana.tracer.in_span(:dalli_test) do
         result = broken_dc.get(:instana)
       end
     rescue
