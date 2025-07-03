@@ -111,10 +111,5 @@ module Instana
         ::Instana.tracer.current_span = nil
       end
     end
-    private
-
-    def with_incoming_context
-
-    end
   end
 end
