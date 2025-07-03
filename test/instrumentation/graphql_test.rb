@@ -122,7 +122,7 @@ class GraphqlTest < Minitest::Test
       }
     }
 
-    results = Instana.tracer.start_or_continue_trace('graphql-test') { Schema.execute(query) }
+    results = Instana.tracer.in_span('graphql-test') { Schema.execute(query) }
     query_span, root_span = *Instana.processor.queued_spans
 
     assert_equal expected_results, results.to_h
@@ -200,7 +200,7 @@ class GraphqlTest < Minitest::Test
       }
     }
 
-    results = Instana.tracer.start_or_continue_trace('graphql-test') { Schema.execute(query) }
+    results = Instana.tracer.in_span('graphql-test') { Schema.execute(query) }
     query_span, root_span = *Instana.processor.queued_spans
 
     assert_equal expected_results, results.to_h
@@ -244,7 +244,7 @@ class GraphqlTest < Minitest::Test
       }
     }
 
-    results = Instana.tracer.start_or_continue_trace('graphql-test') { Schema.execute(query) }
+    results = Instana.tracer.in_span('graphql-test') { Schema.execute(query) }
     query_span, root_span = *Instana.processor.queued_spans
 
     assert_equal expected_results, results.to_h
@@ -278,7 +278,7 @@ class GraphqlTest < Minitest::Test
       }
     }
 
-    results = Instana.tracer.start_or_continue_trace('graphql-test') { Schema.execute(query) }
+    results = Instana.tracer.in_span('graphql-test') { Schema.execute(query) }
     query_span, root_span = *Instana.processor.queued_spans
 
     assert_equal expected_results, results.to_h

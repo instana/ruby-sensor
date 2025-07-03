@@ -30,10 +30,10 @@ module Instana
           }
 
           ::Instana.tracer.in_span(:activejob, attributes: tags) do
-            instana_context = {}
-            OpenTelemetry::Trace::Propagation::TraceContext.text_map_propagator.inject(instana_context)
             context = ::Instana.tracer.context
-            job.arguments.append(instana_context: instana_context)
+            job.arguments.append({
+                                   instana_context: context ? context.to_hash : nil
+                                 })
 
             block.call
           end
@@ -53,7 +53,7 @@ module Instana
                                job.arguments.pop
                                instana_context ? ::Instana::SpanContext.new(trace_id: instana_context[:trace_id], span_id: instana_context[:span_id]) : nil
                              end
-          OpenTelemetry::Context.with_current(instana_context ? OpenTelemetry::Trace::Propagation::TraceContext.text_map_propagator.extract(instana_context) : OpenTelemetry::Context.current) do
+          Trace.with_span(OpenTelemetry::Trace.non_recording_span(incoming_context)) do
             ::Instana.tracer.in_span(:activejob, attributes: tags) do
               block.call
             end

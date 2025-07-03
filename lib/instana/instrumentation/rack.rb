@@ -16,7 +16,28 @@ module Instana
         http: req.request_tags
       }.reject { |_, v| v.nil? }
 
-      current_span = ::Instana.tracer.log_start_or_continue(:rack, {}, req.incoming_context)
+      incoming_context = req.incoming_context
+      if incoming_context
+        if incoming_context.is_a?(Hash)
+          unless incoming_context.empty?
+            parent_context = SpanContext.new(
+              trace_id: incoming_context[:trace_id],
+              span_id: incoming_context[:span_id],
+              level: incoming_context[:level],
+              baggage: {
+                external_trace_id: incoming_context[:external_trace_id],
+                external_state: incoming_context[:external_state]
+              }
+            )
+          end
+        else
+          parent_context = incoming_context
+        end
+      end
+
+      span = OpenTelemetry::Trace.non_recording_span(parent_context) if parent_context
+      parent_context = Trace.context_with_span(span) if parent_context
+      current_span = ::Instana.tracer.start_span(:rack, attributes: {}, with_parent: parent_context)
 
       status, headers, response = @app.call(env)
 
@@ -66,7 +87,7 @@ module Instana
 
       [status, headers, response]
     rescue Exception => e
-      ::Instana.tracer.log_error(e) if ::Instana.tracer.tracing?
+      current_span.record_exception(e) if ::Instana.tracer.tracing?
       raise
     ensure
       if ::Instana.tracer.tracing?
@@ -85,9 +106,15 @@ module Instana
           headers['Traceparent'] = trace_context.trace_parent_header
           headers['Server-Timing'] = "intid;desc=#{trace_context.trace_id_header}"
         end
-
-        ::Instana.tracer.log_end(:rack, kvs)
+        current_span.set_tags(kvs)
+        current_span.close(::Instana::Util.now_in_ms)
+        ::Instana.tracer.current_span = nil
       end
+    end
+    private
+
+    def with_incoming_context
+
     end
   end
 end

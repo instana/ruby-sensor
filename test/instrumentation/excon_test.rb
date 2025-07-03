@@ -26,7 +26,7 @@ class ExconTest < Minitest::Test
     url = "http://127.0.0.1:6511"
 
     connection = Excon.new(url)
-    Instana.tracer.start_or_continue_trace(:'excon-test') do
+    Instana.tracer.in_span(:'excon-test') do
       connection.get(:path => '/?basic_get')
     end
 
@@ -104,7 +104,7 @@ class ExconTest < Minitest::Test
 
     begin
       connection = Excon.new(url)
-      Instana.tracer.start_or_continue_trace('excon-test') do
+      Instana.tracer.in_span('excon-test') do
         connection.get(:path => '/error')
       end
     rescue
@@ -145,7 +145,7 @@ class ExconTest < Minitest::Test
 
     connection = Excon.new(url)
     request = { :method => :get, :path => '/?pipelined_request' }
-    Instana.tracer.start_or_continue_trace('excon-test') do
+    Instana.tracer.in_span('excon-test') do
       connection.requests([request, request, request])
     end
 

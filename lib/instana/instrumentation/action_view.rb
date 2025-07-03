@@ -13,7 +13,7 @@ module Instana
             }
           }
 
-          ::Instana::Tracer.trace(:render, call_payload) { super(*args) }
+          ::Instana.tracer.in_span(:render, attributes: call_payload) { super(*args) }
         end
 
         def render_collection(*args)
@@ -24,7 +24,7 @@ module Instana
             }
           }
 
-          ::Instana::Tracer.trace(:render, call_payload) { super(*args) }
+          ::Instana.tracer.in_span(:render, attributes: call_payload) { super(*args) }
         end
 
         def render_partial_template(*args)
@@ -35,7 +35,7 @@ module Instana
             }
           }
 
-          ::Instana::Tracer.trace(:render, call_payload) { super(*args) }
+          ::Instana.tracer.in_span(:render, attributes: call_payload) { super(*args) }
         end
       end
 
@@ -48,7 +48,7 @@ module Instana
             }
           }
 
-          ::Instana::Tracer.trace(:render, call_payload) { super(*args) }
+          ::Instana.tracer.in_span(:render, attributes: call_payload) { super(*args) }
         end
       end
     end

@@ -17,7 +17,7 @@ class AwsTest < Minitest::Test
     )
 
     assert_raises Aws::DynamoDB::Errors::ResourceNotFoundException do
-      Instana::Tracer.start_or_continue_trace(:dynamo_test, {}) do
+      Instana.tracer.in_span(:dynamo_test, attributes: {}) do
         dynamo.get_item(
           table_name: 'sample_table',
           key: { s: 'sample_item' }
@@ -45,7 +45,7 @@ class AwsTest < Minitest::Test
     )
 
     assert_raises Aws::S3::Errors::NoSuchBucket do
-      Instana::Tracer.start_or_continue_trace(:s3_test, {}) do
+      Instana.tracer.in_span(:s3_test, attributes: {}) do
         s3_client.get_object(
           bucket: 'sample-bucket',
           key: 'sample_key'
@@ -73,7 +73,7 @@ class AwsTest < Minitest::Test
     )
 
     assert_raises Aws::SNS::Errors::NotFound do
-      Instana::Tracer.start_or_continue_trace(:sns_test, {}) do
+      Instana.tracer.in_span(:sns_test, attributes: {}) do
         sns.publish(
           topic_arn: 'topic:arn',
           target_arn: 'target:arn',
@@ -104,7 +104,7 @@ class AwsTest < Minitest::Test
       endpoint: "http://localhost:9911"
     )
 
-    Instana::Tracer.start_or_continue_trace(:sns_test, {}) do
+    Instana.tracer.in_span(:sns_test, attributes: {}) do
       sns.list_subscriptions
     end
 
@@ -127,7 +127,7 @@ class AwsTest < Minitest::Test
     create_response = nil
     get_url_response = nil
 
-    Instana::Tracer.start_or_continue_trace(:sqs_test, {}) do
+    Instana.tracer.in_span(:sqs_test, attributes: {}) do
       create_response = sqs.create_queue(queue_name: 'test')
       get_url_response = sqs.get_queue_url(queue_name: 'test')
       sqs.send_message(queue_url: create_response.queue_url, message_body: 'Sample')
@@ -177,7 +177,7 @@ class AwsTest < Minitest::Test
       secret_access_key: "test"
     )
 
-    Instana::Tracer.start_or_continue_trace(:lambda_test, {}) do
+    Instana.tracer.in_span(:lambda_test, attributes: {}) do
       lambda.invoke(
         function_name: 'Test',
         invocation_type: 'Event',
@@ -216,7 +216,7 @@ class AwsTest < Minitest::Test
     )
 
     assert_raises(RuntimeError) do
-      Instana::Tracer.start_or_continue_trace(:lambda_test, {}) do
+      Instana.tracer.in_span(:lambda_test, attributes: {}) do
         lambda.invoke(
           function_name: 'Test',
           invocation_type: 'Event',

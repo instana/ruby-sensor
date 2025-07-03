@@ -15,7 +15,7 @@ module Instana
 
           span_tags = tags_for(context.operation_name, context.params).reject { |_, v| v.nil? }
 
-          ::Instana.tracer.trace(:sqs, {sqs: span_tags}) do |span|
+          ::Instana.tracer.in_span(:sqs, attributes: {sqs: span_tags}) do |span|
             case context.operation_name
             when :send_message
               inject_instana_headers(span, context.params)

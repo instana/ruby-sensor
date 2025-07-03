@@ -35,13 +35,13 @@ module Instana
         }
 
         begin
-          ::Instana.tracer.log_entry(:'graphql.server')
+          span = ::Instana.tracer.start_span(:'graphql.server', attributes: {graphql: payload})
           yield
         rescue Exception => e
-          ::Instana.tracer.log_error(e)
+          span.record_exception(e)
           raise e
         ensure
-          ::Instana.tracer.log_exit(:'graphql.server', {graphql: payload})
+          span.finish
         end
       end
 

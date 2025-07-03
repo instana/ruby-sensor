@@ -11,7 +11,7 @@ class InstrumentedLoggerTest < Minitest::Test
   def test_log_warn_error
     subject = Instana::InstrumentedLogger.new('/dev/null')
 
-    Instana::Tracer.start_or_continue_trace(:test_logging) do
+    Instana::Tracer.in_span(:test_logging) do
       subject.warn('warn')
       subject.debug('test')
       subject.error('error')
