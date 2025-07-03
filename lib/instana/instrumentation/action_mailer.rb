@@ -12,7 +12,7 @@ module Instana
               method: method_name.to_s
             }
           }
-          Instana::Tracer.trace(:'mail.actionmailer', tags) { super }
+          Instana.tracer.in_span(:'mail.actionmailer', attributes: tags) { super }
         else
           super
         end

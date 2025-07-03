@@ -12,7 +12,7 @@ module Instana
             key: key_from_context(context)
           }.reject { |_, v| v.nil? }
 
-          ::Instana.tracer.trace(:s3, {s3: s3_tags}) { @handler.call(context) }
+          ::Instana.tracer.in_span(:s3, attributes: {s3: s3_tags}) { @handler.call(context) }
         end
 
         private

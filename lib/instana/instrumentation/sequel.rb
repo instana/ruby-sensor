@@ -3,7 +3,7 @@
 module Instana
   module Instrumentation
     module Sequel
-      IGNORED_SQL = %w[BEGIN COMMIT SET].freeze
+      IGNORED_SQL = %w[BEGIN COMMIT SET PRAGMA].freeze
       VERSION_SELECT_STATEMENT = "SELECT VERSION()".freeze
       SANITIZE_REGEXP = /('[\s\S][^']*'|\d*\.\d+|\d+|NULL)/i
 
@@ -28,7 +28,9 @@ module Instana
 
       def maybe_trace(call_payload, &blk)
         if ::Instana.tracer.tracing? && !ignored?(call_payload)
-          ::Instana.tracer.trace(:sequel, call_payload, &blk)
+          ::Instana.tracer.in_span(:sequel, attributes: call_payload) do
+            yield
+          end
         else
           yield
         end

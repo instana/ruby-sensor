@@ -14,7 +14,7 @@ module Instana
           }.reject { |_, v| v.nil? }
 
           if context.operation_name == :publish
-            ::Instana.tracer.trace(:sns, {sns: sns_tags}) { @handler.call(context) }
+            ::Instana.tracer.in_span(:sns, attributes: {sns: sns_tags}) { @handler.call(context) }
           else
             @handler.call(context)
           end

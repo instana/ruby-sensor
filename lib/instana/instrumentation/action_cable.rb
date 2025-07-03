@@ -27,8 +27,10 @@ module Instana
         }
 
         context = connection.instana_trace_context
-        ::Instana.tracer.start_or_continue_trace(:'rpc-server', rpc_tags, context) do
-          super(data, via: via)
+        Trace.with_span(OpenTelemetry::Trace.non_recording_span(context)) do
+          ::Instana.tracer.in_span(:'rpc-server', attributes: rpc_tags) do
+            super(data, via: via)
+          end
         end
       end
 
@@ -44,8 +46,10 @@ module Instana
         }
 
         context = connection.instana_trace_context
-        ::Instana.tracer.start_or_continue_trace(:'rpc-server', rpc_tags, context) do
-          super(action, data)
+        Trace.with_span(OpenTelemetry::Trace.non_recording_span(context)) do
+          ::Instana.tracer.in_span(:'rpc-server', attributes: rpc_tags) do
+            super(action, data)
+          end
         end
       end
     end
