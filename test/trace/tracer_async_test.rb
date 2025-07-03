@@ -8,7 +8,7 @@ class TracerAsyncTest < Minitest::Test
     clear_all!
 
     # Start tracing
-    ::Instana.tracer.log_start_or_continue(:rack, {:rack_start_kv => 1})
+    ::Instana.tracer.start_span(:rack, attributes: {:rack_start_kv => 1})
 
     # Start an asynchronous span
     span = ::Instana.tracer.log_async_entry(:my_async_op, { :entry_kv => 1})

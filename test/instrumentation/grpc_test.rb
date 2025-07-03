@@ -45,7 +45,7 @@ class GrpcTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     clear_all!
     response = nil
 
-    Instana.tracer.start_or_continue_trace(:rpctests) do
+    Instana.tracer.in_span(:rpctests) do
       response = client_stub.ping(
         PingPongService::PingRequest.new(message: 'Hello World')
       )
@@ -123,7 +123,7 @@ class GrpcTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     clear_all!
     response = nil
 
-    Instana.tracer.start_or_continue_trace(:rpctests) do
+    Instana.tracer.in_span(:rpctests) do
       response = client_stub.ping_with_client_stream(
         (0..5).map do |index|
           PingPongService::PingRequest.new(message: index.to_s)
@@ -168,7 +168,7 @@ class GrpcTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     clear_all!
     responses = []
 
-    Instana.tracer.start_or_continue_trace(:rpctests) do
+    Instana.tracer.in_span(:rpctests) do
       responses = client_stub.ping_with_server_stream(
         PingPongService::PingRequest.new(message: 'Hello World')
       )
@@ -209,7 +209,7 @@ class GrpcTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     clear_all!
     responses = []
 
-    Instana.tracer.start_or_continue_trace(:rpctests) do
+    Instana.tracer.in_span(:rpctests) do
       responses = client_stub.ping_with_bidi_stream(
         (0..5).map do |index|
           PingPongService::PingRequest.new(message: (index * 2).to_s)
@@ -252,7 +252,7 @@ class GrpcTest < Minitest::Test # rubocop:disable Metrics/ClassLength
 
   def test_request_response_failure
     clear_all!
-    Instana.tracer.start_or_continue_trace(:rpctests) do
+    Instana.tracer.in_span(:rpctests) do
       begin
         client_stub.fail_to_ping( PingPongService::PingRequest.new(message: 'Hello World'))
       rescue
@@ -292,7 +292,7 @@ class GrpcTest < Minitest::Test # rubocop:disable Metrics/ClassLength
 
   def test_client_streamer_failure
     clear_all!
-    Instana.tracer.start_or_continue_trace(:rpctests) do
+    Instana.tracer.in_span(:rpctests) do
       begin
         client_stub.fail_to_ping_with_client_stream(
           (0..5).map do |index|
@@ -337,7 +337,7 @@ class GrpcTest < Minitest::Test # rubocop:disable Metrics/ClassLength
 
   def test_server_streamer_failure
     clear_all!
-    Instana.tracer.start_or_continue_trace(:rpctests) do
+    Instana.tracer.in_span(:rpctests) do
       begin
         client_stub.fail_to_ping_with_server_stream(
           PingPongService::PingRequest.new(message: 'Hello World')
@@ -379,7 +379,7 @@ class GrpcTest < Minitest::Test # rubocop:disable Metrics/ClassLength
 
   def test_bidi_streamer_failure
     clear_all!
-    Instana.tracer.start_or_continue_trace(:rpctests) do
+    Instana.tracer.in_span(:rpctests) do
       client_stub.fail_to_ping_with_bidi_stream(
         (0..5).map do |index|
           PingPongService::PingRequest.new(message: (index * 2).to_s)

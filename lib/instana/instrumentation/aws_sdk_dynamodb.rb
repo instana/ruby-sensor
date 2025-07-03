@@ -11,7 +11,7 @@ module Instana
             table: table_name_from(context)
           }
 
-          ::Instana.tracer.trace(:dynamodb, {dynamodb: dynamo_tags}) { @handler.call(context) }
+          ::Instana.tracer.in_span(:dynamodb, attributes: {dynamodb: dynamo_tags}) { @handler.call(context) }
         end
 
         private
