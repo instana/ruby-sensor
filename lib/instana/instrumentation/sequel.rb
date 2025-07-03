@@ -26,11 +26,9 @@ module Instana
         ::Instana.config[:sanitize_sql] ? sql.gsub(SANITIZE_REGEXP, '?') : sql
       end
 
-      def maybe_trace(call_payload, &blk)
+      def maybe_trace(call_payload, &block)
         if ::Instana.tracer.tracing? && !ignored?(call_payload)
-          ::Instana.tracer.in_span(:sequel, attributes: call_payload) do
-            yield
-          end
+          ::Instana.tracer.in_span(:sequel, attributes: call_payload, &block)
         else
           yield
         end

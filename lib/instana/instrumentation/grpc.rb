@@ -60,9 +60,9 @@ module Instana
 
             incoming_context = {}
             if metadata.key?('x-instana-t')
-              incoming_context[:trace_id]  = ::Instana::Util.header_to_id(metadata['x-instana-t'])
-              incoming_context[:span_id]   = ::Instana::Util.header_to_id(metadata['x-instana-s']) if metadata.key?('x-instana-s')
-              incoming_context[:level]     = metadata['x-instana-l'] if metadata.key?('x-instana-l')
+              incoming_context = SpanContext.new(trace_id: ::Instana::Util.header_to_id(metadata['x-instana-t']),
+                                                 span_id: metadata.key?('x-instana-s') ? ::Instana::Util.header_to_id(metadata['x-instana-s']) : nil,
+                                                 level: metadata.key?('x-instana-l') ? metadata['x-instana-l'] : nil)
             end
 
             kvs[:rpc][:flavor] = :grpc
@@ -70,6 +70,7 @@ module Instana
             kvs[:rpc][:call] = "/#{mth.owner.service_name}/#{name}"
             kvs[:rpc][:call_type] = call_type
             kvs[:rpc][:peer] = { address: active_call.peer }
+
             span = OpenTelemetry::Trace.non_recording_span(incoming_context) if incoming_context
             parent_context = Trace.context_with_span(span) if incoming_context
 
