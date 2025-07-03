@@ -16,10 +16,10 @@ module Instana
         if datum[:pipeline] == true
           # Pass the context along in the datum so we get back on response
           # and can close out the async span
-          datum[:instana_span] = ::Instana.tracer.log_async_entry(:excon, payload)
+          datum[:instana_span] = ::Instana.tracer.start_span(:excon, attributes: payload)
           t_context = datum[:instana_span].context
         else
-          ::Instana.tracer.log_entry(:excon, payload)
+          ::Instana.tracer.start_span(:excon, attributes: payload)
           t_context = ::Instana.tracer.context
         end
 

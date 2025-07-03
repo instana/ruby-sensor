@@ -28,7 +28,8 @@ class SequelTest < Minitest::Test
   end
 
   def test_create
-    Instana::Tracer.start_or_continue_trace(:sequel_test, {}) do
+    clear_all!
+    Instana.tracer.in_span(:sequel_test, attributes: {}) do
       @model.insert(name: 'core', color: 'blue')
     end
     spans = ::Instana.processor.queued_spans
@@ -39,8 +40,9 @@ class SequelTest < Minitest::Test
   end
 
   def test_read
+    clear_all!
     @model.insert(name: 'core', color: 'blue')
-    Instana::Tracer.start_or_continue_trace(:sequel_test, {}) do
+    Instana.tracer.in_span(:sequel_test, attributes: {}) do
       @model.where(name: 'core').first
     end
     spans = ::Instana.processor.queued_spans
@@ -52,8 +54,9 @@ class SequelTest < Minitest::Test
   end
 
   def test_update
+    clear_all!
     @model.insert(name: 'core', color: 'blue')
-    Instana::Tracer.start_or_continue_trace(:sequel_test, {}) do
+    Instana.tracer.in_span(:sequel_test, attributes: {}) do
       @model.where(name: 'core').update(color: 'red')
     end
     spans = ::Instana.processor.queued_spans
@@ -66,8 +69,9 @@ class SequelTest < Minitest::Test
   end
 
   def test_delete
+    clear_all!
     @model.insert(name: 'core', color: 'blue')
-    Instana::Tracer.start_or_continue_trace(:sequel_test, {}) do
+    Instana.tracer.in_span(:sequel_test, attributes: {}) do
       @model.where(name: 'core').delete
     end
     spans = ::Instana.processor.queued_spans
@@ -80,7 +84,8 @@ class SequelTest < Minitest::Test
   end
 
   def test_raw
-    Instana::Tracer.start_or_continue_trace(:sequel_test, {}) do
+    clear_all!
+    Instana.tracer.in_span(:sequel_test, attributes: {}) do
       @db.run('SELECT 1')
     end
     spans = ::Instana.processor.queued_spans
@@ -92,8 +97,9 @@ class SequelTest < Minitest::Test
   end
 
   def test_raw_error
+    clear_all!
     assert_raises Sequel::DatabaseError do
-      Instana::Tracer.start_or_continue_trace(:sequel_test, {}) do
+      Instana.tracer.in_span(:sequel_test, attributes: {}) do
         @db.run('INVALID')
       end
     end

@@ -105,9 +105,9 @@ class TracerTest < Minitest::Test
 
   def test_complex_trace_block
     clear_all!
-    ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do
+    ::Instana.tracer.in_span(:rack, attributes: {:one => 1}) do
       sleep 0.2
-      ::Instana.tracer.trace(:sub_block, {:sub_two => 2}) do
+      ::Instana.tracer.in_span(:sub_block, attributes: {:sub_two => 2}) do
         sleep 0.2
       end
     end

@@ -53,7 +53,7 @@ module Instana
     # @param [Span] span the span to activate
     # @yield [span, context] yields span and a context containing the span to the block.
     def with_span(span)
-      Context.with_value(CURRENT_SPAN_KEY, span) { |c, s| yield s, c }
+      OpenTelemetry::Context.with_value(CURRENT_SPAN_KEY, span) { |c, s| yield s, c }
     end
 
     # Wraps a SpanContext with an object implementing the Span interface. This is done in order
