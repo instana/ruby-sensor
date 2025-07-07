@@ -8,14 +8,14 @@ module Instana
         # Since RestClient uses net/http under the covers, we just
         # provide span visibility here.  HTTP related KVs are reported
         # in the Net::HTTP instrumentation
-        ::Instana.tracer.log_entry(:'rest-client')
+        span = ::Instana.tracer.start_span(:'rest-client', with_parent: OpenTelemetry::Context.current)
 
-        super(&block)
+        Trace.with_span(span) do super(&block) end;
       rescue => e
-        ::Instana.tracer.log_error(e)
+        span.record_exception(e)
         raise
       ensure
-        ::Instana.tracer.log_exit(:'rest-client')
+        span.finish
       end
     end
   end
