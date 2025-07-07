@@ -6,6 +6,7 @@ require 'support/apps/active_record/active_record'
 
 class RailsActiveRecordTest < Minitest::Test
   def setup
+    clear_all!
     skip unless ENV['DATABASE_URL']
     @connection = ActiveRecord::Base.establish_connection(ENV['DATABASE_URL'])
     ActiveRecord::Migration.suppress_messages do
@@ -28,7 +29,8 @@ class RailsActiveRecordTest < Minitest::Test
   end
 
   def test_create
-    Instana::Tracer.start_or_continue_trace(:ar_test, {}) do
+    # clear_all!
+    Instana.tracer.in_span(:ar_test, attributes: {}) do
       Block.create(name: 'core', color: 'blue')
     end
 
@@ -42,10 +44,9 @@ class RailsActiveRecordTest < Minitest::Test
 
   def test_read
     Block.create(name: 'core', color: 'blue')
-    Instana::Tracer.start_or_continue_trace(:ar_test, {}) do
+    Instana.tracer.in_span(:ar_test, attributes: {}) do
       Block.find_by(name: 'core')
     end
-
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
     span = find_first_span_by_name(spans, :activerecord)
@@ -58,7 +59,7 @@ class RailsActiveRecordTest < Minitest::Test
     Block.create(name: 'core', color: 'blue')
     b = Block.find_by(name: 'core')
 
-    Instana::Tracer.start_or_continue_trace(:ar_test, {}) do
+    Instana.tracer.in_span(:ar_test, attributes: {}) do
       b.color = 'red'
       b.save
     end
@@ -74,7 +75,7 @@ class RailsActiveRecordTest < Minitest::Test
   def test_delete
     b = Block.create(name: 'core', color: 'blue')
 
-    Instana::Tracer.start_or_continue_trace(:ar_test, {}) do
+    Instana.tracer.in_span(:ar_test, attributes: {}) do
       b.delete
     end
 
@@ -87,7 +88,7 @@ class RailsActiveRecordTest < Minitest::Test
   end
 
   def test_raw
-    Instana::Tracer.start_or_continue_trace(:ar_test, {}) do
+    Instana.tracer.in_span(:ar_test, attributes: {}) do
       ActiveRecord::Base.connection.execute('SELECT 1')
     end
 
@@ -101,7 +102,7 @@ class RailsActiveRecordTest < Minitest::Test
 
   def test_raw_error
     assert_raises ActiveRecord::StatementInvalid do
-      Instana::Tracer.start_or_continue_trace(:ar_test, {}) do
+      Instana.tracer.in_span(:ar_test, attributes: {}) do
         ActiveRecord::Base.connection.execute('INVALID')
       end
     end

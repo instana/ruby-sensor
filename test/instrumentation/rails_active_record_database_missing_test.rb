@@ -29,7 +29,7 @@ class RailsActiveRecordDatabaseMissingTest < Minitest::Test
 
   def test_error_on_missing_database
     assert_raises(ActiveRecord::StatementInvalid) do
-      Instana::Tracer.start_or_continue_trace(:ar_test, {}) do
+      Instana.tracer.in_span(:ar_test, attributes: {}) do
         b = Block.new
         FileUtils.rm('/tmp/test.db')
         b.save!
