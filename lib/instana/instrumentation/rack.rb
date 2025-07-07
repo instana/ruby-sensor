@@ -107,7 +107,7 @@ module Instana
           headers['Server-Timing'] = "intid;desc=#{trace_context.trace_id_header}"
         end
         current_span.set_tags(kvs)
-        current_span.close(::Instana::Util.now_in_ms)
+        current_span.finish
         ::Instana.tracer.current_span = nil
       end
     end
