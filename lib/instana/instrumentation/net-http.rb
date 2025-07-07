@@ -59,11 +59,11 @@ module Instana
 
         response
       rescue => e
-        current_span.record_exception(e)
+        current_span&.record_exception(e)
         raise
       ensure
-        current_span.set_tags(kv_payload)
-        current_span.finish unless do_skip
+        current_span&.set_tags(kv_payload)
+        current_span&.finish unless do_skip
       end
 
       def skip_instrumentation?
