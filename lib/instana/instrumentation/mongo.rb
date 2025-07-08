@@ -20,19 +20,19 @@ module Instana
         json: filter_statement(event.command)
       }
 
-      @requests[event.request_id] = ::Instana.tracer.log_async_entry(:mongo, {mongo: tags})
+      @requests[event.request_id] = ::Instana.tracer.start_span(:mongo, attributes: {mongo: tags})
     end
 
     def failed(event)
       span = @requests.delete(event.request_id)
       span.add_error(Exception.new(event.message))
 
-      ::Instana.tracer.log_async_exit(:mongo, {}, span)
+      span.finish
     end
 
     def succeeded(event)
       span = @requests.delete(event.request_id)
-      ::Instana.tracer.log_async_exit(:mongo, {}, span)
+      span.finish
     end
 
     private
