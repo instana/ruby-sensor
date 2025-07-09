@@ -4,7 +4,7 @@
 require 'test_helper'
 require 'support/apps/active_record/active_record'
 require 'fileutils'
-require 'byebug'
+
 class RailsActiveRecordDatabaseMissingTest < Minitest::Test
   def setup
     skip unless ENV['DATABASE_URL']
@@ -15,7 +15,6 @@ class RailsActiveRecordDatabaseMissingTest < Minitest::Test
 
     @connection_pool = ActiveRecord::Base.establish_connection(ENV['DATABASE_URL'])
     c = ::ActiveRecord::Base.connection
-    # c.execute("drop table blocks")
     c.execute 'PRAGMA journal_mode=DELETE'
     c.execute 'PRAGMA locking_mode=NORMAL'
     ActiveRecord::Migration.suppress_messages do
