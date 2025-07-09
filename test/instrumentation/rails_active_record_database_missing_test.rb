@@ -4,17 +4,18 @@
 require 'test_helper'
 require 'support/apps/active_record/active_record'
 require 'fileutils'
-
+require 'byebug'
 class RailsActiveRecordDatabaseMissingTest < Minitest::Test
   def setup
     skip unless ENV['DATABASE_URL']
-
+    clear_all!
     @old_url = ENV['DATABASE_URL']
     SQLite3::Database.new('/tmp/test.db')
     ENV['DATABASE_URL'] = 'sqlite3:///tmp/test.db'
 
     @connection_pool = ActiveRecord::Base.establish_connection(ENV['DATABASE_URL'])
     c = ::ActiveRecord::Base.connection
+    # c.execute("drop table blocks")
     c.execute 'PRAGMA journal_mode=DELETE'
     c.execute 'PRAGMA locking_mode=NORMAL'
     ActiveRecord::Migration.suppress_messages do
@@ -35,7 +36,6 @@ class RailsActiveRecordDatabaseMissingTest < Minitest::Test
         b.save!
       end
     end
-
     spans = ::Instana.processor.queued_spans
     span = find_first_span_by_name(spans, :activerecord)
 
