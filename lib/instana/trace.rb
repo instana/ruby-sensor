@@ -33,7 +33,7 @@ module Instana
     #   {Span} from. Defaults to Context.current
     def current_span(context = nil)
       context ||= OpenTelemetry::Context.current
-      context.value(CURRENT_SPAN_KEY) || Span::INVALID
+      context.value(CURRENT_SPAN_KEY) || nil
     end
 
     # Returns a context containing the span, derived from the optional parent
