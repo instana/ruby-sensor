@@ -16,7 +16,7 @@ class RedisTest < Minitest::Test
   def test_normal_call
     clear_all!
 
-    Instana.tracer.start_or_continue_trace(:redis_test) do
+    Instana.tracer.in_span(:redis_test) do
       @redis_client.set('hello', 'world')
     end
 
@@ -49,7 +49,7 @@ class RedisTest < Minitest::Test
   def test_georadius
     clear_all!
 
-    Instana.tracer.start_or_continue_trace(:redis_test) do
+    Instana.tracer.in_span(:redis_test) do
       @redis_client.georadius('Sicily', '15', '37', '200', 'km', 'WITHCOORD', 'WITHDIST')
     end
 
@@ -59,7 +59,7 @@ class RedisTest < Minitest::Test
   def test_normal_call_with_error
     clear_all!
 
-    Instana.tracer.start_or_continue_trace(:redis_test) do
+    Instana.tracer.in_span(:redis_test) do
       begin
         @redis_client.zadd('hello', 'invalid', 'value')
       rescue; end
@@ -71,7 +71,7 @@ class RedisTest < Minitest::Test
   def test_pipeline_call
     clear_all!
 
-    Instana.tracer.start_or_continue_trace(:redis_test) do
+    Instana.tracer.in_span(:redis_test) do
       @redis_client.pipelined do |pipeline|
         pipeline.set('hello', 'world')
         pipeline.set('other', 'world')
@@ -84,7 +84,7 @@ class RedisTest < Minitest::Test
   def test_pipeline_call_with_error
     clear_all!
 
-    Instana.tracer.start_or_continue_trace(:redis_test) do
+    Instana.tracer.in_span(:redis_test) do
       begin
         @redis_client.pipelined do |pipeline|
           pipeline.set('other', 'world')
@@ -99,7 +99,7 @@ class RedisTest < Minitest::Test
   def test_multi_call
     clear_all!
 
-    Instana.tracer.start_or_continue_trace(:redis_test) do
+    Instana.tracer.in_span(:redis_test) do
       @redis_client.multi do |multi|
         multi.set('hello', 'world')
         multi.set('other', 'world')
@@ -112,7 +112,7 @@ class RedisTest < Minitest::Test
   def test_multi_call_with_error
     clear_all!
 
-    Instana.tracer.start_or_continue_trace(:redis_test) do
+    Instana.tracer.in_span(:redis_test) do
       begin
         @redis_client.multi do |multi|
           multi.set('other', 'world')
