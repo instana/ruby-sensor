@@ -37,8 +37,10 @@ module Instana
 
       span = OpenTelemetry::Trace.non_recording_span(parent_context) if parent_context
       parent_context = Trace.context_with_span(span) if parent_context
-      current_span = ::Instana.tracer.start_span(:rack, attributes: {}, with_parent: parent_context)
 
+      current_span = ::Instana.tracer.start_span(:rack, attributes: {}, with_parent: parent_context)
+      trace_ctx = OpenTelemetry::Trace.context_with_span(current_span)
+      @trace_token = OpenTelemetry::Context.attach(trace_ctx)
       status, headers, response = @app.call(env)
 
       if ::Instana.tracer.tracing?
@@ -107,8 +109,8 @@ module Instana
           headers['Server-Timing'] = "intid;desc=#{trace_context.trace_id_header}"
         end
         current_span.set_tags(kvs)
+        OpenTelemetry::Context.detach(@trace_token) if @trace_token
         current_span.finish
-        ::Instana.tracer.current_span = nil
       end
     end
   end
