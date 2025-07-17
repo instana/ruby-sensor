@@ -5,11 +5,11 @@ module Instana
   module Instrumentation
     class SidekiqWorker
       def call(_worker, msg, _queue)
-        kv_payload = { :'sidekiq-worker' => {} }
-        kv_payload[:'sidekiq-worker'][:job_id] = msg['jid']
-        kv_payload[:'sidekiq-worker'][:queue] = msg['queue']
-        kv_payload[:'sidekiq-worker'][:job] = msg['class'].to_s
-        kv_payload[:'sidekiq-worker'][:retry] = msg['retry'].to_s
+        kvs = { :'sidekiq-worker' => {} }
+        kvs[:'sidekiq-worker'][:job_id] = msg['jid']
+        kvs[:'sidekiq-worker'][:queue] = msg['queue']
+        kvs[:'sidekiq-worker'][:job] = msg['class'].to_s
+        kvs[:'sidekiq-worker'][:retry] = msg['retry'].to_s
 
         # Temporary until we move connection collection to redis
         # instrumentation
@@ -24,29 +24,31 @@ module Instana
                        else # Unexpected version, continue without recording any redis-url
                          break
                        end
-          kv_payload[:'sidekiq-worker'][:'redis-url'] = "#{host}:#{port}"
+          kvs[:'sidekiq-worker'][:'redis-url'] = "#{host}:#{port}"
         end
 
-        context = {}
+        trace_context = nil
         if msg.key?('X-Instana-T')
           trace_id = msg.delete('X-Instana-T')
           span_id = msg.delete('X-Instana-S')
-          context[:trace_id] = ::Instana::Util.header_to_id(trace_id)
-          context[:span_id] = ::Instana::Util.header_to_id(span_id) if span_id
+          trace_context = ::Instana::SpanContext.new(
+            trace_id: ::Instana::Util.header_to_id(trace_id),
+            span_id: span_id ? ::Instana::Util.header_to_id(span_id) : nil
+          )
         end
 
-        ::Instana.tracer.log_start_or_continue(
-          :'sidekiq-worker', kv_payload, context
-        )
+        parent_non_recording_span = OpenTelemetry::Trace.non_recording_span(trace_context) if trace_context
+        Trace.with_span(parent_non_recording_span) do
+          Instana.tracer.in_span(:'sidekiq-worker', attributes: kvs) do |span|
+            yield
+          rescue => e
+            kvs[:'sidekiq-worker'][:error] = true
+            span.set_tags(kvs)
+            span.record_exception(e)
+            raise
+          end
+        end
 
-        yield
-      rescue => e
-        kv_payload[:'sidekiq-worker'][:error] = true
-        ::Instana.tracer.log_info(kv_payload)
-        ::Instana.tracer.log_error(e)
-        raise
-      ensure
-        ::Instana.tracer.log_end(:'sidekiq-worker', {}) if ::Instana.tracer.tracing?
       end
     end
   end
