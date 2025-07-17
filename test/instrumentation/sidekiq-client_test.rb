@@ -21,7 +21,7 @@ class SidekiqClientTest < Minitest::Test
 
   def test_enqueue
     clear_all!
-    Instana.tracer.start_or_continue_trace(:sidekiqtests) do
+    Instana.tracer.in_span(:sidekiqtests) do
       disable_redis_instrumentation
       ::Sidekiq::Client.push(
         'queue' => 'some_random_queue',
@@ -72,7 +72,7 @@ class SidekiqClientTest < Minitest::Test
   def test_enqueue_failure
     clear_all!
 
-    Instana.tracer.start_or_continue_trace(:sidekiqtests) do
+    Instana.tracer.in_span(:sidekiqtests) do
       disable_redis_instrumentation
       add_sidekiq_exception_middleware
       begin
