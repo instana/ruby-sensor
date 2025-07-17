@@ -27,7 +27,7 @@ module Instana
         if Instana.tracer.tracing?
           kvs = collect_kvs(:enqueue, klass, args)
 
-          Instana.tracer.trace(:'resque-client', kvs) do
+          Instana.tracer.in_span(:'resque-client', attributes: kvs) do
             args.push(::Instana.tracer.context.to_hash) if ::Instana.config[:'resque-client'][:propagate]
             super(klass, *args)
           end
@@ -41,7 +41,7 @@ module Instana
           kvs = collect_kvs(:enqueue_to, klass, args)
           kvs[:Queue] = queue.to_s if queue
 
-          Instana.tracer.trace(:'resque-client', kvs) do
+          Instana.tracer.in_span(:'resque-client', attributes: kvs) do
             args.push(::Instana.tracer.context.to_hash) if ::Instana.config[:'resque-client'][:propagate]
             super(queue, klass, *args)
           end
@@ -54,7 +54,7 @@ module Instana
         if Instana.tracer.tracing?
           kvs = collect_kvs(:dequeue, klass, args)
 
-          Instana.tracer.trace(:'resque-client', kvs) do
+          Instana.tracer.in_span(:'resque-client', attributes: kvs) do
             super(klass, *args)
           end
         else
@@ -82,9 +82,11 @@ module Instana
                             span_id: context_from_wire['span_id']
                           )
                         end
-
-        Instana.tracer.start_or_continue_trace(:'resque-worker', kvs, trace_context) do
-          super(job)
+        span = OpenTelemetry::Trace.non_recording_span(trace_context) if trace_context
+        Trace.with_span(span) do
+          Instana.tracer.in_span(:'resque-worker', attributes: kvs) do |span|
+            super(job)
+          end
         end
       end
     end
