@@ -9,10 +9,13 @@ module Instana
 
     attr_accessor :parent, :baggage, :is_root, :context
 
-    def initialize(name, parent_ctx = nil, _context = nil, _parent_span = nil, _kind = nil, parent_span_id = nil, _span_limits = nil, _span_processors = nil, attributes = nil, _links = nil, start_timestamp = ::Instana::Util.now_in_ms, _resource = nil, _instrumentation_scope = nil) # rubocop:disable Lint/MissingSuper, Metrics/ParameterLists
+    def initialize(name, parent_ctx = nil, _context = nil, parent_span = nil, _kind = nil, parent_span_id = nil, _span_limits = nil, _span_processors = nil, attributes = nil, _links = nil, start_timestamp = ::Instana::Util.now_in_ms, _resource = nil, _instrumentation_scope = nil) # rubocop:disable Lint/MissingSuper, Metrics/ParameterLists
       @attributes = {}
 
       @ended = false
+      if parent_span.is_a?(::Instana::Span)
+        @parent = parent_span
+      end
       if parent_ctx.is_a?(::Instana::Span)
         @parent = parent_ctx
         parent_ctx = parent_ctx.context
@@ -66,7 +69,6 @@ module Instana
       end
       set_tags(attributes)
       ::Instana.processor.on_start(self)
-      # super(span_context: context) #Todo check if there is need of parent class methods else this line can be removed
       # Attach a backtrace to all exit spans
       add_stack if ::Instana.config[:collect_backtraces] && exit_span?
     end
@@ -414,6 +416,7 @@ module Instana
     #
     def finish(end_time = ::Instana::Util.now_in_ms)
       close(end_time)
+      ::Instana.tracer.current_span = ::Instana.tracer.current_span&.parent || nil
       self
     end
 
