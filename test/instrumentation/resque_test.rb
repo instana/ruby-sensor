@@ -108,7 +108,7 @@ class ResqueClientTest < Minitest::Test
 
     resque_job = Resque.reserve('critical')
     @worker.work_one_job(resque_job)
-    byebug
+
     spans = ::Instana.processor.queued_spans
     assert_equal 5, spans.length
 
@@ -171,7 +171,7 @@ class ResqueClientTest < Minitest::Test
   def test_worker_error_job
     Resque::Job.create(:critical, ErrorJob)
     @worker.work(0)
-    byebug
+
     spans = ::Instana.processor.queued_spans
     assert_equal 5, spans.length
 
