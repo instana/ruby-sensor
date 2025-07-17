@@ -77,7 +77,7 @@ class SidekiqServerTest < Minitest::Test
     $sidekiq_mode = :server
     inject_instrumentation
 
-    Instana.tracer.start_or_continue_trace(:sidekiqtests) do
+    Instana.tracer.in_span(:sidekiqtests) do
       disable_redis_instrumentation
       ::Sidekiq::Client.push(
         'queue' => 'important',
@@ -110,7 +110,7 @@ class SidekiqServerTest < Minitest::Test
     $sidekiq_mode = :server
     inject_instrumentation
 
-    Instana.tracer.start_or_continue_trace(:sidekiqtests) do
+    Instana.tracer.in_span(:sidekiqtests) do
       disable_redis_instrumentation
       ::Sidekiq::Client.push(
         'queue' => 'important',
