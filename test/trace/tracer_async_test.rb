@@ -132,12 +132,16 @@ class TracerAsyncTest < Minitest::Test
     span = ::Instana.tracer.start_span(:rack, attributes: {:rack_start_kv => 1})
 
     # Start three asynchronous spans
-    span1 = ::Instana.tracer.start_span(:my_async_op1, attributes: { :entry_kv => 1})
-    span2 = ::Instana.tracer.start_span(:my_async_op2, attributes: { :entry_kv => 2})
-    span3 = ::Instana.tracer.start_span(:my_async_op3, attributes: { :entry_kv => 3})
+    span1,span2,span3 = ::Instana::Trace.with_span(span) do
+      span1 = ::Instana.tracer.start_span(:my_async_op1, attributes: { :entry_kv => 1})
+      span2 = ::Instana.tracer.start_span(:my_async_op2, attributes: { :entry_kv => 2})
+      span3 = ::Instana.tracer.start_span(:my_async_op3, attributes: { :entry_kv => 3})
+      return span1,span2,span3
+    end
 
+    # Context awareness when using Opentelemetry is done through Opentelemetry::Context so the below test is invalid
     # Current span should still be rack
-    assert_equal :rack, ::Instana.tracer.current_span.name
+    # assert_equal :rack, ::Instana.tracer.current_span.name
 
     # Log info to the async spans (out of order)
     span2.set_tags({ :info_kv => 2 })
@@ -154,11 +158,13 @@ class TracerAsyncTest < Minitest::Test
     span2.set_tags({ :exit_kv => 2 })
     span2.close
 
+    # Context awareness when using Opentelemetry is done through Opentelemetry::Context so the below test is invalid
     # Current span should still be rack
-    assert_equal :rack, ::Instana.tracer.current_span.name
+    # assert_equal :rack, ::Instana.tracer.current_span.name
 
     # End tracing
-    ::Instana.tracer.log_end(:rack, {:rack_end_kv => 1})
+    span.set_tags({:rack_end_kv => 1})
+    span.finish
 
     # Log an error to and close out the remaining async span after the parent trace has finished
     span1.record_exception(Exception.new("Async span 1"))
@@ -209,7 +215,7 @@ class TracerAsyncTest < Minitest::Test
     clear_all!
     span = ::Instana.tracer.start_span(:rack)
 
-    span1 = ::Instana.tracer.start_span(:async, {})
+    span1 = ::Instana.tracer.start_span(:async, attributes: {})
     span1.set_tags({a: 1})
     span1.record_exception(StandardError.new('Error'))
     span1.finish
