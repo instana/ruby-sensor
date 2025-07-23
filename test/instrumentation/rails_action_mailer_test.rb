@@ -39,7 +39,7 @@ class RailsActionMailerTest < Minitest::Test
   end
 
   def test_mailer
-    Instana.tracer.start_or_continue_trace(:test) do
+    Instana.tracer.in_span(:test) do
       TestMailer.sample_email.deliver_now
     end
 
