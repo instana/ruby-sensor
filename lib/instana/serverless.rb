@@ -42,8 +42,9 @@ module Instana
       else
         tags[:lambda] = tags[:lambda].merge(event_tags)
       end
-
-      @tracer.start_or_continue_trace(:'aws.lambda.entry', tags, span_context, &block)
+      Trace.with_span(OpenTelemetry::Trace.non_recording_span(::Instana::SpanContext.new(trace_id: span_context[:trace_id],span_id: span_context[:span_id],level: span_context[:level]))) do
+        @tracer.in_span(:'aws.lambda.entry', attributes: tags, &block)
+      end
     ensure
       begin
         @agent.send_bundle
