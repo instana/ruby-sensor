@@ -9,11 +9,12 @@ class CustomTracingTest < Minitest::Test
 
     assert_equal false, ::Instana.tracer.tracing?
     # Start tracing
-    ::Instana.tracer.log_start_or_continue(:custom_trace, {:one => 1})
+    span = ::Instana.tracer.start_span(:custom_trace, attributes: {:one => 1})
     assert_equal true, ::Instana.tracer.tracing?
-    ::Instana.tracer.log_info({:info_logged => 1})
+    span.add_attributes({:info_logged => 1})
     # End tracing
-    ::Instana.tracer.log_end(:custom_trace, {:close_one => 1})
+    span.add_attributes({:close_one => 1})
+    span.finish
     assert_equal false, ::Instana.tracer.tracing?
 
     spans = ::Instana.processor.queued_spans
@@ -54,17 +55,17 @@ class CustomTracingTest < Minitest::Test
     kvs[:return] = true
 
     # Start tracing
-    ::Instana.tracer.log_start_or_continue(:rack, :on_trace_start => 1)
+    span = ::Instana.tracer.start_span(:rack, attributes: {:on_trace_start => 1})
     assert_equal true, ::Instana.tracer.tracing?
 
     # Now the automagic
-    ::Instana.tracer.trace(:custom_span, kvs) do
+    ::Instana.tracer.in_span(:custom_span, attributes: kvs) do
       answer = 42 * 1
       active_span = ::Instana.tracer.current_span
       active_span.set_tag(:answer, answer)
 
       # And now nested automagic
-      ::Instana.tracer.trace(:custom_span2, kvs) do
+      ::Instana.tracer.in_span(:custom_span2, attributes: kvs) do
         was_here = 'stan'
         active_span = ::Instana.tracer.current_span
         active_span.set_tag(:was_here, was_here)
@@ -72,7 +73,8 @@ class CustomTracingTest < Minitest::Test
     end
 
     # End tracing
-    ::Instana.tracer.log_end(:rack, {:on_trace_end => 1})
+    span.add_attributes({:on_trace_end => 1})
+    span.finish
     assert_equal false, ::Instana.tracer.tracing?
 
     spans = ::Instana.processor.queued_spans
@@ -111,7 +113,7 @@ class CustomTracingTest < Minitest::Test
     assert_equal false, ::Instana.tracer.tracing?
 
     # Start tracing
-    ::Instana.tracer.log_start_or_continue(:rack, :on_trace_start => 1)
+    span1 = ::Instana.tracer.start_span(:rack, attributes: {:on_trace_start => 1})
     assert_equal true, ::Instana.tracer.tracing?
 
     kvs = {}
@@ -119,12 +121,15 @@ class CustomTracingTest < Minitest::Test
     kvs[:arguments] = [[1, 2, 3], "test_arg", :ok]
     kvs[:return] = true
 
-    ::Instana.tracer.log_entry(:custom_span, kvs)
-    ::Instana.tracer.log_info({:on_info_kv => 1})
-    ::Instana.tracer.log_exit(:custom_span, :on_exit_kv => 1)
+    span2 = ::Instana.tracer.start_span(:custom_span, attributes: kvs)
+    span2.set_tags({:on_info_kv => 1})
+    span2.set_tags({:on_exit_kv => 1})
+    span2.finish
 
     # End tracing
-    ::Instana.tracer.log_end(:rack, {:on_trace_end => 1})
+    span1.set_tags({:on_trace_end => 1})
+    span1.finish
+
     assert_equal false, ::Instana.tracer.tracing?
 
     spans = ::Instana.processor.queued_spans
@@ -164,7 +169,7 @@ class CustomTracingTest < Minitest::Test
     assert_equal false, ::Instana.tracer.tracing?
 
     # Start tracing
-    ::Instana.tracer.log_start_or_continue(:rack, :on_trace_start => 1)
+    span1 = ::Instana.tracer.start_span(:rack, attributes: {:on_trace_start => 1})
     assert_equal true, ::Instana.tracer.tracing?
 
     begin
@@ -173,14 +178,16 @@ class CustomTracingTest < Minitest::Test
       kvs[:arguments] = [[1, 2, 3], "test_arg", :ok]
       kvs[:return] = true
 
-      ::Instana.tracer.log_entry(:custom_span, kvs)
+      span2 = ::Instana.tracer.start_span(:custom_span, attributes: kvs)
       raise "custom tracing error.  This is only a test"
     rescue => e
-      ::Instana.tracer.log_error(e)
+      span2.record_exception(e)
     ensure
-      ::Instana.tracer.log_exit(:custom_span, :on_exit_kv => 1)
+      span2.set_tags(:on_exit_kv => 1)
+      span2.finish
     end
-    ::Instana.tracer.log_end(:rack, {:on_trace_end => 1})
+    span1.set_tags(:on_trace_end => 1)
+    span1.finish
     assert_equal false, ::Instana.tracer.tracing?
 
     spans = ::Instana.processor.queued_spans
