@@ -15,7 +15,7 @@ class TracerTest < Minitest::Test
     ::Instana.config[:tracing][:enabled] = false
     assert_equal false, ::Instana.tracer.tracing?
 
-    ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do
+    ::Instana.tracer.in_span(:rack, attributes: {:one => 1}) do
       assert_equal false, ::Instana.tracer.tracing?
     end
 
@@ -27,7 +27,7 @@ class TracerTest < Minitest::Test
 
     assert_equal false, ::Instana.tracer.tracing?
 
-    ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do
+    ::Instana.tracer.in_span(:rack, attributes: {:one => 1}) do
       assert_equal true, ::Instana.tracer.tracing?
       sleep 0.1
     end
@@ -53,7 +53,7 @@ class TracerTest < Minitest::Test
 
     ipv4 = '111.111.111.111'
 
-    ::Instana.tracer.start_or_continue_trace(:rack, {:ipaddr => ipv4}) do
+    ::Instana.tracer.in_span(:rack, attributes: {:ipaddr => ipv4}) do
       assert_equal true, ::Instana.tracer.tracing?
       sleep 0.1
     end
@@ -77,7 +77,7 @@ class TracerTest < Minitest::Test
     clear_all!
     exception_raised = false
     begin
-      ::Instana.tracer.start_or_continue_trace(:rack, {:one => 1}) do
+      ::Instana.tracer.in_span(:rack, attributes: {:one => 1}) do
         raise StandardError, 'Error in block - this should continue to propogate outside of tracing'
       end
     rescue Exception
@@ -132,9 +132,9 @@ class TracerTest < Minitest::Test
 
   def test_custom_complex_trace_block
     clear_all!
-    ::Instana.tracer.start_or_continue_trace(:root_span, {:one => 1}) do
+    ::Instana.tracer.in_span(:root_span, attributes: {:one => 1}) do
       sleep 0.2
-      ::Instana.tracer.trace(:sub_span, {:sub_two => 2}) do
+      ::Instana.tracer.in_span(:sub_span, attributes: {:sub_two => 2}) do
         sleep 0.2
       end
     end
@@ -167,11 +167,12 @@ class TracerTest < Minitest::Test
 
     assert_equal false, ::Instana.tracer.tracing?
     # Start tracing
-    ::Instana.tracer.log_start_or_continue(:rack, {:one => 1})
+    span = ::Instana.tracer.start_span(:rack, attributes: {:one => 1})
     assert_equal true, ::Instana.tracer.tracing?
-    ::Instana.tracer.log_info({:info_logged => 1})
+    span.set_tags({:info_logged => 1})
     # End tracing
-    ::Instana.tracer.log_end(:rack, {:close_one => 1})
+    span.set_tags({:close_one => 1})
+    span.finish
     assert_equal false, ::Instana.tracer.tracing?
 
     spans = ::Instana.processor.queued_spans
@@ -184,20 +185,25 @@ class TracerTest < Minitest::Test
     assert_equal false, ::Instana.tracer.tracing?
 
     # Start tracing
-    ::Instana.tracer.log_start_or_continue(:rack, {:one => 1})
+    span = ::Instana.tracer.start_span(:rack, attributes: {:one => 1})
     assert_equal true, ::Instana.tracer.tracing?
-    ::Instana.tracer.log_info({:info_logged => 1})
+    span.set_tags({:info_logged => 1})
 
-    # Start tracing a sub span
-    ::Instana.tracer.log_entry(:sub_task)
+    # Start tracing a sub span with context propagation
+    span1 = ::Instana::Trace.with_span(span) do
+      ::Instana.tracer.start_span(:sub_task)
+    end
     assert_equal true, ::Instana.tracer.tracing?
-    ::Instana.tracer.log_info({:sub_task_info => 1})
+    span1.set_tags({:sub_task_info => 1})
     # Exit from the sub span
-    ::Instana.tracer.log_exit(:sub_task, {:sub_task_exit_info => 1})
+    span1.set_tags({:sub_task_exit_info => 1})
+
+    span1.finish
     assert_equal true, ::Instana.tracer.tracing?
 
     # End tracing
-    ::Instana.tracer.log_end(:rack, {:close_one => 1})
+    span.set_tags({:close_one => 1})
+    span.finish
     assert_equal false, ::Instana.tracer.tracing?
 
     spans = ::Instana.processor.queued_spans
@@ -227,8 +233,8 @@ class TracerTest < Minitest::Test
     clear_all!
     exception_raised = false
     begin
-      ::Instana.tracer.start_or_continue_trace(:test_trace, {:one => 1}) do
-        ::Instana.tracer.trace(:test_trace_two) do
+      ::Instana.tracer.in_span(:test_trace, attributes: {:one => 1}) do
+        ::Instana.tracer.in_span(:test_trace_two) do
           raise StandardError, "Block exception test error"
         end
       end
@@ -255,10 +261,14 @@ class TracerTest < Minitest::Test
 
   def test_low_level_error_logging
     clear_all!
-    ::Instana.tracer.log_start_or_continue(:test_trace, {:one => 1})
-    ::Instana.tracer.log_info({:info_logged => 1})
-    ::Instana.tracer.log_error(Exception.new("Low level tracing api error"))
-    ::Instana.tracer.log_end(:test_trace, {:close_one => 1})
+    span = ::Instana.tracer.start_span(:test_trace, attributes: {:one => 1})
+    span.set_tags({:info_logged => 1})
+    span.record_exception(Exception.new("Low level tracing api error"))
+    span.set_tags({:close_one => 1})
+    span.finish
+    # ::Instana.tracer.log_info({:info_logged => 1})
+    # ::Instana.tracer.log_error(Exception.new("Low level tracing api error"))
+    # ::Instana.tracer.log_end(:test_trace, {:close_one => 1})
 
     spans = ::Instana.processor.queued_spans
     assert_equal 1, spans.length
@@ -294,16 +304,17 @@ class TracerTest < Minitest::Test
     clear_all!
 
     refute ::Instana.tracer.tracing_span?(:rack)
-    ::Instana.tracer.log_start_or_continue(:rack)
+    ::Instana.tracer.start_span(:rack)
     assert ::Instana.tracer.tracing_span?(:rack)
   end
 
   def test_log_exit_warn_span_name
     logger = Minitest::Mock.new
     logger.expect(:warn, true, [String])
-    subject = Instana::Tracer.new(nil, nil, nil, logger)
 
-    subject.log_start_or_continue(:sample)
+    subject = Instana::Tracer.new(nil, nil, ::Instana::Trace::TracerProvider.new, logger)
+
+    subject.start_span(:sample)
     subject.log_exit(:roda)
 
     logger.verify
@@ -314,9 +325,9 @@ class TracerTest < Minitest::Test
 
     logger = Minitest::Mock.new
     logger.expect(:warn, true, [String])
-    subject = Instana::Tracer.new(nil, nil, nil, logger)
+    subject = Instana::Tracer.new(nil, nil, ::Instana::Trace::TracerProvider.new, logger)
 
-    subject.log_start_or_continue(:sample)
+    subject.start_span(:sample)
     subject.log_end(:roda)
 
     logger.verify
@@ -325,7 +336,7 @@ class TracerTest < Minitest::Test
   def test_log_entry_span
     clear_all!
 
-    subject = Instana::Tracer.new(nil, nil, nil)
+    subject = Instana::Tracer.new(nil, nil, ::Instana::Trace::TracerProvider.new)
     span = Instana::Span.new(:rack)
 
     subject.log_entry(:sample, {}, ::Instana::Util.now_in_ms, span)
