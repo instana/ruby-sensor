@@ -9,7 +9,7 @@ module Instana
 
     attr_accessor :parent, :baggage, :is_root, :context
 
-    def initialize(name, parent_ctx = nil, _context = nil, parent_span = nil, _kind = nil, parent_span_id = nil, _span_limits = nil, _span_processors = nil, attributes = nil, _links = nil, start_timestamp = ::Instana::Util.now_in_ms, _resource = nil, _instrumentation_scope = nil) # rubocop:disable Lint/MissingSuper, Metrics/ParameterLists
+    def initialize(name, parent_ctx = nil, _context = nil, parent_span = nil, _kind = nil, parent_span_id = nil, _span_limits = nil, _span_processors = nil, attributes = nil, _links = nil, start_timestamp = ::Instana::Util.now_in_ms, _resource = nil, _instrumentation_scope = nil) # rubocop:disable Lint/MissingSuper, Metrics/ParameterLists, Layout/LineLength
       @attributes = {}
 
       @ended = false

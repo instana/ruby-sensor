@@ -132,11 +132,11 @@ class TracerAsyncTest < Minitest::Test
     span = ::Instana.tracer.start_span(:rack, attributes: {:rack_start_kv => 1})
 
     # Start three asynchronous spans
-    span1,span2,span3 = ::Instana::Trace.with_span(span) do
+    span1, span2, span3 = ::Instana::Trace.with_span(span) do
       span1 = ::Instana.tracer.start_span(:my_async_op1, attributes: { :entry_kv => 1})
       span2 = ::Instana.tracer.start_span(:my_async_op2, attributes: { :entry_kv => 2})
       span3 = ::Instana.tracer.start_span(:my_async_op3, attributes: { :entry_kv => 3})
-      return span1,span2,span3
+      return span1, span2, span3
     end
 
     # Context awareness when using Opentelemetry is done through Opentelemetry::Context so the below test is invalid
@@ -213,7 +213,7 @@ class TracerAsyncTest < Minitest::Test
 
   def test_async_helpers
     clear_all!
-    span = ::Instana.tracer.start_span(:rack)
+    ::Instana.tracer.start_span(:rack)
 
     span1 = ::Instana.tracer.start_span(:async, attributes: {})
     span1.set_tags({a: 1})
@@ -229,7 +229,7 @@ class TracerAsyncTest < Minitest::Test
 
   def test_async_helpers_tag_exit
     clear_all!
-    span = ::Instana.tracer.start_span(:rack)
+    ::Instana.tracer.start_span(:rack)
 
     span1 = ::Instana.tracer.start_span(:async, attributes: {})
     span1.set_tags({a: 1})
