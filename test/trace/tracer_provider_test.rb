@@ -138,11 +138,11 @@ end
 class DummyProcessor
   def initialize; end
 
-  def shutdown(timeout: nil)
+  def shutdown(timeout: nil) # rubocop:disable Lint/UnusedMethodArgument
     Instana::Trace::Export::SUCCESS
   end
 
-  def force_flush(timeout: nil)
+  def force_flush(timeout: nil) # rubocop:disable Lint/UnusedMethodArgument
     Instana::Trace::Export::SUCCESS
   end
 end

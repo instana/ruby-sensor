@@ -24,7 +24,7 @@ class CustomTracingTest < Minitest::Test
     assert_equal :sdk, first_span[:n]
 
     assert first_span[:ts].is_a?(Integer)
-    assert (first_span[:ts]).positive?
+    assert first_span[:ts].positive?
     assert first_span[:d].is_a?(Integer)
     assert first_span[:d].between?(0, 5)
 
@@ -139,7 +139,7 @@ class CustomTracingTest < Minitest::Test
     second_span = find_first_span_by_name(spans, :custom_span)
 
     assert first_span[:ts].is_a?(Integer)
-    assert (first_span[:ts]).positive?
+    assert first_span[:ts].positive?
     assert first_span[:d].is_a?(Integer)
     assert first_span[:d].between?(0, 5)
 
@@ -164,7 +164,7 @@ class CustomTracingTest < Minitest::Test
     assert_equal 1, second_span[:data][:sdk][:custom][:tags][:on_exit_kv]
   end
 
-  def test_custom_tracing_with_error
+  def test_custom_tracing_with_error # rubocop:disable Metrics/MethodLength
     clear_all!
     assert_equal false, ::Instana.tracer.tracing?
 
@@ -197,7 +197,7 @@ class CustomTracingTest < Minitest::Test
     second_span = find_first_span_by_name(spans, :custom_span)
 
     assert first_span[:ts].is_a?(Integer)
-    assert (first_span[:ts]).positive?
+    assert first_span[:ts].positive?
     assert first_span[:d].is_a?(Integer)
     assert first_span[:d].between?(0, 5)
 
@@ -209,7 +209,7 @@ class CustomTracingTest < Minitest::Test
     assert_equal 1, first_span[:data][:on_trace_end]
 
     assert second_span[:ts].is_a?(Integer)
-    assert (second_span[:ts]).positive?
+    assert second_span[:ts].positive?
     assert second_span[:d].is_a?(Integer)
     assert second_span[:d].between?(0, 5)
 
