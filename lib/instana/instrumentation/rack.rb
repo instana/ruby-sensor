@@ -10,30 +10,13 @@ module Instana
       @app = app
     end
 
-    def call(env)
+    def call(env) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
       req = InstrumentedRequest.new(env)
       kvs = {
         http: req.request_tags
       }.reject { |_, v| v.nil? }
 
-      incoming_context = req.incoming_context
-      if incoming_context
-        if incoming_context.is_a?(Hash)
-          unless incoming_context.empty?
-            parent_context = SpanContext.new(
-              trace_id: incoming_context[:trace_id],
-              span_id: incoming_context[:span_id],
-              level: incoming_context[:level],
-              baggage: {
-                external_trace_id: incoming_context[:external_trace_id],
-                external_state: incoming_context[:external_state]
-              }
-            )
-          end
-        else
-          parent_context = incoming_context
-        end
-      end
+      parent_context = extract_trace_context(req.incoming_context)
 
       span = OpenTelemetry::Trace.non_recording_span(parent_context) if parent_context
       parent_context = Trace.context_with_span(span) if parent_context
@@ -112,6 +95,31 @@ module Instana
         OpenTelemetry::Context.detach(@trace_token) if @trace_token
         current_span.finish
       end
+    end
+
+    private
+
+    def extract_trace_context(incoming_context)
+      return nil unless incoming_context
+
+      parent_context = nil
+
+      if incoming_context.is_a?(Hash)
+        unless incoming_context.empty?
+          parent_context = SpanContext.new(
+            trace_id: incoming_context[:trace_id],
+            span_id: incoming_context[:span_id],
+            level: incoming_context[:level],
+            baggage: {
+              external_trace_id: incoming_context[:external_trace_id],
+              external_state: incoming_context[:external_state]
+            }
+          )
+        end
+      elsif incoming_context.is_a?(SpanContext)
+        parent_context = incoming_context
+      end
+      parent_context
     end
   end
 end
