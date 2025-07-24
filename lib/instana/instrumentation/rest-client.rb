@@ -10,7 +10,7 @@ module Instana
         # in the Net::HTTP instrumentation
         span = ::Instana.tracer.start_span(:'rest-client', with_parent: OpenTelemetry::Context.current)
 
-        Trace.with_span(span) do super(&block) end;
+        Trace.with_span(span) { super(&block) }
       rescue => e
         span.record_exception(e)
         raise

@@ -44,7 +44,6 @@ module Instana
           span.record_exception(e)
           raise
         end
-
       end
     end
   end

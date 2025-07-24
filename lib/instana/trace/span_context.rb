@@ -13,7 +13,7 @@ module Instana
     # @param level [Integer] default 1
     # @param baggage [Hash] baggage applied to this trace
     #
-    def initialize(
+    def initialize( # rubocop:disable Lint/MissingSuper, Metrics/ParameterLists
       trace_id: Trace.generate_trace_id,
       span_id: Trace.generate_span_id,
       trace_flags: OpenTelemetry::Trace::TraceFlags::DEFAULT, # Todo - implement traceflags

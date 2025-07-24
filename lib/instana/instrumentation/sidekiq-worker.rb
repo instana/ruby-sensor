@@ -48,7 +48,6 @@ module Instana
             raise
           end
         end
-
       end
     end
   end
