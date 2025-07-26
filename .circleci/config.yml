@@ -238,9 +238,13 @@ jobs:
       - checkout
       # - run_sonarqube
   publish:
+    parameters:
+      ruby_version:
+        type: string
+        default: "3.4"
     executor:
       name: "base"
-      ruby_version: "3.4"
+      ruby_version: <<parameters.ruby_version>>
     steps:
       - checkout
       - setup
@@ -250,6 +254,11 @@ workflows:
   publish:
     jobs:
       - publish:
+          matrix:
+            parameters:
+              ruby_version:
+                - "3.4"
+                - "jruby-9.4.13.0"
           filters:
             branches:
               ignore: /.*/
