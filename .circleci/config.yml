@@ -35,6 +35,7 @@ library_gemfile: &library_gemfile
     - "./gemfiles/shoryuken_60.gemfile"
     - "./gemfiles/mongo_216.gemfile"
     - "./gemfiles/mongo_219.gemfile"
+
 executors:
   ruby_33_lint:
     docker:
@@ -88,6 +89,7 @@ executors:
         environment:
           POSTGRES_PASSWORD: 'test'
           POSTGRES_DB: 'ci_test'
+
 commands:
   setup:
     steps:
@@ -181,6 +183,7 @@ commands:
           name: Publish Gem
           command: |
             bundle exec rake release[origin]
+
 jobs:
   test_core:
     parameters:
@@ -190,7 +193,7 @@ jobs:
       ruby_version:
         type: string
         default: "3.1"
-    executor: 
+    executor:
       name: <<parameters.stack>>
       ruby_version: <<parameters.ruby_version>>
     steps:
@@ -208,7 +211,7 @@ jobs:
       ruby_version:
         type: string
         default: "3.1"
-    executor: 
+    executor:
       name: <<parameters.stack>>
       ruby_version: <<parameters.ruby_version>>
     environment:
@@ -235,17 +238,27 @@ jobs:
       - checkout
       # - run_sonarqube
   publish:
-    executor: 
+    parameters:
+      ruby_version:
+        type: string
+        default: "3.4"
+    executor:
       name: "base"
-      ruby_version: "3.4"
+      ruby_version: <<parameters.ruby_version>>
     steps:
       - checkout
       - setup
       - publish_gem
+
 workflows:
   publish:
     jobs:
       - publish:
+          matrix:
+            parameters:
+              ruby_version:
+                - "3.4"
+                - "jruby-9.4.13.0"
           filters:
             branches:
               ignore: /.*/
@@ -266,6 +279,8 @@ workflows:
                 - "3.3"
                 - "3.4"
                 - "3.5.0-preview1"
+                - "jruby-9.4.13.0"
+                - "jruby-10.0.1.0"
   libraries_ruby_31_32:
     jobs:
       - test_apprisal:
@@ -278,6 +293,8 @@ workflows:
               ruby_version:
                 - "3.1"
                 - "3.2"
+                - "jruby-9.4.13.0"
+                - "jruby-10.0.1.0"
   libraries_ruby_33_35:
     jobs:
       - test_apprisal:
@@ -291,6 +308,8 @@ workflows:
                 - "3.3"
                 - "3.4"
                 - "3.5.0-preview1"
+                - "jruby-9.4.13.0"
+                - "jruby-10.0.1.0"
             # Currently compiling the native extensions for `grpc`
             # exceeds an internal RAM and/or CPU limit of CircleCI executor,
             # and the job gets terminated with:
@@ -321,7 +340,9 @@ workflows:
                 - "3.2"
                 - "3.3"
                 - "3.4"
-                - "3.5.0-preview1"             
+                - "3.5.0-preview1"
+                - "jruby-9.4.13.0"
+                - "jruby-10.0.1.0"
   rails8_ruby_33_35:
     jobs:
       - test_apprisal:
@@ -338,6 +359,8 @@ workflows:
                 - "3.2"
                 - "3.3"
                 - "3.4"
+                - "jruby-9.4.13.0"
+                - "jruby-10.0.1.0"
   sequel:
       jobs:
       - test_apprisal:
@@ -356,6 +379,8 @@ workflows:
                 - "3.2"
                 - "3.3"
                 - "3.5.0-preview1"
+                - "jruby-9.4.13.0"
+                - "jruby-10.0.1.0"
   report_coverage:
     jobs:
       - report_coverage
