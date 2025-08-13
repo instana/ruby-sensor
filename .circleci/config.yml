@@ -109,6 +109,11 @@ commands:
   run_sonarqube:
     steps:
       - run:
+          name: Install jq
+          command: |
+            apt-get update
+            apt-get install jq
+      - run:
           name: Install dependencies for coverage merge
           command: |
             bundler --version
