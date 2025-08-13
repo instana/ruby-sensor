@@ -112,7 +112,7 @@ commands:
           name: Install jq
           command: |
             apt-get update
-            apt-get install jq
+            apt-get install jq -y
       - run:
           name: Install dependencies for coverage merge
           command: |
