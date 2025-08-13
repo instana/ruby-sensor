@@ -241,7 +241,7 @@ jobs:
     executor: base
     steps:
       - checkout
-      # - run_sonarqube
+      - run_sonarqube
   publish:
     executor: 
       name: "base"
