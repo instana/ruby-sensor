@@ -109,10 +109,10 @@ commands:
   run_sonarqube:
     steps:
       - run:
-          name: Install Java for the SonarQube tool
+          name: Install jq
           command: |
-            sudo apt-get update
-            sudo apt-get install openjdk-11-jdk
+            apt-get update
+            apt-get install jq -y
       - run:
           name: Install dependencies for coverage merge
           command: |
@@ -133,19 +133,29 @@ commands:
             BUNDLE_GEMFILE: './Gemfile'
       - run:
           name: Run SonarQube to report the coverage
+          environment:
+            SONAR_TOKEN: $SONAR_TOKEN
           command: |
-            wget -O /tmp/sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.1.3023.zip
-            unzip -d /tmp /tmp/sonar-scanner-cli.zip
+            export SONAR_SCANNER_VERSION=7.2.0.5079
+            export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64
+            curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
+            unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+            export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+            export SONAR_SCANNER_OPTS="-server"
             if [[ -n "${CIRCLE_PR_NUMBER}" ]]; then
-              /tmp/sonar-scanner-4.8.1.3023/bin/sonar-scanner \
+              sonar-scanner \
+                -Dsonar.organization=instana \
+                -Dsonar.projectKey=instana_ruby-sensor \
+                -Dsonar.sources=. \
                 -Dsonar.host.url="${SONARQUBE_URL}" \
-                -Dsonar.login="${SONARQUBE_LOGIN}" \
                 -Dsonar.pullrequest.key="${CIRCLE_PR_NUMBER}" \
                 -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}"
             else
-              /tmp/sonar-scanner-4.8.1.3023/bin/sonar-scanner \
+              sonar-scanner \
+                -Dsonar.organization=instana \
+                -Dsonar.projectKey=instana_ruby-sensor \
+                -Dsonar.sources=. \
                 -Dsonar.host.url="${SONARQUBE_URL}" \
-                -Dsonar.login="${SONARQUBE_LOGIN}" \
                 -Dsonar.branch.name="${CIRCLE_BRANCH}"
             fi
       - store_artifacts:
@@ -233,7 +243,7 @@ jobs:
     executor: base
     steps:
       - checkout
-      # - run_sonarqube
+      - run_sonarqube
   publish:
     executor: 
       name: "base"
