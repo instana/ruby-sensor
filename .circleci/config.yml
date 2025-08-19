@@ -136,9 +136,12 @@ commands:
           environment:
             SONAR_TOKEN: $SONAR_TOKEN
           command: |
+            #!/usr/bin/env bash
+
+            set -e
             export SONAR_SCANNER_VERSION=7.2.0.5079
             export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64
-            echo ${SONAR_TOKEN}
+            SONAR_TOKEN=${SONAR_TOKEN}
             curl -H "Authorization: Bearer ${SONAR_TOKEN}" https://api.sonarcloud.io/analysis/jres\?os\=linux\&arch\=x86_64
             curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
             unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
@@ -152,15 +155,13 @@ commands:
                 -Dsonar.host.url="${SONARQUBE_URL}" \
                 -Dsonar.pullrequest.key="${CIRCLE_PR_NUMBER}" \
                 -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}" \
-                -Dsonar.token="${SONAR_TOKEN}"
             else
               sonar-scanner \
                 -Dsonar.organization=instana \
                 -Dsonar.projectKey=instana_ruby-sensor \
                 -Dsonar.sources=. \
                 -Dsonar.host.url="${SONARQUBE_URL}" \
-                -Dsonar.branch.name="${CIRCLE_BRANCH}" \
-                -Dsonar.token="${SONAR_TOKEN}"
+                -Dsonar.branch.name="${CIRCLE_BRANCH}"
             fi
       - store_artifacts:
           path: partial_coverage_results
