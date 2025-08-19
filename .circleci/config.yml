@@ -149,14 +149,16 @@ commands:
                 -Dsonar.sources=. \
                 -Dsonar.host.url="${SONARQUBE_URL}" \
                 -Dsonar.pullrequest.key="${CIRCLE_PR_NUMBER}" \
-                -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}"
+                -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}" \
+                -Dsonar.token="${SONAR_TOKEN}"
             else
               sonar-scanner \
                 -Dsonar.organization=instana \
                 -Dsonar.projectKey=instana_ruby-sensor \
                 -Dsonar.sources=. \
                 -Dsonar.host.url="${SONARQUBE_URL}" \
-                -Dsonar.branch.name="${CIRCLE_BRANCH}"
+                -Dsonar.branch.name="${CIRCLE_BRANCH}" \
+                -Dsonar.token="${SONAR_TOKEN}"
             fi
       - store_artifacts:
           path: partial_coverage_results
