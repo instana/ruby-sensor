@@ -133,10 +133,7 @@ commands:
             BUNDLE_GEMFILE: './Gemfile'
       - run:
           name: Run SonarQube to report the coverage
-          environment:
-            SONAR_TOKEN: $SONAR_TOKEN
           command: |
-            #!/usr/bin/env bash
             
             PR_NUMBER=$(echo ${CIRCLE_PULL_REQUEST} | sed 's/.*\///')
             SONAR_SCANNER_VERSION=${SONAR_SCANNER_VERSION}
