@@ -134,7 +134,6 @@ commands:
       - run:
           name: Run SonarQube to report the coverage
           command: |
-            #!/usr/bin/env bash
             
             export SONAR_SCANNER_VERSION=7.2.0.5079
             export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64
@@ -151,7 +150,7 @@ commands:
                 -Dsonar.sources=. \
                 -Dsonar.host.url="${SONARQUBE_URL}" \
                 -Dsonar.pullrequest.key="${CIRCLE_PR_NUMBER}" \
-                -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}" \
+                -Dsonar.pullrequest.branch="${CIRCLE_BRANCH}"
             else
               sonar-scanner \
                 -Dsonar.organization=instana \
