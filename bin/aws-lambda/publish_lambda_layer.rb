@@ -29,7 +29,7 @@ this_file_path = File.dirname(File.expand_path(__FILE__))
 # Change directory to the base of the Ruby sensor repository
 Dir.chdir(this_file_path.to_s)
 
-zip_filename = "layer.zip"
+zip_filename = "layer"
 
 cn_regions = [
   "cn-north-1",
@@ -79,14 +79,13 @@ else
   layer_name_prefix = "instana-ruby"
 end
 
-published = {}
 # AWS Lambda supported ruby versions
 ruby_supported_runtimes = ["ruby3.2", "ruby3.3", "ruby3.4"]
 # Publish each Ruby version as a separate layer
 layer_name = layer_name_prefix.to_s
 regional_publish = {}
 target_regions.each do |region| # rubocop:disable Metrics/BlockLength
-  puts "===> Uploading layer for Ruby #{ruby_version} to AWS #{region}"
+  puts "===> Uploading layer for Ruby to AWS #{region}"
   profile = cn_regions.include?(region) ? "china" : "non-china"
 
   # Initialize AWS Lambda client for this region and profile
@@ -130,12 +129,9 @@ target_regions.each do |region| # rubocop:disable Metrics/BlockLength
     puts "Failed to publish layer to #{region}: #{e.message}"
     next
   end
-  published[ruby_version] = regional_publish
 end
 
 puts "===> Published list:"
-published.each do |ruby_version, regional_publish|
-  regional_publish.each do |region, arn|
-    puts "#{ruby_version}#{region}\t#{arn}"
-  end
+regional_publish.each do |region, arn|
+  puts "#{region}\t#{arn}"
 end
