@@ -7,6 +7,8 @@ require 'fileutils'
 require 'time'
 require 'aws-sdk-lambda'
 
+CHINA_REGIONS = File.readlines(File.join(File.dirname(__FILE__), 'aws-regions/cn-regions.txt')).map(&:chomp)
+OTHER_REGIONS = File.readlines(File.join(File.dirname(__FILE__), 'aws-regions/other_regions.txt')).map(&:chomp)
 # Check AWS profiles
 ["china", "non-china"].each do |profile|
   # Test if we can initialize a client with this profile
@@ -31,51 +33,11 @@ Dir.chdir(this_file_path.to_s)
 
 zip_filename = "layer"
 
-cn_regions = [
-  "cn-north-1",
-  "cn-northwest-1"
-]
-
 if dev_mode
   target_regions = ["us-east-1"]
   layer_name_prefix = "instana-ruby-dev"
 else
-  target_regions = %w[
-    af-south-1
-    ap-east-1
-    ap-east-2
-    ap-northeast-1
-    ap-northeast-2
-    ap-northeast-3
-    ap-south-1
-    ap-south-2
-    ap-southeast-1
-    ap-southeast-2
-    ap-southeast-3
-    ap-southeast-4
-    ap-southeast-5
-    ap-southeast-7
-    ca-central-1
-    ca-west-1
-    cn-north-1
-    cn-northwest-1
-    eu-central-1
-    eu-central-2
-    eu-north-1
-    eu-south-1
-    eu-south-2
-    eu-west-1
-    eu-west-2
-    eu-west-3
-    il-central-1
-    me-central-1
-    me-south-1
-    sa-east-1
-    us-east-1
-    us-east-2
-    us-west-1
-    us-west-2
-  ]
+  target_regions = CHINA_REGIONS + OTHER_REGIONS
   layer_name_prefix = "instana-ruby"
 end
 
@@ -86,7 +48,7 @@ layer_name = layer_name_prefix.to_s
 regional_publish = {}
 target_regions.each do |region| # rubocop:disable Metrics/BlockLength
   puts "===> Uploading layer for Ruby to AWS #{region}"
-  profile = cn_regions.include?(region) ? "china" : "non-china"
+  profile = CHINA_REGIONS.include?(region) ? "china" : "non-china"
 
   # Initialize AWS Lambda client for this region and profile
   lambda_client = Aws::Lambda::Client.new(
