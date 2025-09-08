@@ -62,7 +62,8 @@ class RedisTest < Minitest::Test
     Instana.tracer.in_span(:redis_test) do
       begin
         @redis_client.zadd('hello', 'invalid', 'value')
-      rescue; end
+      rescue
+      end
     end
 
     assert_redis_trace('ZADD', with_error: 'ERR value is not a valid float')
@@ -90,7 +91,8 @@ class RedisTest < Minitest::Test
           pipeline.set('other', 'world')
           pipeline.call('invalid')
         end
-      rescue; end
+      rescue
+      end
     end
 
     assert_redis_trace('PIPELINE', with_error: "ERR unknown command 'invalid'")
@@ -118,7 +120,8 @@ class RedisTest < Minitest::Test
           multi.set('other', 'world')
           multi.call('invalid')
         end
-      rescue; end
+      rescue
+      end
     end
 
     assert_redis_trace('MULTI', with_error: "ERR unknown command 'invalid'")
