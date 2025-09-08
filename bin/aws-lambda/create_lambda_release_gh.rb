@@ -8,6 +8,9 @@
 require 'json'
 require 'open3'
 
+CHINA_REGIONS = File.readlines(File.join(File.dirname(__FILE__), 'aws-regions/cn-regions.txt')).map(&:chomp)
+OTHER_REGIONS = File.readlines(File.join(File.dirname(__FILE__), 'aws-regions/other_regions.txt')).map(&:chomp)
+
 if ARGV.length != 1
   raise ArgumentError, 'Please specify the layer version to release. e.g. "1"'
 end
@@ -30,40 +33,7 @@ end
   end
 end
 
-regions = %w[
-  af-south-1
-  ap-east-1
-  ap-northeast-1
-  ap-northeast-2
-  ap-northeast-3
-  ap-south-1
-  ap-south-2
-  ap-southeast-1
-  ap-southeast-2
-  ap-southeast-3
-  ap-southeast-4
-  ca-central-1
-  ca-west-1
-  cn-north-1
-  cn-northwest-1
-  eu-central-1
-  eu-central-2
-  eu-north-1
-  eu-south-1
-  eu-south-2
-  eu-west-1
-  eu-west-2
-  eu-west-3
-  il-central-1
-  me-central-1
-  me-south-1
-  sa-east-1
-  us-east-1
-  us-east-2
-  us-west-1
-  us-west-2
-]
-
+regions = CHINA_REGIONS + OTHER_REGIONS
 version = ARGV[0]
 semantic_version = "v#{version}"
 title = "AWS Lambda Layer #{semantic_version}"
@@ -83,7 +53,7 @@ stdout, stderr, status = Open3.capture3(
 
 if status.success?
   json_data = JSON.parse(stdout)
-  puts "If there weren't any failures, the release is available at:"
+  puts "The release is available at:"
   puts json_data["html_url"]
 else
   puts "Error creating release: #{stderr}"
