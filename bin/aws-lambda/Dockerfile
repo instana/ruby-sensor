@@ -13,9 +13,6 @@ RUN echo "source 'https://rubygems.org'; gem 'instana'; gem 'get_process_mem'" >
 RUN mkdir -p ruby/gems/3.4.0 && \
     cp -r vendor/bundle/ruby/3.4.0*/* ruby/gems/3.4.0/
 
-# Create the layer zip file
-# RUN zip -r /layer.zip ruby/
-
 FROM public.ecr.aws/lambda/ruby:3.3 as ruby_dependencies_33
 
 # Install system dependencies for native extensions
@@ -30,9 +27,6 @@ RUN echo "source 'https://rubygems.org'; gem 'instana'; gem 'get_process_mem'" >
 # Create the layer structure
 RUN mkdir -p ruby/gems/3.3.0 && \
     cp -r vendor/bundle/ruby/3.3.0*/* ruby/gems/3.3.0/
-
-# Create the layer zip file
-# RUN zip -r /layer.zip ruby/
 
 FROM public.ecr.aws/lambda/ruby:3.2 as ruby_dependencies_32
 
@@ -49,12 +43,6 @@ RUN echo "source 'https://rubygems.org'; gem 'instana'; gem 'get_process_mem'" >
 # Create the layer structure
 RUN mkdir -p ruby/gems/3.2.0 && \
     cp -r vendor/bundle/ruby/3.2.0*/* ruby/gems/3.2.0/
-
-RUN pwd
-RUN ls -altr
-# Create the layer zip file
-# RUN zip -r /layer.zip ruby/
-
 
 FROM  public.ecr.aws/docker/library/alpine:3.22 as final
 
