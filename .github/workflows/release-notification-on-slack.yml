@@ -15,7 +15,7 @@ jobs:
     name: Slack Post
     runs-on: ubuntu-latest
     steps:
-      - name: 'Checkout the needed file only ./bin/announce_release_on_slack.py'
+      - name: 'Checkout'
         uses: actions/checkout@v3
       - run: |
           if [[ ${{ github.event_name == 'workflow_dispatch' }} == true ]]; then
@@ -27,7 +27,7 @@ jobs:
           pip3 install httpx PyGithub
           echo $PWD
           ls -lah
-          ./github/scripts/announce_release_on_slack.py
+          python ./.github/scripts/announce_release_on_slack.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_TOKEN: ${{ secrets.RUPY_TRACER_RELEASES_TOKEN }}
