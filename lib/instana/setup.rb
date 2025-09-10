@@ -41,6 +41,7 @@ require 'instana/backend/serverless_agent'
 require 'instana/backend/agent'
 require 'instana/trace'
 require 'instana/trace/tracer_provider'
+require 'instana/span_filtering'
 
 ::Instana.setup
 ::Instana.agent.setup

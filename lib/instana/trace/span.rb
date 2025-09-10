@@ -159,15 +159,20 @@ module Instana
     # @return [Span]
     #
     def close(end_time = ::Instana::Util.now_in_ms)
+      result = nil
+      result = ::Instana::SpanFiltering.filter_span(self)
       if end_time.is_a?(Time)
         end_time = ::Instana::Util.time_to_ms(end_time)
       end
-
       @attributes[:d] = end_time - @attributes[:ts]
       @ended = true
-      # Add this span to the queue for reporting
-      ::Instana.processor.on_finish(self)
 
+      # Instana.logger.debug("Span closed: #{@attributes[:n]} with result #{result}")
+      # Instana.logger.debug(@attributes)
+      if result.nil?
+        # Add this span to the queue for reporting
+        ::Instana.processor.on_finish(self)
+      end
       self
     end
 
