@@ -66,9 +66,9 @@ module Instana
           next unless ['include', 'exclude'].include?(policy)
 
           if parts[4] == 'ATTRIBUTES'
-            process_env_attributes(policy, parts[4..-1].join('_'), value)
+            process_env_attributes(policy, parts[4..].join('_'), value)
           elsif policy == 'exclude' && parts[4] == 'SUPPRESSION'
-            process_env_suppression(parts[3..-1].join('_'), value)
+            process_env_suppression(parts[3..].join('_'), value)
           end
         end
       end
@@ -124,7 +124,7 @@ module Instana
         rule_index = policy_name.split('_')[1].to_i
         return if rule_index >= @exclude_rules.size
 
-        suppression = ['1', 'true', 'True'].include?(value)
+        suppression = %w[1 true True].include?(value)
         @exclude_rules[rule_index].suppression = suppression
       end
     end
