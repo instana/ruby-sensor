@@ -56,6 +56,7 @@ module Instana
       def determine_category(span)
         data = span[:data] || span['data']
         return nil unless data
+
         if data[:http] || data['http']
           'protocols'
         elsif data[:redis] || data[:mysql] || data[:pg] || data[:db]
@@ -64,8 +65,6 @@ module Instana
           'messaging'
         elsif (span[:n] || span['n'])&.start_with?('log.')
           'logging'
-        else
-          nil
         end
       end
 
