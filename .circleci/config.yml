@@ -55,7 +55,7 @@ executors:
       - image: public.ecr.aws/aws-dynamodb-local/aws-dynamodb-local
       - image: quay.io/minio/minio
         command: ["server", "/data"]
-      - image: public.ecr.aws/redbox-public/s12v/sns:latest
+      - image: s12v/sns
       - image: public.ecr.aws/sprig/elasticmq-native
       - image: public.ecr.aws/docker/library/mongo:5-focal
   mysql2:
