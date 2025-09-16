@@ -153,3 +153,140 @@ class RedisTest < Minitest::Test
     end
   end
 end
+
+class RedisSpanFilteringTest < Minitest::Test
+  def setup
+    if ENV.key?('REDIS_URL')
+      @redis_url = ENV['REDIS_URL']
+    else
+      @redis_url = "redis://localhost:6379"
+    end
+    @redis_client = Redis.new(url: @redis_url)
+
+    # Reset span filtering configuration before each test
+    ::Instana::SpanFiltering.reset
+    ::Instana::SpanFiltering.initialize
+
+    clear_all!
+  end
+
+  def teardown
+    # Reset span filtering configuration after each test
+    ::Instana::SpanFiltering.reset
+    ::Instana::SpanFiltering.initialize
+  end
+
+  def test_redis_exclude_rule_filters_spans
+    # Configure span filtering to exclude Redis SET operations
+    condition1 = ::Instana::SpanFiltering::Condition.new('type', 'redis')
+    condition2 = ::Instana::SpanFiltering::Condition.new('redis.command', 'SET')
+    rule = ::Instana::SpanFiltering::FilterRule.new('Exclude Redis SET', false, [condition1, condition2])
+    ::Instana::SpanFiltering.configuration.exclude_rules << rule
+
+    # Execute Redis SET operation
+    Instana.tracer.in_span(:redis_test) do
+      @redis_client.set('hello', 'world')
+    end
+
+    # Verify that only the parent span is reported (Redis span is filtered out)
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
+    assert_equal :sdk, spans[0][:n]
+  end
+
+  def test_redis_include_rule_keeps_only_matching_spans
+    # Configure span filtering to only include Redis GET operations
+    condition1 = ::Instana::SpanFiltering::Condition.new('type', 'redis')
+    condition2 = ::Instana::SpanFiltering::Condition.new('redis.command', 'GET')
+    condition3 = ::Instana::SpanFiltering::Condition.new('type', 'sdk')
+
+    rule1 = ::Instana::SpanFiltering::FilterRule.new('Include Redis GET', false, [condition1, condition2])
+    rule2 = ::Instana::SpanFiltering::FilterRule.new('Include all SDK Spans GET', false, [condition3])
+    ::Instana::SpanFiltering.configuration.include_rules << rule1 << rule2
+    # Execute Redis SET operation (should be filtered out)
+    byebug
+    Instana.tracer.in_span(:redis_test) do
+      @redis_client.set('hello', 'world')
+    end
+    # Verify that only the parent span is reported (Redis SET span is filtered out)
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
+    assert_equal :sdk, spans[0][:n]
+
+    clear_all!
+
+    # Execute Redis GET operation (should be included)
+    Instana.tracer.in_span(:redis_test) do
+      @redis_client.get('hello')
+    end
+
+    # Verify that both spans are reported
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
+    first_span, second_span = spans.to_a.reverse
+    assert_equal :sdk, first_span[:n]
+    assert_equal :redis, second_span[:n]
+    assert_equal "GET", second_span[:data][:redis][:command]
+  end
+
+  def test_redis_filtering_deactivated
+    # Configure span filtering but deactivate it
+    condition1 = ::Instana::SpanFiltering::Condition.new('type', 'redis')
+    condition2 = ::Instana::SpanFiltering::Condition.new('redis.command', 'SET')
+    rule = ::Instana::SpanFiltering::FilterRule.new('Exclude Redis SET', false, [condition1, condition2])
+    ::Instana::SpanFiltering.configuration.exclude_rules << rule
+    ::Instana::SpanFiltering.configuration.instance_variable_set(:@deactivated, true)
+
+    # Execute Redis SET operation
+    Instana.tracer.in_span(:redis_test) do
+      @redis_client.set('hello', 'world')
+    end
+
+    # Verify that both spans are reported (filtering is deactivated)
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
+    first_span, second_span = spans.to_a.reverse
+    assert_equal :sdk, first_span[:n]
+    assert_equal :redis, second_span[:n]
+  end
+
+  def test_redis_command_pattern_matching
+    # Configure span filtering to exclude Redis commands that start with 'S'
+    condition1 = ::Instana::SpanFiltering::Condition.new('type', 'redis')
+    condition2 = ::Instana::SpanFiltering::Condition.new('redis.command', 'S', 'startswith')
+    rule = ::Instana::SpanFiltering::FilterRule.new('Exclude Redis S* commands', false, [condition1, condition2])
+    ::Instana::SpanFiltering.configuration.exclude_rules << rule
+
+    # Execute Redis SET operation (should be filtered out)
+    Instana.tracer.in_span(:redis_test) do
+      @redis_client.set('hello', 'world')
+    end
+
+    # Verify that only the parent span is reported
+    spans = ::Instana::processor.queued_spans
+    assert_equal 1, spans.length
+    assert_equal :sdk, spans[0][:n]
+
+    clear_all!
+
+    # Execute Redis GET operation (should not be filtered out)
+    Instana.tracer.in_span(:redis_test) do
+      @redis_client.get('hello')
+    end
+
+    # Verify that both spans are reported
+    spans = ::Instana.processor.queued_spans
+    assert_equal 2, spans.length
+    first_span, second_span = spans.to_a.reverse
+    assert_equal :sdk, first_span[:n]
+    assert_equal :redis, second_span[:n]
+    assert_equal "GET", second_span[:data][:redis][:command]
+  end
+
+  private
+
+  def clear_all!
+    ::Instana.processor.clear!
+    ::Instana.tracer.clear!
+  end
+end
