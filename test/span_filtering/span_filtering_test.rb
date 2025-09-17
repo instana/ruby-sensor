@@ -114,10 +114,10 @@ class SpanFilteringTest < Minitest::Test
                   values: [http.client]
                   match_type: strict
           exclude:
-            - name: exclude-all
+            - name: exclude-redis
               attributes:
                 - key: type
-                  values: ["*"]
+                  values: ["redis"]
                   match_type: strict
     YAML
 
