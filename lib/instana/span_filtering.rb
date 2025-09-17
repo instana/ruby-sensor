@@ -32,8 +32,12 @@ module Instana
         return nil unless @configuration
 
         # Check include rules first (whitelist)
-        if @configuration.include_rules.any? { |rule| rule.matches?(span) }
-          return nil # Keep the span if it matches any include rule
+        if @configuration.include_rules.any?
+          # If we have include rules, only keep spans that match at least one include rule
+          unless @configuration.include_rules.any? { |rule| rule.matches?(span) }
+            return { filtered: true, suppression: false }
+          end
+          # If it matches an include rule, continue to exclude rules
         end
 
         # Check exclude rules (blacklist)
