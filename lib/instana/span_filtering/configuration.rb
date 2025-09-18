@@ -9,7 +9,7 @@ module Instana
     # This class handles loading and managing span filtering rules from various sources:
     # - YAML configuration file (via INSTANA_CONFIG_PATH)
     # - Environment variables
-    #
+    # - Agent discovery response
     # It supports both include and exclude rules with various matching strategies
     class Configuration
       attr_reader :include_rules, :exclude_rules, :deactivated
@@ -24,10 +24,85 @@ module Instana
       # Load configuration from all available sources
       def load_configuration
         load_from_yaml
-        load_from_env_vars
+        load_from_env_vars unless rules_loaded?
+        load_from_agent unless rules_loaded?
       end
 
       private
+
+      # Load configuration from agent discovery response
+      def load_from_agent
+        # Try to get discovery value immediately first
+        discovery = ::Instana.agent&.delegate&.send(:discovery_value)
+        if discovery && discovery.is_a?(Hash) && !discovery.empty?
+          process_discovery_config(discovery)
+          return
+        end
+
+        # If not available, set up a timer task to periodically check for discovery
+        setup_discovery_timer
+      rescue => e
+        Instana.logger.warn("Failed to load span filtering configuration from agent: #{e.message}")
+      end
+
+      # Set up a timer task to periodically check for discovery
+      def setup_discovery_timer
+        # Don't create a timer task if we're in a test environment
+        return if ENV.key?('INSTANA_TEST')
+
+        # Create a timer task that checks for discovery every second
+        @discovery_timer = Concurrent::TimerTask.new(execution_interval: 1) do
+          check_discovery
+        end
+
+        # Start the timer task
+        @discovery_timer.execute
+      end
+
+      # Check if discovery is available and process it
+      def check_discovery
+        discovery = ::Instana.agent&.delegate.send(:discovery_value)
+        if discovery && discovery.is_a?(Hash) && !discovery.empty?
+          process_discovery_config(discovery)
+
+          # Shutdown the timer task after successful processing
+          @discovery_timer.shutdown if @discovery_timer
+
+          return true
+        end
+
+        false
+      rescue => e
+        Instana.logger.warn("Error checking discovery in timer task: #{e.message}")
+        false
+      end
+
+      # Process the discovery configuration
+      def process_discovery_config(discovery)
+        # Check if tracing configuration exists in the discovery response
+        tracing_config = discovery['tracing']
+        return unless tracing_config && tracing_config['filter']
+
+        filter_config = tracing_config['filter']
+        @deactivated = filter_config['deactivate'] == true
+
+        # Process include rules
+        process_rules(filter_config['include'], true) if filter_config['include']
+
+        # Process exclude rules
+        process_rules(filter_config['exclude'], false) if filter_config['exclude']
+
+        # Return true to indicate successful processing
+        true
+      rescue => e
+        Instana.logger.warn("Failed to process discovery configuration: #{e.message}")
+        false
+      end
+
+      # Check if the rules are already loaded
+      def rules_loaded?
+        @include_rules.any? || @exclude_rules.any?
+      end
 
       # Load configuration from YAML file specified by INSTANA_CONFIG_PATH
       def load_from_yaml
