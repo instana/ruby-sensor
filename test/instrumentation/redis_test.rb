@@ -263,7 +263,7 @@ class RedisSpanFilteringTest < Minitest::Test
     end
 
     # Verify that only the parent span is reported
-    spans = ::Instana::processor.queued_spans
+    spans = ::Instana.processor.queued_spans
     assert_equal 1, spans.length
     assert_equal :sdk, spans[0][:n]
 
