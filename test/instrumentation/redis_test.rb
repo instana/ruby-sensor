@@ -204,7 +204,7 @@ class RedisSpanFilteringTest < Minitest::Test
     rule2 = ::Instana::SpanFiltering::FilterRule.new('Include all SDK Spans GET', false, [condition3])
     ::Instana::SpanFiltering.configuration.include_rules << rule1 << rule2
     # Execute Redis SET operation (should be filtered out)
-    byebug
+
     Instana.tracer.in_span(:redis_test) do
       @redis_client.set('hello', 'world')
     end
