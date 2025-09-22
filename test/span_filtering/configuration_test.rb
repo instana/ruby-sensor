@@ -337,7 +337,7 @@ class ConfigurationTest < Minitest::Test
     assert_empty config.exclude_rules
   end
 
-  def test_load_from_agent_with_timer_task
+  def test_load_from_agent_with_timer_task # rubocop:disable Metrics/MethodLength
     # Save original INSTANA_TEST value
     original_test_env = ENV['INSTANA_TEST']
     ENV.delete('INSTANA_TEST') # Temporarily remove INSTANA_TEST to allow timer task creation
