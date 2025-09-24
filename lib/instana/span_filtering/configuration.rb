@@ -13,6 +13,7 @@ module Instana
     # It supports both include and exclude rules with various matching strategies
     class Configuration
       attr_reader :include_rules, :exclude_rules, :deactivated
+      TRACING_CONFIG_WARNING = 'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'.freeze
 
       def initialize
         @include_rules = []
@@ -114,6 +115,7 @@ module Instana
 
           # Support both "tracing" and "com.instana.tracing" as top-level keys
           tracing_config = yaml_content['tracing'] || yaml_content['com.instana.tracing']
+          ::Instana.logger.warn(TRACING_CONFIG_WARNING) if yaml_content.key?('com.instana.tracing')
           return unless tracing_config && tracing_config['filter']
 
           filter_config = tracing_config['filter']
