@@ -13,6 +13,7 @@ module Instana
     # It supports both include and exclude rules with various matching strategies
     class Configuration
       attr_reader :include_rules, :exclude_rules, :deactivated
+
       TRACING_CONFIG_WARNING = 'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'.freeze
 
       def initialize
