@@ -166,8 +166,6 @@ module Instana
       @attributes[:d] = end_time - @attributes[:ts]
       @ended = true
 
-      # Instana.logger.debug("Span closed: #{@attributes[:n]} with result #{result}")
-      # Instana.logger.debug(@attributes)
       if result.nil?
         # Add this span to the queue for reporting
         ::Instana.processor.on_finish(self)
