@@ -93,8 +93,10 @@ class ConfigurationTest < Minitest::Test
     File.write('test_config.yaml', yaml_content)
     ENV['INSTANA_CONFIG_PATH'] = 'test_config.yaml'
 
+    log_output = StringIO.new
+    Instana.logger = Logger.new(log_output)
     config = Instana::SpanFiltering::Configuration.new
-
+    assert_includes log_output.string, 'Please use "tracing" instead of "com.instana.tracing" for local configuration file.'
     assert config.deactivated
     assert_equal 1, config.include_rules.size
   end
