@@ -428,3 +428,241 @@ class ConfigurationTest < Minitest::Test
     end
   end
 end
+
+# Tests for Redis disabling configuration
+class DisableConfigurationTest < Minitest::Test
+  def setup
+    # Clear any existing configuration
+    Instana::SpanFiltering.reset
+
+    # Save original environment variables
+    @original_env = ENV.to_hash
+
+    # Clear relevant environment variables
+    ENV.delete('INSTANA_CONFIG_PATH')
+    ENV.delete('INSTANA_TRACING_DISABLE')
+
+    # Save original agent
+    @original_agent = ::Instana.agent
+
+    # Reset Redis configuration
+    ::Instana.config[:redis] = { :enabled => true }
+  end
+
+  def teardown
+    # Restore original environment variables
+    ENV.clear
+    @original_env.each { |k, v| ENV[k] = v }
+
+    # Reset configuration
+    Instana::SpanFiltering.reset
+
+    # Remove any test config files
+    File.unlink('test_config.yaml') if File.exist?('test_config.yaml')
+
+    # Restore original agent
+    ::Instana.instance_variable_set(:@agent, @original_agent)
+
+    # Reset Redis configuration
+    ::Instana.config[:redis] = { :enabled => true }
+  end
+
+  def test_redis_disabled_via_yaml_string_format
+    # Create a test YAML configuration file with string format
+    yaml_content = <<~YAML
+      tracing:
+        disable:
+          - "redis"
+    YAML
+
+    File.write('test_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_config.yaml'
+
+    Instana::SpanFiltering::Configuration.new
+
+    refute ::Instana.config[:redis][:enabled], "Redis should be disabled via YAML string format"
+  end
+
+  def test_redis_disabled_via_yaml_hash_format
+    # Create a test YAML configuration file with hash format
+    yaml_content = <<~YAML
+      tracing:
+        disable:
+          - redis: true
+    YAML
+
+    File.write('test_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_config.yaml'
+
+    Instana::SpanFiltering::Configuration.new
+
+    refute ::Instana.config[:redis][:enabled], "Redis should be disabled via YAML hash format"
+  end
+
+  def test_redis_not_disabled_when_set_to_false
+    # Create a test YAML configuration file with hash format set to false
+    yaml_content = <<~YAML
+      tracing:
+        disable:
+          - redis: false
+    YAML
+
+    File.write('test_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_config.yaml'
+
+    Instana::SpanFiltering::Configuration.new
+
+    assert ::Instana.config[:redis][:enabled], "Redis should not be disabled when explicitly set to false"
+  end
+
+  def test_redis_disabled_via_databases_category_yaml
+    # Create a test YAML configuration file with databases category
+    yaml_content = <<~YAML
+      tracing:
+        disable:
+          - databases: true
+    YAML
+
+    File.write('test_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_config.yaml'
+
+    Instana::SpanFiltering::Configuration.new
+
+    refute ::Instana.config[:redis][:enabled], "Redis should be disabled when databases category is disabled"
+  end
+
+  def test_redis_disabled_via_env_var_specific
+    # Set environment variable to disable Redis specifically
+    ENV['INSTANA_TRACING_DISABLE'] = 'redis'
+
+    Instana::SpanFiltering::Configuration.new
+
+    refute ::Instana.config[:redis][:enabled], "Redis should be disabled via environment variable"
+  end
+
+  def test_redis_disabled_via_env_var_multiple
+    # Set environment variable to disable multiple technologies including Redis
+    ENV['INSTANA_TRACING_DISABLE'] = 'http,redis,mysql'
+
+    Instana::SpanFiltering::Configuration.new
+
+    refute ::Instana.config[:redis][:enabled], "Redis should be disabled when specified in a comma-separated list"
+  end
+
+  def test_redis_disabled_via_agent_discovery_string_format
+    # Create a mock agent with discovery value using string format
+    discovery_value = {
+      'tracing' => {
+        'disable' => [{'redis' => true}]
+      }
+    }
+
+    mock_agent = Minitest::Mock.new
+    mock_agent.expect(:delegate, mock_agent)
+    mock_agent.expect(:discovery_value, discovery_value)
+
+    ::Instana.instance_variable_set(:@agent, mock_agent)
+
+    Instana::SpanFiltering::Configuration.new
+
+    refute ::Instana.config[:redis][:enabled], "Redis should be disabled via agent discovery string format"
+    mock_agent.verify
+  end
+
+  def test_redis_disabled_via_agent_discovery_hash_format
+    # Create a mock agent with discovery value using hash format
+    discovery_value = {
+      'tracing' => {
+        'disable' => [{'redis' => true}]
+      }
+    }
+
+    mock_agent = Minitest::Mock.new
+    mock_agent.expect(:delegate, mock_agent)
+    mock_agent.expect(:discovery_value, discovery_value)
+
+    ::Instana.instance_variable_set(:@agent, mock_agent)
+
+    Instana::SpanFiltering::Configuration.new
+
+    refute ::Instana.config[:redis][:enabled], "Redis should be disabled via agent discovery hash format"
+    mock_agent.verify
+  end
+
+  def test_redis_disabled_via_agent_discovery_databases
+    # Create a mock agent with discovery value disabling databases category
+    discovery_value = {
+      'tracing' => {
+        'disable' => [{'databases' => true}]
+      }
+    }
+
+    mock_agent = Minitest::Mock.new
+    mock_agent.expect(:delegate, mock_agent)
+    mock_agent.expect(:discovery_value, discovery_value)
+
+    ::Instana.instance_variable_set(:@agent, mock_agent)
+
+    Instana::SpanFiltering::Configuration.new
+
+    refute ::Instana.config[:redis][:enabled], "Redis should be disabled when databases category is disabled via agent discovery"
+    mock_agent.verify
+  end
+
+  def test_yaml_config_takes_precedence_over_agent_discovery
+    # Create a test YAML configuration file that doesn't disable Redis
+    yaml_content = <<~YAML
+      tracing:
+        filter:
+          include:
+            - name: include-all
+              attributes:
+                - key: type
+                  values: ["*"]
+                  match_type: strict
+    YAML
+
+    File.write('test_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_config.yaml'
+
+    # Create a mock agent with discovery value that would disable Redis
+    discovery_value = {
+      'tracing' => {
+        'disable' => [{'redis' => true}]
+      }
+    }
+
+    mock_agent = Minitest::Mock.new
+    mock_agent.expect(:delegate, mock_agent)
+    # This discovery value should not be used since YAML config is loaded first
+    mock_agent.expect(:discovery_value, discovery_value)
+
+    ::Instana.instance_variable_set(:@agent, mock_agent)
+
+    Instana::SpanFiltering::Configuration.new
+
+    # Redis should not be disabled because YAML config takes precedence
+    # and doesn't have any disable directives
+    assert ::Instana.config[:redis][:enabled], "YAML config should take precedence over agent discovery"
+  end
+
+  def test_env_var_takes_precedence_over_yaml_config
+    # Create a test YAML configuration file that doesn't disable Redis
+    yaml_content = <<~YAML
+      tracing:
+        disable:
+          - http: true
+    YAML
+
+    File.write('test_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_config.yaml'
+
+    # Set environment variable to disable Redis
+    ENV['INSTANA_TRACING_DISABLE'] = 'redis'
+
+    Instana::SpanFiltering::Configuration.new
+
+    # Redis should be disabled because env var takes precedence
+    refute ::Instana.config[:redis][:enabled], "Environment variable should take precedence over YAML config"
+  end
+end
