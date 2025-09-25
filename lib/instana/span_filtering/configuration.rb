@@ -83,16 +83,24 @@ module Instana
       def process_discovery_config(discovery)
         # Check if tracing configuration exists in the discovery response
         tracing_config = discovery['tracing']
-        return unless tracing_config && tracing_config['filter']
+        return unless tracing_config
 
-        filter_config = tracing_config['filter']
-        @deactivated = filter_config['deactivate'] == true
+        # Process filter configuration
+        if tracing_config['filter']
+          filter_config = tracing_config['filter']
+          @deactivated = filter_config['deactivate'] == true
 
-        # Process include rules
-        process_rules(filter_config['include'], true) if filter_config['include']
+          # Process include rules
+          process_rules(filter_config['include'], true) if filter_config['include']
 
-        # Process exclude rules
-        process_rules(filter_config['exclude'], false) if filter_config['exclude']
+          # Process exclude rules
+          process_rules(filter_config['exclude'], false) if filter_config['exclude']
+        end
+
+        # Process disable configuration
+        if tracing_config['disable']
+          process_disable_config(tracing_config['disable'])
+        end
 
         # Return true to indicate successful processing
         true
@@ -117,16 +125,24 @@ module Instana
           # Support both "tracing" and "com.instana.tracing" as top-level keys
           tracing_config = yaml_content['tracing'] || yaml_content['com.instana.tracing']
           ::Instana.logger.warn(TRACING_CONFIG_WARNING) if yaml_content.key?('com.instana.tracing')
-          return unless tracing_config && tracing_config['filter']
+          return unless tracing_config
 
-          filter_config = tracing_config['filter']
-          @deactivated = filter_config['deactivate'] == true
+          # Process filter configuration
+          if tracing_config['filter']
+            filter_config = tracing_config['filter']
+            @deactivated = filter_config['deactivate'] == true
 
-          # Process include rules
-          process_rules(filter_config['include'], true) if filter_config['include']
+            # Process include rules
+            process_rules(filter_config['include'], true) if filter_config['include']
 
-          # Process exclude rules
-          process_rules(filter_config['exclude'], false) if filter_config['exclude']
+            # Process exclude rules
+            process_rules(filter_config['exclude'], false) if filter_config['exclude']
+          end
+
+          # Process disable configuration
+          if tracing_config['disable']
+            process_disable_config(tracing_config['disable'])
+          end
         rescue => e
           Instana.logger.warn("Failed to load span filtering configuration from YAML: #{e.message}")
         end
@@ -149,6 +165,10 @@ module Instana
             process_env_suppression(parts[3..].join('_'), value)
           end
         end
+
+        return unless !ENV["INSTANA_TRACING_DISABLE"].nil? && !%w[True true 1].include?(ENV["INSTANA_TRACING_DISABLE"])
+
+        process_disable_config(ENV["INSTANA_TRACING_DISABLE"].split(','))
       end
 
       # Process rules from YAML configuration
@@ -204,6 +224,38 @@ module Instana
 
         suppression = %w[1 true True].include?(value)
         @exclude_rules[rule_index].suppression = suppression
+      end
+
+      # Process disable configuration from YAML or agent discovery
+      # @param disable_config [Array] The disable configuration array
+      def process_disable_config(disable_config)
+        return unless disable_config.is_a?(Array)
+
+        disable_config.each do |item|
+          if item.is_a?(Hash)
+            item.each do |key, value|
+              if value == true
+                update_instana_config_for_disabled_technology(key)
+              end
+            end
+          elsif item.is_a?(String)
+            update_instana_config_for_disabled_technology(item)
+          end
+        end
+      end
+
+      # Update Instana::Config for a disabled technology
+      # @param technology [String] The technology to disable
+      def update_instana_config_for_disabled_technology(technology)
+        tech_sym = technology.to_sym
+
+        case tech_sym
+        when :redis
+          ::Instana.config[:redis][:enabled] = false
+        when :databases
+          # If databases category is disabled, also disable redis
+          ::Instana.config[:redis][:enabled] = false
+        end
       end
     end
   end
