@@ -5,6 +5,7 @@ require 'test_helper'
 
 class RedisTest < Minitest::Test
   def setup
+    ::Instana.config[:redis] = { :enabled => true }
     if ENV.key?('REDIS_URL')
       @redis_url = ENV['REDIS_URL']
     else
