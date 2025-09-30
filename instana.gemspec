@@ -25,11 +25,10 @@ Gem::Specification.new do |spec|
   }
 
   spec.licenses      = ['MIT']
-  spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test)/}) }
+  spec.files         = Dir.glob('lib/**/*.rb') + Dir.glob('README.md') + Dir.glob('bin/console') + Dir.glob('bin/setup')
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
-  spec.test_files    = Dir.glob("{test}/**/*.rb")
 
   spec.required_ruby_version = '>= 3.0'
   spec.platform      = defined?(JRUBY_VERSION) ? 'java' : Gem::Platform::RUBY
