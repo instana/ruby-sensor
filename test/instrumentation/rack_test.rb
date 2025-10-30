@@ -81,7 +81,7 @@ class RackTest < Minitest::Test
     assert last_response.headers["Server-Timing"] == "intid;desc=#{::Instana::Util.id_to_header(rack_span[:t])}"
 
     # W3C Trace Context
-    assert_equal "00-#{rack_span[:t].rjust(32, '0')}-#{rack_span[:s]}-01", last_response.headers["Traceparent"]
+    assert_equal "00-#{rack_span[:t].rjust(32, '0')}-#{rack_span[:s]}-03", last_response.headers["Traceparent"]
     assert_equal "in=#{rack_span[:t]};#{rack_span[:s]}", last_response.headers["Tracestate"]
 
     assert rack_span.key?(:data)
