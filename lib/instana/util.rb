@@ -181,6 +181,19 @@ module Instana
         timeout -= (timeout_timestamp - start_time)
         timeout.positive? ? timeout : 0
       end
+
+      def extra_response_header_tags(incoming_headers)
+        return {} if incoming_headers.nil?
+        return nil unless ::Instana.agent.extra_headers
+
+        headers = {}
+
+        ::Instana.agent.extra_headers.each do |custom_header|
+          headers[custom_header.to_sym] = incoming_headers[custom_header] if incoming_headers.key?(custom_header)
+        end
+
+        headers
+      end
     end
   end
 end
