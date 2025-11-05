@@ -69,7 +69,12 @@ module Instana
         # them in the response headers in the ensure block
         trace_context = ::Instana.tracer.current_span.context
       end
-
+      extra_response_headers = ::Instana::Util.extra_response_header_tags(headers)
+      if kvs[:http][:header].nil?
+        kvs[:http][:header] = extra_response_headers
+      else
+        kvs[:http][:header].merge!(extra_response_headers)
+      end
       [status, headers, response]
     rescue Exception => e
       current_span.record_exception(e) if ::Instana.tracer.tracing?
@@ -112,7 +117,8 @@ module Instana
             level: incoming_context[:level],
             baggage: {
               external_trace_id: incoming_context[:external_trace_id],
-              external_state: incoming_context[:external_state]
+              external_state: incoming_context[:external_state],
+              external_trace_flags: incoming_context[:external_trace_flags]
             }
           )
         end
