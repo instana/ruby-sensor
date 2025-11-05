@@ -122,6 +122,7 @@ module Instana
         long_instana_id: long_instana_id? ? sanitized_t : nil,
         external_trace_id: external_trace_id,
         external_state: @env['HTTP_TRACESTATE'],
+        external_trace_flags: context_from_trace_parent[:external_trace_flags],
         from_w3c: false
       }.reject { |_, v| v.nil? }
     end
@@ -140,6 +141,7 @@ module Instana
         external_state: @env['HTTP_TRACESTATE'],
         trace_id: trace_id,
         span_id: span_id,
+        external_trace_flags: matches['flags'],
         from_w3c: true
       }
     end
@@ -185,6 +187,20 @@ module Instana
         type: data['correlationType'],
         id: data['correlationId']
       }.reject { |_, v| v.nil? }
+    end
+
+    def extra_response_header_tags(response)
+      return nil unless ::Instana.agent.extra_headers
+
+      headers = {}
+
+      ::Instana.agent.extra_headers.each do |custom_header|
+        # Headers are available in this format: HTTP_X_CAPTURE_THIS
+
+        headers[custom_header.to_sym] = response[custom_header] if response.key?(custom_header)
+      end
+
+      headers
     end
   end
 end
