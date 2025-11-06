@@ -69,6 +69,7 @@ class RackInstrumentedRequestTest < Minitest::Test
       external_state: nil,
       trace_id: 'a3ce929d0e0e4736',
       span_id: '00f067aa0ba902b7',
+      external_trace_flags: "01",
       from_w3c: true
     }
 
@@ -86,6 +87,7 @@ class RackInstrumentedRequestTest < Minitest::Test
       external_state: nil,
       trace_id: 'a3ce929d0e0e4736',
       span_id: '00f067aa0ba902b7',
+      external_trace_flags: "01",
       from_w3c: true
     }
 
@@ -103,6 +105,7 @@ class RackInstrumentedRequestTest < Minitest::Test
       external_state: nil,
       trace_id: 'a3ce929d0e0e4736',
       span_id: '00f067aa0ba902b7',
+      external_trace_flags: "ff",
       from_w3c: true
     }
 
