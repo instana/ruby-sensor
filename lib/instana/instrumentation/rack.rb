@@ -69,7 +69,7 @@ module Instana
         # them in the response headers in the ensure block
         trace_context = ::Instana.tracer.current_span.context
       end
-      extra_response_headers = ::Instana::Util.extra_response_header_tags(headers)
+      extra_response_headers = ::Instana::Util.extra_header_tags(headers)
       if kvs[:http][:header].nil?
         kvs[:http][:header] = extra_response_headers
       else
