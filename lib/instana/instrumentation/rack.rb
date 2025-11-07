@@ -10,7 +10,7 @@ module Instana
       @app = app
     end
 
-    def call(env) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
+    def call(env)
       req = InstrumentedRequest.new(env)
       kvs = {
         http: req.request_tags
@@ -26,80 +26,14 @@ module Instana
       @trace_token = OpenTelemetry::Context.attach(trace_ctx)
       status, headers, response = @app.call(env)
 
-      if ::Instana.tracer.tracing?
-        unless req.correlation_data.empty?
-          current_span[:crid] = req.correlation_data[:id]
-          current_span[:crtp] = req.correlation_data[:type]
-        end
-
-        if !req.instana_ancestor.empty? && req.continuing_from_trace_parent?
-          current_span[:ia] = req.instana_ancestor
-        end
-
-        if req.continuing_from_trace_parent?
-          current_span[:tp] = true
-        end
-
-        if req.external_trace_id?
-          current_span[:lt] = req.external_trace_id
-        end
-
-        if req.synthetic?
-          current_span[:sy] = true
-        end
-
-        # In case some previous middleware returned a string status, make sure that we're dealing with
-        # an integer.  In Ruby nil.to_i, "asdfasdf".to_i will always return 0 from Ruby versions 1.8.7 and newer.
-        # So if an 0 status is reported here, it indicates some other issue (e.g. no status from previous middleware)
-        # See Rack Spec: https://www.rubydoc.info/github/rack/rack/file/SPEC#label-The+Status
-        kvs[:http][:status] = status.to_i
-
-        if status.to_i >= 500
-          # Because of the 5xx response, we flag this span as errored but
-          # without a backtrace (no exception)
-          ::Instana.tracer.log_error(nil)
-        end
-
-        # If the framework instrumentation provides a path template,
-        # pass it into the span here.
-        # See: https://www.instana.com/docs/tracing/custom-best-practices/#path-templates-visual-grouping-of-http-endpoints
-        kvs[:http][:path_tpl] = env['INSTANA_HTTP_PATH_TEMPLATE'] if env['INSTANA_HTTP_PATH_TEMPLATE']
-
-        # Save the span context before the trace ends so we can place
-        # them in the response headers in the ensure block
-        trace_context = ::Instana.tracer.current_span.context
-      end
-      extra_response_headers = ::Instana::Util.extra_header_tags(headers)
-      if kvs[:http][:header].nil?
-        kvs[:http][:header] = extra_response_headers
-      else
-        kvs[:http][:header].merge!(extra_response_headers)
-      end
+      trace_context = process_span_tags(req, current_span, kvs, status, env) if ::Instana.tracer.tracing?
+      merge_response_headers(kvs, headers)
       [status, headers, response]
     rescue Exception => e
       current_span.record_exception(e) if ::Instana.tracer.tracing?
       raise
     ensure
-      if ::Instana.tracer.tracing?
-        if headers
-          # Set response headers; encode as hex string
-          if trace_context.active?
-            headers['X-Instana-T'] = trace_context.trace_id_header
-            headers['X-Instana-S'] = trace_context.span_id_header
-            headers['X-Instana-L'] = '1'
-
-            headers['Tracestate'] = trace_context.trace_state_header
-          else
-            headers['X-Instana-L'] = '0'
-          end
-
-          headers['Traceparent'] = trace_context.trace_parent_header
-          headers['Server-Timing'] = "intid;desc=#{trace_context.trace_id_header}"
-        end
-        current_span.set_tags(kvs)
-        OpenTelemetry::Context.detach(@trace_token) if @trace_token
-        current_span.finish
-      end
+      finalize_trace(current_span, kvs, headers, trace_context) if ::Instana.tracer.tracing?
     end
 
     private
@@ -126,6 +60,86 @@ module Instana
         parent_context = incoming_context
       end
       parent_context
+    end
+
+    def process_span_tags(req, current_span, kvs, status, env)
+      add_correlation_data(req, current_span)
+      add_trace_parent_data(req, current_span)
+      add_status_and_error(kvs, status)
+      add_path_template(kvs, env)
+
+      # Save the span context before the trace ends so we can place
+      # them in the response headers in the ensure block
+      ::Instana.tracer.current_span.context
+    end
+
+    def add_correlation_data(req, current_span)
+      return if req.correlation_data.empty?
+
+      current_span[:crid] = req.correlation_data[:id]
+      current_span[:crtp] = req.correlation_data[:type]
+    end
+
+    def add_trace_parent_data(req, current_span)
+      if !req.instana_ancestor.empty? && req.continuing_from_trace_parent?
+        current_span[:ia] = req.instana_ancestor
+      end
+
+      current_span[:tp] = true if req.continuing_from_trace_parent?
+      current_span[:lt] = req.external_trace_id if req.external_trace_id?
+      current_span[:sy] = true if req.synthetic?
+    end
+
+    def add_status_and_error(kvs, status)
+      # In case some previous middleware returned a string status, make sure that we're dealing with
+      # an integer.  In Ruby nil.to_i, "asdfasdf".to_i will always return 0 from Ruby versions 1.8.7 and newer.
+      # So if an 0 status is reported here, it indicates some other issue (e.g. no status from previous middleware)
+      # See Rack Spec: https://www.rubydoc.info/github/rack/rack/file/SPEC#label-The+Status
+      kvs[:http][:status] = status.to_i
+
+      return unless status.to_i >= 500
+
+      # Because of the 5xx response, we flag this span as errored but
+      # without a backtrace (no exception)
+      ::Instana.tracer.log_error(nil)
+    end
+
+    def add_path_template(kvs, env)
+      # If the framework instrumentation provides a path template,
+      # pass it into the span here.
+      # See: https://www.instana.com/docs/tracing/custom-best-practices/#path-templates-visual-grouping-of-http-endpoints
+      kvs[:http][:path_tpl] = env['INSTANA_HTTP_PATH_TEMPLATE'] if env['INSTANA_HTTP_PATH_TEMPLATE']
+    end
+
+    def merge_response_headers(kvs, headers)
+      extra_response_headers = ::Instana::Util.extra_header_tags(headers)
+      if kvs[:http][:header].nil?
+        kvs[:http][:header] = extra_response_headers
+      else
+        kvs[:http][:header].merge!(extra_response_headers)
+      end
+    end
+
+    def finalize_trace(current_span, kvs, headers, trace_context)
+      set_response_headers(headers, trace_context) if headers
+      current_span.set_tags(kvs)
+      OpenTelemetry::Context.detach(@trace_token) if @trace_token
+      current_span.finish
+    end
+
+    def set_response_headers(headers, trace_context)
+      # Set response headers; encode as hex string
+      if trace_context.active?
+        headers['X-Instana-T'] = trace_context.trace_id_header
+        headers['X-Instana-S'] = trace_context.span_id_header
+        headers['X-Instana-L'] = '1'
+        headers['Tracestate'] = trace_context.trace_state_header
+      else
+        headers['X-Instana-L'] = '0'
+      end
+
+      headers['Traceparent'] = trace_context.trace_parent_header
+      headers['Server-Timing'] = "intid;desc=#{trace_context.trace_id_header}"
     end
   end
 end
