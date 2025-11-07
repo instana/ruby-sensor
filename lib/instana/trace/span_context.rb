@@ -44,9 +44,9 @@ module Instana
       parent = span_id_header.rjust(16, '0')
       flags = if @baggage[:external_trace_flags]
                 # Parse external flags as 8-bit hex, clear LSB, then set LSB based on level
-                external_flags = @baggage[:external_trace_flags].to_i(16) & 0xFE  # Clear LSB
-                combined_flags = external_flags | (@level == 1 ? 1 : 0)  # Set LSB based on level
-                combined_flags = [combined_flags, 0xFF].min  # Cap at 8-bit max
+                external_flags = @baggage[:external_trace_flags].to_i(16) & 0xFE # Clear LSB
+                combined_flags = external_flags | (@level == 1 ? 1 : 0) # Set LSB based on level
+                combined_flags = [combined_flags, 0xFF].min # Cap at 8-bit max
                 format('%02x', combined_flags)
               else
                 @level == 1 ? "03" : "02"
