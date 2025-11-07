@@ -56,7 +56,7 @@ module Instana
           # without a backtrace (no exception)
           current_span.record_exception(nil)
         end
-        extra_headers = extra_header_tags(response)&.merge(extra_header_tags(request))
+        extra_headers = ::Instana::Util.extra_header_tags(response)&.merge(::Instana::Util.extra_header_tags(request))
         kv_payload[:http][:header] = extra_headers unless extra_headers&.empty?
         response
       rescue => e
@@ -71,20 +71,6 @@ module Instana
         dnt_spans = [:dynamodb, :sqs, :sns, :s3]
         !Instana.tracer.tracing? || !started? || !Instana.config[:nethttp][:enabled] ||
           (!::Instana.tracer.current_span.nil? && dnt_spans.include?(::Instana.tracer.current_span.name))
-      end
-
-      def extra_header_tags(request_response)
-        return nil unless ::Instana.agent.extra_headers
-
-        headers = {}
-
-        ::Instana.agent.extra_headers.each do |custom_header|
-          # Headers are available in this format: HTTP_X_CAPTURE_THIS
-
-          headers[custom_header.to_sym] = request_response[custom_header] if request_response.key?(custom_header)
-        end
-
-        headers
       end
     end
   end

@@ -188,19 +188,5 @@ module Instana
         id: data['correlationId']
       }.reject { |_, v| v.nil? }
     end
-
-    def extra_response_header_tags(response)
-      return nil unless ::Instana.agent.extra_headers
-
-      headers = {}
-
-      ::Instana.agent.extra_headers.each do |custom_header|
-        # Headers are available in this format: HTTP_X_CAPTURE_THIS
-
-        headers[custom_header.to_sym] = response[custom_header] if response.key?(custom_header)
-      end
-
-      headers
-    end
   end
 end
