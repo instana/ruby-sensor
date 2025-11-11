@@ -307,27 +307,6 @@ module Instana
       self.current_span = nil
     end
 
-    # Creates a span that is active during the execution of the provided block.
-    # The span is automatically closed when the block completes, whether it completes
-    # normally or with an exception.
-    #
-    # @param name [String, Symbol] the name of the span to create
-    # @param attributes [Hash, nil] optional attributes to set on the span
-    # @param links [Array<Link>, nil] optional links to associate with the span
-    # @param start_timestamp [Integer, nil] optional start time for the span in milliseconds
-    # @param kind [Symbol, nil] optional span kind (e.g., :internal, :client, :server)
-    #
-    # @return [Object] the return value of the block
-    #
-    # @note This method is a wrapper around the parent class implementation and
-    #   will only create a span if the Instana agent is ready and tracing is enabled.
-    #
-    def in_span(name, attributes: nil, links: nil, start_timestamp: nil, kind: nil)
-      return if !::Instana.agent.ready? || !::Instana.config[:tracing][:enabled]
-
-      super
-    end
-
     # Starts a new span with the given parameters.
     #
     # @param name [String, Symbol] the name of the span to create (defaults to 'empty' if nil)
