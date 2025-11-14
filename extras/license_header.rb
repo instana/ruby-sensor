@@ -14,7 +14,6 @@ module RuboCop
         HEADER = '(c) Copyright IBM Corp.'.freeze
         HEADER_TEMPLATE = <<~HERE.freeze
           # (c) Copyright IBM Corp. %d
-          # (c) Copyright Instana Inc. %d
         HERE
 
         def on_new_investigation
