@@ -11,7 +11,7 @@ module Instana
 
           kvs = {
             rabbitmq: {
-              sort: 'entry',
+              sort: 'publish',
               address: channel.connection.host,
               key: routing_key,
               exchange: exchange_name
@@ -32,9 +32,9 @@ module Instana
           super(payload, options)
         end
       rescue
-        current_span&.record_exception(e)
-        ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
-        raise
+        # current_span&.record_exception(e)
+        # ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
+        # raise
       end
     end
   end
