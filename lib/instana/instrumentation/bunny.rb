@@ -4,7 +4,6 @@ module Instana
   module Instrumentation
     module BunnyProducer
       def publish(payload, options = {})
-        current_span = nil
         if ::Instana.tracer.tracing?
           exchange_name = name.empty? ? 'default' : name
           routing_key = options[:routing_key] || ''
@@ -18,8 +17,7 @@ module Instana
             }
           }
 
-          ::Instana.tracer.in_span(:rabbitmq, attributes: kvs) do |span|
-            current_span = span
+          ::Instana.tracer.in_span(:rabbitmq, attributes: kvs) do
             # Inject trace context into message headers
             options[:headers] ||= {}
             options[:headers]['X-Instana-T'] = span.context.trace_id
@@ -32,7 +30,6 @@ module Instana
           super(payload, options)
         end
       rescue
-        # current_span&.record_exception(e)
         # ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
         # raise
       end
