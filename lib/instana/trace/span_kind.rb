@@ -9,7 +9,7 @@ module Instana
   module SpanKind
     # Instana specific spans
     REGISTERED_SPANS = [:actioncontroller, :actionview, :activerecord, :excon,
-                        :memcache, :'net-http', :rack, :render, :'rpc-client',
+                        :memcache, :'net-http', :rack, :rabbitmq, :render, :'rpc-client',
                         :'rpc-server', :'sidekiq-client', :'sidekiq-worker',
                         :redis, :'resque-client', :'resque-worker', :'graphql.server', :dynamodb, :s3, :sns, :sqs, :'aws.lambda.entry', :activejob, :log, :"mail.actionmailer",
                         :"aws.lambda.invoke", :mongo, :sequel].freeze

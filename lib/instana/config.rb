@@ -64,6 +64,7 @@ module Instana
       @config[:action_controller]  = { :enabled => true }
       @config[:action_view]        = { :enabled => true }
       @config[:active_record]      = { :enabled => true }
+      @config[:bunny]              = { :enabled => true }
       @config[:dalli]              = { :enabled => true }
       @config[:excon]              = { :enabled => true }
       @config[:grpc]               = { :enabled => true }
