@@ -14,6 +14,7 @@ module Instana
         require 'instana/instrumentation/bunny'
 
         ::Bunny::Exchange.prepend(::Instana::Instrumentation::BunnyProducer)
+        ::Bunny::Queue.prepend(::Instana::Instrumentation::BunnyConsumer)
 
         true
       end
