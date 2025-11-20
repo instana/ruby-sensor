@@ -17,7 +17,7 @@ module Instana
             }
           }
 
-          ::Instana.tracer.in_span(:rabbitmq, attributes: kvs) do
+          ::Instana.tracer.in_span(:rabbitmq, attributes: kvs) do |span|
             # Inject trace context into message headers
             options[:headers] ||= {}
             options[:headers]['X-Instana-T'] = span.context.trace_id
@@ -30,8 +30,8 @@ module Instana
           super(payload, options)
         end
       rescue
-        # ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
-        # raise
+        ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
+        raise
       end
     end
 
@@ -41,14 +41,7 @@ module Instana
 
         return [delivery_info, properties, payload] unless delivery_info
 
-        headers = properties.headers
-        {
-          trace_id: headers['X-Instana-T'],
-          span_id: headers['X-Instana-S'],
-          level: headers['X-Instana-L']&.to_i
-        }.reject { |_, v| v.nil? } || {}
-
-        if ::Instana.tracer.tracing? || headers
+        if ::Instana.tracer.tracing? || extract_context_from_headers(properties)
           queue_name = name
           exchange_name = delivery_info.exchange.empty? ? 'default' : delivery_info.exchange
 
@@ -62,11 +55,14 @@ module Instana
             }
           }
 
-          if headers[:trace_id]
+          # Extract trace context from message headers
+          context = extract_context_from_headers(properties)
+
+          if context[:trace_id]
             instana_context = ::Instana::SpanContext.new(
-              trace_id: headers[:trace_id],
-              span_id: headers[:span_id],
-              level: headers[:level]
+              trace_id: context[:trace_id],
+              span_id: context[:span_id],
+              level: context[:level]
             )
             span = OpenTelemetry::Trace.non_recording_span(instana_context)
 
@@ -92,13 +88,7 @@ module Instana
       def subscribe(options = {}, &block)
         if block_given?
           wrapped_block = lambda do |delivery_info, properties, payload|
-            headers = properties.headers
-            {
-              trace_id: headers['X-Instana-T'],
-              span_id: headers['X-Instana-S'],
-              level: headers['X-Instana-L']&.to_i
-            }.reject { |_, v| v.nil? } || {}
-            if ::Instana.tracer.tracing? || headers
+            if ::Instana.tracer.tracing? || extract_context_from_headers(properties)
               queue_name = name
               exchange_name = delivery_info.exchange.empty? ? 'default' : delivery_info.exchange
 
@@ -112,11 +102,14 @@ module Instana
                 }
               }
 
-              if headers[:trace_id]
+              # Extract trace context from message headers
+              context = extract_context_from_headers(properties)
+
+              if context[:trace_id]
                 instana_context = ::Instana::SpanContext.new(
-                  trace_id: headers[:trace_id],
-                  span_id: headers[:span_id],
-                  level: headers[:level]
+                  trace_id: context[:trace_id],
+                  span_id: context[:span_id],
+                  level: context[:level]
                 )
                 span = OpenTelemetry::Trace.non_recording_span(instana_context)
 
@@ -142,6 +135,19 @@ module Instana
       rescue => e
         ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
         raise
+      end
+
+      private
+
+      def extract_context_from_headers(properties)
+        return {} unless properties && properties.headers
+
+        headers = properties.headers
+        {
+          trace_id: headers['X-Instana-T'],
+          span_id: headers['X-Instana-S'],
+          level: headers['X-Instana-L']&.to_i
+        }.reject { |_, v| v.nil? }
       end
     end
   end
