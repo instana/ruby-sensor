@@ -25,6 +25,12 @@ class BunnyTest < Minitest::Test
     @connection.close if @connection&.open?
   end
 
+  def test_config_defaults
+    assert ::Instana.config[:bunny].is_a?(Hash)
+    assert ::Instana.config[:bunny].key?(:enabled)
+    assert_equal true, ::Instana.config[:bunny][:enabled]
+  end
+
   def test_publish_with_tracing
     skip unless defined?(::Bunny)
     clear_all!
@@ -108,5 +114,28 @@ class BunnyTest < Minitest::Test
     assert_equal 'test.key', rabbitmq_span[:data][:rabbitmq][:key]
 
     custom_exchange.delete
+  end
+
+  def test_subscribe_with_tracing
+    skip unless defined?(::Bunny)
+    clear_all!
+
+    # Publish a message first
+    ::Instana.tracer.in_span(:rabbitmq_producer) do
+      @exchange.publish('test message', routing_key: @queue.name)
+    end
+
+    clear_all!
+
+    # Subscribe and process one message
+    message_received = false
+    @queue.subscribe(manual_ack: false, block: false) do |delivery_info, properties, payload|
+      message_received = true
+    end
+
+    # Give it a moment to process
+    sleep 0.1
+
+    assert message_received
   end
 end
