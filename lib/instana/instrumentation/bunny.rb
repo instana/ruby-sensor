@@ -87,7 +87,7 @@ module Instana
 
       def subscribe(options = {}, &block)
         if block_given?
-          wrapped_block = lambda do |delivery_info, properties, payload|
+          wrapped_block = lambda do |delivery_info, properties, payload| # rubocop:disable Metrics/BlockLength
             if ::Instana.tracer.tracing? || extract_context_from_headers(properties)
               queue_name = name
               exchange_name = delivery_info.exchange.empty? ? 'default' : delivery_info.exchange
