@@ -129,7 +129,7 @@ class BunnyTest < Minitest::Test
 
     # Subscribe and process one message
     message_received = false
-    @queue.subscribe(manual_ack: false, block: false) do |delivery_info, properties, payload|
+    @queue.subscribe(manual_ack: false, block: false) do |_delivery_info, _properties, _payload|
       message_received = true
     end
 
@@ -156,25 +156,25 @@ class BunnyTest < Minitest::Test
     clear_all!
 
     # Now consume the message
-    delivery_info, properties, payload = @queue.pop
+    _, properties, = @queue.pop
 
     # Simulate consumer processing with context extraction
-    if properties && properties.headers
-      context = {
-        trace_id: properties.headers['X-Instana-T'],
-        span_id: properties.headers['X-Instana-S'],
-        level: properties.headers['X-Instana-L']&.to_i
-      }
+    return unless properties && properties.headers
 
-      # Verify context was propagated
-      # The trace_id should match (same trace)
-      assert_equal trace_id, context[:trace_id]
-      # The span_id in the header is the rabbitmq span's ID (child of rabbitmq_producer)
-      # so it won't match the parent's span_id, but we verify it exists
-      refute_nil context[:span_id]
-      refute_equal span_id, context[:span_id] # Should be different (child span)
-      refute_nil context[:level]
-    end
+    context = {
+      trace_id: properties.headers['X-Instana-T'],
+      span_id: properties.headers['X-Instana-S'],
+      level: properties.headers['X-Instana-L']&.to_i
+    }
+
+    # Verify context was propagated
+    # The trace_id should match (same trace)
+    assert_equal trace_id, context[:trace_id]
+    # The span_id in the header is the rabbitmq span's ID (child of rabbitmq_producer)
+    # so it won't match the parent's span_id, but we verify it exists
+    refute_nil context[:span_id]
+    refute_equal span_id, context[:span_id] # Should be different (child span)
+    refute_nil context[:level]
   end
 
   def test_error_handling_in_publish
