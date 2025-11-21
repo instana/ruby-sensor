@@ -138,4 +138,79 @@ class BunnyTest < Minitest::Test
 
     assert message_received
   end
+
+  def test_consume_with_context_propagation
+    skip unless defined?(::Bunny)
+    clear_all!
+
+    # First, publish a message with trace context
+    trace_id = nil
+    span_id = nil
+
+    ::Instana.tracer.in_span(:rabbitmq_producer) do |span|
+      trace_id = span.context.trace_id
+      span_id = span.context.span_id
+      @exchange.publish('test message', routing_key: @queue.name)
+    end
+
+    clear_all!
+
+    # Now consume the message
+    delivery_info, properties, payload = @queue.pop
+
+    # Simulate consumer processing with context extraction
+    if properties && properties.headers
+      context = {
+        trace_id: properties.headers['X-Instana-T'],
+        span_id: properties.headers['X-Instana-S'],
+        level: properties.headers['X-Instana-L']&.to_i
+      }
+
+      # Verify context was propagated
+      # The trace_id should match (same trace)
+      assert_equal trace_id, context[:trace_id]
+      # The span_id in the header is the rabbitmq span's ID (child of rabbitmq_producer)
+      # so it won't match the parent's span_id, but we verify it exists
+      refute_nil context[:span_id]
+      refute_equal span_id, context[:span_id] # Should be different (child span)
+      refute_nil context[:level]
+    end
+  end
+
+  def test_error_handling_in_publish
+    skip unless defined?(::Bunny)
+    clear_all!
+
+    # Close channel to force an error
+    @channel.close
+
+    error_raised = nil
+    ::Instana.tracer.in_span(:rabbitmq_test) do
+      @exchange.publish('test message', routing_key: @queue.name)
+    rescue => e
+      error_raised = e
+    end
+
+    # Verify error was raised
+    refute_nil error_raised
+
+    # Should record both spans (parent and rabbitmq span with error)
+    spans = ::Instana.processor.queued_spans
+    assert spans.length >= 2
+
+    # Find the rabbitmq span
+    rabbitmq_span = spans.find { |s| s[:n] == :rabbitmq }
+    refute_nil rabbitmq_span, "RabbitMQ span should be present"
+
+    # Verify error is recorded in the span
+    assert_equal true, rabbitmq_span[:error], "Span should have error flag set"
+    assert_equal 1, rabbitmq_span[:ec], "Error count should be 1"
+
+    # Verify error message is logged in span data
+    assert rabbitmq_span[:data][:log], "Span should have log data"
+    log_entry = rabbitmq_span[:data][:log]
+    assert log_entry[:message], "Log should have a message"
+    assert_equal error_raised.message, log_entry[:message], "Log message should contain the actual error message"
+    assert_equal error_raised.class.to_s, log_entry[:parameters], "Log parameters should contain error class"
+  end
 end
