@@ -15,6 +15,7 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     @channel = @connection.create_channel
     @exchange = @channel.default_exchange
     @queue = @channel.queue('instana.test.queue', auto_delete: true)
+    @queue.purge
   end
 
   def teardown
