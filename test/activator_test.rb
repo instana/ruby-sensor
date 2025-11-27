@@ -43,7 +43,7 @@ class ActivatorTest < Minitest::Test
     ENV.delete('INSTANA_ACTIVATE_SET')
     subject = activated_set
     assert_instance_of Set, subject
-    assert_equal 32, subject.length
+    assert_equal 33, subject.length
   ensure
     ENV.delete('INSTANA_ACTIVATE_SET')
   end
