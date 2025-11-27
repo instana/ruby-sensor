@@ -16,6 +16,8 @@ library_gemfile: &library_gemfile
     - "./gemfiles/graphql_20.gemfile"
     - "./gemfiles/grpc_10.gemfile"
     - "./gemfiles/net_http_01.gemfile"
+    - "./gemfiles/bunny_223.gemfile"
+    - "./gemfiles/bunny_224.gemfile"
     - "./gemfiles/rack_20.gemfile"
     - "./gemfiles/rack_30.gemfile"
     - "./gemfiles/redis_40.gemfile"
@@ -56,6 +58,7 @@ executors:
       - image: quay.io/minio/minio
         command: ["server", "/data"]
       - image: s12v/sns
+      - image: public.ecr.aws/docker/library/rabbitmq:latest
       - image: public.ecr.aws/sprig/elasticmq-native
       - image: public.ecr.aws/docker/library/mongo:5-focal
   mysql2:
