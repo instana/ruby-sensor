@@ -227,7 +227,7 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
       @exchange.publish('test message', routing_key: @queue.name)
     rescue Bunny::ChannelAlreadyClosed, Bunny::ConnectionClosedError => e
       exception_raised = true
-      assert e.message.length > 0, "Exception should have a message"
+      assert e.message.length.positive?, "Exception should have a message"
     end
 
     assert exception_raised, "Exception should be raised when publishing to closed channel"
@@ -248,7 +248,7 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
       @queue.pop
     rescue Bunny::ChannelAlreadyClosed, Bunny::ConnectionClosedError => e
       exception_raised = true
-      assert e.message.length > 0, "Exception should have a message"
+      assert e.message.length.positive?, "Exception should have a message"
     end
 
     assert exception_raised, "Exception should be raised when consuming from closed channel"
@@ -265,12 +265,10 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     error_message = nil
 
     @queue.subscribe(manual_ack: false, block: false) do |_delivery_info, _properties, _payload|
-      begin
-        raise StandardError, "Test exception in consumer"
-      rescue => e
-        exception_caught = true
-        error_message = e.message
-      end
+      raise StandardError, "Test exception in consumer"
+    rescue => e
+      exception_caught = true
+      error_message = e.message
     end
 
     sleep 0.2
@@ -288,7 +286,7 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
 
     # Pop the message with active tracing
     ::Instana.tracer.in_span(:rabbitmq_consumer_test) do
-      delivery_info, properties, payload = @queue.pop
+      delivery_info, _, payload = @queue.pop
 
       refute_nil delivery_info
       assert_equal 'test message for pop', payload
@@ -329,7 +327,7 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     clear_all!
 
     # Pop the message - should extract and continue the trace
-    delivery_info, properties, payload = @queue.pop
+    delivery_info, _, payload = @queue.pop
 
     refute_nil delivery_info
     assert_equal 'test message with context', payload
@@ -381,7 +379,7 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     message_received = false
     received_payload = nil
 
-    @queue.subscribe(manual_ack: false, block: false) do |delivery_info, properties, payload|
+    @queue.subscribe(manual_ack: false, block: false) do |_delivery_info, _properties, payload|
       message_received = true
       received_payload = payload
     end
@@ -431,7 +429,7 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     error_raised = false
     begin
       @queue.pop
-    rescue => e
+    rescue
       error_raised = true
     end
 
@@ -448,7 +446,7 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     # Subscribe with a block that raises an error
     error_in_block = false
 
-    @queue.subscribe(manual_ack: false, block: false) do |delivery_info, properties, payload|
+    @queue.subscribe(manual_ack: false, block: false) do |_delivery_info, _properties, _payload|
       error_in_block = true
       raise StandardError, "Intentional error in subscribe block"
     end
@@ -505,7 +503,7 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     messages = []
     ::Instana.tracer.in_span(:rabbitmq_consumer_batch) do
       3.times do
-        delivery_info, properties, payload = @queue.pop
+        _, _, payload = @queue.pop
         messages << payload if payload
       end
     end
@@ -530,12 +528,12 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
 
     ::Instana.tracer.in_span(:rabbitmq_test) do
       @exchange.publish('test with headers',
-                       routing_key: @queue.name,
-                       headers: { 'custom-header' => 'custom-value' })
+                        routing_key: @queue.name,
+                        headers: { 'custom-header' => 'custom-value' })
     end
 
     # Retrieve the message
-    delivery_info, properties, payload = @queue.pop
+    _, properties, = @queue.pop
 
     refute_nil properties
     refute_nil properties.headers
@@ -559,7 +557,7 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
 
     # Pop with tracing
     ::Instana.tracer.in_span(:rabbitmq_consumer_test) do
-      delivery_info, properties, payload = @queue.pop
+      _, _, payload = @queue.pop
       assert_equal 'test consume custom', payload
     end
 
