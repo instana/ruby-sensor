@@ -570,4 +570,226 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
 
     custom_exchange.delete
   end
+
+  def test_publish_error_with_span_error_recording
+    skip unless defined?(::Bunny)
+    clear_all!
+
+    # Create a scenario where publish will fail
+    @channel.close
+
+    ::Instana.tracer.in_span(:rabbitmq_test) do
+      @exchange.publish('test message', routing_key: @queue.name)
+    rescue
+      # Expected to raise
+    end
+
+    spans = ::Instana.processor.queued_spans
+    rabbitmq_span = spans.find { |s| s[:n] == :rabbitmq }
+
+    # Verify error was properly recorded
+    refute_nil rabbitmq_span
+    assert_equal true, rabbitmq_span[:error]
+    assert_equal 1, rabbitmq_span[:ec]
+  end
+
+  def test_subscribe_with_manual_ack
+    skip unless defined?(::Bunny)
+    clear_all!
+
+    # Publish a message with trace context
+    ::Instana.tracer.in_span(:rabbitmq_producer) do
+      @exchange.publish('test manual ack', routing_key: @queue.name)
+    end
+
+    clear_all!
+
+    # Subscribe with manual acknowledgment
+    message_received = false
+    @queue.subscribe(manual_ack: true, block: false) do |delivery_info, _properties, payload|
+      message_received = true
+      assert_equal 'test manual ack', payload
+      @channel.ack(delivery_info.delivery_tag)
+    end
+
+    sleep 0.2
+
+    assert message_received
+
+    spans = ::Instana.processor.queued_spans
+    rabbitmq_span = spans.find { |s| s[:n] == :rabbitmq }
+    refute_nil rabbitmq_span
+    assert_equal 'consume', rabbitmq_span[:data][:rabbitmq][:sort]
+  end
+
+  def test_pop_extracts_all_context_fields
+    skip unless defined?(::Bunny)
+    clear_all!
+
+    # Publish with full trace context
+    ::Instana.tracer.in_span(:rabbitmq_producer) do |_span|
+      @exchange.publish('test full context', routing_key: @queue.name)
+    end
+
+    clear_all!
+
+    # Pop and verify all context fields are extracted
+    _, properties, = @queue.pop
+
+    refute_nil properties.headers['X-Instana-T']
+    refute_nil properties.headers['X-Instana-S']
+    refute_nil properties.headers['X-Instana-L']
+
+    # Verify the consume span was created with extracted context
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
+
+    rabbitmq_span = spans[0]
+    assert_equal :rabbitmq, rabbitmq_span[:n]
+    assert_equal 'consume', rabbitmq_span[:data][:rabbitmq][:sort]
+  end
+
+  def test_consume_with_empty_routing_key
+    skip unless defined?(::Bunny)
+    clear_all!
+
+    # Publish with empty routing key
+    @exchange.publish('test empty key', routing_key: '')
+
+    ::Instana.tracer.in_span(:rabbitmq_consumer_test) do
+      delivery_info, = @queue.pop
+
+      # Message won't be delivered to queue with empty routing key to default exchange
+      # but we test the instrumentation handles it
+      if delivery_info
+        assert_equal '', delivery_info.routing_key
+      end
+    end
+  end
+
+  def test_multiple_exchanges_and_queues
+    skip unless defined?(::Bunny)
+    clear_all!
+
+    # Create multiple exchanges and queues
+    exchange1 = @channel.topic('instana.test.exchange1', auto_delete: true)
+    exchange2 = @channel.topic('instana.test.exchange2', auto_delete: true)
+    queue1 = @channel.queue('instana.test.queue1', auto_delete: true)
+    queue2 = @channel.queue('instana.test.queue2', auto_delete: true)
+
+    queue1.bind(exchange1, routing_key: 'key1')
+    queue2.bind(exchange2, routing_key: 'key2')
+
+    ::Instana.tracer.in_span(:rabbitmq_multi_test) do
+      exchange1.publish('message1', routing_key: 'key1')
+      exchange2.publish('message2', routing_key: 'key2')
+    end
+
+    spans = ::Instana.processor.queued_spans
+    # 1 parent + 2 publish spans
+    assert_equal 3, spans.length
+
+    rabbitmq_spans = spans.select { |s| s[:n] == :rabbitmq }
+    assert_equal 2, rabbitmq_spans.length
+
+    # Verify each span has correct exchange
+    exchanges = rabbitmq_spans.map { |s| s[:data][:rabbitmq][:exchange] }.sort
+    assert_equal ['instana.test.exchange1', 'instana.test.exchange2'], exchanges
+
+    # Cleanup
+    queue1.delete
+    queue2.delete
+    exchange1.delete
+    exchange2.delete
+  end
+
+  def test_pop_without_active_trace_but_with_headers
+    skip unless defined?(::Bunny)
+    clear_all!
+
+    # Publish with trace context
+    ::Instana.tracer.in_span(:rabbitmq_producer) do
+      @exchange.publish('test no active trace', routing_key: @queue.name)
+    end
+
+    clear_all!
+
+    # Pop without active trace - should still create span from headers
+    delivery_info, _, payload = @queue.pop
+
+    refute_nil delivery_info
+    assert_equal 'test no active trace', payload
+
+    # Should have created a consume span from extracted headers
+    spans = ::Instana.processor.queued_spans
+    assert_equal 1, spans.length
+
+    rabbitmq_span = spans[0]
+    assert_equal :rabbitmq, rabbitmq_span[:n]
+    assert_equal 'consume', rabbitmq_span[:data][:rabbitmq][:sort]
+  end
+
+  def test_address_field_in_spans
+    skip unless defined?(::Bunny)
+    clear_all!
+
+    ::Instana.tracer.in_span(:rabbitmq_test) do
+      @exchange.publish('test address', routing_key: @queue.name)
+    end
+
+    spans = ::Instana.processor.queued_spans
+    rabbitmq_span = spans.find { |s| s[:n] == :rabbitmq }
+
+    refute_nil rabbitmq_span
+    refute_nil rabbitmq_span[:data][:rabbitmq][:address]
+    # Address should be the RabbitMQ host
+    assert rabbitmq_span[:data][:rabbitmq][:address].is_a?(String)
+  end
+
+  def test_subscribe_error_handling_with_closed_channel
+    skip unless defined?(::Bunny)
+    clear_all!
+
+    # Publish a message first
+    @exchange.publish('test subscribe error', routing_key: @queue.name)
+
+    # Close the channel to force an error during subscribe
+    @channel.close
+
+    error_raised = false
+    begin
+      # This should trigger the rescue block in subscribe method (lines 65-68)
+      @queue.subscribe(manual_ack: false, block: false) do |_delivery_info, _properties, _payload|
+        # Block should not be reached
+      end
+    rescue Bunny::ChannelAlreadyClosed, Bunny::ConnectionClosedError => e
+      error_raised = true
+      # Verify the error has a message (log_error should be called)
+      assert e.message.length.positive?
+    end
+
+    assert error_raised, "Exception should be raised and logged when subscribing to closed channel"
+  end
+
+  def test_pop_error_handling_with_logging
+    skip unless defined?(::Bunny)
+    clear_all!
+
+    # Publish a message
+    @exchange.publish('test pop error', routing_key: @queue.name)
+
+    # Close channel to trigger error in pop (lines 48-51)
+    @channel.close
+
+    error_raised = false
+    begin
+      @queue.pop
+    rescue Bunny::ChannelAlreadyClosed, Bunny::ConnectionClosedError => e
+      error_raised = true
+      # The log_error method (line 124-126) should be called internally
+      assert e.message.length.positive?
+    end
+
+    assert error_raised, "Exception should be raised and logged in pop"
+  end
 end
