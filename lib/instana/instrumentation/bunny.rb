@@ -121,6 +121,7 @@ module Instana
       end
 
       def log_error(error)
+        # Log errors on to console if INSTANA_DEBUG is enabled
         ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{error.message}" }
       end
     end
