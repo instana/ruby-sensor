@@ -7,6 +7,6 @@ gem "webmock"
 gem "puma"
 gem "rack-test"
 gem "simplecov", "~> 0.21.2"
-gem "sidekiq", ">= 6.0.0", "< 6.5.0"
-
+gem "sidekiq", "> 6.0.4", "< 6.5.0"
+gem "connection_pool", "<3.0.0"
 gemspec path: "../"
