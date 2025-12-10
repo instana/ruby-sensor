@@ -15,7 +15,10 @@ module Instana
         }
 
         context = incomming_context_from(sqs_message.message_attributes)
-        ::Instana.tracer.start_or_continue_trace(:sqs, {sqs: sqs_tags}, context, &block)
+        instana_context = Instana::SpanContext.new(trace_id: context[:trace_id], span_id: context[:span_id], level: context[:level])
+        Trace.with_span(OpenTelemetry::Trace.non_recording_span(instana_context)) do
+          ::Instana.tracer.in_span(:sqs, attributes: {sqs: sqs_tags}, &block)
+        end
       end
 
       private

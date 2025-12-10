@@ -8,7 +8,8 @@ Any and all feedback is welcome.  Happy Ruby visibility.
 
 [![Gem Version](https://badge.fury.io/rb/instana.svg)](https://badge.fury.io/rb/instana)
 [![CircleCI](https://circleci.com/gh/instana/ruby-sensor.svg?style=svg)](https://circleci.com/gh/instana/ruby-sensor)
-[![OpenTracing Badge](https://img.shields.io/badge/OpenTracing-enabled-blue.svg)](http://opentracing.io)
+[![OpenTracing Badge](https://img.shields.io/badge/OpenTracing-disabled-red.svg)](http://opentracing.io)
+[![OpenTelemetry Badge](https://img.shields.io/badge/OpenTelemetry-enabled-blue.svg)](http://opentelemetry.io)
 
 ## Installation
 

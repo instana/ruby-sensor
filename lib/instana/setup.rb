@@ -11,8 +11,8 @@ require 'instana/instrumented_logger'
 require "instana/base"
 require "instana/config"
 require "instana/secrets"
-require "instana/tracer"
-require "instana/tracing/processor"
+require "instana/trace/tracer"
+require "instana/trace/processor"
 
 require 'instana/serverless'
 
@@ -39,12 +39,12 @@ require 'instana/backend/host_agent_reporting_observer'
 require 'instana/backend/host_agent'
 require 'instana/backend/serverless_agent'
 require 'instana/backend/agent'
+require 'instana/trace'
+require 'instana/trace/tracer_provider'
+require 'instana/span_filtering'
 
 ::Instana.setup
 ::Instana.agent.setup
-
-# Require supported OpenTracing interfaces
-require "opentracing"
 
 # The Instana agent is now setup.  The only remaining
 # task for a complete boot is to call

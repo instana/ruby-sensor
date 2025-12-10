@@ -122,3 +122,11 @@ end
 appraise 'mongo-216' do
   gem 'mongo', '>= 2.16', '< 3'
 end
+
+appraise 'bunny-223' do
+  gem 'bunny', '~> 2.23.0'
+end
+
+appraise 'bunny-224' do
+  gem 'bunny', '>= 2.24', '< 3.0'
+end

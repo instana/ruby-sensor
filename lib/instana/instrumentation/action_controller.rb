@@ -11,9 +11,8 @@ module Instana
             action: action_name
           }
         }
-
         request.env['INSTANA_HTTP_PATH_TEMPLATE'] = matched_path_template
-        ::Instana::Tracer.trace(:actioncontroller, call_payload) { super(*args) }
+        ::Instana.tracer.in_span(:actioncontroller, attributes: call_payload) { super(*args) }
       end
 
       def render(*args, &block)
@@ -22,8 +21,7 @@ module Instana
             name: describe_render_options(args.first) || 'Default'
           }
         }
-
-        ::Instana::Tracer.trace(:actionview, call_payload) { super(*args, &block) }
+        ::Instana.tracer.in_span(:actionview, attributes: call_payload) { super(*args, &block) }
       end
 
       private

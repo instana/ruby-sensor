@@ -17,7 +17,7 @@ module Instana
         entry_payload[:memcache][:command] = op
         entry_payload[:memcache][:key] = key
 
-        ::Instana.tracer.log_entry(:memcache, entry_payload)
+        ::Instana.tracer.start_span(:memcache, attributes: entry_payload)
         exit_payload = { :memcache => {} }
 
         result = super(*args, &blk)

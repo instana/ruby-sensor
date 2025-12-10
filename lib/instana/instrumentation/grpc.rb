@@ -22,7 +22,7 @@ module Instana
             kvs[:rpc][:call] = method
             kvs[:rpc][:call_type] = call_type
 
-            ::Instana.tracer.log_entry(:'rpc-client', kvs)
+            current_span = ::Instana.tracer.start_span(:'rpc-client', attributes: kvs)
 
             context = ::Instana.tracer.context
             if context
@@ -35,11 +35,11 @@ module Instana
             super(method, *others, **options)
           rescue => e
             kvs[:rpc][:error] = true
-            ::Instana.tracer.log_info(kvs)
-            ::Instana.tracer.log_error(e)
+            current_span.set_tags(kvs)
+            current_span.record_exception(e)
             raise
           ensure
-            ::Instana.tracer.log_exit(:'rpc-client', {})
+            current_span.finish
           end
         end
       end
@@ -60,9 +60,9 @@ module Instana
 
             incoming_context = {}
             if metadata.key?('x-instana-t')
-              incoming_context[:trace_id]  = ::Instana::Util.header_to_id(metadata['x-instana-t'])
-              incoming_context[:span_id]   = ::Instana::Util.header_to_id(metadata['x-instana-s']) if metadata.key?('x-instana-s')
-              incoming_context[:level]     = metadata['x-instana-l'] if metadata.key?('x-instana-l')
+              incoming_context = SpanContext.new(trace_id: ::Instana::Util.header_to_id(metadata['x-instana-t']),
+                                                 span_id: metadata.key?('x-instana-s') ? ::Instana::Util.header_to_id(metadata['x-instana-s']) : nil,
+                                                 level: metadata.key?('x-instana-l') ? metadata['x-instana-l'] : nil)
             end
 
             kvs[:rpc][:flavor] = :grpc
@@ -71,18 +71,19 @@ module Instana
             kvs[:rpc][:call_type] = call_type
             kvs[:rpc][:peer] = { address: active_call.peer }
 
-            ::Instana.tracer.log_start_or_continue(
-              :'rpc-server', kvs, incoming_context
-            )
+            span = OpenTelemetry::Trace.non_recording_span(incoming_context) if incoming_context
+            parent_context = Trace.context_with_span(span) if incoming_context
+
+            current_span = ::Instana.tracer.start_span(:'rpc-server', attributes: kvs, with_parent: parent_context)
 
             super(active_call, mth, *others)
           rescue => e
             kvs[:rpc][:error] = true
-            ::Instana.tracer.log_info(kvs)
-            ::Instana.tracer.log_error(e)
+            current_span.set_tags(kvs)
+            current_span.record_exception(e)
             raise
           ensure
-            ::Instana.tracer.log_end(:'rpc-server', {}) if ::Instana.tracer.tracing?
+            current_span.finish if ::Instana.tracer.tracing?
           end
         end
       end

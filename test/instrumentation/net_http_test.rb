@@ -19,7 +19,7 @@ class NetHTTPTest < Minitest::Test
     clear_all!
     WebMock.allow_net_connect!
 
-    Instana.tracer.start_or_continue_trace(:"net-http-test") do
+    Instana.tracer.in_span(:"net-http-test") do
       Net::HTTP.get(URI('http://127.0.0.1:6511/?query_value=true'))
     end
 
@@ -37,7 +37,7 @@ class NetHTTPTest < Minitest::Test
     clear_all!
     WebMock.allow_net_connect!
 
-    Instana.tracer.start_or_continue_trace(:"net-http-test") do
+    Instana.tracer.in_span(:"net-http-test") do
       Net::HTTP.get(URI('http://127.0.0.1:6511/'))
     end
 
@@ -76,7 +76,7 @@ class NetHTTPTest < Minitest::Test
     req = Net::HTTP::Get.new(uri)
 
     response = nil
-    Instana.tracer.start_or_continue_trace('net-http-test') do
+    Instana.tracer.in_span('net-http-test') do
       Net::HTTP.start(req.uri.hostname, req.uri.port, :open_timeout => 1, :read_timeout => 1) do |http|
         response = http.request(req)
       end
@@ -118,7 +118,7 @@ class NetHTTPTest < Minitest::Test
     WebMock.allow_net_connect!
 
     response = nil
-    Instana.tracer.start_or_continue_trace('net-http-test') do
+    Instana.tracer.in_span('net-http-test') do
       http = Net::HTTP.new("127.0.0.1", 6511)
       response = http.request(Net::HTTP::Post.new("/"))
     end
@@ -159,7 +159,7 @@ class NetHTTPTest < Minitest::Test
     WebMock.allow_net_connect!
 
     begin
-      Instana.tracer.start_or_continue_trace('net-http-error-test') do
+      Instana.tracer.in_span('net-http-error-test') do
         http = Net::HTTP.new("asdfasdf.asdfsadf", 80)
         http.request(Net::HTTP::Get.new("/blah"))
       end
@@ -189,7 +189,7 @@ class NetHTTPTest < Minitest::Test
     WebMock.allow_net_connect!
 
     response = nil
-    Instana.tracer.start_or_continue_trace('net-http-error-test') do
+    Instana.tracer.in_span('net-http-error-test') do
       http = Net::HTTP.new("127.0.0.1", 6511)
       response = http.request(Net::HTTP::Get.new("/error"))
     end

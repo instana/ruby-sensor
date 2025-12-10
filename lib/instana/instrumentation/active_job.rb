@@ -1,5 +1,19 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
+module OpenTelemetry
+  module Trace
+    module Propagation
+      module TraceContext
+        # A TraceParent is an implementation of the W3C trace context specification
+        # https://www.w3.org/TR/trace-context/
+        # {Trace::SpanContext}
+        class TraceParent
+          REGEXP = /^(?<version>[A-Fa-f0-9]{2})-(?<trace_id>[A-Fa-f0-9]{32})-(?<span_id>[A-Fa-f0-9]{32})-(?<flags>[A-Fa-f0-9]{2})(?<ignored>-.*)?$/
+        end
+      end
+    end
+  end
+end
 
 module Instana
   module Instrumentation
@@ -15,7 +29,7 @@ module Instana
             }
           }
 
-          ::Instana::Tracer.trace(:activejob, tags) do
+          ::Instana.tracer.in_span(:activejob, attributes: tags) do
             context = ::Instana.tracer.context
             job.arguments.append({
                                    instana_context: context ? context.to_hash : nil
@@ -37,11 +51,12 @@ module Instana
           incoming_context = if job.arguments.is_a?(Array) && job.arguments.last.is_a?(Hash) && job.arguments.last.key?(:instana_context)
                                instana_context = job.arguments.last[:instana_context]
                                job.arguments.pop
-                               instana_context ? ::Instana::SpanContext.new(instana_context[:trace_id], instana_context[:span_id]) : nil
+                               instana_context ? ::Instana::SpanContext.new(trace_id: instana_context[:trace_id], span_id: instana_context[:span_id]) : nil
                              end
-
-          ::Instana::Tracer.start_or_continue_trace(:activejob, tags, incoming_context) do
-            block.call
+          Trace.with_span(OpenTelemetry::Trace.non_recording_span(incoming_context)) do
+            ::Instana.tracer.in_span(:activejob, attributes: tags) do
+              block.call
+            end
           end
         end
       end

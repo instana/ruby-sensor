@@ -35,7 +35,7 @@ module Instana
 
       def maybe_trace(call_payload, name, &blk)
         if ::Instana.tracer.tracing? && !ignored?(call_payload, name)
-          ::Instana.tracer.trace(:activerecord, call_payload, &blk)
+          ::Instana.tracer.in_span(:activerecord, attributes: call_payload, &blk)
         else
           yield
         end

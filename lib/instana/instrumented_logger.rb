@@ -17,7 +17,7 @@ module Instana
           level: LEVEL_LABELS[severity],
           message: "#{message} #{progname}".strip
         }
-        Instana::Tracer.trace(:log, {log: tags}) {}
+        Instana.tracer.in_span(:log, attributes: {log: tags}) {}
       end
 
       super(severity, message, progname)

@@ -13,7 +13,7 @@ class MongoTest < Minitest::Test
   end
 
   def test_mongo
-    Instana.tracer.start_or_continue_trace(:'mongo-test') do
+    Instana.tracer.in_span(:'mongo-test') do
       client = Mongo::Client.new('mongodb://127.0.0.1:27017/instana')
       client[:people].delete_many({ name: /$S*/ })
       client[:people].insert_many([{ _id: 1, name: "Stan" }])

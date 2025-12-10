@@ -26,7 +26,7 @@ class RestClientTest < Minitest::Test
 
     url = "http://127.0.0.1:6511/"
 
-    Instana.tracer.start_or_continue_trace('restclient-test') do
+    Instana.tracer.in_span('restclient-test') do
       RestClient.get url
     end
 
@@ -81,7 +81,6 @@ class RestClientTest < Minitest::Test
     rack_span = find_first_span_by_name(spans, :rack)
     rest_span = find_first_span_by_name(spans, :'rest-client')
     net_span = find_first_span_by_name(spans, :'net-http')
-
     # Span name validation
     assert_equal :rack, rack_span[:n]
     assert_equal :sdk, rest_span[:n]

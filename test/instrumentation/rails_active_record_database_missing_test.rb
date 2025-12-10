@@ -8,7 +8,7 @@ require 'fileutils'
 class RailsActiveRecordDatabaseMissingTest < Minitest::Test
   def setup
     skip unless ENV['DATABASE_URL']
-
+    clear_all!
     @old_url = ENV['DATABASE_URL']
     SQLite3::Database.new('/tmp/test.db')
     ENV['DATABASE_URL'] = 'sqlite3:///tmp/test.db'
@@ -29,13 +29,12 @@ class RailsActiveRecordDatabaseMissingTest < Minitest::Test
 
   def test_error_on_missing_database
     assert_raises(ActiveRecord::StatementInvalid) do
-      Instana::Tracer.start_or_continue_trace(:ar_test, {}) do
+      Instana.tracer.in_span(:ar_test, attributes: {}) do
         b = Block.new
         FileUtils.rm('/tmp/test.db')
         b.save!
       end
     end
-
     spans = ::Instana.processor.queued_spans
     span = find_first_span_by_name(spans, :activerecord)
 

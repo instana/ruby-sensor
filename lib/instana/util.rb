@@ -170,6 +170,30 @@ module Instana
         return '' unless given.match(/\A[a-z\d]{16,32}\z/i)
         given
       end
+
+      def timeout_timestamp
+        Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      end
+
+      def maybe_timeout(timeout, start_time)
+        return nil if timeout.nil?
+
+        timeout -= (timeout_timestamp - start_time)
+        timeout.positive? ? timeout : 0
+      end
+
+      def extra_header_tags(req_res_headers)
+        return {} if req_res_headers.nil?
+        return nil unless ::Instana.agent.extra_headers
+
+        headers = {}
+
+        ::Instana.agent.extra_headers.each do |custom_header|
+          headers[custom_header.to_sym] = req_res_headers[custom_header] if req_res_headers.key?(custom_header)
+        end
+
+        headers
+      end
     end
   end
 end

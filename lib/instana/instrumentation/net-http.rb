@@ -12,7 +12,7 @@ module Instana
           return super(*args, &block)
         end
 
-        ::Instana.tracer.log_entry(:'net-http')
+        current_span = ::Instana.tracer.start_span(:'net-http')
 
         # Send out the tracing context with the request
         request = args[0]
@@ -54,15 +54,17 @@ module Instana
         if response.code.to_i >= 500
           # Because of the 5xx response, we flag this span as errored but
           # without a backtrace (no exception)
-          ::Instana.tracer.log_error(nil)
+          current_span.record_exception(nil)
         end
-
+        extra_headers = ::Instana::Util.extra_header_tags(response)&.merge(::Instana::Util.extra_header_tags(request))
+        kv_payload[:http][:header] = extra_headers unless extra_headers&.empty?
         response
       rescue => e
-        ::Instana.tracer.log_error(e)
+        current_span&.record_exception(e)
         raise
       ensure
-        ::Instana.tracer.log_exit(:'net-http', kv_payload) unless do_skip
+        current_span&.set_tags(kv_payload)
+        current_span&.finish unless do_skip
       end
 
       def skip_instrumentation?

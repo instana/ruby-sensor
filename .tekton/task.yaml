@@ -12,10 +12,12 @@ spec:
       mountPath: /workspace
   steps:
     - name: clone
-      # alpine/git:2.43.0
-      image: alpine/git@sha256:6ff4de047dcc8f0c7d75d2efff63fbc189e87d2f458305f2cc8f165ff83309cf
+      # alpine/git:latest
+      image: public.ecr.aws/docker/library/alpine:latest
       script: |
         #!/bin/sh
+        echo "Installing git"
+        apk fix && apk --no-cache --update add git gpg less openssh patch
         echo "Cloning repo"
         cd /workspace && git clone --depth 1 -b $(params.revision) https://github.com/instana/ruby-sensor
         ls -lah /workspace
@@ -56,7 +58,7 @@ spec:
   # MySQL (compatible Mariadb)
   - name: mariadb
     # mariadb:11.3.2
-    image: mariadb@sha256:851f05fe1e4cb290442c1b12b7108436a33fd8f6a733d4989950322d06d45c65
+    image: public.ecr.aws/docker/library/mariadb:11.3.2
     startupProbe:
       initialDelaySeconds: 10
       tcpSocket:
@@ -96,7 +98,7 @@ spec:
   sidecars:
   - name: postgres
     # postgres:16.2-bookworm
-    image: postgres@sha256:6b841c8f6a819884207402f1209a8116844365df15fca8cf556fc54a24c70800
+    image: public.ecr.aws/docker/library/postgres:16.2-bookworm
     startupProbe:
       initialDelaySeconds: 10
       tcpSocket:
@@ -139,15 +141,15 @@ spec:
   # Amazon DynamoDB
   - name: dynamodb
     # amazon/dynamodb-local:2.3.0
-    image: amazon/dynamodb-local@sha256:0e42a967205042118277be031a59f7aa035c2f90b1695b1b3250d0ce03a7c8f0
+    image: public.ecr.aws/aws-dynamodb-local/aws-dynamodb-local:2.3.0
     startupProbe:
       tcpSocket:
         port: 8000
       initialDelaySeconds: 10
   # Amazon S3
   - name: s3
-    # minio/minio:RELEASE.2024-03-07T00-43-48Z
-    image: minio/minio@sha256:9224601c529f424e5efac79f95606f0c7e1fe234f3f45344a49deaccd66d5bf5
+    # minio/minio:latest
+    image: quay.io/minio/minio
     command:
       - /usr/bin/minio
       - server
@@ -155,11 +157,11 @@ spec:
   # Amazon SNS
   - name: sns
     # s12v/sns:latest
-    image: s12v/sns@sha256:a80f1cd6318d22419cab38650ee6824f72cc2dc902d2b38e4f997d0530fe4e07
+    image: public.ecr.aws/redbox-public/s12v/sns:latest
   # Amazon SQS
   - name: sqs
     # softwaremill/elasticmq-native:1.5.7
-    image: softwaremill/elasticmq-native@sha256:9183333a9ea4666686c37dc83a2b1f8cee9c15ffd161a219a131e171039f1ac3
+    image: public.ecr.aws/sprig/elasticmq-native
   params:
   - name: imageDigest
     type: string
@@ -189,7 +191,7 @@ spec:
   # Redis
   - name: redis
     # redis:7.2.4-bookworm
-    image: redis@sha256:fe98b2d39d462d06a7360e2860dd6ceff930745e3731eccb3c1406dd0dd7f744
+    image: public.ecr.aws/docker/library/redis:7.2.4-bookworm
     startupProbe:
       initialDelaySeconds: 10
       tcpSocket:
@@ -223,7 +225,7 @@ spec:
   # Memcached
   - name: memcached
     # memcached:1.6.24-bookworm
-    image: memcached@sha256:b2b562323463b6cda240a148fb2a5b7ea86e8017a8509e10a3c7f1681f259193
+    image: public.ecr.aws/docker/library/memcached:1.6.24-bookworm
     startupProbe:
       tcpSocket:
         port: 11211
@@ -256,7 +258,7 @@ spec:
   sidecars:
   - name: mongo
     # mongo:5.0.25-focal
-    image: mongo@sha256:d1b8a7b77424347397653ab8ff500c66b1e9979b4cebf826951d37b0d3966721
+    image: public.ecr.aws/docker/library/mongo:5-focal
     startupProbe:
       initialDelaySeconds: 10
       tcpSocket:
@@ -344,7 +346,7 @@ spec:
   # MySQL (compatible Mariadb)
   - name: mariadb
     # mariadb:11.3.2
-    image: mariadb@sha256:851f05fe1e4cb290442c1b12b7108436a33fd8f6a733d4989950322d06d45c65
+    image: public.ecr.aws/docker/library/mariadb:11.3.2
     startupProbe:
       initialDelaySeconds: 10
       tcpSocket:
@@ -386,8 +388,8 @@ spec:
       mountPath: /workspace
   steps:
     - name: generate-currency-report
-      # 3.10.13-bookworm
-      image: python@sha256:c970ff53939772f47b0672e380328afb50d8fd1c0568ed4f82c22effc54244fc
+      # 3.10-bookworm
+      image: public.ecr.aws/docker/library/python:3.10-bookworm
       script: |
         #!/usr/bin/env bash
 
@@ -418,7 +420,7 @@ spec:
   steps:
     - name: upload-currency-report
       # alpine/git:2.43.0
-      image: alpine/git@sha256:6ff4de047dcc8f0c7d75d2efff63fbc189e87d2f458305f2cc8f165ff83309cf
+      image: public.ecr.aws/docker/library/alpine:latest
       env:
         - name: GH_ENTERPRISE_TOKEN
           valueFrom:
@@ -427,7 +429,9 @@ spec:
               key: "GH_ENTERPRISE_TOKEN"
       script: |
         #!/bin/sh
-
+        echo "Installing git"
+        apk fix && apk --no-cache --update add git gpg less openssh patch
+        
         cd /workspace        
         git clone https://oauth2:$GH_ENTERPRISE_TOKEN@github.ibm.com/instana/tracer-reports.git
 

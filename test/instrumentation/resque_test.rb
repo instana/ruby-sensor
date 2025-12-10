@@ -19,7 +19,7 @@ class ResqueClientTest < Minitest::Test
   end
 
   def test_enqueue
-    ::Instana.tracer.start_or_continue_trace(:'resque-client_test') do
+    ::Instana.tracer.in_span(:'resque-client_test') do
       ::Resque.enqueue(FastJob)
     end
 
@@ -62,7 +62,7 @@ class ResqueClientTest < Minitest::Test
   end
 
   def test_enqueue_to
-    ::Instana.tracer.start_or_continue_trace(:'resque-client_test') do
+    ::Instana.tracer.in_span(:'resque-client_test') do
       ::Resque.enqueue_to(:critical, FastJob)
     end
 
@@ -84,7 +84,7 @@ class ResqueClientTest < Minitest::Test
   end
 
   def test_dequeue
-    ::Instana.tracer.start_or_continue_trace(:'resque-client_test', '', {}) do
+    ::Instana.tracer.in_span(:'resque-client_test') do
       ::Resque.dequeue(FastJob, { :generate => :farfalla })
     end
 
@@ -102,7 +102,7 @@ class ResqueClientTest < Minitest::Test
   end
 
   def test_worker_job
-    ::Instana.tracer.start_or_continue_trace(:'resque-client_test') do
+    ::Instana.tracer.in_span(:'resque-client_test') do
       ::Resque.enqueue_to(:critical, FastJob)
     end
 
@@ -135,7 +135,7 @@ class ResqueClientTest < Minitest::Test
 
   def test_worker_job_no_propagate
     ::Instana.config[:'resque-client'][:propagate] = false
-    ::Instana.tracer.start_or_continue_trace(:'resque-client_test') do
+    ::Instana.tracer.in_span(:'resque-client_test') do
       ::Resque.enqueue_to(:critical, FastJob)
     end
 

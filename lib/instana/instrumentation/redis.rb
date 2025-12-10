@@ -66,7 +66,7 @@ module Instana
       kv_payload = { redis: {} }
 
       begin
-        ::Instana.tracer.log_entry(:redis)
+        ::Instana.tracer.start_span(:redis)
 
         begin
           kv_payload[:redis][:connection] = "#{self.host}:#{self.port}"

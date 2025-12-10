@@ -37,7 +37,7 @@ class RailsActiveJobTest < Minitest::Test
     # ActiveJob::QueueAdapters::TestAdapter.new doesn't work for this test on any version less than 6
     skip unless Rails::VERSION::MAJOR >= 6
 
-    Instana.tracer.start_or_continue_trace(:peform_test) do
+    Instana.tracer.in_span(:peform_test) do
       SampleJob.perform_later("test_enqueue_perform")
     end
 
