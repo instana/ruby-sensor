@@ -279,7 +279,7 @@ workflows:
                 - "3.2"
                 - "3.3"
                 - "3.4"
-                - "3.5.0-preview1"
+                - "4.0"
   libraries_ruby_31_32:
     jobs:
       - test_apprisal:
@@ -304,7 +304,7 @@ workflows:
               ruby_version:
                 - "3.3"
                 - "3.4"
-                - "3.5.0-preview1"
+                - "4.0"
             # Currently compiling the native extensions for `grpc`
             # exceeds an internal RAM and/or CPU limit of CircleCI executor,
             # and the job gets terminated with:
@@ -314,7 +314,7 @@ workflows:
             # on https://rubygems.org/gems/grpc/versions
             exclude:
             - stack: base
-              ruby_version: "3.5.0-preview1"
+              ruby_version: "4.0"
               gemfile: "./gemfiles/grpc_10.gemfile"
   rails_ruby_31_35:
     jobs:
@@ -335,7 +335,7 @@ workflows:
                 - "3.2"
                 - "3.3"
                 - "3.4"
-                - "3.5.0-preview1"             
+                - "4.0"             
   rails8_ruby_33_35:
     jobs:
       - test_apprisal:
@@ -369,7 +369,7 @@ workflows:
                 - "3.1"
                 - "3.2"
                 - "3.3"
-                - "3.5.0-preview1"
+                - "4.0"
   report_coverage:
     jobs:
       - report_coverage
