@@ -48,5 +48,6 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency('sys-proctable', '>= 1.2.2')
   spec.add_runtime_dependency('opentelemetry-api', '~> 1.4')
   spec.add_runtime_dependency('opentelemetry-common')
+  spec.add_runtime_dependency('cgi')
   spec.add_runtime_dependency('oj', '>=3.0.11') unless RUBY_PLATFORM =~ /java/i
 end
