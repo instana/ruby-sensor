@@ -7,7 +7,7 @@ require 'support/apps/http_endpoint/boot'
 class RestClientTest < Minitest::Test
   def setup
     # See https://github.com/rest-client/rest-client/issues/612
-    OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:ciphers] = OpenSSL::SSL::SSLContext.new.ciphers
+    OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:ciphers] = OpenSSL::SSL::SSLContext.new.ciphers if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('4.0')
   end
 
   def teardown

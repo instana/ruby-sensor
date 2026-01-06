@@ -83,13 +83,13 @@ module Instana
 
       @attributes[:stack] = stack
                             .map do |call|
-        file, line, *method = call.split(':')
+                              file, line, *method = call.split(':')
 
-        {
-          c: file,
-          n: line,
-          m: method.join(' ')
-        }
+                              {
+                                c: file,
+                                n: line,
+                                m: method.join(' ')
+                              }
       end.take(limit > 40 ? 40 : limit)
     end
 
