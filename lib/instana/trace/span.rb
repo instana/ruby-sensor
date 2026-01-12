@@ -90,7 +90,7 @@ module Instana
                                 n: line,
                                 m: method.join(' ')
                               }
-      end.take(limit > 40 ? 40 : limit)
+      end.take([limit, 40].min)
     end
 
     # Log an error into the span
