@@ -43,8 +43,8 @@ module Instana
       # In Ruby, backtrace collection is very expensive so it's
       # (unfortunately) disabled by default.  If you still want
       # backtraces, it can be enabled with this config option.
-      # ::Instana.config[:collect_backtraces] = true
-      @config[:collect_backtraces] = false
+      # @config[:back_trace][:stack_trace_level] = all
+      @config[:back_trace] = { stack_trace_level: nil }
 
       # By default, collected SQL will be sanitized to remove potentially sensitive bind params such as:
       #   > SELECT  "blocks".* FROM "blocks"  WHERE "blocks"."name" = "Mr. Smith"

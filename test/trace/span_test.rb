@@ -56,15 +56,15 @@ class SpanTest < Minitest::Test
   end
 
   def test_span_collect_backtraces
-    Instana.config[:collect_backtraces] = true
+    Instana.config[:back_trace][:stack_trace_level] = "all"
     span = Instana::Span.new(:excon)
     assert span[:stack]
   ensure
-    Instana.config[:collect_backtraces] = false
+    Instana.config[:back_trace][:stack_trace_level] = nil
   end
 
   def test_span_backtrace_cleaner
-    Instana.config[:collect_backtraces] = true
+    ::Instana.config[:back_trace][:stack_trace_level] = "all"
     Instana.config[:backtrace_cleaner] =
       ->(trace) { trace.filter { |line| line.include?("lib/instana") } }
     span = Instana::Span.new(:excon)
@@ -72,7 +72,7 @@ class SpanTest < Minitest::Test
     assert_equal 1, span[:stack].size
   ensure
     Instana.config[:backtrace_cleaner] = nil
-    Instana.config[:collect_backtraces] = false
+    Instana.config[:back_trace][:stack_trace_level] = nil
   end
 
   def test_span_stack_over_limit

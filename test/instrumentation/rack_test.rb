@@ -58,7 +58,7 @@ class RackTest < Minitest::Test
 
   def test_basic_get
     clear_all!
-    ::Instana.config[:collect_backtraces] = true
+    Instana.config[:back_trace][:stack_trace_level] = "all"
 
     get '/mrlobster'
     assert last_response.ok?
@@ -94,7 +94,7 @@ class RackTest < Minitest::Test
     assert !rack_span.key?(:stack)
 
     # Restore to default
-    ::Instana.config[:collect_backtraces] = false
+    ::Instana.config[:back_trace] = false
   end
 
   def test_basic_get_with_custom_service_name
@@ -258,7 +258,7 @@ class RackTest < Minitest::Test
 
   def test_custom_headers_capture
     clear_all!
-    ::Instana.config[:collect_backtraces] = true
+    ::Instana.config[:back_trace] = true
     ::Instana.agent.define_singleton_method(:extra_headers) { %w(X-Capture-This X-Capture-That) }
 
     get '/mrlobster', {}, { "HTTP_X_CAPTURE_THIS" => "ThereYouGo" }
@@ -278,7 +278,7 @@ class RackTest < Minitest::Test
     assert !rack_span.key?(:stack)
 
     # Restore to default
-    ::Instana.config[:collect_backtraces] = false
+    ::Instana.config[:back_trace] = false
     ::Instana.agent.singleton_class.send(:remove_method, :extra_headers)
   end
 
