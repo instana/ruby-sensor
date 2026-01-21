@@ -86,6 +86,16 @@ module Instana
     def []=(key, value)
       @config[key.to_sym] = value
     end
+
+    def read_span_stack_config_from_env
+      stack_trace = ENV['INSTANA_STACK_TRACE']
+      stack_trace_length = ENV['INSTANA_STACK_TRACE_LENGTH']
+
+      @config[:back_trace] = {
+        stack_trace_level: stack_trace,
+        stack_trace_length: stack_trace_length ? stack_trace_length.to_i : nil
+      }
+    end
   end
 end
 
