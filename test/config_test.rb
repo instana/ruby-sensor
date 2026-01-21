@@ -67,7 +67,7 @@ class ConfigTest < Minitest::Test
     subject.read_span_stack_config_from_env
 
     assert_equal 'none', subject[:back_trace][:stack_trace_level]
-    assert_nil subject[:back_trace][:stack_trace_length]
+    assert_equal 40, subject[:back_trace][:stack_trace_length]
   ensure
     ENV.delete('INSTANA_STACK_TRACE')
   end
@@ -78,7 +78,7 @@ class ConfigTest < Minitest::Test
     subject = Instana::Config.new(logger: Logger.new('/dev/null'))
     subject.read_span_stack_config_from_env
 
-    assert_nil subject[:back_trace][:stack_trace_level]
+    assert_equal "error", subject[:back_trace][:stack_trace_level]
     assert_equal 20, subject[:back_trace][:stack_trace_length]
   ensure
     ENV.delete('INSTANA_STACK_TRACE_LENGTH')
@@ -88,8 +88,8 @@ class ConfigTest < Minitest::Test
     subject = Instana::Config.new(logger: Logger.new('/dev/null'))
     subject.read_span_stack_config_from_env
 
-    assert_nil subject[:back_trace][:stack_trace_level]
-    assert_nil subject[:back_trace][:stack_trace_length]
+    assert_equal "error", subject[:back_trace][:stack_trace_level]
+    assert_equal 30, subject[:back_trace][:stack_trace_length]
   end
 
   def test_read_span_stack_config_from_env_converts_length_to_integer
