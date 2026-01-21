@@ -84,7 +84,7 @@ class SpanTest < Minitest::Test
 
     inner do
       span = Instana::Span.new(:excon)
-      span.add_stack(limit: 500)
+      span.add_stack(span_stack_config: { stack_trace_length: 500})
       assert_equal 40, span[:stack].length
     end
   end

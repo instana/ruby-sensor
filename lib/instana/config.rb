@@ -44,7 +44,8 @@ module Instana
       # (unfortunately) disabled by default.  If you still want
       # backtraces, it can be enabled with this config option.
       # @config[:back_trace][:stack_trace_level] = all
-      @config[:back_trace] = { stack_trace_level: nil }
+      # @config[:back_trace] = { stack_trace_level: nil }
+      read_span_stack_config_from_env
 
       # By default, collected SQL will be sanitized to remove potentially sensitive bind params such as:
       #   > SELECT  "blocks".* FROM "blocks"  WHERE "blocks"."name" = "Mr. Smith"
@@ -92,8 +93,8 @@ module Instana
       stack_trace_length = ENV['INSTANA_STACK_TRACE_LENGTH']
 
       @config[:back_trace] = {
-        stack_trace_level: stack_trace,
-        stack_trace_length: stack_trace_length ? stack_trace_length.to_i : nil
+        stack_trace_level: stack_trace || "error",
+        stack_trace_length: stack_trace_length ? stack_trace_length.to_i : 30
       }
     end
   end
