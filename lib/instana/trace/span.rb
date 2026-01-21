@@ -70,7 +70,7 @@ module Instana
       set_tags(attributes)
       ::Instana.processor.on_start(self)
       # Attach a backtrace to all exit spans
-      add_stack if ::Instana.config[:collect_backtraces] && exit_span?
+      add_stack if should_collect_stack_trace?
     end
 
     # Adds a backtrace to this span
@@ -78,6 +78,7 @@ module Instana
     # @param limit [Integer] Limit the backtrace to the top <limit> frames
     #
     def add_stack(limit: 30, stack: Kernel.caller)
+      limit ||= ::Instana.config[:back_traces][:stack_trace_length] || 30
       cleaner = ::Instana.config[:backtrace_cleaner]
       stack = cleaner.call(stack) if cleaner
 
@@ -530,5 +531,9 @@ module Instana
     #
     # @return [void]
     def status=(status); end
+
+    def should_collect_stack_trace?
+      ::Instana.config[:back_trace][:stack_trace_level]
+    end
   end
 end
