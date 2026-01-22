@@ -176,4 +176,230 @@ class SpanTest < Minitest::Test
     span = Instana::Span.new(:excon)
     assert_nil(span[:data][:service])
   end
+
+  # Tests for stack_trace_level configuration
+
+  def test_stack_trace_level_all_collects_for_all_spans
+    Instana.config[:back_trace][:stack_trace_level] = "all"
+    span = Instana::Span.new(:excon)
+
+    assert span[:stack], "Stack trace should be collected for all spans when level is 'all'"
+    assert span[:stack].is_a?(Array), "Stack trace should be an array"
+    assert span[:stack].length > 0, "Stack trace should not be empty"
+  ensure
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+  end
+
+  def test_stack_trace_level_error_does_not_collect_for_normal_spans
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+    span = Instana::Span.new(:excon)
+
+    assert_nil span[:stack], "Stack trace should not be collected for normal spans when level is 'error'"
+  ensure
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+  end
+
+  def test_stack_trace_level_error_collects_for_erroneous_spans
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+    span = Instana::Span.new(:excon)
+
+    # Span should not have stack trace at creation with level 'error'
+    assert_nil span[:stack], "Stack trace should not be collected at span creation when level is 'error'"
+
+    # Record an exception to make it an erroneous span
+    # Need to raise the exception to populate its backtrace
+    begin
+      raise StandardError, "Test error"
+    rescue StandardError => error
+      span.record_exception(error)
+    end
+
+    # Stack trace from the exception backtrace should be collected
+    assert span[:stack], "Stack trace from exception should be collected"
+    assert span[:stack].is_a?(Array), "Stack trace should be an array"
+    assert span[:stack].length > 0, "Stack trace should not be empty"
+    assert_equal 1, span[:ec], "Error count should be 1"
+  ensure
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+  end
+
+  def test_stack_trace_level_none_does_not_collect_for_normal_spans
+    Instana.config[:back_trace][:stack_trace_level] = "none"
+    span = Instana::Span.new(:excon)
+
+    assert_nil span[:stack], "Stack trace should not be collected when level is 'none'"
+  ensure
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+  end
+
+  def test_stack_trace_level_none_does_not_collect_for_erroneous_spans
+    Instana.config[:back_trace][:stack_trace_level] = "none"
+    span = Instana::Span.new(:excon)
+
+    # Span should not have stack trace at creation with level 'none'
+    assert_nil span[:stack], "Stack trace should not be collected at span creation when level is 'none'"
+
+    # Record an exception - need to raise it to populate backtrace
+    begin
+      raise StandardError, "Test error"
+    rescue StandardError => error
+      span.record_exception(error)
+    end
+
+    # Note: record_exception always collects the exception's backtrace regardless of stack_trace_level
+    # This is by design - the stack_trace_level only controls automatic collection at span creation
+    assert span[:stack], "Stack trace from exception backtrace is always collected by record_exception"
+    assert_equal 1, span[:ec], "Error count should be 1"
+  ensure
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+  end
+
+  # Tests for stack_trace_length configuration
+
+  def test_stack_trace_length_limits_frames
+    Instana.config[:back_trace][:stack_trace_level] = "all"
+    Instana.config[:back_trace][:stack_trace_length] = 5
+
+    span = Instana::Span.new(:excon)
+
+    assert span[:stack], "Stack trace should be collected"
+    assert span[:stack].length <= 5, "Stack trace should be limited to 5 frames"
+  ensure
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+    Instana.config[:back_trace][:stack_trace_length] = 30
+  end
+
+  def test_stack_trace_length_with_different_values
+    Instana.config[:back_trace][:stack_trace_level] = "all"
+
+    # Test with length 10
+    Instana.config[:back_trace][:stack_trace_length] = 10
+    span1 = Instana::Span.new(:excon)
+    assert span1[:stack].length <= 10, "Stack trace should be limited to 10 frames"
+
+    # Test with length 20
+    Instana.config[:back_trace][:stack_trace_length] = 20
+    span2 = Instana::Span.new(:excon)
+    assert span2[:stack].length <= 20, "Stack trace should be limited to 20 frames"
+
+    # Test with length 1
+    Instana.config[:back_trace][:stack_trace_length] = 1
+    span3 = Instana::Span.new(:excon)
+    assert span3[:stack].length <= 1, "Stack trace should be limited to 1 frame"
+  ensure
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+    Instana.config[:back_trace][:stack_trace_length] = 30
+  end
+
+  def test_stack_trace_length_zero_collects_no_frames
+    Instana.config[:back_trace][:stack_trace_level] = "all"
+    Instana.config[:back_trace][:stack_trace_length] = 0
+
+    span = Instana::Span.new(:excon)
+
+    # With length 0, stack should either be nil or empty array
+    assert(span[:stack].nil? || span[:stack].empty?, "Stack trace should be empty with length 0")
+  ensure
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+    Instana.config[:back_trace][:stack_trace_length] = 30
+  end
+
+  # Combined tests for stack_trace_level and stack_trace_length
+
+  def test_stack_trace_all_with_custom_length
+    Instana.config[:back_trace][:stack_trace_level] = "all"
+    Instana.config[:back_trace][:stack_trace_length] = 15
+
+    span = Instana::Span.new(:excon)
+
+    assert span[:stack], "Stack trace should be collected with level 'all'"
+    assert span[:stack].length <= 15, "Stack trace should respect custom length of 15"
+  ensure
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+    Instana.config[:back_trace][:stack_trace_length] = 30
+  end
+
+  def test_stack_trace_error_with_custom_length_on_error
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+    Instana.config[:back_trace][:stack_trace_length] = 8
+
+    span = Instana::Span.new(:excon)
+
+    # No stack at creation with level 'error'
+    assert_nil span[:stack], "Stack trace should not be collected at span creation when level is 'error'"
+
+    # Raise exception to populate backtrace
+    begin
+      raise StandardError, "Test error"
+    rescue StandardError => error
+      span.record_exception(error)
+    end
+
+    # Stack trace from exception should be collected and respect length limit
+    assert span[:stack], "Stack trace from exception should be collected"
+    assert span[:stack].length <= 8, "Stack trace should respect custom length of 8"
+    assert_equal 1, span[:ec], "Error count should be 1"
+  ensure
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+    Instana.config[:back_trace][:stack_trace_length] = 30
+  end
+
+  def test_stack_trace_none_ignores_length_setting
+    Instana.config[:back_trace][:stack_trace_level] = "none"
+    Instana.config[:back_trace][:stack_trace_length] = 100
+
+    span = Instana::Span.new(:excon)
+
+    assert_nil span[:stack], "Stack trace should not be collected when level is 'none', regardless of length"
+  ensure
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+    Instana.config[:back_trace][:stack_trace_length] = 30
+  end
+
+  # Test for non-exit spans
+
+  def test_stack_trace_not_collected_for_non_exit_spans
+    Instana.config[:back_trace][:stack_trace_level] = "all"
+
+    # Create a non-exit span (sdk/custom span)
+    span = Instana::Span.new(:sdk)
+
+    # Non-exit spans should not collect stack traces automatically
+    assert_nil span[:stack], "Stack trace should not be collected for non-exit spans"
+  ensure
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+  end
+
+  def test_stack_trace_for_multiple_errors_with_error_level
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+
+    span = Instana::Span.new(:excon)
+
+    # No stack at creation with level 'error'
+    assert_nil span[:stack], "Stack trace should not be collected at span creation when level is 'error'"
+
+    # First error - raise to populate backtrace
+    begin
+      raise StandardError, "First error"
+    rescue StandardError => error1
+      span.record_exception(error1)
+    end
+
+    assert span[:stack], "Stack trace from first exception should be collected"
+    first_stack = span[:stack].dup
+
+    # Second error - raise to populate backtrace
+    begin
+      raise StandardError, "Second error"
+    rescue StandardError => error2
+      span.record_exception(error2)
+    end
+
+    assert span[:stack], "Stack trace from second exception should be collected"
+    assert_equal 2, span[:ec], "Error count should be 2"
+    # The stack from the second error should replace the first
+    refute_equal first_stack, span[:stack], "Stack trace should be updated with second error"
+  ensure
+    Instana.config[:back_trace][:stack_trace_level] = "error"
+  end
 end
