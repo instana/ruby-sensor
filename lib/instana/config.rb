@@ -91,10 +91,11 @@ module Instana
     def read_span_stack_config_from_env
       stack_trace = ENV['INSTANA_STACK_TRACE']
       stack_trace_length = ENV['INSTANA_STACK_TRACE_LENGTH']
-
+      config_source = stack_trace || stack_trace_length ? 'env' : 'default'
       @config[:back_trace] = {
-        stack_trace_level: stack_trace || "error",
-        stack_trace_length: stack_trace_length ? stack_trace_length.to_i : 30
+        stack_trace_level: stack_trace || 'error',
+        stack_trace_length: stack_trace_length ? stack_trace_length.to_i : 30,
+        config_source: config_source
       }
     end
   end
