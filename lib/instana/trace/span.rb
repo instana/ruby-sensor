@@ -78,7 +78,7 @@ module Instana
     # @param limit [Integer] Limit the backtrace to the top <limit> frames
     #
     def add_stack(span_stack_config: ::Instana.config[:back_trace], stack: Kernel.caller)
-      limit = span_stack_config.dig(:stack_trace_length)
+      limit = span_stack_config[:stack_trace_length]
       cleaner = ::Instana.config[:backtrace_cleaner]
       stack = cleaner.call(stack) if cleaner
 

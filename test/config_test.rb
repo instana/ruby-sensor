@@ -41,6 +41,7 @@ class ConfigTest < Minitest::Test
 
     assert_equal 'all', subject[:back_trace][:stack_trace_level]
     assert_equal 40, subject[:back_trace][:stack_trace_length]
+    assert_equal 'env', subject[:back_trace][:config_source]
   ensure
     ENV.delete('INSTANA_STACK_TRACE')
     ENV.delete('INSTANA_STACK_TRACE_LENGTH')
@@ -55,6 +56,7 @@ class ConfigTest < Minitest::Test
 
     assert_equal 'error', subject[:back_trace][:stack_trace_level]
     assert_equal 30, subject[:back_trace][:stack_trace_length]
+    assert_equal 'env', subject[:back_trace][:config_source]
   ensure
     ENV.delete('INSTANA_STACK_TRACE')
     ENV.delete('INSTANA_STACK_TRACE_LENGTH')
@@ -67,7 +69,8 @@ class ConfigTest < Minitest::Test
     subject.read_span_stack_config_from_env
 
     assert_equal 'none', subject[:back_trace][:stack_trace_level]
-    assert_equal 40, subject[:back_trace][:stack_trace_length]
+    assert_equal 30, subject[:back_trace][:stack_trace_length]
+    assert_equal 'env', subject[:back_trace][:config_source]
   ensure
     ENV.delete('INSTANA_STACK_TRACE')
   end
@@ -80,6 +83,7 @@ class ConfigTest < Minitest::Test
 
     assert_equal "error", subject[:back_trace][:stack_trace_level]
     assert_equal 20, subject[:back_trace][:stack_trace_length]
+    assert_equal 'env', subject[:back_trace][:config_source]
   ensure
     ENV.delete('INSTANA_STACK_TRACE_LENGTH')
   end
@@ -90,6 +94,7 @@ class ConfigTest < Minitest::Test
 
     assert_equal "error", subject[:back_trace][:stack_trace_level]
     assert_equal 30, subject[:back_trace][:stack_trace_length]
+    assert_equal 'default', subject[:back_trace][:config_source]
   end
 
   def test_read_span_stack_config_from_env_converts_length_to_integer
@@ -100,6 +105,7 @@ class ConfigTest < Minitest::Test
 
     assert_equal 25, subject[:back_trace][:stack_trace_length]
     assert_instance_of Integer, subject[:back_trace][:stack_trace_length]
+    assert_equal 'env', subject[:back_trace][:config_source]
   ensure
     ENV.delete('INSTANA_STACK_TRACE_LENGTH')
   end
@@ -111,6 +117,7 @@ class ConfigTest < Minitest::Test
     subject.read_span_stack_config_from_env
 
     assert_equal 0, subject[:back_trace][:stack_trace_length]
+    assert_equal 'env', subject[:back_trace][:config_source]
   ensure
     ENV.delete('INSTANA_STACK_TRACE_LENGTH')
   end
