@@ -131,8 +131,6 @@ module Instana
             stack_trace_length: stack_trace_length ? stack_trace_length.to_i : 30,
             config_source: 'yaml'
           }
-        else
-          nil
         end
       rescue => e
         ::Instana.logger.warn("Failed to load stack trace configuration from YAML: #{e.message}")
