@@ -185,7 +185,7 @@ class SpanTest < Minitest::Test
 
     assert span[:stack], "Stack trace should be collected for all spans when level is 'all'"
     assert span[:stack].is_a?(Array), "Stack trace should be an array"
-    assert span[:stack].length > 0, "Stack trace should not be empty"
+    assert span[:stack].length.positive?, "Stack trace should not be empty"
   ensure
     Instana.config[:back_trace][:stack_trace_level] = "error"
   end
@@ -210,14 +210,14 @@ class SpanTest < Minitest::Test
     # Need to raise the exception to populate its backtrace
     begin
       raise StandardError, "Test error"
-    rescue StandardError => error
-      span.record_exception(error)
+    rescue StandardError => e
+      span.record_exception(e)
     end
 
     # Stack trace from the exception backtrace should be collected
     assert span[:stack], "Stack trace from exception should be collected"
     assert span[:stack].is_a?(Array), "Stack trace should be an array"
-    assert span[:stack].length > 0, "Stack trace should not be empty"
+    assert span[:stack].length.positive?, "Stack trace should not be empty"
     assert_equal 1, span[:ec], "Error count should be 1"
   ensure
     Instana.config[:back_trace][:stack_trace_level] = "error"
@@ -242,11 +242,11 @@ class SpanTest < Minitest::Test
     # Record an exception - need to raise it to populate backtrace
     begin
       raise StandardError, "Test error"
-    rescue StandardError => error
-      span.record_exception(error)
+    rescue StandardError => e
+      span.record_exception(e)
     end
 
-    # Note: record_exception always collects the exception's backtrace regardless of stack_trace_level
+    # NOTE: record_exception always collects the exception's backtrace regardless of stack_trace_level
     # This is by design - the stack_trace_level only controls automatic collection at span creation
     assert span[:stack], "Stack trace from exception backtrace is always collected by record_exception"
     assert_equal 1, span[:ec], "Error count should be 1"
@@ -331,8 +331,8 @@ class SpanTest < Minitest::Test
     # Raise exception to populate backtrace
     begin
       raise StandardError, "Test error"
-    rescue StandardError => error
-      span.record_exception(error)
+    rescue StandardError => e
+      span.record_exception(e)
     end
 
     # Stack trace from exception should be collected and respect length limit
@@ -381,8 +381,8 @@ class SpanTest < Minitest::Test
     # First error - raise to populate backtrace
     begin
       raise StandardError, "First error"
-    rescue StandardError => error1
-      span.record_exception(error1)
+    rescue StandardError => e
+      span.record_exception(e)
     end
 
     assert span[:stack], "Stack trace from first exception should be collected"
@@ -391,8 +391,8 @@ class SpanTest < Minitest::Test
     # Second error - raise to populate backtrace
     begin
       raise StandardError, "Second error"
-    rescue StandardError => error2
-      span.record_exception(error2)
+    rescue StandardError => e
+      span.record_exception(e)
     end
 
     assert span[:stack], "Stack trace from second exception should be collected"
