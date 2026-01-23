@@ -1,6 +1,8 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2016
 
+require 'yaml'
+
 module Instana
   class Config
     def initialize(logger: ::Instana.logger, agent_host: ENV['INSTANA_AGENT_HOST'], agent_port: ENV['INSTANA_AGENT_PORT'])
@@ -45,7 +47,7 @@ module Instana
       # backtraces, it can be enabled with this config option.
       # @config[:back_trace][:stack_trace_level] = all
       # @config[:back_trace] = { stack_trace_level: nil }
-      read_span_stack_config_from_env
+      read_span_stack_config
 
       # By default, collected SQL will be sanitized to remove potentially sensitive bind params such as:
       #   > SELECT  "blocks".* FROM "blocks"  WHERE "blocks"."name" = "Mr. Smith"
@@ -88,6 +90,57 @@ module Instana
       @config[key.to_sym] = value
     end
 
+    # Read stack trace configuration from YAML file, environment variables, or use defaults
+    # Priority: YAML file > Environment variables > Defaults
+    def read_span_stack_config
+      # Try to load from YAML file first
+      yaml_config = read_span_stack_config_from_yaml
+
+      if yaml_config
+        @config[:back_trace] = yaml_config
+      else
+        # Fall back to environment variables or defaults
+        read_span_stack_config_from_env
+      end
+    end
+
+    # Read stack trace configuration from YAML file
+    # Returns hash with config or nil if not found
+    def read_span_stack_config_from_yaml
+      config_path = ENV['INSTANA_CONFIG_PATH']
+      return nil unless config_path && File.exist?(config_path)
+
+      begin
+        yaml_content = YAML.safe_load(File.read(config_path))
+
+        # Support both "tracing" and "com.instana.tracing" as top-level keys
+        tracing_config = yaml_content['tracing'] || yaml_content['com.instana.tracing']
+        return nil unless tracing_config
+
+        # Look for global stack trace configuration
+        global_config = tracing_config['global']
+        return nil unless global_config
+
+        stack_trace_level = global_config['stack-trace']
+        stack_trace_length = global_config['stack-trace-length']
+
+        # Only return config if at least one value is present
+        if stack_trace_level || stack_trace_length
+          {
+            stack_trace_level: stack_trace_level || 'error',
+            stack_trace_length: stack_trace_length ? stack_trace_length.to_i : 30,
+            config_source: 'yaml'
+          }
+        else
+          nil
+        end
+      rescue => e
+        ::Instana.logger.warn("Failed to load stack trace configuration from YAML: #{e.message}")
+        nil
+      end
+    end
+
+    # Read stack trace configuration from environment variables
     def read_span_stack_config_from_env
       stack_trace = ENV['INSTANA_STACK_TRACE']
       stack_trace_length = ENV['INSTANA_STACK_TRACE_LENGTH']
