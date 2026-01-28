@@ -91,7 +91,7 @@ module Instana
     end
 
     # Read stack trace configuration from YAML file, environment variables, or use defaults
-    # Priority: YAML file > Environment variables > Defaults
+    # Priority: YAML file > Environment variables > Agent discovery > Defaults
     def read_span_stack_config
       # Try to load from YAML file first
       yaml_config = read_span_stack_config_from_yaml
@@ -101,6 +101,39 @@ module Instana
       else
         # Fall back to environment variables or defaults
         read_span_stack_config_from_env
+      end
+    end
+
+    # Read configuration from agent discovery response
+    # This is called after agent discovery is complete
+    # @param discovery [Hash] The discovery response from the agent
+    def read_config_from_agent(discovery)
+      return unless discovery.is_a?(Hash) && discovery['tracing']
+
+      tracing_config = discovery['tracing']
+
+      # Read stack trace configuration from agent if not already set from YAML or env
+      read_span_stack_config_from_agent(tracing_config) if should_read_from_agent?(:back_trace)
+    rescue => e
+      ::Instana.logger.warn("Failed to read configuration from agent: #{e.message}")
+    end
+
+    # Read stack trace configuration from agent discovery
+    # @param tracing_config [Hash] The tracing configuration from discovery
+    def read_span_stack_config_from_agent(tracing_config)
+      return unless tracing_config['global']
+
+      global_config = tracing_config['global']
+      stack_trace_level = global_config['stack-trace']
+      stack_trace_length = global_config['stack-trace-length']
+
+      # Only update if at least one value is present
+      if stack_trace_level || stack_trace_length
+        @config[:back_trace] = {
+          stack_trace_level: stack_trace_level || 'error',
+          stack_trace_length: stack_trace_length ? stack_trace_length.to_i : 30,
+          config_source: 'agent'
+        }
       end
     end
 
@@ -149,6 +182,16 @@ module Instana
         config_source: config_source
       }
     end
+
+    # Check if we should read configuration from agent
+    # Returns true if config was not set from YAML or environment variables
+    def should_read_from_agent?(config_key)
+      return true unless @config[config_key]
+
+      source = @config[config_key][:config_source]
+      source.nil? || source == 'default'
+    end
+
   end
 end
 
