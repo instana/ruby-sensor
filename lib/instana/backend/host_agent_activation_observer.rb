@@ -40,6 +40,9 @@ module Instana
           wait_for_backend(discovery['pid'])
           @logger.debug("Agent ready.")
           @discovery.swap { discovery }
+
+          # Read configuration from agent right after discovery
+          ::Instana.config.read_config_from_agent(discovery)
         end
 
         socket.close
