@@ -27,57 +27,21 @@ module Instana
       def load_configuration
         load_from_yaml
         load_from_env_vars unless rules_loaded?
-        load_from_agent unless rules_loaded?
+        # Agent configuration will be loaded after discovery via read_config_from_agent
+      end
+
+      # Read configuration from agent discovery response
+      # This is called from Config#read_config_from_agent after discovery is complete
+      # @param discovery [Hash] The discovery response from the agent
+      def read_config_from_agent(discovery)
+        return if rules_loaded? # Don't override if already loaded from YAML or env
+
+        process_discovery_config(discovery)
+      rescue => e
+        Instana.logger.warn("Failed to read span filtering configuration from agent: #{e.message}")
       end
 
       private
-
-      # Load configuration from agent discovery response
-      def load_from_agent
-        # Try to get discovery value immediately first
-        discovery = ::Instana.agent&.delegate&.send(:discovery_value)
-        if discovery && discovery.is_a?(Hash) && !discovery.empty?
-          process_discovery_config(discovery)
-          return
-        end
-
-        # If not available, set up a timer task to periodically check for discovery
-        setup_discovery_timer
-      rescue => e
-        Instana.logger.warn("Failed to load span filtering configuration from agent: #{e.message}")
-      end
-
-      # Set up a timer task to periodically check for discovery
-      def setup_discovery_timer
-        # Don't create a timer task if we're in a test environment
-        return if ENV.key?('INSTANA_TEST')
-
-        # Create a timer task that checks for discovery every second
-        @discovery_timer = Concurrent::TimerTask.new(execution_interval: 1) do
-          check_discovery
-        end
-
-        # Start the timer task
-        @discovery_timer.execute
-      end
-
-      # Check if discovery is available and process it
-      def check_discovery
-        discovery = ::Instana.agent&.delegate.send(:discovery_value)
-        if discovery && discovery.is_a?(Hash) && !discovery.empty?
-          process_discovery_config(discovery)
-
-          # Shutdown the timer task after successful processing
-          @discovery_timer.shutdown if @discovery_timer
-
-          return true
-        end
-
-        false
-      rescue => e
-        Instana.logger.warn("Error checking discovery in timer task: #{e.message}")
-        false
-      end
 
       # Process the discovery configuration
       def process_discovery_config(discovery)
