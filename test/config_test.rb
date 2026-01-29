@@ -289,4 +289,207 @@ class ConfigTest < Minitest::Test
     ENV.delete('INSTANA_CONFIG_PATH')
     ENV.delete('INSTANA_STACK_TRACE')
   end
+
+  # Tests for reading configuration from agent discovery
+
+  def test_read_config_from_agent_with_stack_trace_config
+    discovery = {
+      'tracing' => {
+        'global' => {
+          'stack-trace' => 'all',
+          'stack-trace-length' => 100
+        }
+      }
+    }
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    subject.read_config_from_agent(discovery)
+
+    assert_equal 'all', subject[:back_trace][:stack_trace_level]
+    assert_equal 100, subject[:back_trace][:stack_trace_length]
+    assert_equal 'agent', subject[:back_trace][:config_source]
+  end
+
+  def test_read_config_from_agent_with_only_stack_trace_level
+    discovery = {
+      'tracing' => {
+        'global' => {
+          'stack-trace' => 'none'
+        }
+      }
+    }
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    subject.read_config_from_agent(discovery)
+
+    assert_equal 'none', subject[:back_trace][:stack_trace_level]
+    assert_equal 30, subject[:back_trace][:stack_trace_length]
+    assert_equal 'agent', subject[:back_trace][:config_source]
+  end
+
+  def test_read_config_from_agent_with_only_stack_trace_length
+    discovery = {
+      'tracing' => {
+        'global' => {
+          'stack-trace-length' => 75
+        }
+      }
+    }
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    subject.read_config_from_agent(discovery)
+
+    assert_equal 'error', subject[:back_trace][:stack_trace_level]
+    assert_equal 75, subject[:back_trace][:stack_trace_length]
+    assert_equal 'agent', subject[:back_trace][:config_source]
+  end
+
+  def test_read_config_from_agent_without_tracing_config
+    discovery = {
+      'pid' => 12345,
+      'agentUuid' => 'test-uuid'
+    }
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    original_config = subject[:back_trace].dup
+    subject.read_config_from_agent(discovery)
+
+    # Config should remain unchanged
+    assert_equal original_config, subject[:back_trace]
+  end
+
+  def test_read_config_from_agent_with_empty_discovery
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    original_config = subject[:back_trace].dup
+    subject.read_config_from_agent({})
+
+    # Config should remain unchanged
+    assert_equal original_config, subject[:back_trace]
+  end
+
+  def test_read_config_from_agent_with_nil_discovery
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    original_config = subject[:back_trace].dup
+    subject.read_config_from_agent(nil)
+
+    # Config should remain unchanged
+    assert_equal original_config, subject[:back_trace]
+  end
+
+  # Tests for configuration priority: YAML > Env > Agent > Default
+
+  def test_priority_yaml_over_agent
+    yaml_content = <<~YAML
+      tracing:
+        global:
+          stack-trace: none
+          stack-trace-length: 10
+    YAML
+
+    File.write('test_stack_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_stack_config.yaml'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    # Try to override with agent config
+    discovery = {
+      'tracing' => {
+        'global' => {
+          'stack-trace' => 'all',
+          'stack-trace-length' => 100
+        }
+      }
+    }
+    subject.read_config_from_agent(discovery)
+
+    # YAML should take precedence
+    assert_equal 'none', subject[:back_trace][:stack_trace_level]
+    assert_equal 10, subject[:back_trace][:stack_trace_length]
+    assert_equal 'yaml', subject[:back_trace][:config_source]
+  ensure
+    File.unlink('test_stack_config.yaml') if File.exist?('test_stack_config.yaml')
+    ENV.delete('INSTANA_CONFIG_PATH')
+  end
+
+  def test_priority_env_over_agent
+    ENV['INSTANA_STACK_TRACE'] = 'error'
+    ENV['INSTANA_STACK_TRACE_LENGTH'] = '20'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    # Try to override with agent config
+    discovery = {
+      'tracing' => {
+        'global' => {
+          'stack-trace' => 'all',
+          'stack-trace-length' => 100
+        }
+      }
+    }
+    subject.read_config_from_agent(discovery)
+
+    # Env should take precedence
+    assert_equal 'error', subject[:back_trace][:stack_trace_level]
+    assert_equal 20, subject[:back_trace][:stack_trace_length]
+    assert_equal 'env', subject[:back_trace][:config_source]
+  ensure
+    ENV.delete('INSTANA_STACK_TRACE')
+    ENV.delete('INSTANA_STACK_TRACE_LENGTH')
+  end
+
+  def test_priority_agent_over_default
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    # Verify default config
+    assert_equal 'error', subject[:back_trace][:stack_trace_level]
+    assert_equal 30, subject[:back_trace][:stack_trace_length]
+    assert_equal 'default', subject[:back_trace][:config_source]
+
+    # Override with agent config
+    discovery = {
+      'tracing' => {
+        'global' => {
+          'stack-trace' => 'all',
+          'stack-trace-length' => 50
+        }
+      }
+    }
+    subject.read_config_from_agent(discovery)
+
+    # Agent should override default
+    assert_equal 'all', subject[:back_trace][:stack_trace_level]
+    assert_equal 50, subject[:back_trace][:stack_trace_length]
+    assert_equal 'agent', subject[:back_trace][:config_source]
+  end
+
+  def test_should_read_from_agent_returns_true_for_default_config
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    assert subject.send(:should_read_from_agent?, :back_trace)
+  end
+
+  def test_should_read_from_agent_returns_false_for_yaml_config
+    yaml_content = <<~YAML
+      tracing:
+        global:
+          stack-trace: all
+    YAML
+
+    File.write('test_stack_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_stack_config.yaml'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    refute subject.send(:should_read_from_agent?, :back_trace)
+  ensure
+    File.unlink('test_stack_config.yaml') if File.exist?('test_stack_config.yaml')
+    ENV.delete('INSTANA_CONFIG_PATH')
+  end
+
+  def test_should_read_from_agent_returns_false_for_env_config
+    ENV['INSTANA_STACK_TRACE'] = 'all'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    refute subject.send(:should_read_from_agent?, :back_trace)
+  ensure
+    ENV.delete('INSTANA_STACK_TRACE')
+  end
 end
