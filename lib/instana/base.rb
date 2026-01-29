@@ -17,6 +17,15 @@ module Instana
     attr_accessor :tracer_provider
 
     ##
+    # span_filtering_config
+    #
+    # Returns the span filtering configuration instance
+    #
+    def span_filtering_config
+      ::Instana::SpanFiltering.configuration
+    end
+
+    ##
     # setup
     #
     # Setup the Instana language agent to an informal "ready

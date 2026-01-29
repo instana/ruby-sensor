@@ -114,6 +114,8 @@ module Instana
 
       # Read stack trace configuration from agent if not already set from YAML or env
       read_span_stack_config_from_agent(tracing_config) if should_read_from_agent?(:back_trace)
+      # Read span filtering configuration from agent
+      ::Instana.span_filtering_config&.read_config_from_agent(discovery)
     rescue => e
       ::Instana.logger.warn("Failed to read configuration from agent: #{e.message}")
     end
