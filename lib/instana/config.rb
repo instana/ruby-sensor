@@ -97,10 +97,12 @@ module Instana
       yaml_config = read_span_stack_config_from_yaml
 
       if yaml_config
-        @config[:back_trace] = yaml_config
+        @config[:back_trace] = yaml_config[:global]
+        @config[:back_trace_technologies] = yaml_config[:technologies] || {}
       else
         # Fall back to environment variables or defaults
         read_span_stack_config_from_env
+        @config[:back_trace_technologies] = {}
       end
     end
 
@@ -137,10 +139,26 @@ module Instana
           config_source: 'agent'
         }
       end
+
+      # Read technology-specific configurations
+      @config[:back_trace_technologies] = {}
+      tracing_config.each do |key, value|
+        next if key == 'global' || !value.is_a?(Hash)
+
+        tech_stack_trace = value['stack-trace']
+        tech_stack_trace_length = value['stack-trace-length']
+
+        if tech_stack_trace || tech_stack_trace_length
+          @config[:back_trace_technologies][key.to_sym] = {
+            stack_trace_level: tech_stack_trace,
+            stack_trace_length: tech_stack_trace_length ? tech_stack_trace_length.to_i : nil
+          }.compact
+        end
+      end
     end
 
     # Read stack trace configuration from YAML file
-    # Returns hash with config or nil if not found
+    # Returns hash with :global and :technologies keys or nil if not found
     def read_span_stack_config_from_yaml
       config_path = ENV['INSTANA_CONFIG_PATH']
       return nil unless config_path && File.exist?(config_path)
@@ -152,21 +170,42 @@ module Instana
         tracing_config = yaml_content['tracing'] || yaml_content['com.instana.tracing']
         return nil unless tracing_config
 
+        result = {}
+
         # Look for global stack trace configuration
-        global_config = tracing_config['global']
-        return nil unless global_config
+        if tracing_config['global']
+          global_config = tracing_config['global']
+          stack_trace_level = global_config['stack-trace']
+          stack_trace_length = global_config['stack-trace-length']
 
-        stack_trace_level = global_config['stack-trace']
-        stack_trace_length = global_config['stack-trace-length']
-
-        # Only return config if at least one value is present
-        if stack_trace_level || stack_trace_length
-          {
-            stack_trace_level: stack_trace_level || 'error',
-            stack_trace_length: stack_trace_length ? stack_trace_length.to_i : 30,
-            config_source: 'yaml'
-          }
+          if stack_trace_level || stack_trace_length
+            result[:global] = {
+              stack_trace_level: stack_trace_level || 'error',
+              stack_trace_length: stack_trace_length ? stack_trace_length.to_i : 30,
+              config_source: 'yaml'
+            }
+          end
         end
+
+        # Look for technology-specific configurations
+        technologies = {}
+        tracing_config.each do |key, value|
+          next if key == 'global' || !value.is_a?(Hash)
+
+          tech_stack_trace = value['stack-trace']
+          tech_stack_trace_length = value['stack-trace-length']
+
+          if tech_stack_trace || tech_stack_trace_length
+            technologies[key.to_sym] = {
+              stack_trace_level: tech_stack_trace,
+              stack_trace_length: tech_stack_trace_length ? tech_stack_trace_length.to_i : nil
+            }.compact
+          end
+        end
+
+        result[:technologies] = technologies unless technologies.empty?
+
+        result.empty? ? nil : result
       rescue => e
         ::Instana.logger.warn("Failed to load stack trace configuration from YAML: #{e.message}")
         nil
@@ -192,6 +231,20 @@ module Instana
 
       source = @config[config_key][:config_source]
       source.nil? || source == 'default'
+    end
+
+    # Get stack trace configuration for a specific technology
+    # Falls back to global configuration if technology-specific config is not found
+    # @param technology [Symbol] The technology name (e.g., :excon, :kafka, :activerecord)
+    # @return [Hash] Configuration hash with :stack_trace_level and :stack_trace_length
+    def get_stack_trace_config(technology)
+      tech_config = @config[:back_trace_technologies]&.[](technology)
+      global_config = @config[:back_trace] || {}
+
+      {
+        stack_trace_level: tech_config&.[](:stack_trace_level) || global_config[:stack_trace_level] || 'error',
+        stack_trace_length: tech_config&.[](:stack_trace_length) || global_config[:stack_trace_length] || 30
+      }
     end
 
   end
