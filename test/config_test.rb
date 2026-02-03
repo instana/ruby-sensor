@@ -492,4 +492,191 @@ class ConfigTest < Minitest::Test
   ensure
     ENV.delete('INSTANA_STACK_TRACE')
   end
+
+  # Tests for technology-specific stack trace configuration
+
+  def test_read_span_stack_config_from_yaml_with_technology_specific_config
+    yaml_content = <<~YAML
+      com.instana.tracing:
+        global:
+          stack-trace: error
+          stack-trace-length: 25
+
+        kafka:
+          stack-trace: all
+
+        redis:
+          stack-trace: all
+    YAML
+
+    File.write('test_stack_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_stack_config.yaml'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    # Check global config
+    assert_equal 'error', subject[:back_trace][:stack_trace_level]
+    assert_equal 25, subject[:back_trace][:stack_trace_length]
+    assert_equal 'yaml', subject[:back_trace][:config_source]
+
+    # Check technology-specific configs
+    assert_equal 'all', subject[:back_trace_technologies][:kafka][:stack_trace_level]
+    assert_equal 'all', subject[:back_trace_technologies][:redis][:stack_trace_level]
+  ensure
+    File.unlink('test_stack_config.yaml') if File.exist?('test_stack_config.yaml')
+    ENV.delete('INSTANA_CONFIG_PATH')
+  end
+
+  def test_read_span_stack_config_from_yaml_with_technology_specific_length
+    yaml_content = <<~YAML
+      tracing:
+        global:
+          stack-trace: error
+          stack-trace-length: 30
+
+        kafka:
+          stack-trace: all
+          stack-trace-length: 50
+
+        redis:
+          stack-trace-length: 10
+    YAML
+
+    File.write('test_stack_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_stack_config.yaml'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    # Check kafka config
+    kafka_config = subject[:back_trace_technologies][:kafka]
+    assert_equal 'all', kafka_config[:stack_trace_level]
+    assert_equal 50, kafka_config[:stack_trace_length]
+
+    # Check redis config (only length specified)
+    redis_config = subject[:back_trace_technologies][:redis]
+    assert_nil redis_config[:stack_trace_level]
+    assert_equal 10, redis_config[:stack_trace_length]
+  ensure
+    File.unlink('test_stack_config.yaml') if File.exist?('test_stack_config.yaml')
+    ENV.delete('INSTANA_CONFIG_PATH')
+  end
+
+  def test_get_stack_trace_config_for_technology
+    yaml_content = <<~YAML
+      tracing:
+        global:
+          stack-trace: error
+          stack-trace-length: 30
+
+        kafka:
+          stack-trace: all
+          stack-trace-length: 50
+
+        redis:
+          stack-trace: all
+    YAML
+
+    File.write('test_stack_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_stack_config.yaml'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    # Test kafka - should use technology-specific config
+    kafka_config = subject.get_stack_trace_config(:kafka)
+    assert_equal 'all', kafka_config[:stack_trace_level]
+    assert_equal 50, kafka_config[:stack_trace_length]
+
+    # Test redis - should use technology-specific level, global length
+    redis_config = subject.get_stack_trace_config(:redis)
+    assert_equal 'all', redis_config[:stack_trace_level]
+    assert_equal 30, redis_config[:stack_trace_length]
+
+    # Test excon - should fall back to global config
+    excon_config = subject.get_stack_trace_config(:excon)
+    assert_equal 'error', excon_config[:stack_trace_level]
+    assert_equal 30, excon_config[:stack_trace_length]
+  ensure
+    File.unlink('test_stack_config.yaml') if File.exist?('test_stack_config.yaml')
+    ENV.delete('INSTANA_CONFIG_PATH')
+  end
+
+  def test_read_config_from_agent_with_technology_specific_config
+    discovery = {
+      'tracing' => {
+        'global' => {
+          'stack-trace' => 'error',
+          'stack-trace-length' => 30
+        },
+        'kafka' => {
+          'stack-trace' => 'all',
+          'stack-trace-length' => 100
+        },
+        'redis' => {
+          'stack-trace' => 'all'
+        }
+      }
+    }
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    subject.read_config_from_agent(discovery)
+
+    # Check global config
+    assert_equal 'error', subject[:back_trace][:stack_trace_level]
+    assert_equal 30, subject[:back_trace][:stack_trace_length]
+    assert_equal 'agent', subject[:back_trace][:config_source]
+
+    # Check technology-specific configs
+    kafka_config = subject[:back_trace_technologies][:kafka]
+    assert_equal 'all', kafka_config[:stack_trace_level]
+    assert_equal 100, kafka_config[:stack_trace_length]
+
+    redis_config = subject[:back_trace_technologies][:redis]
+    assert_equal 'all', redis_config[:stack_trace_level]
+    assert_nil redis_config[:stack_trace_length]
+  end
+
+  def test_yaml_technology_config_not_overridden_by_agent
+    yaml_content = <<~YAML
+      tracing:
+        global:
+          stack-trace: none
+          stack-trace-length: 10
+
+        kafka:
+          stack-trace: error
+          stack-trace-length: 20
+    YAML
+
+    File.write('test_stack_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_stack_config.yaml'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    # Try to override with agent config
+    discovery = {
+      'tracing' => {
+        'global' => {
+          'stack-trace' => 'all',
+          'stack-trace-length' => 100
+        },
+        'kafka' => {
+          'stack-trace' => 'all',
+          'stack-trace-length' => 200
+        }
+      }
+    }
+    subject.read_config_from_agent(discovery)
+
+    # YAML should take precedence for both global and technology-specific
+    assert_equal 'none', subject[:back_trace][:stack_trace_level]
+    assert_equal 10, subject[:back_trace][:stack_trace_length]
+    assert_equal 'yaml', subject[:back_trace][:config_source]
+
+    kafka_config = subject[:back_trace_technologies][:kafka]
+    assert_equal 'error', kafka_config[:stack_trace_level]
+    assert_equal 20, kafka_config[:stack_trace_length]
+  ensure
+    File.unlink('test_stack_config.yaml') if File.exist?('test_stack_config.yaml')
+    ENV.delete('INSTANA_CONFIG_PATH')
+  end
 end
