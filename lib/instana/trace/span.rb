@@ -77,7 +77,10 @@ module Instana
     #
     # @param limit [Integer] Limit the backtrace to the top <limit> frames
     #
-    def add_stack(span_stack_config: ::Instana.config[:back_trace], stack: Kernel.caller)
+    def add_stack(span_stack_config: nil, stack: Kernel.caller)
+      # Get technology-specific config if not provided
+      span_stack_config ||= get_span_stack_config
+
       limit = span_stack_config[:stack_trace_length]
       cleaner = ::Instana.config[:backtrace_cleaner]
       stack = cleaner.call(stack) if cleaner
@@ -533,7 +536,18 @@ module Instana
     def status=(status); end
 
     def should_collect_stack_trace?
-      ::Instana.config[:back_trace] && ::Instana.config[:back_trace][:stack_trace_level] == "all" && exit_span?
+      return false unless exit_span?
+
+      config = get_span_stack_config
+      config[:stack_trace_level] == "all"
+    end
+
+    # Get the stack trace configuration for this span's technology
+    # Falls back to global configuration if technology-specific config is not found
+    # @return [Hash] Configuration hash with :stack_trace_level and :stack_trace_length
+    def get_span_stack_config
+      technology = @attributes[:n]
+      ::Instana.config.get_stack_trace_config(technology)
     end
   end
 end
