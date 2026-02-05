@@ -3,7 +3,7 @@
 
 require 'test_helper'
 
-class ConfigTest < Minitest::Test
+class ConfigTest < Minitest::Test # rubocop:disable Metrics/ClassLength
   def test_that_config_exists
     refute_nil ::Instana.config
     assert_instance_of(::Instana::Config, ::Instana.config)

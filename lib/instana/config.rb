@@ -148,18 +148,18 @@ module Instana
         tech_stack_trace = value['stack-trace']
         tech_stack_trace_length = value['stack-trace-length']
 
-        if tech_stack_trace || tech_stack_trace_length
-          @config[:back_trace_technologies][key.to_sym] = {
-            stack_trace_level: tech_stack_trace,
-            stack_trace_length: tech_stack_trace_length ? tech_stack_trace_length.to_i : nil
-          }.compact
-        end
+        next unless tech_stack_trace || tech_stack_trace_length
+
+        @config[:back_trace_technologies][key.to_sym] = {
+          stack_trace_level: tech_stack_trace,
+          stack_trace_length: tech_stack_trace_length ? tech_stack_trace_length.to_i : nil
+        }.compact
       end
     end
 
     # Read stack trace configuration from YAML file
     # Returns hash with :global and :technologies keys or nil if not found
-    def read_span_stack_config_from_yaml
+    def read_span_stack_config_from_yaml # rubocop:disable Metrics/CyclomaticComplexity
       config_path = ENV['INSTANA_CONFIG_PATH']
       return nil unless config_path && File.exist?(config_path)
 
@@ -195,12 +195,12 @@ module Instana
           tech_stack_trace = value['stack-trace']
           tech_stack_trace_length = value['stack-trace-length']
 
-          if tech_stack_trace || tech_stack_trace_length
-            technologies[key.to_sym] = {
-              stack_trace_level: tech_stack_trace,
-              stack_trace_length: tech_stack_trace_length ? tech_stack_trace_length.to_i : nil
-            }.compact
-          end
+          next unless tech_stack_trace || tech_stack_trace_length
+
+          technologies[key.to_sym] = {
+            stack_trace_level: tech_stack_trace,
+            stack_trace_length: tech_stack_trace_length ? tech_stack_trace_length.to_i : nil
+          }.compact
         end
 
         result[:technologies] = technologies unless technologies.empty?
