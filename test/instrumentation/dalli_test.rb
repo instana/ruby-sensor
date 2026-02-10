@@ -188,7 +188,7 @@ class DalliTest < Minitest::Test
     clear_all!
 
     result = nil
-    @dc.set(:counter, 0, nil, :raw => true)
+    @dc.set(:counter, '0', nil, :raw => true)
     ::Instana.tracer.in_span(:dalli_test) do
       result = @dc.incr(:counter, 1, nil, 0)
     end
@@ -222,7 +222,7 @@ class DalliTest < Minitest::Test
     clear_all!
 
     result = nil
-    @dc.set(:counter, 0, nil, :raw => true)
+    @dc.set(:counter, '0', nil, :raw => true)
     ::Instana.tracer.in_span(:dalli_test) do
       result = @dc.decr(:counter, 1, nil, 0)
     end
