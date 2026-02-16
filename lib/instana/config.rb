@@ -141,20 +141,7 @@ module Instana
       end
 
       # Read technology-specific configurations
-      @config[:back_trace_technologies] = {}
-      tracing_config.each do |key, value|
-        next if key == 'global' || !value.is_a?(Hash)
-
-        tech_stack_trace = value['stack-trace']
-        tech_stack_trace_length = value['stack-trace-length']
-
-        next unless tech_stack_trace || tech_stack_trace_length
-
-        @config[:back_trace_technologies][key.to_sym] = {
-          stack_trace_level: tech_stack_trace,
-          stack_trace_length: tech_stack_trace_length ? tech_stack_trace_length.to_i : nil
-        }.compact
-      end
+      @config[:back_trace_technologies] = parse_technology_configs(tracing_config)
     end
 
     # Read stack trace configuration from YAML file
@@ -167,6 +154,9 @@ module Instana
         yaml_content = YAML.safe_load(File.read(config_path))
 
         # Support both "tracing" and "com.instana.tracing" as top-level keys
+        if yaml_content['com.instana.tracing']
+          ::Instana.logger.warn('Please use "tracing" instead of "com.instana.tracing"')
+        end
         tracing_config = yaml_content['tracing'] || yaml_content['com.instana.tracing']
         return nil unless tracing_config
 
@@ -188,21 +178,7 @@ module Instana
         end
 
         # Look for technology-specific configurations
-        technologies = {}
-        tracing_config.each do |key, value|
-          next if key == 'global' || !value.is_a?(Hash)
-
-          tech_stack_trace = value['stack-trace']
-          tech_stack_trace_length = value['stack-trace-length']
-
-          next unless tech_stack_trace || tech_stack_trace_length
-
-          technologies[key.to_sym] = {
-            stack_trace_level: tech_stack_trace,
-            stack_trace_length: tech_stack_trace_length ? tech_stack_trace_length.to_i : nil
-          }.compact
-        end
-
+        technologies = parse_technology_configs(tracing_config)
         result[:technologies] = technologies unless technologies.empty?
 
         result.empty? ? nil : result
@@ -245,6 +221,29 @@ module Instana
         stack_trace_level: tech_config&.[](:stack_trace_level) || global_config[:stack_trace_level] || 'error',
         stack_trace_length: tech_config&.[](:stack_trace_length) || global_config[:stack_trace_length] || 30
       }
+    end
+
+    private
+
+    # Parse technology-specific stack trace configurations from tracing config
+    # @param tracing_config [Hash] The tracing configuration hash
+    # @return [Hash] Technology-specific configurations
+    def parse_technology_configs(tracing_config)
+      technologies = {}
+      tracing_config.each do |key, value|
+        next if key == 'global' || !value.is_a?(Hash)
+
+        tech_stack_trace = value['stack-trace']
+        tech_stack_trace_length = value['stack-trace-length']
+
+        next unless tech_stack_trace || tech_stack_trace_length
+
+        technologies[key.to_sym] = {
+          stack_trace_level: tech_stack_trace,
+          stack_trace_length: tech_stack_trace_length ? tech_stack_trace_length.to_i : nil
+        }.compact
+      end
+      technologies
     end
 
   end
