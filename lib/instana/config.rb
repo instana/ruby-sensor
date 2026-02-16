@@ -127,18 +127,8 @@ module Instana
     def read_span_stack_config_from_agent(tracing_config)
       return unless tracing_config['global']
 
-      global_config = tracing_config['global']
-      stack_trace_level = global_config['stack-trace']
-      stack_trace_length = global_config['stack-trace-length']
-
-      # Only update if at least one value is present
-      if stack_trace_level || stack_trace_length
-        @config[:back_trace] = {
-          stack_trace_level: stack_trace_level || 'error',
-          stack_trace_length: stack_trace_length ? stack_trace_length.to_i : 30,
-          config_source: 'agent'
-        }
-      end
+      global_config = parse_global_stack_trace_config(tracing_config['global'], 'agent')
+      @config[:back_trace] = global_config if global_config
 
       # Read technology-specific configurations
       @config[:back_trace_technologies] = parse_technology_configs(tracing_config)
@@ -146,7 +136,7 @@ module Instana
 
     # Read stack trace configuration from YAML file
     # Returns hash with :global and :technologies keys or nil if not found
-    def read_span_stack_config_from_yaml # rubocop:disable Metrics/CyclomaticComplexity
+    def read_span_stack_config_from_yaml
       config_path = ENV['INSTANA_CONFIG_PATH']
       return nil unless config_path && File.exist?(config_path)
 
@@ -164,17 +154,8 @@ module Instana
 
         # Look for global stack trace configuration
         if tracing_config['global']
-          global_config = tracing_config['global']
-          stack_trace_level = global_config['stack-trace']
-          stack_trace_length = global_config['stack-trace-length']
-
-          if stack_trace_level || stack_trace_length
-            result[:global] = {
-              stack_trace_level: stack_trace_level || 'error',
-              stack_trace_length: stack_trace_length ? stack_trace_length.to_i : 30,
-              config_source: 'yaml'
-            }
-          end
+          global_config = parse_global_stack_trace_config(tracing_config['global'], 'yaml')
+          result[:global] = global_config if global_config
         end
 
         # Look for technology-specific configurations
@@ -224,6 +205,26 @@ module Instana
     end
 
     private
+
+    # Parse global stack trace configuration from a config hash
+    # @param global_config [Hash] The global configuration hash
+    # @param config_source [String] The source of the configuration ('yaml', 'agent', etc.)
+    # @return [Hash, nil] Parsed configuration or nil if no valid config found
+    def parse_global_stack_trace_config(global_config, config_source)
+      return nil unless global_config.is_a?(Hash)
+
+      stack_trace_level = global_config['stack-trace']
+      stack_trace_length = global_config['stack-trace-length']
+
+      # Only return config if at least one value is present
+      return nil unless stack_trace_level || stack_trace_length
+
+      {
+        stack_trace_level: stack_trace_level || 'error',
+        stack_trace_length: stack_trace_length ? stack_trace_length.to_i : 30,
+        config_source: config_source
+      }
+    end
 
     # Parse technology-specific stack trace configurations from tracing config
     # @param tracing_config [Hash] The tracing configuration hash
