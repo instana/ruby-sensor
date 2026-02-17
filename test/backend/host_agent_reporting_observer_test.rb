@@ -79,9 +79,9 @@ class HostAgentReportingObserverTest < Minitest::Test
 
   def test_agent_actions
     action = JSON.dump([
-                         action: 'ruby.source',
-                         messageId: 'test',
-                         args: {file: 'test_helper.rb'}
+                         {action: 'ruby.source',
+                          messageId: 'test',
+                          args: {file: 'test_helper.rb'}}
                        ])
 
     stub_request(:post, "http://10.10.10.10:9292/tracermetrics")
