@@ -94,7 +94,7 @@ class ConfigTest < Minitest::Test # rubocop:disable Metrics/ClassLength
 
     assert_equal "error", subject[:back_trace][:stack_trace_level]
     assert_equal 30, subject[:back_trace][:stack_trace_length]
-    assert_equal 'default', subject[:back_trace][:config_source]
+    assert_equal 'env', subject[:back_trace][:config_source]
   end
 
   def test_read_span_stack_config_from_env_converts_length_to_integer
@@ -248,7 +248,7 @@ class ConfigTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     ENV.delete('INSTANA_CONFIG_PATH')
   end
 
-  def test_read_span_stack_config_yaml_takes_precedence_over_env
+  def test_read_span_stack_config_env_takes_precedence_over_yaml
     yaml_content = <<~YAML
       tracing:
         global:
@@ -263,10 +263,10 @@ class ConfigTest < Minitest::Test # rubocop:disable Metrics/ClassLength
 
     subject = Instana::Config.new(logger: Logger.new('/dev/null'))
 
-    # YAML should take precedence
-    assert_equal 'all', subject[:back_trace][:stack_trace_level]
-    assert_equal 50, subject[:back_trace][:stack_trace_length]
-    assert_equal 'yaml', subject[:back_trace][:config_source]
+    # Environment variables should take precedence
+    assert_equal 'none', subject[:back_trace][:stack_trace_level]
+    assert_equal 5, subject[:back_trace][:stack_trace_length]
+    assert_equal 'env', subject[:back_trace][:config_source]
   ensure
     File.unlink('test_stack_config.yaml') if File.exist?('test_stack_config.yaml')
     ENV.delete('INSTANA_CONFIG_PATH')
@@ -376,9 +376,35 @@ class ConfigTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     assert_equal original_config, subject[:back_trace]
   end
 
-  # Tests for configuration priority: YAML > Env > Agent > Default
+  # Tests for configuration priority: Env > YAML > Agent > Default
 
-  def test_priority_yaml_over_agent
+  def test_priority_env_over_yaml
+    yaml_content = <<~YAML
+      tracing:
+        global:
+          stack-trace: all
+          stack-trace-length: 50
+    YAML
+
+    File.write('test_stack_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_stack_config.yaml'
+    ENV['INSTANA_STACK_TRACE'] = 'none'
+    ENV['INSTANA_STACK_TRACE_LENGTH'] = '10'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    # Environment variables should take precedence over YAML
+    assert_equal 'none', subject[:back_trace][:stack_trace_level]
+    assert_equal 10, subject[:back_trace][:stack_trace_length]
+    assert_equal 'env', subject[:back_trace][:config_source]
+  ensure
+    File.unlink('test_stack_config.yaml') if File.exist?('test_stack_config.yaml')
+    ENV.delete('INSTANA_CONFIG_PATH')
+    ENV.delete('INSTANA_STACK_TRACE')
+    ENV.delete('INSTANA_STACK_TRACE_LENGTH')
+  end
+
+  def test_priority_yaml_over_agent_when_no_env
     yaml_content = <<~YAML
       tracing:
         global:
@@ -402,7 +428,7 @@ class ConfigTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     }
     subject.read_config_from_agent(discovery)
 
-    # YAML should take precedence
+    # YAML should take precedence over agent (when no env vars)
     assert_equal 'none', subject[:back_trace][:stack_trace_level]
     assert_equal 10, subject[:back_trace][:stack_trace_length]
     assert_equal 'yaml', subject[:back_trace][:config_source]
@@ -635,7 +661,7 @@ class ConfigTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     assert_nil redis_config[:stack_trace_length]
   end
 
-  def test_yaml_technology_config_not_overridden_by_agent
+  def test_yaml_technology_config_not_overridden_by_agent_when_no_env
     yaml_content = <<~YAML
       tracing:
         global:
@@ -667,7 +693,7 @@ class ConfigTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     }
     subject.read_config_from_agent(discovery)
 
-    # YAML should take precedence for both global and technology-specific
+    # YAML should take precedence for both global and technology-specific (when no env vars)
     assert_equal 'none', subject[:back_trace][:stack_trace_level]
     assert_equal 10, subject[:back_trace][:stack_trace_length]
     assert_equal 'yaml', subject[:back_trace][:config_source]
