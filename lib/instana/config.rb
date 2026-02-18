@@ -90,20 +90,26 @@ module Instana
       @config[key.to_sym] = value
     end
 
-    # Read stack trace configuration from YAML file, environment variables, or use defaults
-    # Priority: YAML file > Environment variables > Agent discovery > Defaults
+    # Read stack trace configuration from environment variables, YAML file, or use defaults
+    # Priority: Environment variables > YAML file > Agent discovery > Defaults
     def read_span_stack_config
-      # Try to load from YAML file first
-      yaml_config = read_span_stack_config_from_yaml
+      # Try environment variables first
+      if ENV['INSTANA_STACK_TRACE'] || ENV['INSTANA_STACK_TRACE_LENGTH']
+        read_span_stack_config_from_env
+        @config[:back_trace_technologies] = {}
+        return
+      end
 
+      # Try YAML file
+      yaml_config = read_span_stack_config_from_yaml
       if yaml_config
         @config[:back_trace] = yaml_config[:global]
         @config[:back_trace_technologies] = yaml_config[:technologies] || {}
-      else
-        # Fall back to environment variables or defaults
-        read_span_stack_config_from_env
-        @config[:back_trace_technologies] = {}
+        return
       end
+
+      # Use defaults
+      apply_default_stack_trace_config
     end
 
     # Read configuration from agent discovery response
@@ -171,14 +177,21 @@ module Instana
 
     # Read stack trace configuration from environment variables
     def read_span_stack_config_from_env
-      stack_trace = ENV['INSTANA_STACK_TRACE']
-      stack_trace_length = ENV['INSTANA_STACK_TRACE_LENGTH']
-      config_source = stack_trace || stack_trace_length ? 'env' : 'default'
       @config[:back_trace] = {
-        stack_trace_level: stack_trace || 'error',
-        stack_trace_length: stack_trace_length ? stack_trace_length.to_i : 30,
-        config_source: config_source
+        stack_trace_level: ENV['INSTANA_STACK_TRACE'] || 'error',
+        stack_trace_length: ENV['INSTANA_STACK_TRACE_LENGTH']&.to_i || 30,
+        config_source: 'env'
       }
+    end
+
+    # Apply default stack trace configuration
+    def apply_default_stack_trace_config
+      @config[:back_trace] = {
+        stack_trace_level: 'error',
+        stack_trace_length: 30,
+        config_source: 'default'
+      }
+      @config[:back_trace_technologies] = {}
     end
 
     # Check if we should read configuration from agent
