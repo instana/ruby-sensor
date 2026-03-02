@@ -25,9 +25,9 @@ module Instana
       def update(_time, _old_version, new_version)
         return unless new_version.nil?
 
-        socket = @socket_proc.call(@client)
-
+        socket = nil
         try_forever_with_backoff do
+          socket = @socket_proc.call(@client)
           payload = discovery_payload(socket)
           discovery_response = @client.send_request('PUT', DISCOVERY_URL, payload)
 
@@ -45,7 +45,7 @@ module Instana
           ::Instana.config.read_config_from_agent(discovery)
         end
 
-        socket.close
+        socket&.close
       end
 
       private
