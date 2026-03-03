@@ -64,8 +64,8 @@ module Instana
           response = @client.send_request('POST', path, spans)
 
           unless response.ok?
-            @logger.debug("Sent `#{spans.count}` spans to `#{path}` and got `#{response.code}`.")
-            @discovery.swap { nil }
+            @logger.warn("Failed to send `#{spans.count}` spans to `#{path}`. Response: #{response.code} - #{response.body}")
+            trigger_rediscovery
             break
           end
         end
@@ -82,8 +82,8 @@ module Instana
         if response.ok?
           handle_agent_tasks(response, discovery) unless response.body.empty?
         else
-          @logger.debug("Sent `#{payload}` to `#{path}` and got `#{response.code}`.")
-          @discovery.swap { nil }
+          @logger.warn("Failed to send metrics to `#{path}`. Response: #{response.code} - #{response.body}")
+          trigger_rediscovery
         end
       end
 
@@ -124,6 +124,11 @@ module Instana
         end
 
         payload
+      end
+
+      def trigger_rediscovery
+        @discovery.swap { nil }
+        ::Instana.agent.announce
       end
     end
   end
