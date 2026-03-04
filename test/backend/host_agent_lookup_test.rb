@@ -75,4 +75,19 @@ class HostAgentLookupTest < Minitest::Test
 
     assert_nil client
   end
+
+  def test_lookup_handles_connection_errors
+    # Test that various connection errors result in nil client
+    stub_request(:get, "http://10.10.10.10:42699/")
+      .to_raise(Errno::ECONNREFUSED)
+
+    subject = Instana::Backend::HostAgentLookup.new('10.10.10.10', 42699)
+
+    client = FakeFS.with_fresh do
+      FakeFS::FileSystem.clone('test/support/ecs', '/proc')
+      subject.call
+    end
+
+    assert_nil client
+  end
 end

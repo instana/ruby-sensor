@@ -86,4 +86,55 @@ class HostAgentTest < Minitest::Test
     subject = Instana::Backend::HostAgent.new
     assert subject.respond_to? :after_fork
   end
+
+  def test_announce_retries_on_connection_failure
+    agent_host = '10.10.10.10'
+    ::Instana.config[:agent_host] = agent_host
+
+    # Simulate connection failures followed by success
+    stub_request(:get, "http://#{agent_host}:42699/")
+      .to_raise(Errno::ECONNREFUSED).times(3).then
+      .to_return(status: 200, body: "", headers: {})
+
+    discovery = Minitest::Mock.new
+    discovery.expect(:delete_observers, discovery, [])
+    discovery.expect(:observers, discovery, [])
+    discovery.expect(:notify_and_delete_observers, discovery, [Object, nil, nil])
+    discovery.expect(:with_observer, discovery, [Instana::Backend::HostAgentActivationObserver])
+    discovery.expect(:with_observer, discovery, [Instana::Backend::HostAgentReportingObserver])
+    discovery.expect(:swap, discovery, [])
+
+    subject = Instana::Backend::HostAgent.new(discovery: discovery)
+
+    FakeFS.with_fresh do
+      FakeFS::FileSystem.clone('test/support/ecs', '/proc')
+      client = subject.announce
+      assert client
+      assert_instance_of Instana::Backend::RequestClient, client
+    end
+
+    discovery.verify
+  ensure
+    ::Instana.config[:agent_host] = '127.0.0.1'
+  end
+
+  def test_announce_returns_nil_after_max_retries
+    agent_host = '10.10.10.10'
+    ::Instana.config[:agent_host] = agent_host
+
+    # Simulate persistent connection failures
+    stub_request(:get, "http://#{agent_host}:42699/")
+      .to_raise(Errno::ECONNREFUSED).times(15)
+
+    discovery = Concurrent::Atom.new(nil)
+    subject = Instana::Backend::HostAgent.new(discovery: discovery)
+
+    FakeFS.with_fresh do
+      FakeFS::FileSystem.clone('test/support/ecs', '/proc')
+      client = subject.announce
+      assert_nil client
+    end
+  ensure
+    ::Instana.config[:agent_host] = '127.0.0.1'
+  end
 end

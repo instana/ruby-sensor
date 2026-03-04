@@ -41,6 +41,12 @@ class HostAgentReportingObserverTest < Minitest::Test
       .to_return(status: 200)
     stub_request(:post, "http://10.10.10.10:9292/com.instana.plugin.ruby.0")
       .to_return(status: 500)
+    stub_request(:get, "http://127.0.0.1:42699/")
+      .to_return(status: 200)
+    stub_request(:put, "http://127.0.0.1:42699/com.instana.plugin.ruby.discovery")
+      .to_return(status: 200, body: '{"pid": 0}')
+    stub_request(:head, "http://127.0.0.1:42699/com.instana.plugin.ruby.0")
+      .to_return(status: 200)
 
     client = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
     discovery = Concurrent::Atom.new({'pid' => 0})
@@ -239,6 +245,13 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     stub_request(:post, "http://10.10.10.10:9292/com.instana.plugin.ruby/traces.1234")
       .to_return(status: 500)
+
+    stub_request(:get, "http://127.0.0.1:42699/")
+      .to_return(status: 200)
+    stub_request(:put, "http://127.0.0.1:42699/com.instana.plugin.ruby.discovery")
+      .to_return(status: 200, body: '{"pid": 1234}')
+    stub_request(:head, "http://127.0.0.1:42699/com.instana.plugin.ruby.1234")
+      .to_return(status: 200)
 
     client = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
     discovery = Concurrent::Atom.new({'pid' => 1234})

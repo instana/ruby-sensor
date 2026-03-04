@@ -36,4 +36,48 @@ class RequestClientTest < Minitest::Test
 
     refute response.ok?
   end
+
+  def test_connection_errors_return_error_responses
+    subject = Instana::Backend::RequestClient.new('example.com', 9292)
+
+    # Test ECONNREFUSED
+    stub_request(:get, 'http://example.com:9292/refused')
+      .to_raise(Errno::ECONNREFUSED)
+    response = subject.send_request('GET', '/refused')
+    refute response.ok?
+    assert_equal '503', response.code
+    assert_includes response.body, 'Connection refused'
+
+    # Test EHOSTUNREACH
+    stub_request(:get, 'http://example.com:9292/unreachable')
+      .to_raise(Errno::EHOSTUNREACH)
+    response = subject.send_request('GET', '/unreachable')
+    refute response.ok?
+    assert_equal '503', response.code
+    assert_includes response.body, 'Host unreachable'
+
+    # Test Timeout
+    stub_request(:get, 'http://example.com:9292/timeout')
+      .to_timeout
+    response = subject.send_request('GET', '/timeout')
+    refute response.ok?
+    assert_equal '408', response.code
+    assert_includes response.body, 'Timeout'
+
+    # Test SocketError
+    stub_request(:get, 'http://example.com:9292/socket')
+      .to_raise(SocketError.new('Name or service not known'))
+    response = subject.send_request('GET', '/socket')
+    refute response.ok?
+    assert_equal '502', response.code
+    assert_includes response.body, 'Socket error'
+
+    # Test StandardError
+    stub_request(:get, 'http://example.com:9292/error')
+      .to_raise(StandardError.new('Unexpected error'))
+    response = subject.send_request('GET', '/error')
+    refute response.ok?
+    assert_equal '500', response.code
+    assert_includes response.body, 'StandardError'
+  end
 end
