@@ -59,9 +59,25 @@ module Instana
 
                  data
                end
-
-        response = @client.send_request(method, path, body, headers)
-        Response.new(response)
+        begin
+          response = @client.send_request(method, path, body, headers)
+          Response.new(response)
+        rescue Errno::ECONNREFUSED => e
+          Instana.logger.debug("Connection refused to #{@host}:#{@port} - #{e.message}")
+          create_error_response('503', 'Connection Refused', 'Connection refused', e.message)
+        rescue Errno::EHOSTUNREACH => e
+          Instana.logger.debug("Host unreachable #{@host}:#{@port} - #{e.message}")
+          create_error_response('503', 'Host Unreachable', 'Host unreachable', e.message)
+        rescue Errno::ETIMEDOUT, Net::OpenTimeout, Net::ReadTimeout => e
+          Instana.logger.debug("Timeout connecting to #{@host}:#{@port} - #{e.message}")
+          create_error_response('408', 'Request Timeout', 'Timeout', e.message)
+        rescue SocketError => e
+          Instana.logger.debug("Socket error connecting to #{@host}:#{@port} - #{e.message}")
+          create_error_response('502', 'Socket Error', 'Socket error', e.message)
+        rescue StandardError => e
+          Instana.logger.debug("Error sending request to #{@host}:#{@port} - #{e.class}: #{e.message}")
+          create_error_response('500', 'Internal Error', e.class.to_s, e.message)
+        end
       end
 
       private
@@ -70,6 +86,19 @@ module Instana
         # :nocov:
         INSTANA_USE_OJ ? Oj.dump(data, mode: :strict) : JSON.dump(data)
         # :nocov:
+      end
+
+      def create_error_response(code, message, error_type, error_message)
+        # Create a mock response object that behaves like Net::HTTPResponse
+        error_response = Object.new
+        error_body = JSON.dump(error: error_type, message: error_message)
+
+        error_response.define_singleton_method(:code) { code }
+        error_response.define_singleton_method(:message) { message }
+        error_response.define_singleton_method(:body) { error_body }
+        error_response.define_singleton_method(:is_a?) { |klass| klass == Net::HTTPResponse || super(klass) }
+
+        Response.new(error_response)
       end
     end
   end
