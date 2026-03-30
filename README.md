@@ -2,7 +2,9 @@
 
 The `instana` gem provides Ruby metrics and traces (request, queue & cross-host) for [Instana](https://www.instana.com/).
 
-This gem supports Ruby versions 2.7 or greater.
+## Ruby Version Support
+
+This gem requires Ruby 3.2 or greater. We actively test and maintain compatibility with Ruby versions 3.2, 3.3, 3.4, and 4.0 to ensure optimal performance and reliability. As part of our commitment to supporting the Ruby community, we continue to provide support for Ruby versions up to 1 year after their official End-of-Life (EOL) date, giving you ample time to plan and execute version upgrades.
 
 Any and all feedback is welcome.  Happy Ruby visibility.
 
