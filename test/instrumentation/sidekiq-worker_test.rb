@@ -177,4 +177,36 @@ class SidekiqServerTest < Minitest::Test
     assert       client_span[:data][:'sidekiq-client'][:'redis-url']
     assert_equal job.name, client_span[:data][:'sidekiq-client'][:job]
   end
+
+  def test_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready
+    clear_all!
+    error = nil
+    $sidekiq_mode = :server
+    inject_instrumentation
+
+    ::Instana.agent.stub(:ready?, false) do
+      disable_redis_instrumentation
+      ::Sidekiq.redis_pool.with do |redis|
+        redis.sadd('queues'.freeze, 'important')
+        redis.lpush(
+          'queue:important',
+          <<-JSON
+          {
+            "class":"SidekiqJobOne",
+            "args":[1,2,3],
+            "queue":"important",
+            "jid":"123456789"
+          }
+          JSON
+        )
+      end
+      enable_redis_instrumentation
+      sleep 1
+    end
+
+    assert_nil error
+    assert_empty ::Instana.processor.queued_spans
+
+    $sidekiq_mode = :client
+  end
 end

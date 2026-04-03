@@ -108,4 +108,21 @@ class SequelTest < Minitest::Test
     span = find_first_span_by_name(spans, :sequel)
     assert_equal 1, span[:ec]
   end
+
+  def test_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready
+    skip unless ENV['DATABASE_URL']
+    clear_all!
+    error = nil
+
+    ::Instana.agent.stub(:ready?, false) do
+      assert_silent do
+        @model.insert(name: 'test', color: 'blue')
+      rescue StandardError => e
+        error = e
+      end
+    end
+
+    assert_nil error
+    assert_empty ::Instana.processor.queued_spans
+  end
 end

@@ -132,4 +132,26 @@ class RailsActionCableTest < Minitest::Test
     connection.define_singleton_method(:transmit) { |*_args, **_kwargs| true }
     connection
   end
+
+  def test_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready
+    skip unless defined?(::ActionCable::Connection::Base)
+    clear_all!
+    error = nil
+
+    ::Instana.agent.stub(:ready?, false) do
+      connection = mock_connection
+      channel_klass = Class.new(ActionCable::Channel::Base)
+
+      assert_silent do
+        channel_klass
+          .new(connection, :test)
+          .send(:transmit, 'Sample message', via: nil)
+      rescue StandardError => e
+        error = e
+      end
+    end
+
+    assert_nil error
+    assert_empty ::Instana.processor.queued_spans
+  end
 end

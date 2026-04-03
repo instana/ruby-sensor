@@ -62,4 +62,20 @@ class RailsActiveJobTest < Minitest::Test
     assert_equal client_span[:t], server_span[:t]
     assert_equal client_span[:s], server_span[:p]
   end
+
+  def test_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready
+    clear_all!
+    error = nil
+
+    ::Instana.agent.stub(:ready?, false) do
+      assert_silent do
+        SampleJob.perform_now("test_agent_not_ready")
+      rescue StandardError => e
+        error = e
+      end
+    end
+
+    assert_nil error
+    assert_empty ::Instana.processor.queued_spans
+  end
 end

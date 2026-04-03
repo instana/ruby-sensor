@@ -153,6 +153,24 @@ class RedisTest < Minitest::Test
       assert data[:log].key?(:message)
     end
   end
+
+  def test_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready
+    clear_all!
+    error = nil
+
+    ::Instana.agent.stub(:ready?, false) do
+      assert_silent do
+        begin
+          @redis_client.set('hello', 'world')
+        rescue StandardError => e
+          error = e
+        end
+      end
+    end
+
+    assert_nil error
+    assert_empty ::Instana.processor.queued_spans
+  end
 end
 
 class RedisSpanFilteringTest < Minitest::Test
