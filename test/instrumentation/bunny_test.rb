@@ -792,4 +792,20 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
 
     assert error_raised, "Exception should be raised and logged in pop"
   end
+
+  def test_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready
+    skip unless defined?(::Bunny)
+    error = nil
+
+    ::Instana.agent.stub(:ready?, false) do
+      assert_silent do
+        @exchange.publish('test message', routing_key: @queue.name)
+      rescue StandardError => e
+        error = e
+      end
+    end
+
+    assert_nil error
+    assert_empty ::Instana.processor.queued_spans
+  end
 end

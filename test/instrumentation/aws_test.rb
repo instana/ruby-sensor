@@ -238,4 +238,30 @@ class AwsTest < Minitest::Test
     refute_nil lambda_span[:stack]
     assert_equal 30, lambda_span[:stack].length # default limit is 30 in span.add_stack
   end
+
+  def test_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready
+    error = nil
+
+    ::Instana.agent.stub(:ready?, false) do
+      dynamo = Aws::DynamoDB::Client.new(
+        region: "local",
+        access_key_id: "placeholder",
+        secret_access_key: "placeholder",
+        endpoint: "http://localhost:8000"
+      )
+
+      assert_silent do
+        dynamo.get_item(
+          table_name: 'sample_table',
+          key: { s: 'sample_item' }
+        )
+      rescue StandardError => e
+        error = e
+      end
+    end
+
+    # Should not raise instrumentation errors, only the expected AWS error
+    assert error.is_a?(Aws::DynamoDB::Errors::ServiceError)
+    assert_empty ::Instana.processor.queued_spans
+  end
 end

@@ -39,7 +39,7 @@ module Instana
             current_span.record_exception(e)
             raise
           ensure
-            current_span.finish
+            current_span&.finish
           end
         end
       end
@@ -83,7 +83,7 @@ module Instana
             current_span.record_exception(e)
             raise
           ensure
-            current_span.finish if ::Instana.tracer.tracing?
+            current_span&.finish
           end
         end
       end
