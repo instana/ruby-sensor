@@ -417,4 +417,25 @@ class GrpcTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     assert_equal server_span[:p], client_span[:s]
     assert_equal client_span[:p], sdk_span[:s]
   end
+
+  def test_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready
+    clear_all!
+    error = nil
+    ::Instana.agent.stub(:ready?, false) do
+      assert_silent do
+        begin
+          client_stub.ping(
+            PingPongService::PingRequest.new(message: 'Hello World')
+          )
+        rescue StandardError => e
+          error = e
+        end
+      end
+    end
+
+    sleep 0.2
+
+    assert_nil error
+    assert_empty ::Instana.processor.queued_spans
+  end
 end

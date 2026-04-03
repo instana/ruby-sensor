@@ -201,4 +201,29 @@ class ExconTest < Minitest::Test
     connection = Excon.new(url)
     connection.get(:path => '/?basic_get')
   end
+
+  def test_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready
+    clear_all!
+    error = nil
+
+    # A slight hack but webmock chokes with pipelined requests.
+    # Delete their excon middleware
+    Excon.defaults[:middlewares].delete ::WebMock::HttpLibAdapters::ExconAdapter
+    Excon.defaults[:middlewares].delete ::Excon::Middleware::Mock
+
+    url = "http://127.0.0.1:6511"
+
+    ::Instana.agent.stub(:ready?, false) do
+      connection = Excon.new(url)
+
+      assert_silent do
+        connection.get(:path => '/?basic_get')
+      rescue StandardError => e
+        error = e
+      end
+    end
+
+    assert_nil error
+    assert_empty ::Instana.processor.queued_spans
+  end
 end

@@ -322,4 +322,20 @@ class DalliTest < Minitest::Test
     assert_equal 'instana_test', second_span[:data][:memcache][:namespace]
     assert second_span[:data][:memcache].key?(:error)
   end
+
+  def test_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready
+    clear_all!
+    error = nil
+
+    ::Instana.agent.stub(:ready?, false) do
+      assert_silent do
+        @dc.set(:instana, :test_value)
+      rescue StandardError => e
+        error = e
+      end
+    end
+
+    assert_nil error
+    assert_empty ::Instana.processor.queued_spans
+  end
 end

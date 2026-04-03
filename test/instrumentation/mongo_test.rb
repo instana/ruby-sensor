@@ -65,4 +65,21 @@ class MongoTest < Minitest::Test
     assert_equal insert_data[:peer], {hostname: "127.0.0.1", port: 27017}
     assert insert_data[:json].include?("insert")
   end
+
+  def test_mongo_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready
+    error = nil
+
+    ::Instana.agent.stub(:ready?, false) do
+      client = Mongo::Client.new('mongodb://127.0.0.1:27017/instana')
+
+      assert_silent do
+        client[:people].delete_many({ name: /$S*/ })
+      rescue StandardError => e
+        error = e
+      end
+    end
+
+    assert_nil error
+    assert_empty ::Instana.processor.queued_spans
+  end
 end
