@@ -63,7 +63,7 @@ module Instana
     #
     # @return [Span]
     def non_recording_span(span_context)
-      Span.new(span_context: span_context)
+      OpenTelemetry::Trace::Span.new(span_context: span_context)
     end
   end
 end
