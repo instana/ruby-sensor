@@ -113,4 +113,21 @@ class RailsActiveRecordTest < Minitest::Test
 
     assert_equal 1, span[:ec]
   end
+
+  def test_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready
+    skip unless ENV['DATABASE_URL']
+    clear_all!
+    error = nil
+
+    ::Instana.agent.stub(:ready?, false) do
+      assert_silent do
+        Block.create(name: 'test', color: 'green')
+      rescue StandardError => e
+        error = e
+      end
+    end
+
+    assert_nil error
+    assert_empty ::Instana.processor.queued_spans
+  end
 end
