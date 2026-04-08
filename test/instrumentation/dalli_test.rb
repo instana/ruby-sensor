@@ -3,6 +3,8 @@
 
 require 'test_helper'
 
+Warning[:deprecated] = false if Gem::Version.new(RUBY_VERSION) > Gem::Version.new('4.0')
+
 class DalliTest < Minitest::Test
   def setup
     @memcached_host = ENV['MEMCACHED_HOST'] || '127.0.0.1:11211'
