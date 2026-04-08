@@ -2,6 +2,8 @@
 
 require 'test_helper'
 
+Warning[:deprecated] = false if Gem::Version.new(RUBY_VERSION) > Gem::Version.new('3.4')
+
 class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
   def setup
     skip unless defined?(::Bunny)
