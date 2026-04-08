@@ -10,6 +10,7 @@ class RailsActiveRecordDatabaseMissingTest < Minitest::Test
     skip unless ENV['DATABASE_URL']
     clear_all!
     @old_url = ENV['DATABASE_URL']
+
     SQLite3::Database.new('/tmp/test.db')
     ENV['DATABASE_URL'] = 'sqlite3:///tmp/test.db'
 
@@ -43,12 +44,14 @@ class RailsActiveRecordDatabaseMissingTest < Minitest::Test
   end
 
   def test_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready
-    skip unless ENV['DATABASE_URL']
     error = nil
 
     ::Instana.agent.stub(:ready?, false) do
       assert_silent do
+        b = Block.new
         Block.create(name: 'test', color: 'green')
+        b.save!
+        FileUtils.rm('/tmp/test.db')
       rescue StandardError => e
         error = e
       end
