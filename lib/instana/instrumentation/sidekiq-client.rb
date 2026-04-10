@@ -36,7 +36,7 @@ module Instana
           result = yield
 
           if result && result['jid']
-            span.set_tag(:'sidekiq-client', { job_id: result['jid'] })
+            span.set_attribute(:'sidekiq-client', { job_id: result['jid'] })
           end
 
           result

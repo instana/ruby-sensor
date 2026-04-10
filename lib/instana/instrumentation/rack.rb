@@ -122,7 +122,7 @@ module Instana
 
     def finalize_trace(current_span, kvs, headers, trace_context)
       set_response_headers(headers, trace_context) if headers
-      current_span.set_tags(kvs)
+      current_span.add_attributes(kvs)
       OpenTelemetry::Context.detach(@trace_token) if @trace_token
       current_span.finish
     end

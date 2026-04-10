@@ -25,7 +25,7 @@ module Instana
 
     def failed(event)
       span = @requests.delete(event.request_id)
-      span.add_error(Exception.new(event.message))
+      span.record_exception(Exception.new(event.message))
 
       span.finish
     end

@@ -63,7 +63,7 @@ module Instana
         current_span&.record_exception(e)
         raise
       ensure
-        current_span&.set_tags(kv_payload)
+        current_span&.add_attributes(kv_payload)
         current_span&.finish unless do_skip
       end
 

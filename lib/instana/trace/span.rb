@@ -67,7 +67,7 @@ module Instana
       else
         configure_custom(name)
       end
-      set_tags(attributes)
+      add_attributes(attributes)
       ::Instana.processor.on_start(self)
       # Attach a backtrace to all exit spans
       add_stack if should_collect_stack_trace?
@@ -450,8 +450,7 @@ module Instana
     #
     # @return [self] returns itself
     def set_attribute(key, value)
-      @attributes ||= {}
-      @attributes[key] = value
+      set_tag(key, value)
       self
     end
     # alias []= set_attribute
@@ -470,8 +469,12 @@ module Instana
     #
     # @return [self] returns itself
     def add_attributes(attributes)
-      @attributes ||= {}
-      @attributes.merge!(attributes)
+
+      return unless attributes.is_a?(Hash)
+
+      attributes.each do |k, v|
+        set_tag(k, v)
+      end
       self
     end
 

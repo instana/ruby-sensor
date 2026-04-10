@@ -43,7 +43,7 @@ module Instana
             yield
           rescue => e
             kvs[:'sidekiq-worker'][:error] = true
-            span.set_tags(kvs)
+            span.add_attributes(kvs)
             span.record_exception(e)
             raise
           end
