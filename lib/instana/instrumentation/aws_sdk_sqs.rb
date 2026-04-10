@@ -26,7 +26,7 @@ module Instana
             response = @handler.call(context)
 
             span_tags[:queue] = response.queue_url if response.respond_to?(:queue_url)
-            span.set_tags(sqs: span_tags)
+            span.add_attributes(sqs: span_tags)
 
             response
           end

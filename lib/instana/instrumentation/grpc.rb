@@ -35,7 +35,7 @@ module Instana
             super(method, *others, **options)
           rescue => e
             kvs[:rpc][:error] = true
-            current_span.set_tags(kvs)
+            current_span.add_attributes(kvs)
             current_span.record_exception(e)
             raise
           ensure
@@ -79,7 +79,7 @@ module Instana
             super(active_call, mth, *others)
           rescue => e
             kvs[:rpc][:error] = true
-            current_span.set_tags(kvs)
+            current_span.add_attributes(kvs)
             current_span.record_exception(e)
             raise
           ensure
