@@ -70,14 +70,14 @@ class TracerAsyncTest < Minitest::Test
 
       # Sleep beyond the end of this root trace
       sleep 0.5
-      span2.set_tags({ :wake_up => 1})
+      span2.add_attributes({ :wake_up => 1})
       span2.finish
-      span1.set_tags({:async_end => 1})
+      span1.add_attributes({:async_end => 1})
       span1.finish
     end
     # Current span should still be rack
     assert_equal :rack, ::Instana.tracer.current_span.name
-    span.set_tags({:rack_end_kv => 1})
+    span.add_attributes({:rack_end_kv => 1})
     span.finish
     # End tracing
     # ::Instana.tracer.log_end(:rack, {:rack_end_kv => 1})
@@ -144,18 +144,18 @@ class TracerAsyncTest < Minitest::Test
     # assert_equal :rack, ::Instana.tracer.current_span.name
 
     # Log info to the async spans (out of order)
-    span2.set_tags({ :info_kv => 2 })
-    span1.set_tags({ :info_kv => 1 })
-    span3.set_tags({ :info_kv => 3 })
+    span2.add_attributes({ :info_kv => 2 })
+    span1.add_attributes({ :info_kv => 1 })
+    span3.add_attributes({ :info_kv => 3 })
 
     # Log out of order errors to the async spans
     span3.record_exception(Exception.new("Async span 3"))
     span2.record_exception(Exception.new("Async span 3"))
 
     # End two out of order asynchronous spans
-    span3.set_tags({ :exit_kv => 3 })
+    span3.add_attributes({ :exit_kv => 3 })
     span3.close
-    span2.set_tags({ :exit_kv => 2 })
+    span2.add_attributes({ :exit_kv => 2 })
     span2.close
 
     # Context awareness when using Opentelemetry is done through Opentelemetry::Context so the below test is invalid
@@ -163,12 +163,12 @@ class TracerAsyncTest < Minitest::Test
     # assert_equal :rack, ::Instana.tracer.current_span.name
 
     # End tracing
-    span.set_tags({:rack_end_kv => 1})
+    span.add_attributes({:rack_end_kv => 1})
     span.finish
 
     # Log an error to and close out the remaining async span after the parent trace has finished
     span1.record_exception(Exception.new("Async span 1"))
-    span1.set_tags({ :exit_kv => 1 })
+    span1.add_attributes({ :exit_kv => 1 })
     span1.close
 
     spans = ::Instana.processor.queued_spans
@@ -216,7 +216,7 @@ class TracerAsyncTest < Minitest::Test
     ::Instana.tracer.start_span(:rack)
 
     span1 = ::Instana.tracer.start_span(:async, attributes: {})
-    span1.set_tags({a: 1})
+    span1.add_attributes({a: 1})
     span1.record_exception(StandardError.new('Error'))
     span1.finish
 
@@ -232,7 +232,7 @@ class TracerAsyncTest < Minitest::Test
     ::Instana.tracer.start_span(:rack)
 
     span1 = ::Instana.tracer.start_span(:async, attributes: {})
-    span1.set_tags({a: 1})
+    span1.add_attributes({a: 1})
     span1.finish
 
     spans = ::Instana.processor.queued_spans
