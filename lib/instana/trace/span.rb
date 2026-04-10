@@ -469,7 +469,6 @@ module Instana
     #
     # @return [self] returns itself
     def add_attributes(attributes)
-
       return unless attributes.is_a?(Hash)
 
       attributes.each do |k, v|

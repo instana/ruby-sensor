@@ -91,7 +91,7 @@ class SpanTest < Minitest::Test
 
   def test_multiple_errors
     span = Instana::Span.new(:activerecord)
-    span.set_tag(:activerecord, {})
+    span.set_attribute(:activerecord, {})
 
     span.record_exception(StandardError.new('Test1'))
     span.record_exception(StandardError.new('Test2'))
@@ -109,20 +109,20 @@ class SpanTest < Minitest::Test
 
   def test_set_tag_merge
     span = Instana::Span.new(:excon)
-    span.set_tag(1024, {a: 1})
-    span.set_tag(1024, {b: 2})
+    span.set_attribute(1024, {a: 1})
+    span.set_attribute(1024, {b: 2})
 
     assert_equal({'1024' => {a: 1, b: 2}}, span[:data])
   end
 
   def test_set_tags_non_hash
     span = Instana::Span.new(:excon)
-    assert_nil span.set_tags(0)
+    assert_nil span.add_attributes(0)
   end
 
   def test_tags_standard
     span = Instana::Span.new(:excon)
-    span.set_tag(:test, {a: 1})
+    span.set_attribute(:test, {a: 1})
 
     assert_equal({test: {a: 1}}, span.tags)
     assert_equal({a: 1}, span.tags(:test))

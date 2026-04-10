@@ -124,7 +124,7 @@ module Instana
                             Span.new(name)
                           end
 
-      current_span.set_tags(kvs) unless kvs.empty?
+      current_span.add_attributes(kvs) unless kvs.empty?
       current_span
     end
 
@@ -142,7 +142,7 @@ module Instana
                  else
                    Span.new(name, child_of)
                  end
-      new_span.set_tags(kvs) if kvs
+      new_span.add_attributes(kvs) if kvs
       self.current_span = new_span
     end
 
@@ -153,7 +153,7 @@ module Instana
     def log_info(kvs)
       return unless current_span
 
-      current_span.set_tags(kvs)
+      current_span.add_attributes(kvs)
     end
 
     # Add an error to the current span
@@ -181,7 +181,7 @@ module Instana
         @logger.warn "Span mismatch: Attempt to end #{name} span but #{current_span.name} is active."
       end
 
-      current_span.set_tags(kvs)
+      current_span.add_attributes(kvs)
       current_span.close
 
       self.current_span = current_span.parent || nil
@@ -203,7 +203,7 @@ module Instana
         @logger.warn "Span mismatch: Attempt to end #{name} span but #{current_span.name} is active."
       end
 
-      current_span.set_tags(kvs)
+      current_span.add_attributes(kvs)
       current_span.close(end_time)
       self.current_span = nil
     end
@@ -225,7 +225,7 @@ module Instana
       return unless tracing?
 
       new_span = Span.new(name, current_span)
-      new_span.set_tags(kvs) unless kvs.empty?
+      new_span.add_attributes(kvs) unless kvs.empty?
       new_span
     end
 
@@ -235,7 +235,7 @@ module Instana
     # @param span [Span] the span for this Async op (previously returned from `log_async_entry`)
     #
     def log_async_info(kvs, span)
-      span.set_tags(kvs)
+      span.add_attributes(kvs)
     end
 
     # Add an error to an asynchronous span
@@ -254,7 +254,7 @@ module Instana
     # @param span [Span] the span for this Async op (previously returned from `log_async_entry`)
     #
     def log_async_exit(_name, kvs, span)
-      span.set_tags(kvs) unless kvs.empty?
+      span.add_attributes(kvs) unless kvs.empty?
       span.close
     end
 

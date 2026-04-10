@@ -62,13 +62,13 @@ class CustomTracingTest < Minitest::Test
     ::Instana.tracer.in_span(:custom_span, attributes: kvs) do
       answer = 42 * 1
       active_span = ::Instana.tracer.current_span
-      active_span.set_tag(:answer, answer)
+      active_span.set_attribute(:answer, answer)
 
       # And now nested automagic
       ::Instana.tracer.in_span(:custom_span2, attributes: kvs) do
         was_here = 'stan'
         active_span = ::Instana.tracer.current_span
-        active_span.set_tag(:was_here, was_here)
+        active_span.set_attribute(:was_here, was_here)
       end
     end
 
@@ -122,12 +122,12 @@ class CustomTracingTest < Minitest::Test
     kvs[:return] = true
 
     span2 = ::Instana.tracer.start_span(:custom_span, attributes: kvs)
-    span2.set_tags({:on_info_kv => 1})
-    span2.set_tags({:on_exit_kv => 1})
+    span2.add_attributes({:on_info_kv => 1})
+    span2.add_attributes({:on_exit_kv => 1})
     span2.finish
 
     # End tracing
-    span1.set_tags({:on_trace_end => 1})
+    span1.add_attributes({:on_trace_end => 1})
     span1.finish
 
     assert_equal false, ::Instana.tracer.tracing?
@@ -183,10 +183,10 @@ class CustomTracingTest < Minitest::Test
     rescue => e
       span2.record_exception(e)
     ensure
-      span2.set_tags(:on_exit_kv => 1)
+      span2.add_attributes(:on_exit_kv => 1)
       span2.finish
     end
-    span1.set_tags(:on_trace_end => 1)
+    span1.add_attributes(:on_trace_end => 1)
     span1.finish
     assert_equal false, ::Instana.tracer.tracing?
 

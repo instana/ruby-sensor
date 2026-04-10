@@ -169,9 +169,9 @@ class TracerTest < Minitest::Test
     # Start tracing
     span = ::Instana.tracer.start_span(:rack, attributes: {:one => 1})
     assert_equal true, ::Instana.tracer.tracing?
-    span.set_tags({:info_logged => 1})
+    span.add_attributes({:info_logged => 1})
     # End tracing
-    span.set_tags({:close_one => 1})
+    span.add_attributes({:close_one => 1})
     span.finish
     assert_equal false, ::Instana.tracer.tracing?
 
@@ -187,22 +187,22 @@ class TracerTest < Minitest::Test
     # Start tracing
     span = ::Instana.tracer.start_span(:rack, attributes: {:one => 1})
     assert_equal true, ::Instana.tracer.tracing?
-    span.set_tags({:info_logged => 1})
+    span.add_attributes({:info_logged => 1})
 
     # Start tracing a sub span with context propagation
     span1 = ::Instana::Trace.with_span(span) do
       ::Instana.tracer.start_span(:sub_task)
     end
     assert_equal true, ::Instana.tracer.tracing?
-    span1.set_tags({:sub_task_info => 1})
+    span1.add_attributes({:sub_task_info => 1})
     # Exit from the sub span
-    span1.set_tags({:sub_task_exit_info => 1})
+    span1.add_attributes({:sub_task_exit_info => 1})
 
     span1.finish
     assert_equal true, ::Instana.tracer.tracing?
 
     # End tracing
-    span.set_tags({:close_one => 1})
+    span.add_attributes({:close_one => 1})
     span.finish
     assert_equal false, ::Instana.tracer.tracing?
 
@@ -262,9 +262,9 @@ class TracerTest < Minitest::Test
   def test_low_level_error_logging
     clear_all!
     span = ::Instana.tracer.start_span(:test_trace, attributes: {:one => 1})
-    span.set_tags({:info_logged => 1})
+    span.add_attributes({:info_logged => 1})
     span.record_exception(Exception.new("Low level tracing api error"))
-    span.set_tags({:close_one => 1})
+    span.add_attributes({:close_one => 1})
     span.finish
     # ::Instana.tracer.log_info({:info_logged => 1})
     # ::Instana.tracer.log_error(Exception.new("Low level tracing api error"))
