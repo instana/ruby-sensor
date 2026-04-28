@@ -58,7 +58,7 @@ executors:
       - image: quay.io/minio/minio
         command: ["server", "/data"]
       - image: s12v/sns
-      - image: public.ecr.aws/docker/library/rabbitmq:latest
+      - image: public.ecr.aws/docker/library/rabbitmq:4.2
       - image: public.ecr.aws/sprig/elasticmq-native
       - image: public.ecr.aws/docker/library/mongo:5-focal
   mysql2:
