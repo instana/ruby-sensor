@@ -11,7 +11,7 @@ module Instana
       TRACES_DATA_URL = "/com.instana.plugin.ruby/traces.%i".freeze
       TRACE_METRICS_URL = "/tracermetrics".freeze
 
-      attr_reader :report_timer
+      attr_reader :metrics_timer, :traces_timer
 
       # @param [RequestClient] client used to make requests to the backend
       # @param [Concurrent::Atom] discovery object used to store discovery response in
@@ -19,22 +19,51 @@ module Instana
         @client = client
         @discovery = discovery
         @logger = logger
-        @report_timer = timer_class.new(execution_interval: 1, run_now: true) { report_to_backend }
+        @timer_class = timer_class
         @nonce = Time.now
         @processor = processor
+
+        # Initialize timers with default 1 second interval
+        @metrics_timer = @timer_class.new(execution_interval: 1, run_now: true) { report_metrics_to_backend }
+        @traces_timer = @timer_class.new(execution_interval: 1, run_now: true) { report_traces_to_backend }
       end
 
       def update(time, _old_version, new_version)
         return unless time > @nonce
 
         @nonce = time
-        new_version.nil? ? @report_timer.shutdown : @report_timer.execute
+
+        if new_version.nil?
+          @metrics_timer&.shutdown
+          @traces_timer&.shutdown
+        else
+          # Read poll_rate directly from discovery payload
+          discovery = @discovery.value
+          poll_rate = discovery&.dig('pollRate') || 1
+
+          # Only recreate metrics_timer if poll_rate is different from current interval
+          if @metrics_timer.nil? || @metrics_timer.opts[:execution_interval] != poll_rate
+            @metrics_timer&.shutdown
+            @metrics_timer = @timer_class.new(execution_interval: poll_rate, run_now: true) { report_metrics_to_backend }
+          end
+          @metrics_timer.execute
+
+          # Traces timer always uses 1 second interval
+          @traces_timer&.shutdown
+          @traces_timer = @timer_class.new(execution_interval: 1, run_now: true) { report_traces_to_backend }
+          @traces_timer.execute
+        end
       end
 
       private
 
-      def report_to_backend
+      def report_metrics_to_backend
         report_metrics if ::Instana.config[:metrics][:enabled]
+      rescue StandardError => e
+        @logger.error(%(#{e}\n#{e.backtrace.join("\n")}))
+      end
+
+      def report_traces_to_backend
         report_traces if ::Instana.config[:tracing][:enabled]
         report_trace_stats if ::Instana.config[:tracing][:enabled]
       rescue StandardError => e
