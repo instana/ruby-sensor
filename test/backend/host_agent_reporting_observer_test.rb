@@ -10,16 +10,20 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
 
-    refute subject.report_timer.running
+    refute subject.metrics_timer.running
+    refute subject.traces_timer.running
 
     subject.update(Time.now, nil, true)
-    assert subject.report_timer.running
+    assert subject.metrics_timer.running
+    assert subject.traces_timer.running
 
     subject.update(Time.now, nil, nil)
-    refute subject.report_timer.running
+    refute subject.metrics_timer.running
+    refute subject.traces_timer.running
 
     subject.update(Time.now - 500, nil, true)
-    refute subject.report_timer.running
+    refute subject.metrics_timer.running
+    refute subject.traces_timer.running
   end
 
   def test_report
@@ -33,7 +37,7 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
 
-    subject.report_timer.block.call
+    subject.metrics_timer.block.call
   end
 
   def test_report_fail
@@ -53,7 +57,7 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
 
-    subject.report_timer.block.call
+    subject.metrics_timer.block.call
     assert_nil discovery.value
   end
 
@@ -80,7 +84,7 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
 
-    subject.report_timer.block.call
+    subject.metrics_timer.block.call
   end
 
   def test_agent_actions
@@ -104,7 +108,7 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
 
-    subject.report_timer.block.call
+    subject.metrics_timer.block.call
   end
 
   def test_agent_action_error
@@ -119,7 +123,7 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
 
-    subject.report_timer.block.call
+    subject.metrics_timer.block.call
   end
 
   def test_disable_metrics
@@ -130,7 +134,7 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
 
-    subject.report_timer.block.call
+    subject.metrics_timer.block.call
   ensure
     ::Instana.config[:metrics][:enabled] = true
   end
@@ -153,7 +157,7 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
 
-    subject.report_timer.block.call
+    subject.metrics_timer.block.call
   ensure
     ::Instana.config[:metrics][:memory][:enabled] = true
   end
@@ -176,7 +180,7 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
 
-    subject.report_timer.block.call
+    subject.metrics_timer.block.call
   ensure
     ::Instana.config[:metrics][:gc][:enabled] = true
   end
@@ -199,7 +203,7 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
 
-    subject.report_timer.block.call
+    subject.metrics_timer.block.call
   ensure
     ::Instana.config[:metrics][:thread][:enabled] = true
   end
@@ -212,7 +216,7 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
 
-    subject.report_timer.block.call
+    subject.traces_timer.block.call
   ensure
     ::Instana.config[:tracing][:enabled] = true
   end
@@ -235,7 +239,7 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer, processor: processor)
 
-    subject.report_timer.block.call
+    subject.traces_timer.block.call
     refute_nil discovery.value
   end
 
@@ -264,7 +268,7 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer, processor: processor)
 
-    subject.report_timer.block.call
+    subject.traces_timer.block.call
     assert_nil discovery.value
   end
 
@@ -283,7 +287,35 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer, processor: processor, logger: Logger.new('/dev/null'))
 
-    subject.report_timer.block.call
+    subject.traces_timer.block.call
     assert_equal({"pid" => 1234}, discovery.value)
+  end
+
+  def test_poll_rate_changes_metrics_timer_interval
+    client = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
+    discovery = Concurrent::Atom.new(nil)
+
+    subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
+
+    # Initially, metrics_timer should have 1 second interval (default)
+    assert_equal 1, subject.metrics_timer.opts[:execution_interval]
+    refute subject.metrics_timer.running
+
+    # Simulate first discovery with pollRate = 1 (should keep 1 second interval)
+    discovery.swap { {'pid' => 1234, 'pollRate' => 1} }
+    subject.update(Time.now, nil, true)
+    assert subject.metrics_timer.running
+    assert_equal 1, subject.metrics_timer.opts[:execution_interval]
+    assert_equal({'pid' => 1234, 'pollRate' => 1}, discovery.value)
+
+    # Simulate discovery cycle changing pollRate to 5 seconds
+    discovery.swap { {'pid' => 1234, 'pollRate' => 5} }
+    subject.update(Time.now + 1, nil, true)
+    assert subject.metrics_timer.running
+    assert_equal 5, subject.metrics_timer.opts[:execution_interval]
+    assert_equal({'pid' => 1234, 'pollRate' => 5}, discovery.value)
+
+    # Verify traces_timer always stays at 1 second
+    assert_equal 1, subject.traces_timer.opts[:execution_interval]
   end
 end
