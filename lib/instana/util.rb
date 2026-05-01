@@ -27,25 +27,25 @@ module Instana
       def take_snapshot
         data = {}
 
-        data[:sensorVersion] = ::Instana::VERSION
-        data[:ruby_version] = RUBY_VERSION
+        data[:sensorVersion] = ::Instana::VERSION.dup
+        data[:ruby_version] = RUBY_VERSION.dup
         data[:rpl] = RUBY_PATCHLEVEL if defined?(RUBY_PATCHLEVEL)
 
         # Framework Detection
         if defined?(::RailsLts::VERSION)
-          data[:framework] = "Rails on Rails LTS-#{::RailsLts::VERSION}"
+          data[:framework] = "Rails on Rails LTS-#{::RailsLts::VERSION}".dup
 
         elsif defined?(::Rails.version)
-          data[:framework] = "Ruby on Rails #{::Rails.version}"
+          data[:framework] = "Ruby on Rails #{::Rails.version}".dup
 
         elsif defined?(::Grape::VERSION)
-          data[:framework] = "Grape #{::Grape::VERSION}"
+          data[:framework] = "Grape #{::Grape::VERSION}".dup
 
         elsif defined?(::Padrino::VERSION)
-          data[:framework] = "Padrino #{::Padrino::VERSION}"
+          data[:framework] = "Padrino #{::Padrino::VERSION}".dup
 
         elsif defined?(::Sinatra::VERSION)
-          data[:framework] = "Sinatra #{::Sinatra::VERSION}"
+          data[:framework] = "Sinatra #{::Sinatra::VERSION}".dup
         end
 
         # Report Bundle
@@ -53,7 +53,7 @@ module Instana
           data[:versions] = {}
 
           Gem.loaded_specs.each do |k, v|
-            data[:versions][k] = v.version.to_s
+            data[:versions][k.dup] = v.version.to_s.dup
           end
         end
 

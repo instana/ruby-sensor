@@ -38,7 +38,10 @@ module Instana
         timeout = Integer(ENV.fetch('INSTANA_TIMEOUT', 500))
         @host = host
         @port = port
-        @client = Net::HTTP.start(host, port, use_ssl: use_ssl, read_timeout: timeout)
+        @use_ssl = use_ssl
+        @timeout = timeout
+        @client_mutex = Mutex.new
+        @client = nil
       end
 
       # Send a request to the backend. If data is a {Hash},
@@ -60,7 +63,10 @@ module Instana
                  data
                end
         begin
-          response = @client.send_request(method, path, body, headers)
+          response = @client_mutex.synchronize do
+            ensure_connection
+            @client.send_request(method, path, body, headers)
+          end
           Response.new(response)
         rescue Errno::ECONNREFUSED => e
           Instana.logger.debug("Connection refused to #{@host}:#{@port} - #{e.message}")
@@ -74,6 +80,11 @@ module Instana
         rescue SocketError => e
           Instana.logger.debug("Socket error connecting to #{@host}:#{@port} - #{e.message}")
           create_error_response('502', 'Socket Error', 'Socket error', e.message)
+        rescue IOError => e
+          Instana.logger.debug("IO error sending request to #{@host}:#{@port} - #{e.message}")
+          # Reset connection on IO errors and retry once
+          @client_mutex.synchronize { reset_connection }
+          create_error_response('500', 'IO Error', 'IOError', e.message)
         rescue StandardError => e
           Instana.logger.debug("Error sending request to #{@host}:#{@port} - #{e.class}: #{e.message}")
           create_error_response('500', 'Internal Error', e.class.to_s, e.message)
@@ -81,6 +92,18 @@ module Instana
       end
 
       private
+
+      def ensure_connection
+        return if @client && !@client.instance_variable_get(:@socket).nil?
+
+        reset_connection
+        @client = Net::HTTP.start(@host, @port, use_ssl: @use_ssl, read_timeout: @timeout)
+      end
+
+      def reset_connection
+        @client&.finish rescue nil
+        @client = nil
+      end
 
       def encode_body(data)
         # :nocov:

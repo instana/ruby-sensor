@@ -10,6 +10,10 @@ class MockTimer
     @running = false
   end
 
+  def execution_interval
+    @opts[:execution_interval]
+  end
+
   def shutdown
     @running = false
   end
