@@ -101,7 +101,11 @@ module Instana
       end
 
       def reset_connection
-        @client&.finish rescue nil
+        begin
+          @client&.finish
+        rescue
+          nil
+        end
         @client = nil
       end
 
