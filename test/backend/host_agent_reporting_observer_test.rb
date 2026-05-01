@@ -301,19 +301,19 @@ class HostAgentReportingObserverTest < Minitest::Test
     assert_equal 1, subject.metrics_timer.opts[:execution_interval]
     refute subject.metrics_timer.running
 
-    # Simulate first discovery with pollRate = 1 (should keep 1 second interval)
-    discovery.swap { {'pid' => 1234, 'pollRate' => 1} }
+    # Simulate first discovery with poll_rate = 1 (should keep 1 second interval)
+    discovery.swap { {'pid' => 1234, 'plugin' => {'ruby' => {'poll_rate' => 1}}} }
     subject.update(Time.now, nil, true)
     assert subject.metrics_timer.running
     assert_equal 1, subject.metrics_timer.opts[:execution_interval]
-    assert_equal({'pid' => 1234, 'pollRate' => 1}, discovery.value)
+    assert_equal({'pid' => 1234, 'plugin' => {'ruby' => {'poll_rate' => 1}}}, discovery.value)
 
-    # Simulate discovery cycle changing pollRate to 5 seconds
-    discovery.swap { {'pid' => 1234, 'pollRate' => 5} }
+    # Simulate discovery cycle changing poll_rate to 5 seconds
+    discovery.swap { {'pid' => 1234, 'plugin' => {'ruby' => {'poll_rate' => 5}}} }
     subject.update(Time.now + 1, nil, true)
     assert subject.metrics_timer.running
     assert_equal 5, subject.metrics_timer.opts[:execution_interval]
-    assert_equal({'pid' => 1234, 'pollRate' => 5}, discovery.value)
+    assert_equal({'pid' => 1234, 'plugin' => {'ruby' => {'poll_rate' => 5}}}, discovery.value)
 
     # Verify traces_timer always stays at 1 second
     assert_equal 1, subject.traces_timer.opts[:execution_interval]

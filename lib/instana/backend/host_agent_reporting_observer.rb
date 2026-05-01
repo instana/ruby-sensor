@@ -37,12 +37,12 @@ module Instana
           @metrics_timer&.shutdown
           @traces_timer&.shutdown
         else
-          # Read poll_rate directly from discovery payload
+          # Read poll_rate from discovery payload - it's nested under plugin.ruby.poll_rate
           discovery = @discovery.value
-          poll_rate = discovery&.dig('pollRate') || 1
+          poll_rate = discovery&.dig('plugin', 'ruby', 'poll_rate') || 1
 
           # Only recreate metrics_timer if poll_rate is different from current interval
-          if @metrics_timer.nil? || @metrics_timer.opts[:execution_interval] != poll_rate
+          if @metrics_timer.nil? || @metrics_timer.execution_interval != poll_rate
             @metrics_timer&.shutdown
             @metrics_timer = @timer_class.new(execution_interval: poll_rate, run_now: true) { report_metrics_to_backend }
           end
