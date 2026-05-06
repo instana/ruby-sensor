@@ -18,6 +18,7 @@ library_gemfile: &library_gemfile
     - "./gemfiles/net_http_01.gemfile"
     - "./gemfiles/bunny_223.gemfile"
     - "./gemfiles/bunny_224.gemfile"
+    - "./gemfiles/bunny_300.gemfile"
     - "./gemfiles/rack_20.gemfile"
     - "./gemfiles/rack_30.gemfile"
     - "./gemfiles/redis_40.gemfile"
