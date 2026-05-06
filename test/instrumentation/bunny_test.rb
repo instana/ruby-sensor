@@ -16,7 +16,7 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     end
     @channel = @connection.create_channel
     @exchange = @channel.default_exchange
-    @queue = @channel.queue('instana.test.queue', auto_delete: true)
+    @queue = @channel.queue('instana.test.queue', auto_delete: true, exclusive: true)
     @queue.purge
   end
 
@@ -676,8 +676,8 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     # Create multiple exchanges and queues
     exchange1 = @channel.topic('instana.test.exchange1', auto_delete: true)
     exchange2 = @channel.topic('instana.test.exchange2', auto_delete: true)
-    queue1 = @channel.queue('instana.test.queue1', auto_delete: true)
-    queue2 = @channel.queue('instana.test.queue2', auto_delete: true)
+    queue1 = @channel.queue('instana.test.queue1', auto_delete: true, exclusive: true)
+    queue2 = @channel.queue('instana.test.queue2', auto_delete: true, exclusive: true)
 
     queue1.bind(exchange1, routing_key: 'key1')
     queue2.bind(exchange2, routing_key: 'key2')

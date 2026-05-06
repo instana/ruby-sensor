@@ -38,7 +38,7 @@ library_gemfile: &library_gemfile
     - "./gemfiles/mongo_216.gemfile"
     - "./gemfiles/mongo_219.gemfile"
 executors:
-  ruby_33_lint:
+  ruby_34_lint:
     docker:
       - image: public.ecr.aws/docker/library/ruby:3.4
   base:
@@ -58,7 +58,7 @@ executors:
       - image: quay.io/minio/minio
         command: ["server", "/data"]
       - image: s12v/sns
-      - image: public.ecr.aws/docker/library/rabbitmq:4.2
+      - image: public.ecr.aws/docker/library/rabbitmq:latest
       - image: public.ecr.aws/sprig/elasticmq-native
       - image: public.ecr.aws/docker/library/mongo:5-focal
   mysql2:
@@ -233,7 +233,7 @@ jobs:
       - setup
       - run_tests
   lint:
-    executor: ruby_33_lint
+    executor: ruby_34_lint
     environment:
       BUNDLE_GEMFILE: "./gemfiles/rubocop_162.gemfile"
     steps:
