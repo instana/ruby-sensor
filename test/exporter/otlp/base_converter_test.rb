@@ -150,7 +150,7 @@ class BaseConverterTest < Minitest::Test
     span = create_test_span
     span.record_exception(StandardError.new('Test error'))
     converter = TestConverter.new(span)
-    assert converter.send(:has_errors?)
+    assert converter.send(:errors?)
   end
 
   def test_span_accessor
