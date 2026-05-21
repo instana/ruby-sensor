@@ -22,7 +22,8 @@ Rake::TestTask.new(:test) do |t|
   else
     t.test_files = Dir[
       'test/*_test.rb',
-      'test/{agent,trace,backend,snapshot,span_filtering}/*_test.rb'
+      'test/{agent,trace,backend,snapshot,span_filtering}/*_test.rb',
+      'test/exporter/otlp/*_test.rb'
     ]
   end
 end
