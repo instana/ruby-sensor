@@ -8,7 +8,7 @@ Warning[:deprecated] = false if Gem::Version.new(RUBY_VERSION) > Gem::Version.ne
 class DalliTest < Minitest::Test
   def setup
     @memcached_host = ENV['MEMCACHED_HOST'] || '127.0.0.1:11211'
-    @dc = Dalli::Client.new(@memcached_host, :namespace => "instana_test")
+    @dc = Dalli::Client.new(@memcached_host, namespace: "instana_test", serializer: JSON)
   end
 
   def teardown
@@ -24,14 +24,14 @@ class DalliTest < Minitest::Test
   def test_basic_get
     clear_all!
 
-    @dc.set(:instana, :boom)
+    @dc.set(:instana, 'boom')
 
     result = nil
     ::Instana.tracer.in_span(:dalli_test) do
       result = @dc.get(:instana)
     end
 
-    assert_equal :boom, result
+    assert_equal 'boom', result
 
     spans = ::Instana.processor.queued_spans
     assert_equal 2, spans.length
@@ -58,12 +58,12 @@ class DalliTest < Minitest::Test
 
   def test_basic_get_as_root_exit_span
     clear_all!
-    @dc.set(:instana, :boom)
+    @dc.set(:instana, 'boom')
 
     ::Instana.config[:allow_exit_as_root] = true
     result = @dc.get(:instana)
 
-    assert_equal :boom, result
+    assert_equal 'boom', result
 
     spans = ::Instana.processor.queued_spans
     assert_equal 1, spans.length

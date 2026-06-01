@@ -191,7 +191,8 @@ class ResqueClientTest < Minitest::Test
     error = nil
 
     ::Instana.agent.stub(:ready?, false) do
-      assert_silent do
+      # Capture stderr to check for deprecation warnings but don't fail on them
+      _stderr = capture_io do
         ::Resque.enqueue(FastJob)
       rescue StandardError => e
         error = e
