@@ -16,7 +16,7 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     end
     @channel = @connection.create_channel
     @exchange = @channel.default_exchange
-    @queue = @channel.queue('instana.test.queue', auto_delete: true, exclusive: true)
+    @queue = @channel.queue("instana.test.queue.#{object_id}", auto_delete: true, exclusive: true)
     @queue.purge
   end
 
@@ -448,7 +448,7 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     # Subscribe with a block that raises an error
     error_in_block = false
 
-    @queue.subscribe(manual_ack: false, block: false) do |_delivery_info, _properties, _payload|
+    consumer = @queue.subscribe(manual_ack: false, block: false) do |_delivery_info, _properties, _payload|
       error_in_block = true
       raise StandardError, "Intentional error in subscribe block"
     end
@@ -457,6 +457,9 @@ class BunnyTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     sleep 0.2
 
     assert error_in_block, "Block should have been called and raised error"
+  ensure
+    # Cancel the consumer to release the queue
+    consumer&.cancel if consumer
   end
 
   def test_publish_with_empty_exchange_name

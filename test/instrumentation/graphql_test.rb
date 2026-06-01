@@ -88,7 +88,7 @@ class GraphqlTest < Minitest::Test
   end
 
   def test_it_works
-    assert defined?(GraphQL)
+    assert(defined?(GraphQL))
   end
 
   def test_config_defaults
