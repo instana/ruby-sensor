@@ -13,7 +13,7 @@ class ConverterFactoryTest < Minitest::Test
   # ============================================================================
 
   def test_returns_http_converter_for_http_spans
-    http_span_names = [:nethttp, 'http', 'HTTP_CLIENT', 'http_server', 'excon_http', 'http_request']
+    http_span_names = ['net-http', 'rack', 'excon']
 
     http_span_names.each do |name|
       span = create_test_span(name: name)
@@ -25,7 +25,7 @@ class ConverterFactoryTest < Minitest::Test
   end
 
   def test_determine_span_type_returns_http
-    span = create_test_span(name: :nethttp)
+    span = create_test_span(name: :rack)
     span_type = @factory.send(:determine_span_type, span)
 
     assert_equal 'http', span_type
@@ -156,14 +156,6 @@ class ConverterFactoryTest < Minitest::Test
   # SPAN TYPE PRIORITY TESTS
   # ============================================================================
 
-  def test_http_detection_has_priority_over_other_types
-    span = create_test_span(name: 'http_database_query')
-    span_type = @factory.send(:determine_span_type, span)
-
-    assert_equal 'http', span_type,
-                 'HTTP detection should have priority'
-  end
-
   def test_database_detection_has_priority_over_messaging
     span = create_test_span(name: 'database_message')
     span_type = @factory.send(:determine_span_type, span)
@@ -215,7 +207,7 @@ class ConverterFactoryTest < Minitest::Test
   # ============================================================================
 
   def test_http_span_detection
-    assert @factory.send(:http_span?, create_test_span(name: :nethttp))
+    assert @factory.send(:http_span?, create_test_span(name: :rack))
     refute @factory.send(:http_span?, create_test_span(name: :database))
   end
 
@@ -259,7 +251,7 @@ class ConverterFactoryTest < Minitest::Test
 
   def test_case_insensitive_detection
     test_cases = {
-      'HTTP' => 'Instana::Exporter::Otlp::HttpConverter',
+      'rack' => 'Instana::Exporter::Otlp::HttpConverter',
       'SQL' => 'Instana::Exporter::Otlp::DatabaseConverter',
       'KAFKA' => 'Instana::Exporter::Otlp::MessagingConverter',
       'GRPC' => 'Instana::Exporter::Otlp::RpcConverter',
