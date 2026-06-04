@@ -30,11 +30,11 @@ class HttpConverterTest < Minitest::Test
     result = converter.convert
 
     # Verify base attributes
-    assert_equal span.trace_id, result[:trace_id]
-    assert_equal span.id, result[:span_id]
-    assert_equal span.parent_id, result[:parent_span_id]
-    assert_equal :nethttp, result[:name]
-    assert_equal 3, result[:kind] # CLIENT kind
+    assert_equal format_trace_id(span.trace_id), result[:trace_id]
+    assert_equal format_span_id(span.id), result[:span_id]
+    assert_equal format_span_id(span.parent_id), result[:parent_span_id]
+    assert_equal 'nethttp', result[:name]
+    assert_equal :client, result[:kind] # CLIENT kind
 
     # Verify HTTP attributes are present
     attributes = result[:attributes]
@@ -60,7 +60,7 @@ class HttpConverterTest < Minitest::Test
     converter = Instana::Exporter::Otlp::HttpConverter.new(span)
     result = converter.convert
 
-    assert_equal 2, result[:kind] # SERVER kind
+    assert_equal :server, result[:kind] # SERVER kind
     attributes = result[:attributes]
     assert_http_attribute(attributes, 'http.method', 'POST')
     assert_http_attribute(attributes, 'http.status_code', 201)
@@ -92,7 +92,7 @@ class HttpConverterTest < Minitest::Test
 
     # Should return base attributes with empty HTTP attributes
     assert result[:attributes]
-    assert_instance_of Array, result[:attributes]
+    assert_instance_of Hash, result[:attributes]
   end
 
   def test_extract_scheme_from_https_url
@@ -160,9 +160,7 @@ class HttpConverterTest < Minitest::Test
     result = converter.convert
 
     attributes = result[:attributes]
-    status_attr = attributes.find { |a| a[:key] == 'http.status_code' }
-    assert status_attr
-    assert_equal 404, status_attr[:value][:int_value]
+    assert_equal 404, attributes['http.status_code']
   end
 
   def test_http_status_code_as_string
@@ -171,10 +169,8 @@ class HttpConverterTest < Minitest::Test
     result = converter.convert
 
     attributes = result[:attributes]
-    status_attr = attributes.find { |a| a[:key] == 'http.status_code' }
-    assert status_attr
-    # Should be converted to string value since it's a string
-    assert status_attr[:value][:string_value] || status_attr[:value][:int_value]
+    # Status should be present (as string or converted to int)
+    assert attributes['http.status_code']
   end
 
   def test_user_agent_from_header
@@ -222,7 +218,7 @@ class HttpConverterTest < Minitest::Test
     result = converter.convert
 
     # Verify error status
-    assert_equal 2, result[:status][:code] # ERROR code
+    assert_equal OpenTelemetry::Trace::Status::ERROR, result[:status].code # ERROR code
 
     # Verify HTTP attributes are still present
     attributes = result[:attributes]
@@ -241,8 +237,8 @@ class HttpConverterTest < Minitest::Test
     assert result[:span_id]
     assert result[:name]
     assert result[:kind]
-    assert result[:start_time_unix_nano]
-    assert result[:end_time_unix_nano]
+    assert result[:start_timestamp]
+    assert result[:end_timestamp]
     assert result[:status]
     assert result[:attributes]
   end
@@ -272,7 +268,7 @@ class HttpConverterTest < Minitest::Test
     ]
 
     expected_keys.each do |key|
-      assert attributes.any? { |a| a[:key] == key }, "Expected attribute key '#{key}' not found"
+      assert attributes.key?(key), "Expected attribute key '#{key}' not found"
     end
   end
 
@@ -308,20 +304,25 @@ class HttpConverterTest < Minitest::Test
   end
 
   def assert_http_attribute(attributes, key, expected_value)
-    attr = attributes.find { |a| a[:key] == key }
-    assert attr, "Expected attribute '#{key}' not found"
-
-    actual_value = attr[:value][:string_value] ||
-                   attr[:value][:int_value] ||
-                   attr[:value][:double_value] ||
-                   attr[:value][:bool_value]
-
+    actual_value = attributes[key]
+    assert actual_value, "Expected attribute '#{key}' not found"
     assert_equal expected_value, actual_value,
                  "Expected attribute '#{key}' to have value '#{expected_value}', got '#{actual_value}'"
   end
 
   def refute_http_attribute(attributes, key)
-    attr = attributes.find { |a| a[:key] == key }
-    assert_nil attr, "Expected attribute '#{key}' to not be present, but it was found"
+    assert_nil attributes[key], "Expected attribute '#{key}' to not be present, but it was found"
+  end
+
+  def format_trace_id(trace_id)
+    return OpenTelemetry::Trace::INVALID_TRACE_ID unless trace_id
+    hex_string = trace_id.to_s.rjust(32, '0')
+    [hex_string].pack('H*')
+  end
+
+  def format_span_id(span_id)
+    return OpenTelemetry::Trace::INVALID_SPAN_ID unless span_id
+    hex_string = span_id.to_s.rjust(16, '0')
+    [hex_string].pack('H*')
   end
 end
