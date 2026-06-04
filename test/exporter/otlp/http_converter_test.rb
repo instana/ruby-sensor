@@ -316,12 +316,14 @@ class HttpConverterTest < Minitest::Test
 
   def format_trace_id(trace_id)
     return OpenTelemetry::Trace::INVALID_TRACE_ID unless trace_id
+
     hex_string = trace_id.to_s.rjust(32, '0')
     [hex_string].pack('H*')
   end
 
   def format_span_id(span_id)
     return OpenTelemetry::Trace::INVALID_SPAN_ID unless span_id
+
     hex_string = span_id.to_s.rjust(16, '0')
     [hex_string].pack('H*')
   end

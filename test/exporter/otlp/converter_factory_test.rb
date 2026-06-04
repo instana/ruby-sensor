@@ -13,7 +13,7 @@ class ConverterFactoryTest < Minitest::Test
   # ============================================================================
 
   def test_returns_http_converter_for_http_spans
-    http_span_names = ['net-http', 'rack', 'excon']
+    http_span_names = %w[net-http rack excon]
 
     http_span_names.each do |name|
       span = create_test_span(name: name)

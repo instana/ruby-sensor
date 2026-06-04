@@ -11,11 +11,6 @@ module Instana
       class RpcConverter < BaseConverter
         # Convert RPC span to OTLP format
         # @return [Hash] Converted RPC span data in OTLP format
-        def convert
-          # For now, return base attributes only
-          # RPC-specific attributes will be added in a future phase
-          super
-        end
       end
     end
   end

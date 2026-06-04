@@ -11,10 +11,6 @@ module Instana
       class CustomConverter < BaseConverter
         # Convert custom span to OTLP format
         # @return [Hash] Converted custom span data in OTLP format
-        def convert
-          # Stub implementation - returns base attributes only
-          super
-        end
       end
     end
   end
