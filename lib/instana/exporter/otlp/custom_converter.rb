@@ -13,7 +13,7 @@ module Instana
         # @return [Hash] Converted custom span data in OTLP format
         def convert
           # Stub implementation - returns base attributes only
-          extract_common_attributes
+          super
         end
       end
     end
