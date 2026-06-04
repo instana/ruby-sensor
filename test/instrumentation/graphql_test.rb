@@ -301,11 +301,9 @@ class GraphqlTest < Minitest::Test
 
     ::Instana.agent.stub(:ready?, false) do
       assert_silent do
-
         Schema.execute(query)
       rescue StandardError => e
         error = e
-
       end
     end
 
