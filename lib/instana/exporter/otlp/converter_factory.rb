@@ -9,6 +9,7 @@ require_relative 'messaging_converter'
 require_relative 'rpc_converter'
 require_relative 'custom_converter'
 require_relative 'internal_converter'
+require_relative '../../trace/span_kind'
 
 module Instana
   module Exporter
@@ -67,9 +68,9 @@ module Instana
           end
 
           # Check if span is an HTTP span
-          # Instana native spans always have a name, so we only check the name
+          # Uses the HTTP_SPANS constant to identify HTTP spans
           def http_span?(span)
-            span.name&.match?(/http/i)
+            Instana::SpanKind::HTTP_SPANS.include?(span.name&.to_sym)
           end
 
           # Check if span is a database span
