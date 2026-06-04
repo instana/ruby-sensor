@@ -14,7 +14,7 @@ module Instana
         def convert
           # For now, return base attributes only
           # Database-specific attributes will be added in a future phase
-          extract_common_attributes
+          super
         end
       end
     end
