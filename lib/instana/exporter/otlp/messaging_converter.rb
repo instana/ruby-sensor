@@ -11,11 +11,6 @@ module Instana
       class MessagingConverter < BaseConverter
         # Convert messaging span to OTLP format
         # @return [Hash] Converted messaging span data in OTLP format
-        def convert
-          # For now, return base attributes only
-          # Messaging-specific attributes will be added in a future phase
-          super
-        end
       end
     end
   end

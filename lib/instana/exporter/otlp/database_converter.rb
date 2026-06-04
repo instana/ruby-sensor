@@ -11,11 +11,6 @@ module Instana
       class DatabaseConverter < BaseConverter
         # Convert database span to OTLP format
         # @return [Hash] Converted database span data in OTLP format
-        def convert
-          # For now, return base attributes only
-          # Database-specific attributes will be added in a future phase
-          super
-        end
       end
     end
   end
