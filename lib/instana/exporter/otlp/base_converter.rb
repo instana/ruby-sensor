@@ -98,9 +98,7 @@ module Instana
             OpenTelemetry::Trace::TraceFlags::DEFAULT
           end
 
-          private
-
-          EMPTY_ARRAY = [].freeze
+          EMPTY_ARRAY = [].freeze # rubocop:disable Lint/ConstantDefinitionInBlock
         end
 
         # Milliseconds to nanoseconds conversion factor
