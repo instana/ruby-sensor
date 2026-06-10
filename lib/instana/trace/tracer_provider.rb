@@ -135,7 +135,7 @@ module Instana
       def internal_start_span(name, kind, attributes, links, start_timestamp, parent_context, instrumentation_scope) # rubocop:disable Metrics/ParameterLists
         parent_span = OpenTelemetry::Trace.current_span(parent_context)
         parent_span_context = parent_span.context if parent_span
-        if parent_span_context&.valid?
+        if parent_span_context.respond_to?(:valid?) && parent_span_context.valid?
           parent_span_id = parent_span_context.span_id
           trace_id = parent_span_context.trace_id
           span_id = @id_generator.generate_span_id
