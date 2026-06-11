@@ -259,7 +259,7 @@ module Instana
         #
         # @return [String] The span name
         def span_name
-          span[:n].to_s
+          span[:n]&.to_s || ''
         end
 
         # Format parent span ID, returning INVALID_SPAN_ID if no parent
@@ -282,9 +282,9 @@ module Instana
         #
         # @return [Symbol] Inferred span kind
         def infer_span_kind_from_name
-          span_name = span[:n]&.to_sym
-          return :server if ::Instana::SpanKind::ENTRY_SPANS.include?(span_name)
-          return :client if ::Instana::SpanKind::EXIT_SPANS.include?(span_name)
+          name = span[:n]&.to_sym
+          return :server if ::Instana::SpanKind::ENTRY_SPANS.include?(name)
+          return :client if ::Instana::SpanKind::EXIT_SPANS.include?(name)
 
           :internal
         end

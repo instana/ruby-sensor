@@ -11,7 +11,6 @@ module Instana
       # Converter for HTTP spans to OTLP format
       # Handles conversion of HTTP-related spans with specific attributes
       class HttpConverter < BaseConverter
-        private
 
         # Extract HTTP-specific attributes as plain key/value pairs
         # @return [Hash] HTTP attributes

@@ -70,31 +70,31 @@ module Instana
           # Check if span is an HTTP span
           # Uses the HTTP_SPANS constant to identify HTTP spans
           def http_span?(span)
-            Instana::SpanKind::HTTP_SPANS.include?(span.name&.to_sym)
+            Instana::SpanKind::HTTP_SPANS.include?(span[:n]&.to_sym)
           end
 
           # Check if span is a database span
           # Instana native spans always have a name, so we only check the name
           def database_span?(span)
-            span.name&.match?(/sql|database|query|activerecord|sequel|mongo|redis|dalli/i)
+            span[:n]&.match?(/sql|database|query|activerecord|sequel|mongo|redis|dalli/i)
           end
 
           # Check if span is a messaging span
           # Instana native spans always have a name, so we only check the name
           def messaging_span?(span)
-            span.name&.match?(/kafka|rabbitmq|sqs|sns|message|bunny|shoryuken/i)
+            span[:n]&.match?(/kafka|rabbitmq|sqs|sns|message|bunny|shoryuken/i)
           end
 
           # Check if span is an RPC span
           # Instana native spans always have a name, so we only check the name
           def rpc_span?(span)
-            span.name&.match?(/grpc|rpc/i)
+            span[:n]&.match?(/grpc|rpc/i)
           end
 
           # Check if span is a custom span
           # Instana native spans always have a name, so we only check the name
           def custom_span?(span)
-            span.name&.match?(/custom|sdk/i)
+            span[:n]&.match?(/custom|sdk/i)
           end
         end
       end

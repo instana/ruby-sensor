@@ -1,5 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
+require 'opentelemetry/exporter/otlp'
+require_relative '../exporter/otlp/converter_factory'
 
 module Instana
   module Backend
@@ -22,7 +24,11 @@ module Instana
         @timer_class = timer_class
         @nonce = Time.now
         @processor = processor
-
+        @otlp_exporter = OpenTelemetry::Exporter::OTLP::Exporter.new(
+          endpoint: 'http://localhost:4318/v1/traces',
+          timeout: 5.0, # in seconds
+          compression: 'gzip'
+        ) if ENV["INSTANA_OTLP_ENABLED"]
         # Initialize timers with default 1 second interval
         @metrics_timer = @timer_class.new(execution_interval: 1, run_now: true) { report_metrics_to_backend }
         @traces_timer = @timer_class.new(execution_interval: 1, run_now: true) { report_traces_to_backend }
@@ -87,13 +93,26 @@ module Instana
         discovery = @discovery.value
         return unless discovery
 
-        path = format(TRACES_DATA_URL, discovery['pid'])
+        path=format(TRACES_DATA_URL, discovery['pid'])
 
         @processor.send do |spans|
-          response = @client.send_request('POST', path, spans)
+          success = false
+          if @otlp_exporter
+            converted_spans = spans.map do |span|
+              ::Instana::Exporter::Otlp::ConverterFactory.create(span).convert
+            end
+            Instana.logger.info(converted_spans)
+            result_code = @otlp_exporter.export(converted_spans)
+            Instana.logger.debug("using otlp exporter to export result code: #{result_code}")
+            success = result_code == OpenTelemetry::SDK::Trace::Export::SUCCESS
+          else
+            response = @client.send_request('POST', path, spans)
+            Instana.logger.debug("using instana native exporter to export result code: #{response}")
+            success = response&.ok?
+          end
 
-          unless response.ok?
-            @logger.warn("Failed to send `#{spans.count}` spans to `#{path}`. Response: #{response.code} - #{response.body}")
+          unless success
+            @logger.warn("Failed to send `#{spans.count}` spans to `#{path}`.")
             trigger_rediscovery
             break
           end
