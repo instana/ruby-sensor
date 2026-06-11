@@ -259,7 +259,7 @@ module Instana
         #
         # @return [String] The span name
         def span_name
-          span[:n]&.to_s || ''
+          span[:n].to_s
         end
 
         # Format parent span ID, returning INVALID_SPAN_ID if no parent
