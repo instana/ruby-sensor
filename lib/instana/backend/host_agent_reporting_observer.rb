@@ -24,11 +24,13 @@ module Instana
         @timer_class = timer_class
         @nonce = Time.now
         @processor = processor
-        @otlp_exporter = OpenTelemetry::Exporter::OTLP::Exporter.new(
-          endpoint: 'http://localhost:4318/v1/traces',
-          timeout: 5.0, # in seconds
-          compression: 'gzip'
-        ) if ENV["INSTANA_OTLP_ENABLED"]
+        if ENV["INSTANA_OTLP_ENABLED"]
+          @otlp_exporter = OpenTelemetry::Exporter::OTLP::Exporter.new(
+            endpoint: 'http://localhost:4318/v1/traces',
+            timeout: 5.0, # in seconds
+            compression: 'gzip'
+          )
+        end
         # Initialize timers with default 1 second interval
         @metrics_timer = @timer_class.new(execution_interval: 1, run_now: true) { report_metrics_to_backend }
         @traces_timer = @timer_class.new(execution_interval: 1, run_now: true) { report_traces_to_backend }
@@ -93,7 +95,7 @@ module Instana
         discovery = @discovery.value
         return unless discovery
 
-        path=format(TRACES_DATA_URL, discovery['pid'])
+        path = format(TRACES_DATA_URL, discovery['pid'])
 
         @processor.send do |spans|
           success = false

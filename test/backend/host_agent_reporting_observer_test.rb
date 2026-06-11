@@ -3,7 +3,7 @@
 
 require 'test_helper'
 
-class HostAgentReportingObserverTest < Minitest::Test
+class HostAgentReportingObserverTest < Minitest::Test # rubocop:disable Metrics/ClassLength
   def test_start_stop
     client = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
     discovery = Concurrent::Atom.new(nil)
@@ -400,7 +400,7 @@ class HostAgentReportingObserverTest < Minitest::Test
       n: 'rack',
       t: '1234567890abcdef',
       s: 'fedcba0987654321',
-      ts: 1234567890000,
+      ts: Time.now.to_i * 1000,
       d: 100,
       k: 1,
       data: {
@@ -468,7 +468,7 @@ class HostAgentReportingObserverTest < Minitest::Test
 
     otlp_exporter = Minitest::Mock.new
     # Return FAILURE status code
-    otlp_exporter.expect(:export, OpenTelemetry::SDK::Trace::Export::FAILURE) do |spans|
+    otlp_exporter.expect(:export, OpenTelemetry::SDK::Trace::Export::FAILURE) do |_spans|
       OpenTelemetry::SDK::Trace::Export::FAILURE
     end
 
