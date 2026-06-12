@@ -170,13 +170,13 @@ module Instana
         def convert_span_kind
           # Explicit kind takes precedence
           case span[:k]
-          when 1 then return :server
-          when 2 then return :client
-          when 3 then return :internal
+          when 1 then :server
+          when 2 then :client
+          when 3 then :internal
+          else
+            # Infer from span name if no explicit kind
+            infer_span_kind_from_name
           end
-
-          # Infer from span name if no explicit kind
-          infer_span_kind_from_name
         end
 
         # Convert Instana millisecond timestamps to Unix nanoseconds

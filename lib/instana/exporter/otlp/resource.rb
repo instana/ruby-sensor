@@ -13,6 +13,8 @@ module Instana
       # for which telemetry (metrics or traces) is reported.
       # This follows OpenTelemetry semantic conventions for resource attributes
       class Resource
+        PROC_SELF_CGROUP = '/proc/self/cgroup'
+
         class << self
           private :new
 
@@ -87,8 +89,8 @@ module Instana
           #
           # @return [Resource]
           def service_name_from_env
-            service_name = ENV['OTEL_SERVICE_NAME'] ||
-                           ENV['INSTANA_SERVICE_NAME'] ||
+            service_name = ENV.fetch('OTEL_SERVICE_NAME', nil) ||
+                           ENV.fetch('INSTANA_SERVICE_NAME', nil) ||
                            ::Instana::Util.get_app_name
 
             return create({}) unless service_name
@@ -107,7 +109,7 @@ module Instana
             attrs[OpenTelemetry::SemanticConventions::Resource::SERVICE_INSTANCE_ID] = "#{host}:#{Process.pid}"
 
             # Add service version if available
-            version = ENV['OTEL_SERVICE_VERSION'] || ENV['INSTANA_SERVICE_VERSION'] || detect_app_version
+            version = ENV.fetch('OTEL_SERVICE_VERSION', nil) || ENV.fetch('INSTANA_SERVICE_VERSION', nil) || detect_app_version
             attrs[OpenTelemetry::SemanticConventions::Resource::SERVICE_VERSION] = version if version
 
             # Add host attributes if available
@@ -126,38 +128,38 @@ module Instana
             attrs = {}
 
             # Check for Docker
-            if File.exist?('/.dockerenv') || File.exist?('/proc/self/cgroup')
+            if File.exist?('/.dockerenv') || File.exist?(PROC_SELF_CGROUP)
               attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_RUNTIME] = 'docker'
               container_id = extract_container_id
               attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_ID] = container_id if container_id
             end
 
             # Check for Kubernetes
-            if ENV['KUBERNETES_SERVICE_HOST']
-              attrs[OpenTelemetry::SemanticConventions::Resource::K8S_POD_NAME] = ENV['HOSTNAME']
-              attrs[OpenTelemetry::SemanticConventions::Resource::K8S_NAMESPACE_NAME] = ENV['KUBERNETES_NAMESPACE'] if ENV['KUBERNETES_NAMESPACE']
+            if ENV.fetch('KUBERNETES_SERVICE_HOST', nil)
+              attrs[OpenTelemetry::SemanticConventions::Resource::K8S_POD_NAME] = ENV.fetch('HOSTNAME', nil)
+              attrs[OpenTelemetry::SemanticConventions::Resource::K8S_NAMESPACE_NAME] = ENV.fetch('KUBERNETES_NAMESPACE', nil) if ENV.fetch('KUBERNETES_NAMESPACE', nil)
             end
 
             # Check for AWS ECS/Fargate
-            if ENV['ECS_CONTAINER_METADATA_URI'] || ENV['ECS_CONTAINER_METADATA_URI_V4']
+            if ENV.fetch('ECS_CONTAINER_METADATA_URI', nil) || ENV.fetch('ECS_CONTAINER_METADATA_URI_V4', nil)
               attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PROVIDER] = 'aws'
               attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PLATFORM] = 'aws_ecs'
             end
 
             # Check for AWS Lambda
-            if ENV['AWS_LAMBDA_FUNCTION_NAME']
+            if ENV.fetch('AWS_LAMBDA_FUNCTION_NAME', nil)
               attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PROVIDER] = 'aws'
               attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PLATFORM] = 'aws_lambda'
-              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_NAME] = ENV['AWS_LAMBDA_FUNCTION_NAME']
-              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_VERSION] = ENV['AWS_LAMBDA_FUNCTION_VERSION'] if ENV['AWS_LAMBDA_FUNCTION_VERSION']
+              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_NAME] = ENV.fetch('AWS_LAMBDA_FUNCTION_NAME', nil)
+              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_VERSION] = ENV.fetch('AWS_LAMBDA_FUNCTION_VERSION', nil) if ENV.fetch('AWS_LAMBDA_FUNCTION_VERSION', nil)
             end
 
             # Check for Google Cloud Run
-            if ENV['K_SERVICE']
+            if ENV.fetch('K_SERVICE', nil)
               attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PROVIDER] = 'gcp'
               attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PLATFORM] = 'gcp_cloud_run'
-              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_NAME] = ENV['K_SERVICE']
-              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_VERSION] = ENV['K_REVISION'] if ENV['K_REVISION']
+              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_NAME] = ENV.fetch('K_SERVICE', nil)
+              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_VERSION] = ENV.fetch('K_REVISION', nil) if ENV.fetch('K_REVISION', nil)
             end
 
             create(attrs)
@@ -183,15 +185,16 @@ module Instana
           #
           # @return [String, nil] Container ID
           def extract_container_id
-            return nil unless File.exist?('/proc/self/cgroup')
+            return nil unless File.exist?(PROC_SELF_CGROUP)
 
-            File.readlines('/proc/self/cgroup').each do |line|
-              # Docker container ID is typically in the cgroup path
-              match = line.match(%r{/docker/([a-f0-9]{64})})
-              return match[1] if match
+            line = File.readlines(PROC_SELF_CGROUP).find do |l|
+              l.match?(%r{/docker/([a-f0-9]{64})})
             end
 
-            nil
+            return nil unless line
+
+            match = line.match(%r{/docker/([a-f0-9]{64})})
+            match[1]
           rescue StandardError
             nil
           end
