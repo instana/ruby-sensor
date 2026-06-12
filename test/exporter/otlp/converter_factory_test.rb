@@ -279,6 +279,7 @@ class ConverterFactoryTest < Minitest::Test
 
   def create_test_span(name: :test, kind: 3)
     span = Instana::Span.new(name)
+    span[:n] = name&.to_s
     span[:k] = kind
     span.close
     span
