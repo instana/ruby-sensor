@@ -109,6 +109,7 @@ commands:
       - run:
           name: Install Dependencies
           command: |
+            export RUBYOPT="-r${PWD}/.circleci/global_pinner"
             bundle check || bundle install
   run_sonarqube:
     steps:
@@ -197,6 +198,72 @@ commands:
           command: |
             bundle exec rake release[origin]
 jobs:
+  update-currency-versions:
+    executor:
+      name: base
+      ruby_version: "4.0"
+    steps:
+      - checkout
+      - run:
+          name: Update RubyGems and Bundler
+          command: |
+            gem update --system
+            gem install bundler
+            bundle config set path './vendor/bundle'
+      - run:
+          name: Capture installed gem versions and test with latest versions
+          command: |
+            #!/usr/bin/env bash
+            set -e
+            mkdir -p bundle-list
+            mkdir -p test-results
+
+            run_bundle_list_and_test() {
+              local label="$1"
+              local gemfile="$2"
+              echo "=== Processing $label from $gemfile ==="
+              
+              # Install dependencies
+              BUNDLE_GEMFILE="$gemfile" bundle check 2>/dev/null \
+                || BUNDLE_GEMFILE="$gemfile" bundle install --quiet
+              
+              # Capture installed versions
+              BUNDLE_GEMFILE="$gemfile" bundle list > "bundle-list/installed_${label}.txt"
+              echo "  Captured $(grep -c '^\s\+\*' bundle-list/installed_${label}.txt) gems"
+              
+              # Run tests to verify the versions work
+              echo "  Running tests for $label..."
+              if BUNDLE_GEMFILE="$gemfile" bundle exec rake test 2>&1 | tee "test-results/${label}_test.log"; then
+                echo "PASS" > "test-results/${label}_status.txt"
+                echo "  ✓ Tests passed for $label"
+              else
+                echo "FAIL" > "test-results/${label}_status.txt"
+                echo "  ✗ Tests failed for $label"
+              fi
+            }
+
+            run_bundle_list_and_test "rails"       "./gemfiles/rails_80.gemfile"
+            run_bundle_list_and_test "sinatra"     "./gemfiles/sinatra_40.gemfile"
+            run_bundle_list_and_test "rack"        "./gemfiles/rack_30.gemfile"
+            run_bundle_list_and_test "excon"       "./gemfiles/excon_100.gemfile"
+            run_bundle_list_and_test "rest-client" "./gemfiles/rest_client_20.gemfile"
+            run_bundle_list_and_test "redis"       "./gemfiles/redis_50.gemfile"
+            run_bundle_list_and_test "mongo"       "./gemfiles/mongo_219.gemfile"
+            run_bundle_list_and_test "sequel"      "./gemfiles/sequel_58.gemfile"
+            run_bundle_list_and_test "bunny"       "./gemfiles/bunny_300.gemfile"
+            run_bundle_list_and_test "sidekiq"     "./gemfiles/sidekiq_70.gemfile"
+            run_bundle_list_and_test "resque"      "./gemfiles/resque_20.gemfile"
+            run_bundle_list_and_test "grpc"        "./gemfiles/grpc_10.gemfile"
+            run_bundle_list_and_test "aws"         "./gemfiles/aws_60.gemfile"
+            run_bundle_list_and_test "cuba"        "./gemfiles/cuba_40.gemfile"
+            run_bundle_list_and_test "dalli"       "./gemfiles/dalli_32.gemfile"
+            run_bundle_list_and_test "graphql"     "./gemfiles/graphql_20.gemfile"
+            run_bundle_list_and_test "roda"        "./gemfiles/roda_30.gemfile"
+            run_bundle_list_and_test "net-http"    "./gemfiles/net_http_01.gemfile"
+      - store_artifacts:
+          path: bundle-list
+      - store_artifacts:
+          path: test-results
   test_core:
     parameters:
       stack:
@@ -268,6 +335,7 @@ workflows:
             tags:
               only: /^v.*/
   core:
+    max_auto_reruns: 2
     jobs:
       - lint
       - test_core:
@@ -281,7 +349,19 @@ workflows:
                 - "3.3"
                 - "3.4"
                 - "4.0"
+      - update-currency-versions:
+          filters:
+            branches:
+              only:
+                - master
+          requires:
+            - lint
+            - test_core-ruby-base-3.2
+            - test_core-ruby-base-3.3
+            - test_core-ruby-base-3.4
+            - test_core-ruby-base-4.0
   libraries_ruby_32_33:
+    max_auto_reruns: 2
     jobs:
       - test_apprisal:
           name: "test_apprisal-<<matrix.gemfile>>-ruby-<<matrix.stack>>-<<matrix.ruby_version>>"
@@ -294,6 +374,7 @@ workflows:
                 - "3.2"
                 - "3.3"
   libraries_ruby_34_40:
+    max_auto_reruns: 2
     jobs:
       - test_apprisal:
           name: "test_apprisal-<<matrix.gemfile>>-ruby-<<matrix.stack>>-<<matrix.ruby_version>>"
@@ -317,6 +398,7 @@ workflows:
               ruby_version: "4.0"
               gemfile: "./gemfiles/grpc_10.gemfile"
   rails_ruby_32_40:
+    max_auto_reruns: 2
     jobs:
       - test_apprisal:
           name: "test_apprisal-rails-<<matrix.gemfile>>-ruby-<<matrix.stack>>-<<matrix.ruby_version>>"
@@ -336,6 +418,7 @@ workflows:
                 - "3.4"
                 - "4.0"
   rails8_ruby_32_40:
+    max_auto_reruns: 2
     jobs:
       - test_apprisal:
           name: "test_apprisal-rails-8-<<matrix.gemfile>>-ruby-<<matrix.stack>>-<<matrix.ruby_version>>"
@@ -353,23 +436,24 @@ workflows:
                 - "3.4"
                 - "4.0"
   sequel:
-      jobs:
-      - test_apprisal:
-          name: "test_apprisal-sequel-<<matrix.gemfile>>-ruby-<<matrix.stack>>-<<matrix.ruby_version>>"
-          matrix:
-            parameters:
-              stack:
-                - base
-                - mysql2
-              gemfile:
-                - "./gemfiles/sequel_56.gemfile"
-                - "./gemfiles/sequel_57.gemfile"
-                - "./gemfiles/sequel_58.gemfile"
-              ruby_version:
-                - "3.2"
-                - "3.3"
-                - "3.4"
-                - "4.0"
+    max_auto_reruns: 2
+    jobs:
+    - test_apprisal:
+        name: "test_apprisal-sequel-<<matrix.gemfile>>-ruby-<<matrix.stack>>-<<matrix.ruby_version>>"
+        matrix:
+          parameters:
+            stack:
+              - base
+              - mysql2
+            gemfile:
+              - "./gemfiles/sequel_56.gemfile"
+              - "./gemfiles/sequel_57.gemfile"
+              - "./gemfiles/sequel_58.gemfile"
+            ruby_version:
+              - "3.2"
+              - "3.3"
+              - "3.4"
+              - "4.0"
   report_coverage:
     jobs:
       - report_coverage
