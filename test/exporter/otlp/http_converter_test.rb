@@ -36,15 +36,15 @@ class HttpConverterTest < Minitest::Test
     assert_equal 'nethttp', result[:name]
     assert_equal :client, result[:kind] # CLIENT kind
 
-    # Verify HTTP attributes are present
+    # Verify HTTP attributes are present (using new semantic conventions)
     attributes = result[:attributes]
-    assert_http_attribute(attributes, 'http.method', 'GET')
-    assert_http_attribute(attributes, 'http.url', 'https://api.example.com/users/123')
-    assert_http_attribute(attributes, 'http.status_code', 200)
-    assert_http_attribute(attributes, 'http.host', 'api.example.com')
-    assert_http_attribute(attributes, 'http.target', '/users/123')
-    assert_http_attribute(attributes, 'http.scheme', 'https')
-    assert_http_attribute(attributes, 'http.user_agent', 'Ruby/3.2.0')
+    assert_http_attribute(attributes, 'http.request.method', 'GET')
+    assert_http_attribute(attributes, 'url.full', 'https://api.example.com/users/123')
+    assert_http_attribute(attributes, 'http.response.status_code', 200)
+    assert_http_attribute(attributes, 'server.address', 'api.example.com')
+    assert_http_attribute(attributes, 'url.path', '/users/123')
+    assert_http_attribute(attributes, 'url.scheme', 'https')
+    assert_http_attribute(attributes, 'user_agent.original', 'Ruby/3.2.0')
   end
 
   def test_convert_http_server_span
@@ -62,8 +62,8 @@ class HttpConverterTest < Minitest::Test
 
     assert_equal :server, result[:kind] # SERVER kind
     attributes = result[:attributes]
-    assert_http_attribute(attributes, 'http.method', 'POST')
-    assert_http_attribute(attributes, 'http.status_code', 201)
+    assert_http_attribute(attributes, 'http.request.method', 'POST')
+    assert_http_attribute(attributes, 'http.response.status_code', 201)
   end
 
   def test_convert_http_span_with_minimal_data
@@ -79,7 +79,7 @@ class HttpConverterTest < Minitest::Test
 
     # Should have at least the method attribute
     attributes = result[:attributes]
-    assert_http_attribute(attributes, 'http.method', 'GET')
+    assert_http_attribute(attributes, 'http.request.method', 'GET')
   end
 
   def test_convert_http_span_without_http_data
@@ -101,7 +101,7 @@ class HttpConverterTest < Minitest::Test
     result = converter.convert
 
     attributes = result[:attributes]
-    assert_http_attribute(attributes, 'http.scheme', 'https')
+    assert_http_attribute(attributes, 'url.scheme', 'https')
   end
 
   def test_extract_scheme_from_http_url
@@ -110,7 +110,7 @@ class HttpConverterTest < Minitest::Test
     result = converter.convert
 
     attributes = result[:attributes]
-    assert_http_attribute(attributes, 'http.scheme', 'http')
+    assert_http_attribute(attributes, 'url.scheme', 'http')
   end
 
   def test_extract_scheme_from_invalid_url
@@ -120,7 +120,7 @@ class HttpConverterTest < Minitest::Test
 
     attributes = result[:attributes]
     # Should not have scheme attribute for invalid URL
-    refute_http_attribute(attributes, 'http.scheme')
+    refute_http_attribute(attributes, 'url.scheme')
   end
 
   def test_extract_scheme_from_nil_url
@@ -130,7 +130,7 @@ class HttpConverterTest < Minitest::Test
 
     attributes = result[:attributes]
     # Should not have scheme attribute for nil URL
-    refute_http_attribute(attributes, 'http.scheme')
+    refute_http_attribute(attributes, 'url.scheme')
   end
 
   def test_http_attributes_with_nil_values_are_not_included
@@ -147,11 +147,11 @@ class HttpConverterTest < Minitest::Test
 
     attributes = result[:attributes]
     # Only method should be present
-    assert_http_attribute(attributes, 'http.method', 'GET')
-    refute_http_attribute(attributes, 'http.url')
-    refute_http_attribute(attributes, 'http.status_code')
-    refute_http_attribute(attributes, 'http.host')
-    refute_http_attribute(attributes, 'http.target')
+    assert_http_attribute(attributes, 'http.request.method', 'GET')
+    refute_http_attribute(attributes, 'url.full')
+    refute_http_attribute(attributes, 'http.response.status_code')
+    refute_http_attribute(attributes, 'server.address')
+    refute_http_attribute(attributes, 'url.path')
   end
 
   def test_http_status_code_as_integer
@@ -160,7 +160,7 @@ class HttpConverterTest < Minitest::Test
     result = converter.convert
 
     attributes = result[:attributes]
-    assert_equal 404, attributes['http.status_code']
+    assert_equal 404, attributes['http.response.status_code']
   end
 
   def test_http_status_code_as_string
@@ -170,7 +170,7 @@ class HttpConverterTest < Minitest::Test
 
     attributes = result[:attributes]
     # Status should be present (as string or converted to int)
-    assert attributes['http.status_code']
+    assert attributes['http.response.status_code']
   end
 
   def test_user_agent_from_header
@@ -185,7 +185,7 @@ class HttpConverterTest < Minitest::Test
     result = converter.convert
 
     attributes = result[:attributes]
-    assert_http_attribute(attributes, 'http.user_agent', 'Mozilla/5.0')
+    assert_http_attribute(attributes, 'user_agent.original', 'Mozilla/5.0')
   end
 
   def test_user_agent_not_present_when_header_missing
@@ -194,7 +194,7 @@ class HttpConverterTest < Minitest::Test
     result = converter.convert
 
     attributes = result[:attributes]
-    refute_http_attribute(attributes, 'http.user_agent')
+    refute_http_attribute(attributes, 'user_agent.original')
   end
 
   def test_user_agent_not_present_when_header_nil
@@ -203,7 +203,7 @@ class HttpConverterTest < Minitest::Test
     result = converter.convert
 
     attributes = result[:attributes]
-    refute_http_attribute(attributes, 'http.user_agent')
+    refute_http_attribute(attributes, 'user_agent.original')
   end
 
   def test_convert_with_error_span
@@ -222,8 +222,8 @@ class HttpConverterTest < Minitest::Test
 
     # Verify HTTP attributes are still present
     attributes = result[:attributes]
-    assert_http_attribute(attributes, 'http.method', 'GET')
-    assert_http_attribute(attributes, 'http.status_code', 500)
+    assert_http_attribute(attributes, 'http.request.method', 'GET')
+    assert_http_attribute(attributes, 'http.response.status_code', 500)
   end
 
   def test_convert_preserves_base_converter_functionality
@@ -257,14 +257,14 @@ class HttpConverterTest < Minitest::Test
 
     attributes = result[:attributes]
 
-    # Verify semantic convention keys are used
+    # Verify semantic convention keys are used (new conventions)
     expected_keys = [
-      'http.method',
-      'http.url',
-      'http.status_code',
-      'http.host',
-      'http.target',
-      'http.scheme'
+      'http.request.method',
+      'url.full',
+      'http.response.status_code',
+      'server.address',
+      'url.path',
+      'url.scheme'
     ]
 
     expected_keys.each do |key|
@@ -285,9 +285,9 @@ class HttpConverterTest < Minitest::Test
     end
 
     assert_equal 3, results.length
-    assert_http_attribute(results[0][:attributes], 'http.method', 'GET')
-    assert_http_attribute(results[1][:attributes], 'http.method', 'POST')
-    assert_http_attribute(results[2][:attributes], 'http.method', 'DELETE')
+    assert_http_attribute(results[0][:attributes], 'http.request.method', 'GET')
+    assert_http_attribute(results[1][:attributes], 'http.request.method', 'POST')
+    assert_http_attribute(results[2][:attributes], 'http.request.method', 'DELETE')
   end
 
   private
