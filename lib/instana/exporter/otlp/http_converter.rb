@@ -3,7 +3,10 @@
 # (c) Copyright IBM Corp. 2026
 
 require_relative 'base_converter'
-require 'opentelemetry/semantic_conventions'
+require 'opentelemetry/semconv/http'
+require 'opentelemetry/semconv/url'
+require 'opentelemetry/semconv/server'
+require 'opentelemetry/semconv/user_agent'
 
 module Instana
   module Exporter
@@ -17,13 +20,13 @@ module Instana
           attributes = {}
           http_data = span[:data]&.[](:http) || {}
 
-          add_attribute(attributes, OpenTelemetry::SemanticConventions::Trace::HTTP_METHOD, http_data[:method])
-          add_attribute(attributes, OpenTelemetry::SemanticConventions::Trace::HTTP_URL, http_data[:url])
-          add_attribute(attributes, OpenTelemetry::SemanticConventions::Trace::HTTP_TARGET, http_data[:path])
-          add_attribute(attributes, OpenTelemetry::SemanticConventions::Trace::HTTP_HOST, http_data[:host])
-          add_attribute(attributes, OpenTelemetry::SemanticConventions::Trace::HTTP_SCHEME, extract_scheme(http_data[:url]))
-          add_attribute(attributes, OpenTelemetry::SemanticConventions::Trace::HTTP_STATUS_CODE, http_data[:status])
-          add_attribute(attributes, OpenTelemetry::SemanticConventions::Trace::HTTP_USER_AGENT, http_data.dig(:header, 'user-agent'))
+          add_attribute(attributes, OpenTelemetry::SemConv::HTTP::HTTP_REQUEST_METHOD, http_data[:method])
+          add_attribute(attributes, OpenTelemetry::SemConv::URL::URL_FULL, http_data[:url])
+          add_attribute(attributes, OpenTelemetry::SemConv::URL::URL_PATH, http_data[:path])
+          add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_ADDRESS, http_data[:host])
+          add_attribute(attributes, OpenTelemetry::SemConv::URL::URL_SCHEME, extract_scheme(http_data[:url]))
+          add_attribute(attributes, OpenTelemetry::SemConv::HTTP::HTTP_RESPONSE_STATUS_CODE, http_data[:status])
+          add_attribute(attributes, OpenTelemetry::SemConv::USER_AGENT::USER_AGENT_ORIGINAL, http_data.dig(:header, 'user-agent'))
 
           attributes
         end
