@@ -57,7 +57,7 @@ module Instana
           current_span.record_exception(nil)
         end
         extra_headers = ::Instana::Util.extra_header_tags(response)&.merge(::Instana::Util.extra_header_tags(request))
-        kv_payload[:http][:header] = extra_headers unless extra_headers&.empty?
+        kv_payload[:http][:header] = extra_headers unless extra_headers && extra_headers.empty?
         response
       rescue => e
         current_span&.record_exception(e)
