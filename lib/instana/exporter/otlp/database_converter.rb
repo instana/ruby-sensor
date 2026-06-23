@@ -4,7 +4,6 @@
 
 require_relative 'base_converter'
 require 'opentelemetry/semconv/db'
-require 'opentelemetry/semconv/db'
 require 'opentelemetry/semconv/server'
 
 module Instana

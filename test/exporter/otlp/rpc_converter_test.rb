@@ -6,8 +6,8 @@ require 'instana/exporter/otlp/rpc_converter'
 class RpcConverterTest < Minitest::Test
   def test_grpc_conversion
     span = create_span(:grpc, {
-      rpc: { call: '/package.Service/Method', host: 'grpc.example.com', call_type: 'unary' }
-    })
+                         rpc: { call: '/package.Service/Method', host: 'grpc.example.com', call_type: 'unary' }
+                       })
     converter = Instana::Exporter::Otlp::RpcConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
@@ -20,8 +20,8 @@ class RpcConverterTest < Minitest::Test
 
   def test_grpc_with_peer_address
     span = create_span(:grpc, {
-      rpc: { call: '/test.API/Get', peer: { address: '10.0.0.1' } }
-    })
+                         rpc: { call: '/test.API/Get', peer: { address: '10.0.0.1' } }
+                       })
     converter = Instana::Exporter::Otlp::RpcConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
@@ -30,9 +30,9 @@ class RpcConverterTest < Minitest::Test
 
   def test_actioncable_conversion
     span = create_span(:actioncable, {
-      rpc: { flavor: :actioncable, call: 'ChatChannel#speak', host: 'ws.example.com', call_type: 'action' },
-      service: 'my-app'
-    })
+                         rpc: { flavor: :actioncable, call: 'ChatChannel#speak', host: 'ws.example.com', call_type: 'action' },
+                         service: 'my-app'
+                       })
     converter = Instana::Exporter::Otlp::RpcConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
@@ -47,8 +47,8 @@ class RpcConverterTest < Minitest::Test
 
   def test_actioncable_transmit
     span = create_span(:actioncable, {
-      rpc: { flavor: :actioncable, call: 'NotificationChannel', call_type: 'transmit' }
-    })
+                         rpc: { flavor: :actioncable, call: 'NotificationChannel', call_type: 'transmit' }
+                       })
     converter = Instana::Exporter::Otlp::RpcConverter.new(span)
     attrs = converter.send(:convert_attributes)
 

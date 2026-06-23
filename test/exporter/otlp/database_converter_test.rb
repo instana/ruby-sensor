@@ -6,8 +6,8 @@ require 'instana/exporter/otlp/database_converter'
 class DatabaseConverterTest < Minitest::Test
   def test_activerecord_conversion
     span = create_span(:activerecord, {
-      activerecord: { adapter: 'postgresql', db: 'mydb', sql: 'SELECT * FROM users', username: 'admin', host: 'db.example.com' }
-    })
+                         activerecord: { adapter: 'postgresql', db: 'mydb', sql: 'SELECT * FROM users', username: 'admin', host: 'db.example.com' }
+                       })
     converter = Instana::Exporter::Otlp::DatabaseConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
@@ -20,8 +20,8 @@ class DatabaseConverterTest < Minitest::Test
 
   def test_sequel_conversion
     span = create_span(:sequel, {
-      sequel: { adapter: 'mysql2', db: 'testdb', sql: 'INSERT INTO logs', username: 'root', host: 'localhost' }
-    })
+                         sequel: { adapter: 'mysql2', db: 'testdb', sql: 'INSERT INTO logs', username: 'root', host: 'localhost' }
+                       })
     converter = Instana::Exporter::Otlp::DatabaseConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
@@ -34,8 +34,8 @@ class DatabaseConverterTest < Minitest::Test
 
   def test_redis_conversion
     span = create_span(:redis, {
-      redis: { command: 'GET key', db: 2, connection: 'redis.local:6379' }
-    })
+                         redis: { command: 'GET key', db: 2, connection: 'redis.local:6379' }
+                       })
     converter = Instana::Exporter::Otlp::DatabaseConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
@@ -48,8 +48,8 @@ class DatabaseConverterTest < Minitest::Test
 
   def test_memcache_conversion
     span = create_span(:memcache, {
-      memcache: { command: 'get', key: 'user:123', namespace: 'app', server: '127.0.0.1:11211' }
-    })
+                         memcache: { command: 'get', key: 'user:123', namespace: 'app', server: '127.0.0.1:11211' }
+                       })
     converter = Instana::Exporter::Otlp::DatabaseConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
@@ -63,8 +63,8 @@ class DatabaseConverterTest < Minitest::Test
 
   def test_memcache_with_keys
     span = create_span(:memcache, {
-      memcache: { command: 'get_multi', keys: ['key1', 'key2'], server: 'localhost:11211' }
-    })
+                         memcache: { command: 'get_multi', keys: ['key1', 'key2'], server: 'localhost:11211' }
+                       })
     converter = Instana::Exporter::Otlp::DatabaseConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
@@ -73,8 +73,8 @@ class DatabaseConverterTest < Minitest::Test
 
   def test_mongodb_conversion
     span = create_span(:mongo, {
-      mongo: { namespace: 'mydb.users', command: 'find', json: '{"name":"John"}', peer: { hostname: 'mongo.local', port: 27017 } }
-    })
+                         mongo: { namespace: 'mydb.users', command: 'find', json: '{"name":"John"}', peer: { hostname: 'mongo.local', port: 27017 } }
+                       })
     converter = Instana::Exporter::Otlp::DatabaseConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
