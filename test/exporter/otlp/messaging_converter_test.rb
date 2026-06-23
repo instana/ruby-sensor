@@ -6,8 +6,8 @@ require 'instana/exporter/otlp/messaging_converter'
 class MessagingConverterTest < Minitest::Test
   def test_rabbitmq_publish_conversion
     span = create_span(:rabbitmq, {
-      rabbitmq: { exchange: 'orders', key: 'order.created', queue: 'order_queue', address: 'rabbitmq.local', sort: 'publish' }
-    })
+                         rabbitmq: { exchange: 'orders', key: 'order.created', queue: 'order_queue', address: 'rabbitmq.local', sort: 'publish' }
+                       })
     converter = Instana::Exporter::Otlp::MessagingConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
@@ -21,8 +21,8 @@ class MessagingConverterTest < Minitest::Test
 
   def test_rabbitmq_consume_conversion
     span = create_span(:rabbitmq, {
-      rabbitmq: { exchange: 'events', key: 'user.signup', address: 'localhost', sort: 'consume' }
-    })
+                         rabbitmq: { exchange: 'events', key: 'user.signup', address: 'localhost', sort: 'consume' }
+                       })
     converter = Instana::Exporter::Otlp::MessagingConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
@@ -34,8 +34,8 @@ class MessagingConverterTest < Minitest::Test
 
   def test_rabbitmq_minimal_data
     span = create_span(:rabbitmq, {
-      rabbitmq: { exchange: 'logs', sort: 'publish' }
-    })
+                         rabbitmq: { exchange: 'logs', sort: 'publish' }
+                       })
     converter = Instana::Exporter::Otlp::MessagingConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
