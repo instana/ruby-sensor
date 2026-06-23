@@ -4,7 +4,7 @@
 
 require_relative 'base_converter'
 require 'opentelemetry/semconv/incubating/rpc'
-require 'opentelemetry/semconv/code'
+require 'opentelemetry/semconv/incubating/code'
 require 'opentelemetry/semconv/server'
 
 module Instana
@@ -64,8 +64,8 @@ module Instana
           # Format can be either "ChannelClass" (for transmit) or "ChannelClass#action" (for action dispatch)
           if rpc_data[:call]
             call_parts = rpc_data[:call].to_s.split('#')
-            add_attribute(attributes, OpenTelemetry::SemConv::CODE::CODE_NAMESPACE, call_parts[0])
-            add_attribute(attributes, OpenTelemetry::SemConv::CODE::CODE_FUNCTION, call_parts[1]) if call_parts[1]
+            add_attribute(attributes, OpenTelemetry::SemConv::Incubating::CODE::CODE_NAMESPACE, call_parts[0])
+            add_attribute(attributes, OpenTelemetry::SemConv::Incubating::CODE::CODE_FUNCTION, call_parts[1]) if call_parts[1]
           end
 
           # Network peer
