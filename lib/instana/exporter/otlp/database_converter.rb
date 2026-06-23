@@ -4,6 +4,7 @@
 
 require_relative 'base_converter'
 require 'opentelemetry/semconv/db'
+require 'opentelemetry/semconv/db'
 require 'opentelemetry/semconv/server'
 
 module Instana
@@ -17,27 +18,27 @@ module Instana
           # ActiveRecord
           ar_data = span[:data]&.[](:activerecord)
           if ar_data
-            add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM, ar_data[:adapter])
+            add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM_NAME, ar_data[:adapter])
             add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_NAMESPACE, ar_data[:db])
             add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_QUERY_TEXT, ar_data[:sql])
-            add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_USER, ar_data[:username])
+            add_attribute(attributes, OpenTelemetry::SemConv::Incubating::DB::DB_USER, ar_data[:username])
             add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_ADDRESS, ar_data[:host])
           end
 
           # Sequel
           seq_data = span[:data]&.[](:sequel)
           if seq_data
-            add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM, seq_data[:adapter])
+            add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM_NAME, seq_data[:adapter])
             add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_NAMESPACE, seq_data[:db])
             add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_QUERY_TEXT, seq_data[:sql])
-            add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_USER, seq_data[:username])
+            add_attribute(attributes, OpenTelemetry::SemConv::Incubating::DB::DB_USER, seq_data[:username])
             add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_ADDRESS, seq_data[:host])
           end
 
           # Redis
           redis_data = span[:data]&.[](:redis)
           if redis_data
-            add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM, 'redis')
+            add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM_NAME, 'redis')
             add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_QUERY_TEXT, redis_data[:command])
             add_attribute(attributes, 'db.redis.database_index', redis_data[:db])
             add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_ADDRESS, extract_host(redis_data[:connection]))
@@ -47,7 +48,7 @@ module Instana
           # Memcache (Dalli)
           mc_data = span[:data]&.[](:memcache)
           if mc_data
-            add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM, 'memcached')
+            add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM_NAME, 'memcached')
             add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_OPERATION_NAME, mc_data[:command])
             add_attribute(attributes, 'db.memcached.key', mc_data[:key])
             add_attribute(attributes, 'db.memcached.keys', mc_data[:keys])
@@ -59,7 +60,7 @@ module Instana
           # MongoDB
           mongo_data = span[:data]&.[](:mongo)
           if mongo_data
-            add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM, 'mongodb')
+            add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM_NAME, 'mongodb')
             add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_NAMESPACE, mongo_data[:namespace])
             add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_OPERATION_NAME, mongo_data[:command])
             add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_QUERY_TEXT, mongo_data[:json])
