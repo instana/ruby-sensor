@@ -274,7 +274,7 @@ module Instana
     # Parse OTLP config from YAML file at INSTANA_CONFIG_PATH under tracing.otlp
     # @return [Hash, nil] merged OTLP settings or nil if not found
     def parse_otlp_config_from_yaml
-      config_path = ENV['INSTANA_CONFIG_PATH']
+      config_path = ENV.fetch('INSTANA_CONFIG_PATH', nil)
       return nil unless config_path && File.exist?(config_path)
 
       begin
@@ -324,14 +324,14 @@ module Instana
     # @return [Hash]
     def otlp_env_vars
       {
-        enabled_raw: ENV['INSTANA_TRACING_OTLP_ENABLED'],
-        endpoint: ENV['OTEL_EXPORTER_OTLP_TRACES_ENDPOINT'] || ENV['OTEL_EXPORTER_OTLP_ENDPOINT'],
-        timeout_raw: ENV['OTEL_EXPORTER_OTLP_TIMEOUT'],
-        compression: ENV['OTEL_EXPORTER_OTLP_COMPRESSION'],
-        headers_raw: ENV['OTEL_EXPORTER_OTLP_HEADERS'],
-        certificate: ENV['OTEL_EXPORTER_OTLP_CERTIFICATE'],
-        client_key: ENV['OTEL_EXPORTER_OTLP_CLIENT_KEY'],
-        client_cert: ENV['OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE']
+        enabled_raw: ENV.fetch('INSTANA_TRACING_OTLP_ENABLED', nil),
+        endpoint: ENV.fetch('OTEL_EXPORTER_OTLP_TRACES_ENDPOINT', nil) || ENV.fetch('OTEL_EXPORTER_OTLP_ENDPOINT', nil),
+        timeout_raw: ENV.fetch('OTEL_EXPORTER_OTLP_TIMEOUT', nil),
+        compression: ENV.fetch('OTEL_EXPORTER_OTLP_COMPRESSION', nil),
+        headers_raw: ENV.fetch('OTEL_EXPORTER_OTLP_HEADERS', nil),
+        certificate: ENV.fetch('OTEL_EXPORTER_OTLP_CERTIFICATE', nil),
+        client_key: ENV.fetch('OTEL_EXPORTER_OTLP_CLIENT_KEY', nil),
+        client_cert: ENV.fetch('OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE', nil)
       }
     end
 
