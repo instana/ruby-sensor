@@ -124,10 +124,10 @@ module Instana
             span[:n]&.match?(/grpc|rpc/i)
           end
 
-          # Check if span is a custom span
-          # Instana native spans always have a name, so we only check the name
+          # Check if span is an Instana SDK custom span
           def custom_span?(span)
-            span[:n]&.match?(/custom|sdk/i)
+            span[:n]&.match?(/custom|sdk/i) ||
+              span[:data]&.dig(:sdk, :type)&.to_s == 'custom'
           end
         end
       end
