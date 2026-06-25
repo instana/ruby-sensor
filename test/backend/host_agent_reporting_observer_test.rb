@@ -637,4 +637,26 @@ class HostAgentReportingObserverTest < Minitest::Test # rubocop:disable Metrics/
 
     refute_nil discovery.value, 'Discovery should remain valid with empty span batch'
   end
+
+  def test_otlp_exporter_shutdown_on_agent_disconnect
+    client    = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
+    discovery = Concurrent::Atom.new(nil)
+
+    shutdown_called = false
+    fake_exporter = Object.new
+    fake_exporter.define_singleton_method(:shutdown) { shutdown_called = true }
+
+    with_otlp_config(enabled: true) do
+      OpenTelemetry::Exporter::OTLP::Exporter.stub(:new, fake_exporter) do
+        subject = Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
+
+        # Simulate agent going away (new_version.nil? branch)
+        subject.update(Time.now, nil, nil)
+
+        assert shutdown_called, 'OTLP exporter should be shut down when agent disconnects'
+        assert_nil subject.instance_variable_get(:@otlp_exporter),
+                   'OTLP exporter reference should be cleared after shutdown'
+      end
+    end
+  end
 end
