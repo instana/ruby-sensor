@@ -183,7 +183,8 @@ module Instana
           return
         end
 
-        opts = { endpoint: config[:endpoint], timeout: config[:timeout] / 1000.0 }
+        endpoint = resolve_otlp_endpoint(config[:endpoint], config[:config_source])
+        opts = { endpoint: endpoint, timeout: config[:timeout] / 1000.0 }
         opts[:compression] = config[:compression] if config[:compression]
         opts[:headers]     = config[:headers] if config[:headers]&.any?
 
@@ -191,6 +192,23 @@ module Instana
       rescue StandardError => e
         @logger.error("Failed to initialize OTLP exporter: #{e.message}")
         @otlp_exporter = nil
+      end
+
+      # Derive the OTLP endpoint from the discovered agent host when no explicit
+      # endpoint has been configured (config_source == 'default').
+      OTLP_DEFAULT_PORT = 4318
+      OTLP_TRACES_PATH  = '/v1/traces'.freeze
+
+      def resolve_otlp_endpoint(endpoint, config_source)
+        return endpoint unless config_source == 'default'
+
+        # Use the host that was discovered by HostAgentLookup (same host the
+        # metrics/traces client is already talking to) and append the standard
+        # OTLP HTTP port and traces path.
+        agent_host = @client&.host
+        return endpoint unless agent_host
+
+        "http://#{agent_host}:#{OTLP_DEFAULT_PORT}#{OTLP_TRACES_PATH}"
       end
     end
   end
