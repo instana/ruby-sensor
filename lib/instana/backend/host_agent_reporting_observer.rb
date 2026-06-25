@@ -24,13 +24,7 @@ module Instana
         @timer_class = timer_class
         @nonce = Time.now
         @processor = processor
-        if ENV["INSTANA_OTLP_ENABLED"]
-          @otlp_exporter = OpenTelemetry::Exporter::OTLP::Exporter.new(
-            endpoint: 'http://localhost:4318/v1/traces',
-            timeout: 5.0, # in seconds
-            compression: 'gzip'
-          )
-        end
+        initialize_otlp_exporter
         # Initialize timers with default 1 second interval
         @metrics_timer = @timer_class.new(execution_interval: 1, run_now: true) { report_metrics_to_backend }
         @traces_timer = @timer_class.new(execution_interval: 1, run_now: true) { report_traces_to_backend }
@@ -103,7 +97,6 @@ module Instana
             converted_spans = spans.map do |span|
               ::Instana::Exporter::Otlp::ConverterFactory.create(span).convert
             end
-            Instana.logger.info(converted_spans)
             result_code = @otlp_exporter.export(converted_spans)
             Instana.logger.debug("using otlp exporter to export result code: #{result_code}")
             success = result_code == OpenTelemetry::SDK::Trace::Export::SUCCESS
@@ -179,6 +172,23 @@ module Instana
       def trigger_rediscovery
         @discovery.swap { nil }
         ::Instana.agent.announce
+      end
+
+      def initialize_otlp_exporter
+        config = ::Instana.config[:otlp]
+        unless config[:enabled]
+          @otlp_exporter = nil
+          return
+        end
+
+        opts = { endpoint: config[:endpoint], timeout: config[:timeout] / 1000.0 }
+        opts[:compression] = config[:compression] if config[:compression]
+        opts[:headers]     = config[:headers] if config[:headers]&.any?
+
+        @otlp_exporter = OpenTelemetry::Exporter::OTLP::Exporter.new(**opts)
+      rescue StandardError => e
+        @logger.error("Failed to initialize OTLP exporter: #{e.message}")
+        @otlp_exporter = nil
       end
     end
   end
