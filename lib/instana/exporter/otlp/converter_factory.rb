@@ -6,7 +6,11 @@ require_relative 'base_converter'
 require_relative 'http_converter'
 require_relative 'database_converter'
 require_relative 'messaging_converter'
+require_relative 'background_job_converter'
+require_relative 'aws_converter'
 require_relative 'rpc_converter'
+require_relative 'rails_converter'
+require_relative 'graphql_converter'
 require_relative 'custom_converter'
 require_relative 'internal_converter'
 require_relative '../../trace/span_kind'
@@ -22,7 +26,11 @@ module Instana
           http: 'http',
           database: 'database',
           messaging: 'messaging',
+          background_job: 'background_job',
+          aws: 'aws',
           rpc: 'rpc',
+          rails: 'rails',
+          graphql: 'graphql',
           internal: 'internal',
           custom: 'custom'
         }.freeze
@@ -46,7 +54,11 @@ module Instana
           def determine_span_type(span)
             return SPAN_TYPES[:http] if http_span?(span)
             return SPAN_TYPES[:database] if database_span?(span)
+            return SPAN_TYPES[:aws] if aws_span?(span)
+            return SPAN_TYPES[:background_job] if background_job_span?(span)
             return SPAN_TYPES[:messaging] if messaging_span?(span)
+            return SPAN_TYPES[:rails] if rails_span?(span)
+            return SPAN_TYPES[:graphql] if graphql_span?(span)
             return SPAN_TYPES[:rpc] if rpc_span?(span)
             return SPAN_TYPES[:custom] if custom_span?(span)
 
@@ -57,7 +69,8 @@ module Instana
           # @param span_type [String] The type of span
           # @return [Class] The converter class
           def get_converter_class(span_type)
-            class_name = "#{span_type.capitalize}Converter"
+            # Convert snake_case to CamelCase (e.g., 'background_job' -> 'BackgroundJob')
+            class_name = "#{span_type.split('_').map(&:capitalize).join}Converter"
 
             begin
               const_get("Instana::Exporter::Otlp::#{class_name}")
@@ -79,10 +92,30 @@ module Instana
             span[:n]&.match?(/sql|database|query|activerecord|sequel|mongo|redis|dalli/i)
           end
 
+          # Check if span is an AWS span
+          # Note: SQS and SNS are handled by messaging_span? since they're messaging services
+          def aws_span?(span)
+            span[:n]&.match?(/dynamodb|s3|aws\.lambda/i)
+          end
+
           # Check if span is a messaging span
-          # Instana native spans always have a name, so we only check the name
           def messaging_span?(span)
-            span[:n]&.match?(/kafka|rabbitmq|sqs|sns|message|bunny|shoryuken/i)
+            span[:n]&.match?(/sqs|sns|kafka|rabbitmq|message|bunny|shoryuken/i)
+          end
+
+          # Check if span is a background job span
+          def background_job_span?(span)
+            span[:n]&.match?(/sidekiq-(client|worker)|resque-(client|worker)/i)
+          end
+
+          # Check if span is a Rails span
+          def rails_span?(span)
+            span[:n]&.match?(/actioncontroller|actionview|actionmailer|render|mail\.actionmailer/i)
+          end
+
+          # Check if span is a GraphQL span
+          def graphql_span?(span)
+            span[:n]&.match?(/graphql/i)
           end
 
           # Check if span is an RPC span
@@ -91,10 +124,10 @@ module Instana
             span[:n]&.match?(/grpc|rpc/i)
           end
 
-          # Check if span is a custom span
-          # Instana native spans always have a name, so we only check the name
+          # Check if span is an Instana SDK custom span
           def custom_span?(span)
-            span[:n]&.match?(/custom|sdk/i)
+            span[:n]&.match?(/custom|sdk/i) ||
+              span[:data]&.dig(:sdk, :type)&.to_s == 'custom'
           end
         end
       end

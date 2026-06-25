@@ -189,6 +189,7 @@ class ConverterFactoryTest < Minitest::Test
       'http' => 'Instana::Exporter::Otlp::HttpConverter',
       'database' => 'Instana::Exporter::Otlp::DatabaseConverter',
       'messaging' => 'Instana::Exporter::Otlp::MessagingConverter',
+      'background_job' => 'Instana::Exporter::Otlp::BackgroundJobConverter',
       'rpc' => 'Instana::Exporter::Otlp::RpcConverter',
       'custom' => 'Instana::Exporter::Otlp::CustomConverter',
       'internal' => 'Instana::Exporter::Otlp::InternalConverter'
@@ -221,6 +222,14 @@ class ConverterFactoryTest < Minitest::Test
     refute @factory.send(:messaging_span?, create_test_span(name: :http))
   end
 
+  def test_background_job_span_detection
+    assert @factory.send(:background_job_span?, create_test_span(name: 'sidekiq-client'))
+    assert @factory.send(:background_job_span?, create_test_span(name: 'sidekiq-worker'))
+    assert @factory.send(:background_job_span?, create_test_span(name: 'resque-client'))
+    assert @factory.send(:background_job_span?, create_test_span(name: 'resque-worker'))
+    refute @factory.send(:background_job_span?, create_test_span(name: :http))
+  end
+
   def test_rpc_span_detection
     assert @factory.send(:rpc_span?, create_test_span(name: 'grpc'))
     refute @factory.send(:rpc_span?, create_test_span(name: :http))
@@ -249,11 +258,29 @@ class ConverterFactoryTest < Minitest::Test
     assert_equal 'Instana::Exporter::Otlp::InternalConverter', converter.class.name
   end
 
+  def test_returns_background_job_converter_for_background_job_spans
+    %w[sidekiq-client sidekiq-worker resque-client resque-worker].each do |name|
+      span = create_test_span(name: name)
+      converter = @factory.create(span)
+
+      assert_equal 'Instana::Exporter::Otlp::BackgroundJobConverter', converter.class.name,
+                   "Should return BackgroundJobConverter for '#{name}' span"
+    end
+  end
+
+  def test_determine_span_type_returns_background_job
+    span = create_test_span(name: 'sidekiq-client')
+    span_type = @factory.send(:determine_span_type, span)
+
+    assert_equal 'background_job', span_type
+  end
+
   def test_case_insensitive_detection
     test_cases = {
       'rack' => 'Instana::Exporter::Otlp::HttpConverter',
       'SQL' => 'Instana::Exporter::Otlp::DatabaseConverter',
       'KAFKA' => 'Instana::Exporter::Otlp::MessagingConverter',
+      'SIDEKIQ-CLIENT' => 'Instana::Exporter::Otlp::BackgroundJobConverter',
       'GRPC' => 'Instana::Exporter::Otlp::RpcConverter',
       'CUSTOM' => 'Instana::Exporter::Otlp::CustomConverter'
     }
