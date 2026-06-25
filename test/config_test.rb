@@ -706,3 +706,357 @@ class ConfigTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     ENV.delete('INSTANA_CONFIG_PATH')
   end
 end
+
+# ============================================================================
+# OTLP configuration tests
+# ============================================================================
+
+class OtlpConfigTest < Minitest::Test
+  OTLP_ENV_VARS = %w[
+    INSTANA_TRACING_OTLP_ENABLED
+    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+    OTEL_EXPORTER_OTLP_ENDPOINT
+    OTEL_EXPORTER_OTLP_TIMEOUT
+    OTEL_EXPORTER_OTLP_COMPRESSION
+    OTEL_EXPORTER_OTLP_HEADERS
+    OTEL_EXPORTER_OTLP_CERTIFICATE
+    OTEL_EXPORTER_OTLP_CLIENT_KEY
+    OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE
+    INSTANA_CONFIG_PATH
+  ].freeze
+
+  def setup
+    OTLP_ENV_VARS.each { |k| ENV.delete(k) }
+  end
+
+  def teardown
+    OTLP_ENV_VARS.each { |k| ENV.delete(k) }
+    File.unlink('test_otlp_config.yaml') if File.exist?('test_otlp_config.yaml')
+  end
+
+  # ── defaults ───────────────────────────────────────────────────────────────
+
+  def test_otlp_defaults_when_no_env_or_yaml
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    otlp = subject[:otlp]
+    refute_nil otlp, 'config[:otlp] should always be populated'
+    assert_equal false, otlp[:enabled]
+    assert_equal 'http://localhost:4318/v1/traces', otlp[:endpoint]
+    assert_equal 10_000, otlp[:timeout]
+    assert_nil otlp[:compression]
+    assert_equal({}, otlp[:headers])
+    assert_nil otlp[:certificate]
+    assert_nil otlp[:client_key]
+    assert_nil otlp[:client_certificate]
+    assert_equal 'default', otlp[:config_source]
+  end
+
+  # ── INSTANA_TRACING_OTLP_ENABLED truthy variants ──────────────────────────
+
+  def test_enable_flag_true_string
+    ENV['INSTANA_TRACING_OTLP_ENABLED'] = 'true'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal true,  subject[:otlp][:enabled]
+    assert_equal 'env', subject[:otlp][:config_source]
+  end
+
+  def test_enable_flag_one_string
+    ENV['INSTANA_TRACING_OTLP_ENABLED'] = '1'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal true, subject[:otlp][:enabled]
+  end
+
+  def test_enable_flag_yes_string
+    ENV['INSTANA_TRACING_OTLP_ENABLED'] = 'yes'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal true, subject[:otlp][:enabled]
+  end
+
+  def test_enable_flag_yes_case_insensitive
+    ENV['INSTANA_TRACING_OTLP_ENABLED'] = 'YES'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal true, subject[:otlp][:enabled]
+  end
+
+  def test_enable_flag_false_leaves_disabled
+    ENV['INSTANA_TRACING_OTLP_ENABLED'] = 'false'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal false, subject[:otlp][:enabled]
+    assert_equal 'env', subject[:otlp][:config_source]
+  end
+
+  # ── endpoint precedence ────────────────────────────────────────────────────
+
+  def test_traces_endpoint_takes_precedence_over_base_endpoint
+    ENV['OTEL_EXPORTER_OTLP_TRACES_ENDPOINT'] = 'http://traces.example.com/v1/traces'
+    ENV['OTEL_EXPORTER_OTLP_ENDPOINT']        = 'http://base.example.com'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal 'http://traces.example.com/v1/traces', subject[:otlp][:endpoint]
+  end
+
+  def test_base_endpoint_used_when_no_traces_endpoint
+    ENV['OTEL_EXPORTER_OTLP_ENDPOINT'] = 'http://base.example.com'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal 'http://base.example.com', subject[:otlp][:endpoint]
+  end
+
+  # ── timeout ────────────────────────────────────────────────────────────────
+
+  def test_timeout_stored_as_integer_milliseconds
+    ENV['OTEL_EXPORTER_OTLP_TIMEOUT'] = '30000'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal 30_000, subject[:otlp][:timeout]
+    assert_instance_of Integer, subject[:otlp][:timeout]
+  end
+
+  # ── compression ───────────────────────────────────────────────────────────
+
+  def test_compression_from_env
+    ENV['OTEL_EXPORTER_OTLP_COMPRESSION'] = 'gzip'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal 'gzip', subject[:otlp][:compression]
+  end
+
+  # ── headers ───────────────────────────────────────────────────────────────
+
+  def test_headers_parsed_from_env_into_hash
+    ENV['OTEL_EXPORTER_OTLP_HEADERS'] = 'api-key=secret,x-tenant=tenant1'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal({ 'api-key' => 'secret', 'x-tenant' => 'tenant1' }, subject[:otlp][:headers])
+  end
+
+  def test_single_header_parsed_correctly
+    ENV['OTEL_EXPORTER_OTLP_HEADERS'] = 'authorization=Bearer token123'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal({ 'authorization' => 'Bearer token123' }, subject[:otlp][:headers])
+  end
+
+  # ── TLS fields ────────────────────────────────────────────────────────────
+
+  def test_tls_fields_from_env
+    ENV['OTEL_EXPORTER_OTLP_CERTIFICATE']        = '/etc/certs/ca.pem'
+    ENV['OTEL_EXPORTER_OTLP_CLIENT_KEY']         = '/etc/certs/client.key'
+    ENV['OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE'] = '/etc/certs/client.crt'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal '/etc/certs/ca.pem',     subject[:otlp][:certificate]
+    assert_equal '/etc/certs/client.key', subject[:otlp][:client_key]
+    assert_equal '/etc/certs/client.crt', subject[:otlp][:client_certificate]
+  end
+
+  # ── YAML configuration ────────────────────────────────────────────────────
+
+  def test_yaml_populates_otlp_config
+    yaml_content = <<~YAML
+      tracing:
+        otlp:
+          enabled: true
+          endpoint: "http://otlp.example.com/v1/traces"
+          timeout: 5000
+          compression: gzip
+    YAML
+
+    File.write('test_otlp_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_otlp_config.yaml'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal true, subject[:otlp][:enabled]
+    assert_equal 'http://otlp.example.com/v1/traces', subject[:otlp][:endpoint]
+    assert_equal 5000,                                  subject[:otlp][:timeout]
+    assert_equal 'gzip',                                subject[:otlp][:compression]
+    assert_equal 'yaml',                                subject[:otlp][:config_source]
+  end
+
+  def test_yaml_headers_as_hash
+    yaml_content = <<~YAML
+      tracing:
+        otlp:
+          enabled: true
+          headers:
+            x-api-key: mysecret
+            x-tenant: acme
+    YAML
+
+    File.write('test_otlp_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_otlp_config.yaml'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal({ 'x-api-key' => 'mysecret', 'x-tenant' => 'acme' }, subject[:otlp][:headers])
+  end
+
+  def test_yaml_takes_precedence_over_env
+    yaml_content = <<~YAML
+      tracing:
+        otlp:
+          enabled: true
+          endpoint: "http://from-yaml.example.com/v1/traces"
+          timeout: 5000
+    YAML
+
+    File.write('test_otlp_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH']                 = 'test_otlp_config.yaml'
+    ENV['INSTANA_TRACING_OTLP_ENABLED']        = 'false'
+    ENV['OTEL_EXPORTER_OTLP_TRACES_ENDPOINT'] = 'http://from-env.example.com/v1/traces'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal true, subject[:otlp][:enabled]
+    assert_equal 'http://from-yaml.example.com/v1/traces', subject[:otlp][:endpoint]
+    assert_equal 'yaml', subject[:otlp][:config_source]
+  end
+
+  def test_yaml_without_otlp_section_leaves_defaults
+    yaml_content = <<~YAML
+      tracing:
+        global:
+          stack-trace: error
+    YAML
+
+    File.write('test_otlp_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_otlp_config.yaml'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal false,     subject[:otlp][:enabled]
+    assert_equal 'default', subject[:otlp][:config_source]
+  end
+
+  # ── agent discovery ───────────────────────────────────────────────────────
+
+  def test_agent_discovery_sets_otlp_config_when_source_is_default
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    assert_equal 'default', subject[:otlp][:config_source]
+
+    discovery = {
+      'tracing' => {
+        'otlp' => {
+          'enabled' => 'true',
+          'endpoint' => 'http://agent.example.com/v1/traces',
+          'timeout' => 8000
+        }
+      }
+    }
+    subject.read_config_from_agent(discovery)
+
+    assert_equal true, subject[:otlp][:enabled]
+    assert_equal 'http://agent.example.com/v1/traces', subject[:otlp][:endpoint]
+    assert_equal 8000,                                    subject[:otlp][:timeout]
+    assert_equal 'agent',                                 subject[:otlp][:config_source]
+  end
+
+  def test_agent_discovery_does_not_override_env_config
+    ENV['INSTANA_TRACING_OTLP_ENABLED'] = 'true'
+    ENV['OTEL_EXPORTER_OTLP_TRACES_ENDPOINT'] = 'http://from-env.example.com/v1/traces'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    assert_equal 'env', subject[:otlp][:config_source]
+
+    discovery = {
+      'tracing' => {
+        'otlp' => {
+          'enabled' => 'false',
+          'endpoint' => 'http://agent.example.com/v1/traces'
+        }
+      }
+    }
+    subject.read_config_from_agent(discovery)
+
+    # env values must be preserved
+    assert_equal true, subject[:otlp][:enabled]
+    assert_equal 'http://from-env.example.com/v1/traces', subject[:otlp][:endpoint]
+    assert_equal 'env', subject[:otlp][:config_source]
+  end
+
+  def test_agent_discovery_does_not_override_yaml_config
+    yaml_content = <<~YAML
+      tracing:
+        otlp:
+          enabled: true
+          endpoint: "http://from-yaml.example.com/v1/traces"
+    YAML
+
+    File.write('test_otlp_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_otlp_config.yaml'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    assert_equal 'yaml', subject[:otlp][:config_source]
+
+    discovery = {
+      'tracing' => {
+        'otlp' => {
+          'enabled' => 'false',
+          'endpoint' => 'http://agent.example.com/v1/traces'
+        }
+      }
+    }
+    subject.read_config_from_agent(discovery)
+
+    assert_equal true, subject[:otlp][:enabled]
+    assert_equal 'http://from-yaml.example.com/v1/traces', subject[:otlp][:endpoint]
+    assert_equal 'yaml', subject[:otlp][:config_source]
+  end
+
+  def test_agent_discovery_without_otlp_key_is_ignored
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    discovery = { 'tracing' => { 'global' => { 'stack-trace' => 'all' } } }
+    subject.read_config_from_agent(discovery)
+
+    assert_equal false,     subject[:otlp][:enabled]
+    assert_equal 'default', subject[:otlp][:config_source]
+  end
+
+  # ── should_read_from_agent? guard ────────────────────────────────────────
+
+  def test_should_read_from_agent_returns_true_for_default_otlp
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    assert subject.send(:should_read_from_agent?, :otlp)
+  end
+
+  def test_should_read_from_agent_returns_false_after_env_config
+    ENV['INSTANA_TRACING_OTLP_ENABLED'] = 'true'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    refute subject.send(:should_read_from_agent?, :otlp)
+  end
+
+  def test_should_read_from_agent_returns_false_after_yaml_config
+    yaml_content = <<~YAML
+      tracing:
+        otlp:
+          enabled: true
+    YAML
+
+    File.write('test_otlp_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_otlp_config.yaml'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+    refute subject.send(:should_read_from_agent?, :otlp)
+  end
+end
