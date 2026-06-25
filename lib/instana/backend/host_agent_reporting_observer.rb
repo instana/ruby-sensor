@@ -38,6 +38,8 @@ module Instana
         if new_version.nil?
           @metrics_timer&.shutdown
           @traces_timer&.shutdown
+          @otlp_exporter&.shutdown
+          @otlp_exporter = nil
         else
           # Read poll_rate from discovery payload - it's nested under plugin.ruby.poll_rate
           discovery = @discovery.value
