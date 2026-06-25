@@ -5,7 +5,7 @@ require 'yaml'
 
 module Instana
   class Config
-    def initialize(logger: ::Instana.logger, agent_host: ENV['INSTANA_AGENT_HOST'], agent_port: ENV['INSTANA_AGENT_PORT'])
+    def initialize(logger: ::Instana.logger, agent_host: ENV['INSTANA_AGENT_HOST'], agent_port: ENV['INSTANA_AGENT_PORT']) # rubocop:disable Metrics/MethodLength
       @config = {}
       if agent_host
         logger.debug "Using custom agent host location specified in INSTANA_AGENT_HOST (#{ENV['INSTANA_AGENT_HOST']})"
@@ -48,6 +48,20 @@ module Instana
       # @config[:back_trace][:stack_trace_level] = all
       # @config[:back_trace] = { stack_trace_level: nil }
       read_span_stack_config
+
+      # OTLP exporter configuration (default: disabled)
+      @config[:otlp] = {
+        enabled: false,
+        endpoint: 'http://localhost:4318/v1/traces',
+        timeout: 10_000,
+        compression: nil,
+        headers: {},
+        certificate: nil,
+        client_key: nil,
+        client_certificate: nil,
+        config_source: 'default'
+      }
+      read_otlp_config
 
       # By default, collected SQL will be sanitized to remove potentially sensitive bind params such as:
       #   > SELECT  "blocks".* FROM "blocks"  WHERE "blocks"."name" = "Mr. Smith"
@@ -122,6 +136,8 @@ module Instana
 
       # Read stack trace configuration from agent if not already set from YAML or env
       read_span_stack_config_from_agent(tracing_config) if should_read_from_agent?(:back_trace)
+      # Read OTLP configuration from agent if not already set from YAML or env
+      read_otlp_config_from_agent(tracing_config) if should_read_from_agent?(:otlp)
       # Read span filtering configuration from agent
       ::Instana.span_filtering_config&.read_config_from_agent(discovery)
     rescue => e
@@ -217,7 +233,124 @@ module Instana
       }
     end
 
+    # Read OTLP configuration from agent discovery
+    # @param tracing_config [Hash] The tracing configuration from discovery
+    def read_otlp_config_from_agent(tracing_config)
+      otlp_config = tracing_config['otlp']
+      return unless otlp_config.is_a?(Hash)
+
+      @config[:otlp][:enabled]            = truthy?(otlp_config['enabled'])         unless otlp_config['enabled'].nil?
+      @config[:otlp][:endpoint]           = otlp_config['endpoint']                 if otlp_config['endpoint']
+      @config[:otlp][:timeout]            = otlp_config['timeout'].to_i             if otlp_config['timeout']
+      @config[:otlp][:compression]        = otlp_config['compression']              if otlp_config['compression']
+      @config[:otlp][:headers]            = otlp_config['headers']                  if otlp_config['headers'].is_a?(Hash)
+      @config[:otlp][:certificate]        = otlp_config['certificate']              if otlp_config['certificate']
+      @config[:otlp][:client_key]         = otlp_config['client_key']               if otlp_config['client_key']
+      @config[:otlp][:client_certificate] = otlp_config['client_certificate']       if otlp_config['client_certificate']
+      @config[:otlp][:config_source]      = 'agent'
+    end
+
     private
+
+    # Read OTLP configuration — precedence: YAML > env vars > defaults (agent handled separately)
+    def read_otlp_config
+      # Try YAML first
+      yaml_otlp = parse_otlp_config_from_yaml
+      if yaml_otlp
+        @config[:otlp].merge!(yaml_otlp)
+        @config[:otlp][:config_source] = 'yaml'
+        return
+      end
+
+      # Try environment variables
+      env_otlp = parse_otlp_config_from_env
+      if env_otlp
+        @config[:otlp].merge!(env_otlp)
+        @config[:otlp][:config_source] = 'env'
+      end
+      # Otherwise leave defaults ('default' config_source), agent can update later
+    end
+
+    # Parse OTLP config from YAML file at INSTANA_CONFIG_PATH under tracing.otlp
+    # @return [Hash, nil] merged OTLP settings or nil if not found
+    def parse_otlp_config_from_yaml
+      config_path = ENV['INSTANA_CONFIG_PATH']
+      return nil unless config_path && File.exist?(config_path)
+
+      begin
+        yaml_content = YAML.safe_load(File.read(config_path))
+        tracing_config = yaml_content['tracing'] || yaml_content['com.instana.tracing']
+        return nil unless tracing_config
+
+        otlp_yaml = tracing_config['otlp']
+        return nil unless otlp_yaml.is_a?(Hash)
+
+        result = {}
+        result[:enabled]            = truthy?(otlp_yaml['enabled'])            unless otlp_yaml['enabled'].nil?
+        result[:endpoint]           = otlp_yaml['endpoint']                    if otlp_yaml['endpoint']
+        result[:timeout]            = otlp_yaml['timeout'].to_i                if otlp_yaml['timeout']
+        result[:compression]        = otlp_yaml['compression']                 if otlp_yaml['compression']
+        result[:headers]            = otlp_yaml['headers']                     if otlp_yaml['headers'].is_a?(Hash)
+        result[:certificate]        = otlp_yaml['certificate']                 if otlp_yaml['certificate']
+        result[:client_key]         = otlp_yaml['client_key']                  if otlp_yaml['client_key']
+        result[:client_certificate] = otlp_yaml['client_certificate']          if otlp_yaml['client_certificate']
+
+        result.empty? ? nil : result
+      rescue => e
+        ::Instana.logger.warn("Failed to load OTLP configuration from YAML: #{e.message}")
+        nil
+      end
+    end
+
+    # Parse OTLP config from environment variables
+    # @return [Hash, nil] merged OTLP settings or nil if no relevant env vars are set
+    def parse_otlp_config_from_env
+      raw = otlp_env_vars
+      return nil if raw.values.all?(&:nil?)
+
+      result = {}
+      result[:enabled]            = truthy?(raw[:enabled_raw])              unless raw[:enabled_raw].nil?
+      result[:endpoint]           = raw[:endpoint]                          if raw[:endpoint]
+      result[:timeout]            = raw[:timeout_raw].to_i                  if raw[:timeout_raw]
+      result[:compression]        = raw[:compression]                       if raw[:compression]
+      result[:headers]            = parse_otlp_headers(raw[:headers_raw])   if raw[:headers_raw]
+      result[:certificate]        = raw[:certificate]                       if raw[:certificate]
+      result[:client_key]         = raw[:client_key]                        if raw[:client_key]
+      result[:client_certificate] = raw[:client_cert]                       if raw[:client_cert]
+      result
+    end
+
+    # Collect raw OTLP-related environment variable values into a single hash
+    # @return [Hash]
+    def otlp_env_vars
+      {
+        enabled_raw: ENV['INSTANA_TRACING_OTLP_ENABLED'],
+        endpoint: ENV['OTEL_EXPORTER_OTLP_TRACES_ENDPOINT'] || ENV['OTEL_EXPORTER_OTLP_ENDPOINT'],
+        timeout_raw: ENV['OTEL_EXPORTER_OTLP_TIMEOUT'],
+        compression: ENV['OTEL_EXPORTER_OTLP_COMPRESSION'],
+        headers_raw: ENV['OTEL_EXPORTER_OTLP_HEADERS'],
+        certificate: ENV['OTEL_EXPORTER_OTLP_CERTIFICATE'],
+        client_key: ENV['OTEL_EXPORTER_OTLP_CLIENT_KEY'],
+        client_cert: ENV['OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE']
+      }
+    end
+
+    # Parse OTEL_EXPORTER_OTLP_HEADERS value (comma-separated key=value pairs) into a Hash
+    # @param headers_str [String] e.g. "api-key=secret,x-tenant=tenant1"
+    # @return [Hash]
+    def parse_otlp_headers(headers_str)
+      return {} unless headers_str
+
+      headers_str.split(',').each_with_object({}) do |pair, hash|
+        key, value = pair.split('=', 2)
+        hash[key.strip] = value&.strip if key
+      end
+    end
+
+    # Normalise a truthy string value to a boolean
+    def truthy?(value)
+      %w[true 1 yes].include?(value.to_s.downcase)
+    end
 
     # Parse global stack trace configuration from a config hash
     # @param global_config [Hash] The global configuration hash
