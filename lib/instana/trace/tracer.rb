@@ -323,7 +323,9 @@ module Instana
     #   with_parent=current context, start_timestamp=current time.
     #
     def start_span(name, with_parent: nil, attributes: nil, links: nil, start_timestamp: ::Instana::Util.now_in_ms, kind: nil) # rubocop:disable Metrics/ParameterLists
-      return Instana::Trace.non_recording_span(with_parent) if !::Instana.agent.ready? || !::Instana.config[:tracing][:enabled]
+      # The placeholder's #context is read back as the parent by the next span
+      # start, so it must be a SpanContext (INVALID when there is no parent).
+      return Instana::Trace.non_recording_span(OpenTelemetry::Trace.current_span(with_parent).context) if !::Instana.agent.ready? || !::Instana.config[:tracing][:enabled]
 
       with_parent ||= OpenTelemetry::Context.current
       name ||= 'empty'

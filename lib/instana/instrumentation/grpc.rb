@@ -58,7 +58,7 @@ module Instana
             kvs = { rpc: {} }
             metadata = active_call.metadata
 
-            incoming_context = {}
+            incoming_context = nil
             if metadata.key?('x-instana-t')
               incoming_context = SpanContext.new(trace_id: ::Instana::Util.header_to_id(metadata['x-instana-t']),
                                                  span_id: metadata.key?('x-instana-s') ? ::Instana::Util.header_to_id(metadata['x-instana-s']) : nil,

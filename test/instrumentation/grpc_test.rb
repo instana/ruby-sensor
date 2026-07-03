@@ -418,6 +418,29 @@ class GrpcTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     assert_equal client_span[:p], sdk_span[:s]
   end
 
+  # A call from an untraced client carries no x-instana-t/-s metadata; the
+  # server still answers normally and records the call as a root span.
+  def test_server_span_for_request_without_trace_headers
+    clear_all!
+
+    response = client_stub.ping(
+      PingPongService::PingRequest.new(message: 'World')
+    )
+    sleep 0.2
+
+    assert_equal 'Hello World', response.message
+
+    server_span, rest = ::Instana.processor.queued_spans
+    assert_nil rest
+
+    assert_server_span(
+      server_span,
+      call: '/PingPongService/Ping',
+      call_type: :request_response
+    )
+    assert_nil server_span[:p]
+  end
+
   def test_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready
     clear_all!
     error = nil
