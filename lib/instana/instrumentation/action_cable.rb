@@ -9,7 +9,13 @@ module Instana
       end
 
       def process
-        @instana_trace_context ||= ::Instana.tracer.tracing? ? ::Instana.tracer.current_span.context : {}
+        # Wrapped in non_recording_span by the channel callbacks below, so it
+        # must be a SpanContext.
+        @instana_trace_context ||= if ::Instana.tracer.tracing?
+                                     ::Instana.tracer.current_span.context
+                                   else
+                                     OpenTelemetry::Trace::SpanContext::INVALID
+                                   end
         super
       end
     end
