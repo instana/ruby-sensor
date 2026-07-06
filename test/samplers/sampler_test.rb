@@ -3,7 +3,7 @@
 require 'test_helper'
 require 'instana/samplers/samplers'
 
-class SamplersTest < Minitest::Test
+class SamplerTest < Minitest::Test
   # A malformed parent (non_recording_span accepts any object, so a bare
   # Context or Hash can surface here) does not crash span creation and still
   # yields a real Tracestate, which is copied into the new span's context.
