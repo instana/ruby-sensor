@@ -345,6 +345,55 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     assert_kind_of Instana::Exporter::Otlp::BaseConverter, converter
   end
 
+  # --- span_name tests ---
+
+  def test_span_name_sqs_send
+    span = create_span('aws.sqs', { sqs: { queue: 'my-queue', type: 'send' } })
+    result = Instana::Exporter::Otlp::AwsConverter.new(span).convert
+    assert_equal 'my-queue publish', result[:name]
+  end
+
+  def test_span_name_sqs_delete_maps_to_receive
+    span = create_span('aws.sqs', { sqs: { queue: 'my-queue', type: 'delete' } })
+    result = Instana::Exporter::Otlp::AwsConverter.new(span).convert
+    assert_equal 'my-queue receive', result[:name]
+  end
+
+  def test_span_name_sns_publish
+    span = create_span('aws.sns', { sns: { topic: 'my-topic' } })
+    result = Instana::Exporter::Otlp::AwsConverter.new(span).convert
+    assert_equal 'my-topic publish', result[:name]
+  end
+
+  def test_span_name_dynamodb
+    span = create_span('aws.dynamodb', { dynamodb: { op: 'PutItem', table: 'users' } })
+    result = Instana::Exporter::Otlp::AwsConverter.new(span).convert
+    assert_equal 'DynamoDB.PutItem', result[:name]
+  end
+
+  def test_span_name_s3
+    span = create_span('aws.s3', { s3: { bucket: 'b', key: 'k', op: 'GetObject' } })
+    result = Instana::Exporter::Otlp::AwsConverter.new(span).convert
+    assert_equal 'S3.GetObject', result[:name]
+  end
+
+  def test_span_name_lambda
+    span = create_span('aws.lambda', { aws: { lambda: { invoke: { function: 'my-fn', type: 'RequestResponse' } } } })
+    result = Instana::Exporter::Otlp::AwsConverter.new(span).convert
+    assert_equal 'Lambda.my-fn', result[:name]
+  end
+
+  def test_span_name_falls_back_to_user_supplied_name_when_no_aws_data
+    # Instana::Span normalises unregistered names to :sdk but stores the
+    # user-supplied name in span[:data][:sdk][:name].
+    # We must not overwrite :data so we do NOT call create_span (which sets
+    # span[:data] = {}). Instead build the span manually.
+    span = Instana::Span.new(:'aws.unknown')
+    span.close
+    result = Instana::Exporter::Otlp::AwsConverter.new(span).convert
+    assert_equal 'aws.unknown', result[:name]
+  end
+
   def test_full_span_conversion_with_sqs
     span = create_span('aws.sqs', {
                          sqs: { queue: 'integration-queue', type: 'send', size: 10 }

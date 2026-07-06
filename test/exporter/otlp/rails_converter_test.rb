@@ -73,6 +73,38 @@ class RailsConverterTest < Minitest::Test
     assert_empty attrs
   end
 
+  # --- span_name tests ---
+
+  def test_span_name_actioncontroller
+    span = create_span('actioncontroller', { actioncontroller: { controller: 'UsersController', action: 'index' } })
+    result = Instana::Exporter::Otlp::RailsConverter.new(span).convert
+    assert_equal 'UsersController#index', result[:name]
+  end
+
+  def test_span_name_actionview
+    span = create_span('actionview', { actionview: { name: 'users/index.html.erb' } })
+    result = Instana::Exporter::Otlp::RailsConverter.new(span).convert
+    assert_equal 'users/index.html.erb', result[:name]
+  end
+
+  def test_span_name_render
+    span = create_span('render', { render: { type: 'partial', name: '_user.html.erb' } })
+    result = Instana::Exporter::Otlp::RailsConverter.new(span).convert
+    assert_equal 'partial _user.html.erb', result[:name]
+  end
+
+  def test_span_name_actionmailer
+    span = create_span('mail.actionmailer', { actionmailer: { class: 'UserMailer', method: 'welcome_email' } })
+    result = Instana::Exporter::Otlp::RailsConverter.new(span).convert
+    assert_equal 'UserMailer#welcome_email', result[:name]
+  end
+
+  def test_span_name_falls_back_to_span_n_for_unknown_type
+    span = create_span('unknown', {})
+    result = Instana::Exporter::Otlp::RailsConverter.new(span).convert
+    assert_equal 'unknown', result[:name]
+  end
+
   private
 
   def create_span(name, data)

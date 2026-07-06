@@ -7,6 +7,18 @@ module Instana
     module Otlp
       # Converter for Instana SDK custom spans to OTLP format
       class CustomConverter < BaseConverter
+        # Build OTel-compliant span name for custom (SDK) spans
+        #
+        # Formula per SPAN_NAME_PATTERNS.txt Section 7:
+        #   Use the user-supplied sdk[:name] when available, otherwise fall back
+        #   to the internal span type key (span[:n]).
+        #
+        # @return [String] The span name
+        def span_name
+          sdk_name = span[:data]&.[](:sdk)&.[](:name).to_s.strip
+          sdk_name.empty? ? super : sdk_name
+        end
+
         def convert_attributes
           attributes = {}
           sdk_data = span[:data]&.[](:sdk) || {}

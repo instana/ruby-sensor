@@ -10,6 +10,27 @@ module Instana
     module Otlp
       # Converter for GraphQL spans to OTLP format
       class GraphqlConverter < BaseConverter
+        # Build OTel-compliant span name for GraphQL spans
+        #
+        # Formula per SPAN_NAME_PATTERNS.txt Section 7 (observability):
+        #   "{operationType} {operationName}"  e.g. "query MyQuery"
+        #   Falls back to just "{operationType}" when no name, or "graphql" when both absent.
+        #
+        # @return [String] The span name
+        def span_name
+          gql = span[:data]&.[](:graphql) || {}
+          type = gql[:operationType].to_s.strip
+          name = gql[:operationName].to_s.strip
+
+          if type.empty?
+            'graphql'
+          elsif name.empty?
+            type
+          else
+            "#{type} #{name}"
+          end
+        end
+
         def convert_attributes
           attributes = {}
 
