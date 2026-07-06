@@ -113,6 +113,44 @@ class DatabaseConverterTest < Minitest::Test
     assert_empty attrs
   end
 
+  # --- span_name tests ---
+
+  def test_span_name_activerecord
+    span = create_span(:activerecord, { activerecord: { adapter: 'postgresql', db: 'mydb' } })
+    result = Instana::Exporter::Otlp::DatabaseConverter.new(span).convert
+    assert_equal 'postgresql mydb', result[:name]
+  end
+
+  def test_span_name_sequel
+    span = create_span(:sequel, { sequel: { adapter: 'mysql2', db: 'testdb' } })
+    result = Instana::Exporter::Otlp::DatabaseConverter.new(span).convert
+    assert_equal 'mysql2 testdb', result[:name]
+  end
+
+  def test_span_name_redis
+    span = create_span(:redis, { redis: { command: 'GET key', db: 0, connection: 'redis.local:6379' } })
+    result = Instana::Exporter::Otlp::DatabaseConverter.new(span).convert
+    assert_equal 'redis GET key', result[:name]
+  end
+
+  def test_span_name_memcache
+    span = create_span(:memcache, { memcache: { command: 'get', key: 'u:1', server: '127.0.0.1:11211' } })
+    result = Instana::Exporter::Otlp::DatabaseConverter.new(span).convert
+    assert_equal 'memcached get', result[:name]
+  end
+
+  def test_span_name_mongo
+    span = create_span(:mongo, { mongo: { namespace: 'users', command: 'find', peer: { hostname: 'localhost', port: 27017 } } })
+    result = Instana::Exporter::Otlp::DatabaseConverter.new(span).convert
+    assert_equal 'users.find', result[:name]
+  end
+
+  def test_span_name_falls_back_to_span_n_when_no_data
+    span = create_span(:activerecord, {})
+    result = Instana::Exporter::Otlp::DatabaseConverter.new(span).convert
+    assert_equal 'activerecord', result[:name]
+  end
+
   private
 
   def create_span(name, data)

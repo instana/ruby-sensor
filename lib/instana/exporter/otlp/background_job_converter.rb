@@ -10,6 +10,25 @@ module Instana
   module Exporter
     module Otlp
       class BackgroundJobConverter < BaseConverter
+        # Build OTel-compliant span name for background-job spans
+        #
+        # Formula per SPAN_NAME_PATTERNS.txt Section 3 (sidekiq / resque):
+        #   client/producer → "{queue} publish"
+        #   worker/consumer → "{queue} process"
+        #
+        # @return [String] The span name
+        def span_name
+          span_type = span[:n].to_s
+          data_key  = span_type.to_sym
+          job_data  = span[data_key] || span[:data]&.[](data_key) || {}
+
+          queue = job_data[:queue] || job_data['queue']
+          queue = queue.to_s.strip
+
+          operation = span_type.end_with?('-client') ? 'publish' : 'process'
+          queue.empty? ? operation : "#{queue} #{operation}"
+        end
+
         def convert_attributes
           attributes = {}
 

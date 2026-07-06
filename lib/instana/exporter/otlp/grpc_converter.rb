@@ -10,6 +10,17 @@ module Instana
     module Otlp
       # Converter for gRPC spans to OTLP format
       class GrpcConverter < BaseConverter
+        # Build OTel-compliant span name for gRPC spans
+        #
+        # Formula per SPAN_NAME_PATTERNS.txt Section 4:
+        #   "{package.Service/Method}"  — leading "/" stripped per OTel spec
+        #
+        # @return [String] The span name
+        def span_name
+          call = span[:data]&.[](:rpc)&.[](:call).to_s.delete_prefix('/')
+          call.empty? ? super : call
+        end
+
         def convert_attributes
           attributes = {}
 

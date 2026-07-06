@@ -33,7 +33,7 @@ class HttpConverterTest < Minitest::Test
     assert_equal format_trace_id(span.trace_id), result[:trace_id]
     assert_equal format_span_id(span.id), result[:span_id]
     assert_equal format_span_id(span.parent_id), result[:parent_span_id]
-    assert_equal 'nethttp', result[:name]
+    assert_equal 'GET /users/123', result[:name]
     assert_equal :client, result[:kind] # CLIENT kind
 
     # Verify HTTP attributes are present (using new semantic conventions)
@@ -218,10 +218,10 @@ class HttpConverterTest < Minitest::Test
     result = converter.convert
 
     # Verify error status
-    assert_equal OpenTelemetry::Trace::Status::ERROR, result[:status].code # ERROR code
+    assert_equal OpenTelemetry::Trace::Status::ERROR, result.status.code # ERROR code
 
     # Verify HTTP attributes are still present
-    attributes = result[:attributes]
+    attributes = result.attributes
     assert_http_attribute(attributes, 'http.request.method', 'GET')
     assert_http_attribute(attributes, 'http.response.status_code', 500)
   end
@@ -288,6 +288,32 @@ class HttpConverterTest < Minitest::Test
     assert_http_attribute(results[0][:attributes], 'http.request.method', 'GET')
     assert_http_attribute(results[1][:attributes], 'http.request.method', 'POST')
     assert_http_attribute(results[2][:attributes], 'http.request.method', 'DELETE')
+  end
+
+  # --- span_name tests ---
+
+  def test_span_name_method_only
+    span = create_http_span(method: 'DELETE')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_equal 'DELETE', result[:name]
+  end
+
+  def test_span_name_method_and_path
+    span = create_http_span(method: 'GET', path: '/users/{id}')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_equal 'GET /users/{id}', result[:name]
+  end
+
+  def test_span_name_falls_back_to_http_when_no_method
+    span = create_http_span(method: nil)
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_equal 'HTTP', result[:name]
+  end
+
+  def test_span_name_no_path_suffix_when_path_blank
+    span = create_http_span(method: 'POST', path: '')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_equal 'POST', result[:name]
   end
 
   private
