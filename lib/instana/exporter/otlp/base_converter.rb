@@ -4,6 +4,7 @@
 
 require_relative 'resource'
 require 'opentelemetry/trace'
+require 'forwardable'
 
 module Instana
   module Exporter
@@ -30,6 +31,14 @@ module Instana
 
         # Represents the status of a span (OK, ERROR, or UNSET)
         Status = Struct.new(:code, :description)
+
+        # Represents a span event (mirrors OpenTelemetry::SDK::Trace::Event)
+        #
+        # Fields:
+        #   name       [String]  - event name
+        #   attributes [Hash]    - key/value attributes attached to the event
+        #   timestamp  [Integer] - Unix nanoseconds
+        Event = Struct.new(:name, :attributes, :timestamp)
 
         # Adapter to make resource objects compatible with OTLP exporter expectations
         ResourceAdapter = Struct.new(:attributes) do
@@ -68,12 +77,12 @@ module Instana
             attributes.size
           end
 
-          # @return [Array] Empty array (events not currently supported)
+          # @return [Array] Empty array — error-free spans carry no events
           def events
             EMPTY_ARRAY
           end
 
-          # @return [Integer] Zero (events not currently supported)
+          # @return [Integer] Zero — no events on error-free spans
           def total_recorded_events
             0
           end
@@ -101,6 +110,29 @@ module Instana
           EMPTY_ARRAY = [].freeze # rubocop:disable Lint/ConstantDefinitionInBlock
         end
 
+        # SpanData extended with an optional list of span events
+        #
+        # We wrap the base struct to carry events without changing the positional
+        # keyword_init constructor used by all converters.
+        SpanDataWithEvents = Struct.new(:span_data, :span_events) do
+          extend Forwardable
+          def_delegators :span_data,
+                         :name, :trace_id, :span_id, :parent_span_id,
+                         :resource, :instrumentation_scope, :kind,
+                         :start_timestamp, :end_timestamp, :attributes, :status,
+                         :tracestate, :total_recorded_attributes,
+                         :links, :total_recorded_links,
+                         :parent_span_is_remote, :trace_flags
+
+          def events
+            span_events
+          end
+
+          def total_recorded_events
+            span_events.size
+          end
+        end
+
         # Milliseconds to nanoseconds conversion factor
         MS_TO_NS = 1_000_000
         private_constant :MS_TO_NS
@@ -114,9 +146,14 @@ module Instana
 
         # Convert the Instana span to OTLP-compatible span data
         #
-        # @return [SpanData] Converted span data object ready for export
+        # @return [SpanData, SpanDataWithEvents] Converted span data object ready for export
         def convert
-          SpanData.new(
+          # Resolve error info once — reused by both status and events
+          error_count = span[:ec].to_i
+          error_msg   = error_count.positive? ? extract_error_message : nil
+          stacktrace  = error_count.positive? ? convert_stack_trace   : nil
+
+          span_data = SpanData.new(
             name: span_name,
             trace_id: format_trace_id(span[:t]),
             span_id: format_span_id(span[:s]),
@@ -127,8 +164,13 @@ module Instana
             start_timestamp: convert_to_unix_nano(span[:ts]),
             end_timestamp: calculate_end_timestamp,
             attributes: convert_attributes,
-            status: convert_status
+            status: build_status(error_count, error_msg)
           )
+
+          events = build_error_events(error_count, error_msg, stacktrace)
+          return SpanDataWithEvents.new(span_data, events) unless events.empty?
+
+          span_data
         end
 
         protected
@@ -194,22 +236,54 @@ module Instana
           end
         end
 
-        # Convert span status to OpenTelemetry status object
+        # Build span status from pre-resolved error info
         #
-        # @return [Status] Status object with code and optional description
-        def convert_status
-          if span[:error]
-            error_message = extract_error_message
-            Status.new(OpenTelemetry::Trace::Status::ERROR, error_message.to_s)
+        # @param error_count [Integer] Span error count (span[:ec].to_i)
+        # @param error_msg   [String, nil] Pre-extracted error message
+        # @return [Status]
+        def build_status(error_count, error_msg)
+          if error_count.positive?
+            Status.new(OpenTelemetry::Trace::Status::ERROR, error_msg.to_s)
           else
             Status.new(OpenTelemetry::Trace::Status::UNSET, '')
           end
         end
 
-        # Extract error message from span
-        # @return [String, nil] Error message
+        # Extract error message from span data
+        #
+        # Searches `span[:data][<type>][:error]` for any span type that
+        # carries an error field (e.g. http.error, activerecord.error).
+        # Returns the first non-nil value found, truncated to 1024 chars
+        # per the OTel status.message recommendation.
+        #
+        # @return [String, nil] Error message or nil when not present
         def extract_error_message
-          # TODO: Implement error message extraction
+          data = span[:data]
+          return nil unless data.is_a?(Hash)
+
+          data.each_value do |type_data|
+            next unless type_data.is_a?(Hash)
+
+            msg = type_data[:error]
+            return msg.to_s[0, 1024] if msg
+          end
+
+          nil
+        end
+
+        # Convert Instana stack trace to OTel exception.stacktrace string
+        #
+        # Instana stores stack frames as an Array of Hashes with keys:
+        #   c: file path, n: line number, m: method name
+        #
+        # OTel requires a newline-separated string of stack frames.
+        #
+        # @return [String, nil] Formatted stacktrace or nil if not present
+        def convert_stack_trace
+          stack = span[:stack]
+          return nil unless stack.is_a?(Array) && !stack.empty?
+
+          stack.map { |frame| "#{frame[:c]}:#{frame[:n]} in #{frame[:m]}" }.join("\n")
         end
 
         # Convert span attributes to OTLP-compatible attributes
@@ -220,6 +294,31 @@ module Instana
         # @return [Hash] Hash of attribute key-value pairs
         def convert_attributes
           {}
+        end
+
+        # Build OTel span events from pre-resolved error info
+        #
+        #   - error_count > 0 AND stacktrace present → "exception" event
+        #   - error_count > 0, no stack              → "error" event
+        #   - error_count == 0                       → []
+        #
+        # @param error_count [Integer]
+        # @param error_msg   [String, nil]
+        # @param stacktrace  [String, nil]
+        # @return [Array<Event>]
+        def build_error_events(error_count, error_msg, stacktrace)
+          return [] unless error_count.positive?
+
+          timestamp = calculate_end_timestamp
+
+          if stacktrace
+            attrs = { 'exception.type' => span_name }
+            attrs['exception.message']    = error_msg if error_msg
+            attrs['exception.stacktrace'] = stacktrace
+            [Event.new('exception', attrs, timestamp)]
+          else
+            [Event.new('error', { 'error.type' => span_name }, timestamp)]
+          end
         end
 
         # Add an attribute to the attributes hash if value is not nil
@@ -257,9 +356,18 @@ module Instana
 
         # Get the span name as a string
         #
+        # For custom (SDK) spans the user-supplied name is stored in
+        # span[:data][:sdk][:name], not in span[:n] (which is always :sdk).
+        # We read that path directly to avoid crashing when sdk data has been
+        # overwritten by tests or other code. Non-custom spans use span[:n].
+        #
         # @return [String] The span name
         def span_name
-          span[:n].to_s
+          if span.respond_to?(:custom?) ? span.custom? : span[:n]&.to_sym == :sdk
+            span[:data]&.dig(:sdk, :name).to_s
+          else
+            span[:n].to_s
+          end
         end
 
         # Format parent span ID, returning INVALID_SPAN_ID if no parent
