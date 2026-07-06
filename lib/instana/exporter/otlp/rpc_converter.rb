@@ -12,6 +12,24 @@ module Instana
     module Otlp
       # Converter for RPC spans (gRPC, ActionCable) to OTLP format
       class RpcConverter < BaseConverter
+        # Build OTel-compliant span name for RPC spans
+        #
+        # Formulas per SPAN_NAME_PATTERNS.txt Section 4:
+        #   gRPC        → "{package.Service/Method}"  (leading "/" stripped per OTel spec)
+        #   ActionCable → "{ChannelClass#action}"      (call string used as-is)
+        #
+        # @return [String] The span name
+        def span_name
+          rpc_data = span[:data]&.[](:rpc) || {}
+
+          if rpc_data[:flavor] == :actioncable
+            rpc_data[:call].to_s
+          else
+            # Strip the mandatory leading slash per gRPC/OTel spec
+            rpc_data[:call].to_s.delete_prefix('/')
+          end.then { |n| n.empty? ? super : n }
+        end
+
         def convert_attributes
           attributes = {}
 

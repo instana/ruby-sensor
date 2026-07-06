@@ -31,6 +31,21 @@ module Instana
           attributes
         end
 
+        # Build OTel-compliant span name for HTTP spans
+        #
+        # Convention (stable): "{METHOD}" or "{METHOD} {url.template/path}"
+        # Falls back to "HTTP" when no method is present.
+        #
+        # @return [String] The span name
+        def span_name
+          http_data = span[:data]&.[](:http) || {}
+          method = http_data[:method].to_s.upcase
+          method = 'HTTP' if method.empty?
+
+          path = http_data[:path].to_s.strip
+          path.empty? ? method : "#{method} #{path}"
+        end
+
         # Extract scheme from URL
         # @param url [String] The URL
         # @return [String, nil] The scheme (http or https)

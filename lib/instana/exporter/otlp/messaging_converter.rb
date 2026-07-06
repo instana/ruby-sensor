@@ -11,6 +11,27 @@ module Instana
     module Otlp
       # Converter for messaging spans to OTLP format
       class MessagingConverter < BaseConverter
+        # Build OTel-compliant span name for messaging (RabbitMQ) spans
+        #
+        # Formula per SPAN_NAME_PATTERNS.txt Section 3 (bunny/AMQP):
+        #   publish → "{exchange} publish"   (or "{queue} publish" when no exchange)
+        #   receive → "{queue} receive"
+        #
+        # @return [String] The span name
+        def span_name
+          rabbitmq_data = span[:data]&.[](:rabbitmq) || {}
+          sort = rabbitmq_data[:sort].to_s
+
+          if sort == 'publish'
+            dest = rabbitmq_data[:exchange].to_s.strip
+            dest = rabbitmq_data[:queue].to_s.strip if dest.empty?
+            dest.empty? ? 'publish' : "#{dest} publish"
+          else
+            queue = rabbitmq_data[:queue].to_s.strip
+            queue.empty? ? 'receive' : "#{queue} receive"
+          end
+        end
+
         def convert_attributes
           attributes = {}
 

@@ -84,6 +84,38 @@ class BackgroundJobConverterTest < Minitest::Test
     assert_empty attrs
   end
 
+  # --- span_name tests ---
+
+  def test_span_name_sidekiq_client_publish
+    span = create_span('sidekiq-client', { 'sidekiq-client': { queue: 'default', job: 'MyWorker' } })
+    result = Instana::Exporter::Otlp::BackgroundJobConverter.new(span).convert
+    assert_equal 'default publish', result[:name]
+  end
+
+  def test_span_name_sidekiq_worker_process
+    span = create_span('sidekiq-worker', { 'sidekiq-worker': { queue: 'critical', job: 'MyWorker' } })
+    result = Instana::Exporter::Otlp::BackgroundJobConverter.new(span).convert
+    assert_equal 'critical process', result[:name]
+  end
+
+  def test_span_name_resque_client_publish
+    span = create_span('resque-client', { 'resque-client': { queue: 'low' } })
+    result = Instana::Exporter::Otlp::BackgroundJobConverter.new(span).convert
+    assert_equal 'low publish', result[:name]
+  end
+
+  def test_span_name_resque_worker_process
+    span = create_span('resque-worker', { 'resque-worker': { queue: 'high' } })
+    result = Instana::Exporter::Otlp::BackgroundJobConverter.new(span).convert
+    assert_equal 'high process', result[:name]
+  end
+
+  def test_span_name_falls_back_to_operation_when_no_queue
+    span = create_span('sidekiq-worker', { 'sidekiq-worker': {} })
+    result = Instana::Exporter::Otlp::BackgroundJobConverter.new(span).convert
+    assert_equal 'process', result[:name]
+  end
+
   private
 
   def create_span(name, data)
