@@ -54,6 +54,32 @@ class MessagingConverterTest < Minitest::Test
     assert_empty attrs
   end
 
+  # --- span_name tests ---
+
+  def test_span_name_publish_uses_exchange
+    span = create_span(:rabbitmq, { rabbitmq: { exchange: 'orders', queue: 'order_queue', sort: 'publish' } })
+    result = Instana::Exporter::Otlp::MessagingConverter.new(span).convert
+    assert_equal 'orders publish', result[:name]
+  end
+
+  def test_span_name_publish_falls_back_to_queue_when_no_exchange
+    span = create_span(:rabbitmq, { rabbitmq: { queue: 'order_queue', sort: 'publish' } })
+    result = Instana::Exporter::Otlp::MessagingConverter.new(span).convert
+    assert_equal 'order_queue publish', result[:name]
+  end
+
+  def test_span_name_receive_uses_queue
+    span = create_span(:rabbitmq, { rabbitmq: { exchange: 'events', queue: 'events_q', sort: 'consume' } })
+    result = Instana::Exporter::Otlp::MessagingConverter.new(span).convert
+    assert_equal 'events_q receive', result[:name]
+  end
+
+  def test_span_name_falls_back_to_receive_when_no_queue
+    span = create_span(:rabbitmq, { rabbitmq: { sort: 'consume' } })
+    result = Instana::Exporter::Otlp::MessagingConverter.new(span).convert
+    assert_equal 'receive', result[:name]
+  end
+
   private
 
   def create_span(name, data)

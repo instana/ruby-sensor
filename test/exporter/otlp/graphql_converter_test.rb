@@ -59,6 +59,27 @@ class GraphqlConverterTest < Minitest::Test
     assert_empty attrs
   end
 
+  # --- span_name tests ---
+
+  def test_span_name_with_type_and_name
+    span = create_span({ operationType: 'query', operationName: 'GetUser' })
+    result = Instana::Exporter::Otlp::GraphqlConverter.new(span).convert
+    assert_equal 'query GetUser', result[:name]
+  end
+
+  def test_span_name_with_type_only
+    span = create_span({ operationType: 'mutation' })
+    result = Instana::Exporter::Otlp::GraphqlConverter.new(span).convert
+    assert_equal 'mutation', result[:name]
+  end
+
+  def test_span_name_falls_back_to_graphql_when_no_data
+    span = Instana::Span.new(:graphql)
+    span.close
+    result = Instana::Exporter::Otlp::GraphqlConverter.new(span).convert
+    assert_equal 'graphql', result[:name]
+  end
+
   def test_format_fields
     span = create_span({})
     converter = Instana::Exporter::Otlp::GraphqlConverter.new(span)

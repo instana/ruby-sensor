@@ -70,6 +70,50 @@ module Instana
           attributes
         end
 
+        # Build OTel-compliant span name for database spans
+        #
+        # Formulas per SPAN_NAME_PATTERNS.txt Section 2:
+        #   activerecord / sequel  → "{adapter} {db}"       e.g. "mysql2 myapp"
+        #   redis                  → "redis {command}"       e.g. "redis GET"
+        #   memcache               → "memcached {command}"   e.g. "memcached get"
+        #   mongo                  → "{namespace}.{command}" e.g. "users.find"
+        #
+        # @return [String] The span name
+        def span_name
+          data = span[:data] || {}
+
+          if (ar = data[:activerecord])
+            parts = [ar[:adapter], ar[:db]].compact.reject(&:empty?)
+            return parts.empty? ? 'activerecord' : parts.join(' ')
+          end
+
+          if (seq = data[:sequel])
+            parts = [seq[:adapter], seq[:db]].compact.reject(&:empty?)
+            return parts.empty? ? 'sequel' : parts.join(' ')
+          end
+
+          if (redis = data[:redis])
+            cmd = redis[:command].to_s.strip
+            return cmd.empty? ? 'redis' : "redis #{cmd}"
+          end
+
+          if (mc = data[:memcache])
+            cmd = mc[:command].to_s.strip
+            return cmd.empty? ? 'memcached' : "memcached #{cmd}"
+          end
+
+          if (mongo = data[:mongo])
+            ns  = mongo[:namespace].to_s.strip
+            cmd = mongo[:command].to_s.strip
+            parts = [ns, cmd].reject(&:empty?)
+            return parts.join('.') unless parts.empty?
+
+            return 'mongodb'
+          end
+
+          super
+        end
+
         private
 
         def extract_host(connection)

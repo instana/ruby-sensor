@@ -77,6 +77,37 @@ class RpcConverterTest < Minitest::Test
     assert_empty attrs
   end
 
+  # --- span_name tests ---
+
+  def test_span_name_grpc_strips_leading_slash
+    span = create_span(:grpc, { rpc: { call: '/package.Service/Method', host: 'grpc.example.com' } })
+    result = Instana::Exporter::Otlp::RpcConverter.new(span).convert
+    assert_equal 'package.Service/Method', result[:name]
+  end
+
+  def test_span_name_grpc_without_leading_slash
+    span = create_span(:grpc, { rpc: { call: 'pkg.API/Get' } })
+    result = Instana::Exporter::Otlp::RpcConverter.new(span).convert
+    assert_equal 'pkg.API/Get', result[:name]
+  end
+
+  def test_span_name_actioncable_with_action
+    span = create_span(:actioncable, { rpc: { flavor: :actioncable, call: 'ChatChannel#speak' } })
+    result = Instana::Exporter::Otlp::RpcConverter.new(span).convert
+    assert_equal 'ChatChannel#speak', result[:name]
+  end
+
+  def test_span_name_falls_back_to_span_name_when_call_missing
+    # :grpc is unregistered so Instana stores the original name in sdk[:name].
+    # We must not overwrite :data (which would lose sdk[:name]), so we
+    # build the span manually and only add the rpc sub-hash.
+    span = Instana::Span.new(:grpc)
+    span[:data][:rpc] = {}
+    span.close
+    result = Instana::Exporter::Otlp::RpcConverter.new(span).convert
+    assert_equal 'grpc', result[:name]
+  end
+
   private
 
   def create_span(name, data)

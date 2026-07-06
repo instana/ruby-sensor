@@ -44,4 +44,28 @@ class CustomConverterTest < Minitest::Test
     assert_equal 'value1', attributes['param1']
     assert_equal 42, attributes['param2']
   end
+
+  # --- span_name tests ---
+
+  def test_span_name_uses_sdk_name
+    span = Instana::Span.new(:my_custom_span)
+    span[:data] = { sdk: { name: 'my-operation', type: 'custom' } }
+    span.close
+    result = Instana::Exporter::Otlp::CustomConverter.new(span).convert
+    assert_equal 'my-operation', result[:name]
+  end
+
+  def test_span_name_falls_back_to_span_name_when_no_sdk_name
+    # When no sdk[:name] is set, CustomConverter falls back to super
+    # (BaseConverter#span_name -> span.name.to_s). For an unregistered
+    # span Instana stores the original name in sdk[:name] — so we must
+    # not override it. Here we simulate a span where sdk[:name] is nil
+    # so span.name returns nil and the result is an empty string.
+    span = Instana::Span.new(:my_custom_span)
+    # Overwrite sdk[:name] with nil to test the nil-name branch
+    span[:data][:sdk][:name] = nil
+    span.close
+    result = Instana::Exporter::Otlp::CustomConverter.new(span).convert
+    assert_equal '', result[:name]
+  end
 end

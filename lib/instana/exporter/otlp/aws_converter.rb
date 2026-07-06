@@ -12,6 +12,51 @@ module Instana
     module Otlp
       # Converter for AWS SDK spans (SQS, SNS, DynamoDB) to OTLP format
       class AwsConverter < BaseConverter
+        # Build OTel-compliant span name for AWS SDK spans
+        #
+        # Formulas per SPAN_NAME_PATTERNS.txt Section 6:
+        #   SQS send/publish  → "{queue} publish"
+        #   SQS receive/delete → "{queue} receive"
+        #   SNS               → "{topic} publish"
+        #   DynamoDB          → "DynamoDB.{op}"      e.g. "DynamoDB.PutItem"
+        #   S3                → "S3.{op}"            e.g. "S3.PutObject"
+        #   Lambda invoke     → "Lambda.{function}"
+        #
+        # @return [String] The span name
+        def span_name
+          data = span[:data] || {}
+
+          if (sqs = data[:sqs])
+            queue = sqs[:queue].to_s.strip
+            operation = sqs[:type].to_s =~ /^(delete|receive)/ ? 'receive' : 'publish'
+            return queue.empty? ? "SQS #{operation}" : "#{queue} #{operation}"
+          end
+
+          if (sns = data[:sns])
+            topic = sns[:topic].to_s.strip
+            topic = sns[:target].to_s.strip if topic.empty?
+            return topic.empty? ? 'SNS publish' : "#{topic} publish"
+          end
+
+          if (ddb = data[:dynamodb])
+            op = ddb[:op].to_s.strip
+            return op.empty? ? 'DynamoDB' : "DynamoDB.#{op}"
+          end
+
+          if (s3 = data[:s3])
+            op = s3[:op].to_s.strip
+            return op.empty? ? 'S3' : "S3.#{op}"
+          end
+
+          lambda_data = data.dig(:aws, :lambda, :invoke)
+          if lambda_data
+            fn = lambda_data[:function].to_s.strip
+            return fn.empty? ? 'Lambda.invoke' : "Lambda.#{fn}"
+          end
+
+          super
+        end
+
         def convert_attributes
           attributes = {}
 

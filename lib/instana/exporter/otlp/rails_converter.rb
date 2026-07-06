@@ -10,6 +10,43 @@ module Instana
     module Otlp
       # Converter for Rails-related spans (ActionController, ActionView, ActionMailer) to OTLP format
       class RailsConverter < BaseConverter
+        # Build OTel-compliant span name for Rails spans
+        #
+        # Formulas per SPAN_NAME_PATTERNS.txt Sections 5 & 7:
+        #   actioncontroller  → "{Controller}#{action}"    e.g. "UsersController#index"
+        #   actionview        → "{view_name}"              e.g. "users/index"
+        #   render            → "{type} {name}"            e.g. "template users/index"
+        #   mail.actionmailer → "{Class}#{method}"         e.g. "UserMailer#welcome_email"
+        #
+        # @return [String] The span name
+        def span_name # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+          case span[:n].to_s
+          when 'actioncontroller'
+            d = span[:data]&.[](:actioncontroller) || span[:actioncontroller] || {}
+            ctrl   = d[:controller].to_s.strip
+            action = d[:action].to_s.strip
+            parts  = [ctrl, action].reject(&:empty?)
+            parts.empty? ? 'actioncontroller' : parts.join('#')
+          when 'actionview'
+            d = span[:data]&.[](:actionview) || span[:actionview] || {}
+            d[:name].to_s.strip.then { |n| n.empty? ? 'actionview' : n }
+          when 'render'
+            d = span[:data]&.[](:render) || span[:render] || {}
+            type = d[:type].to_s.strip
+            name = d[:name].to_s.strip
+            parts = [type, name].reject(&:empty?)
+            parts.empty? ? 'render' : parts.join(' ')
+          when 'mail.actionmailer'
+            d = span[:data]&.[](:actionmailer) || span[:actionmailer] || {}
+            klass  = d[:class].to_s.strip
+            method = d[:method].to_s.strip
+            parts  = [klass, method].reject(&:empty?)
+            parts.empty? ? 'mail.actionmailer' : parts.join('#')
+          else
+            super
+          end
+        end
+
         def convert_attributes
           attributes = {}
 
