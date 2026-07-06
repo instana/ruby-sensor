@@ -81,23 +81,178 @@ class BaseConverterTest < Minitest::Test
   end
 
   def test_convert_status
-    # Test UNSET status (no error)
+    # Test UNSET status (no error — ec is 0 or absent)
     span = create_test_span(name: :rack)
     converter = TestConverter.new(span)
-    status = converter.send(:convert_status)
+    status = converter.send(:build_status, span[:ec].to_i, nil)
     assert_equal OpenTelemetry::Trace::Status::UNSET, status.code
     assert_equal '', status.description
 
-    # Test ERROR status
+    # Test ERROR status driven by span.ec > 0
     span = create_test_span(name: :rack)
     span.record_exception(StandardError.new('Test error'))
     converter = TestConverter.new(span)
-    status = converter.send(:convert_status)
+    status = converter.send(:build_status, span[:ec].to_i, converter.send(:extract_error_message))
     assert_equal OpenTelemetry::Trace::Status::ERROR, status.code
   end
 
+  def test_convert_status_uses_ec_not_error_flag
+    # span.ec > 0 should always yield ERROR, independent of :error flag
+    span = create_test_span(name: :rack)
+    span[:ec] = 2
+    converter = TestConverter.new(span)
+    status = converter.send(:build_status, span[:ec].to_i, nil)
+    assert_equal OpenTelemetry::Trace::Status::ERROR, status.code
+
+    # ec == 0 should yield UNSET even when :error is true
+    span2 = create_test_span(name: :rack)
+    span2[:error] = true
+    span2[:ec] = 0
+    converter2 = TestConverter.new(span2)
+    status2 = converter2.send(:build_status, span2[:ec].to_i, nil)
+    assert_equal OpenTelemetry::Trace::Status::UNSET, status2.code
+  end
+
+  def test_extract_error_message_returns_nil_when_no_data
+    span = create_test_span(name: :rack)
+    converter = TestConverter.new(span)
+    assert_nil converter.send(:extract_error_message)
+  end
+
+  def test_extract_error_message_finds_error_in_type_data
+    span = create_test_span(name: :rack, data: { http: { error: 'Connection refused' } })
+    converter = TestConverter.new(span)
+    assert_equal 'Connection refused', converter.send(:extract_error_message)
+  end
+
+  def test_extract_error_message_truncates_to_1024_chars
+    long_msg = 'x' * 2000
+    span = create_test_span(name: :rack, data: { http: { error: long_msg } })
+    converter = TestConverter.new(span)
+    result = converter.send(:extract_error_message)
+    assert_equal 1024, result.length
+  end
+
+  def test_convert_stack_trace_returns_nil_when_no_stack
+    span = create_test_span(name: :rack)
+    converter = TestConverter.new(span)
+    assert_nil converter.send(:convert_stack_trace)
+  end
+
+  def test_convert_stack_trace_formats_frames_as_string
+    span = create_test_span(name: :rack)
+    span[:stack] = [
+      { c: '/app/models/user.rb', n: '42', m: 'in `save`' },
+      { c: '/app/controllers/users_controller.rb', n: '10', m: 'in `create`' }
+    ]
+    converter = TestConverter.new(span)
+    result = converter.send(:convert_stack_trace)
+    assert_equal "/app/models/user.rb:42 in in `save`\n" \
+                 "/app/controllers/users_controller.rb:10 in in `create`",
+                 result
+  end
+
+  def test_convert_stack_trace_returns_nil_for_empty_stack
+    span = create_test_span(name: :rack)
+    span[:stack] = []
+    converter = TestConverter.new(span)
+    assert_nil converter.send(:convert_stack_trace)
+  end
+
+  # --- build_error_events / event-based error recording ---
+
+  def test_no_error_events_when_no_error
+    span = create_test_span(name: :rack)
+    converter = TestConverter.new(span)
+    assert_equal [], converter.send(:build_error_events, span[:ec].to_i, nil, nil)
+  end
+
+  def test_exception_event_emitted_when_ec_positive_and_stack_present
+    span = create_test_span(name: :rack, data: { http: { error: 'Timeout' } })
+    span[:stack] = [{ c: '/app/lib/client.rb', n: '7', m: 'in `call`' }]
+    span[:ec] = 1
+    converter = TestConverter.new(span)
+    events = converter.send(:build_error_events, span[:ec].to_i, converter.send(:extract_error_message), converter.send(:convert_stack_trace))
+
+    assert_equal 1, events.size
+    event = events.first
+    assert_equal 'exception', event.name
+    assert_equal 'rack', event.attributes['exception.type']
+    assert_equal 'Timeout', event.attributes['exception.message']
+    assert_equal '/app/lib/client.rb:7 in in `call`', event.attributes['exception.stacktrace']
+    assert_kind_of Integer, event.timestamp
+  end
+
+  def test_error_event_emitted_when_ec_positive_but_no_stack
+    span = create_test_span(name: :rack, data: { http: { error: 'Timeout' } })
+    span[:ec] = 1
+    converter = TestConverter.new(span)
+    events = converter.send(:build_error_events, span[:ec].to_i, converter.send(:extract_error_message), converter.send(:convert_stack_trace))
+
+    assert_equal 1, events.size
+    event = events.first
+    assert_equal 'error', event.name
+    assert_equal 'rack', event.attributes['error.type']
+  end
+
+  def test_convert_returns_span_data_with_events_on_error
+    span = create_test_span(name: :rack, data: { http: { error: 'Timeout' } })
+    span[:stack] = [{ c: '/app/lib/client.rb', n: '7', m: 'in `call`' }]
+    span[:ec] = 1
+    converter = TestConverter.new(span)
+    result = converter.convert
+
+    assert_instance_of Instana::Exporter::Otlp::BaseConverter::SpanDataWithEvents, result
+    assert_equal 1, result.total_recorded_events
+    assert_equal 'exception', result.events.first.name
+  end
+
+  def test_convert_returns_plain_span_data_when_no_error
+    span = create_test_span(name: :rack)
+    converter = TestConverter.new(span)
+    result = converter.convert
+
+    assert_instance_of Instana::Exporter::Otlp::BaseConverter::SpanData, result
+    assert_equal 0, result.total_recorded_events
+    assert_equal [], result.events
+  end
+
+  def test_exception_event_has_no_message_when_no_error_field
+    span = create_test_span(name: :rack)
+    span[:stack] = [{ c: '/app/lib/client.rb', n: '7', m: 'in `call`' }]
+    span[:ec] = 1
+    converter = TestConverter.new(span)
+    events = converter.send(:build_error_events, span[:ec].to_i, converter.send(:extract_error_message), converter.send(:convert_stack_trace))
+
+    assert_equal 1, events.size
+    event = events.first
+    assert_equal 'exception', event.name
+    refute event.attributes.key?('exception.message')
+    assert event.attributes.key?('exception.stacktrace')
+  end
+
+  def test_convert_status_description_contains_error_message
+    span = create_test_span(name: :rack, data: { http: { error: 'Server error' } })
+    span[:ec] = 1
+    converter = TestConverter.new(span)
+    status = converter.send(:build_status, span[:ec].to_i, converter.send(:extract_error_message))
+    assert_equal 'Server error', status.description
+  end
+
+  def test_span_attributes_do_not_contain_exception_keys
+    # exception.* belong on events, NOT on span attributes
+    span = create_test_span(name: :rack, data: { http: { error: 'Timeout' } })
+    span[:stack] = [{ c: '/app/lib/client.rb', n: '7', m: 'in `call`' }]
+    span[:ec] = 1
+    converter = TestConverter.new(span)
+    result = converter.convert
+
+    refute result.attributes.key?('exception.stacktrace')
+    refute result.attributes.key?('exception.message')
+  end
+
   def test_convert_attributes
-    # Test empty attributes for base converter
+    # Test empty attributes for base converter (no stack)
     span = create_test_span(data: { undefined: { method: 'GET', url: 'http://example.com' } })
     converter = TestConverter.new(span)
     attributes = converter.send(:convert_attributes)
@@ -174,10 +329,19 @@ class BaseConverterTest < Minitest::Test
     span
   end
 
+  def create_error_span(name: :rack, error_msg: nil, stack: nil)
+    span = create_test_span(name: name)
+    span[:ec] = 1
+    span[:data] = { http: { error: error_msg } } if error_msg
+    span[:stack] = stack if stack
+    span
+  end
+
   # Test converter class that exposes protected methods for testing
   class TestConverter < Instana::Exporter::Otlp::BaseConverter
     # Make protected methods public for testing
     public :convert_span_kind, :convert_to_unix_nano,
-           :convert_status, :convert_attributes, :normalize_attribute_value, :span
+           :build_status, :convert_attributes, :normalize_attribute_value, :span,
+           :extract_error_message, :convert_stack_trace, :build_error_events
   end
 end
