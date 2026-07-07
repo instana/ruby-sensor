@@ -15,7 +15,7 @@ class OtelContextLeakTest < Minitest::Test
   # -----------------------------------------------------------------------
 
   def setup
-    @rack_app     = Rack::Builder.new do
+    @rack_app = Rack::Builder.new do
       use Instana::Rack
       run ->(_env) { [200, { 'content-type' => 'text/plain' }, ['ok']] }
     end
@@ -46,7 +46,7 @@ class OtelContextLeakTest < Minitest::Test
   def with_corrupted_frame(trace_id: 'abc123', span_id: 'def456')
     span_ctx       = Instana::SpanContext.new(trace_id: trace_id, span_id: span_id)
     nrs            = OpenTelemetry::Trace.non_recording_span(span_ctx)
-    corrupted_ctx  = Instana::Trace.context_with_span(nrs)           # OTel Context, not SpanContext
+    corrupted_ctx  = Instana::Trace.context_with_span(nrs) # OTel Context, not SpanContext
     corrupted_span = OpenTelemetry::Trace.non_recording_span(corrupted_ctx) # .context => OTel Context
     leaked_frame   = OpenTelemetry::Trace.context_with_span(corrupted_span)
     token          = OpenTelemetry::Context.attach(leaked_frame)
@@ -58,7 +58,7 @@ class OtelContextLeakTest < Minitest::Test
   # Assert that the span returned by start_span is a live, recording Instana span.
   def assert_recording_span(span, msg = nil)
     assert_instance_of Instana::Span, span, msg || 'Expected an Instana::Span'
-    assert span.recording?,               "#{msg || 'Span'} must be recording"
+    assert span.recording?, "#{msg || 'Span'} must be recording"
   end
 
   # -----------------------------------------------------------------------
@@ -147,7 +147,7 @@ class OtelContextLeakTest < Minitest::Test
       # `started?` is an instance method of Net::HTTP and is not testable here
       # without a live connection, so we omit it — it is not relevant to the
       # poisoned-context path being exercised.
-      dnt_spans = %i[dynamodb sqs sns s3]
+      dnt_spans = [:dynamodb, :sqs, :sns, :s3]
       skip = !Instana.tracer.tracing? ||
              !Instana.config[:nethttp][:enabled] ||
              (!::Instana.tracer.current_span.nil? &&
@@ -187,7 +187,7 @@ class OtelContextLeakTest < Minitest::Test
     # upstream Instana headers are present.
     incoming_context = Instana::SpanContext.new(
       trace_id: ::Instana::Util.header_to_id('deadbeef'),
-      span_id:  ::Instana::Util.header_to_id('cafebabe')
+      span_id: ::Instana::Util.header_to_id('cafebabe')
     )
     nrs            = OpenTelemetry::Trace.non_recording_span(incoming_context)
     parent_context = Instana::Trace.context_with_span(nrs) # OTel Context — the corrupted form
