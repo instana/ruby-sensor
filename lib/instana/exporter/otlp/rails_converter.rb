@@ -10,6 +10,8 @@ module Instana
     module Otlp
       # Converter for Rails-related spans (ActionController, ActionView, ActionMailer) to OTLP format
       class RailsConverter < BaseConverter
+        ACTIONMAILER_SPAN = 'mail.actionmailer'
+
         # Build OTel-compliant span name for Rails spans
         #
         # Formulas per SPAN_NAME_PATTERNS.txt Sections 5 & 7:
@@ -19,29 +21,29 @@ module Instana
         #   mail.actionmailer → "{Class}#{method}"         e.g. "UserMailer#welcome_email"
         #
         # @return [String] The span name
-        def span_name # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+        def span_name
           case span[:n].to_s
           when 'actioncontroller'
-            d = span[:data]&.[](:actioncontroller) || span[:actioncontroller] || {}
+            d = span_data_for(:actioncontroller)
             ctrl   = d[:controller].to_s.strip
             action = d[:action].to_s.strip
             parts  = [ctrl, action].reject(&:empty?)
             parts.empty? ? 'actioncontroller' : parts.join('#')
           when 'actionview'
-            d = span[:data]&.[](:actionview) || span[:actionview] || {}
+            d = span_data_for(:actionview)
             d[:name].to_s.strip.then { |n| n.empty? ? 'actionview' : n }
           when 'render'
-            d = span[:data]&.[](:render) || span[:render] || {}
+            d = span_data_for(:render)
             type = d[:type].to_s.strip
             name = d[:name].to_s.strip
             parts = [type, name].reject(&:empty?)
             parts.empty? ? 'render' : parts.join(' ')
-          when 'mail.actionmailer'
-            d = span[:data]&.[](:actionmailer) || span[:actionmailer] || {}
+          when ACTIONMAILER_SPAN
+            d = span_data_for(:actionmailer)
             klass  = d[:class].to_s.strip
             method = d[:method].to_s.strip
             parts  = [klass, method].reject(&:empty?)
-            parts.empty? ? 'mail.actionmailer' : parts.join('#')
+            parts.empty? ? ACTIONMAILER_SPAN : parts.join('#')
           else
             super
           end
@@ -57,7 +59,7 @@ module Instana
             convert_action_view_attributes(attributes)
           when 'render'
             convert_render_attributes(attributes)
-          when 'mail.actionmailer'
+          when ACTIONMAILER_SPAN
             convert_action_mailer_attributes(attributes)
           end
 
@@ -65,6 +67,12 @@ module Instana
         end
 
         private
+
+        # Return the data hash for a given span data key, falling back to
+        # top-level span key, then an empty hash.
+        def span_data_for(key)
+          span[:data]&.[](key) || span[key] || {}
+        end
 
         # Convert ActionController span attributes
         def convert_action_controller_attributes(attributes)
