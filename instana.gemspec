@@ -42,7 +42,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "benchmark"
   spec.add_development_dependency "rack"
 
-
   spec.add_runtime_dependency('base64', '>= 0.1')
   spec.add_runtime_dependency('logger')
   spec.add_runtime_dependency('concurrent-ruby', '>= 1.1')
