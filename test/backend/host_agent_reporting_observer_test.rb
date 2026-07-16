@@ -330,7 +330,11 @@ class HostAgentReportingObserverTest < Minitest::Test # rubocop:disable Metrics/
       endpoint: 'http://localhost:4318/v1/traces',
       timeout: 5_000,
       compression: nil,
-      headers: {}
+      headers: {},
+      certificate: nil,
+      client_key: nil,
+      client_certificate: nil,
+      config_source: 'default'
     }
     ::Instana.config[:otlp] = base.merge(overrides)
     yield
@@ -438,6 +442,68 @@ class HostAgentReportingObserverTest < Minitest::Test # rubocop:disable Metrics/
     end
 
     assert_equal({ 'x-api-key' => 'secret' }, received_opts[:headers])
+  end
+
+  def test_otlp_exporter_passes_certificate_file_when_set
+    client    = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
+    discovery = Concurrent::Atom.new(nil)
+    received_opts = nil
+
+    with_otlp_config(enabled: true, certificate: '/etc/ssl/certs/ca.pem') do
+      capture = lambda { |**opts|
+        received_opts = opts
+        Minitest::Mock.new
+      }
+      OpenTelemetry::Exporter::OTLP::Exporter.stub(:new, capture) do
+        Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
+      end
+    end
+
+    assert_equal '/etc/ssl/certs/ca.pem', received_opts[:certificate_file]
+    refute received_opts.key?(:client_certificate_file), 'client_certificate_file should be absent when not configured'
+    refute received_opts.key?(:client_key_file),         'client_key_file should be absent when not configured'
+  end
+
+  def test_otlp_exporter_passes_client_cert_and_key_when_set
+    client    = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
+    discovery = Concurrent::Atom.new(nil)
+    received_opts = nil
+
+    with_otlp_config(enabled: true,
+                     client_certificate: '/etc/ssl/certs/client.pem',
+                     client_key: '/etc/ssl/private/client.key') do
+      capture = lambda { |**opts|
+        received_opts = opts
+        Minitest::Mock.new
+      }
+      OpenTelemetry::Exporter::OTLP::Exporter.stub(:new, capture) do
+        Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
+      end
+    end
+
+    assert_equal '/etc/ssl/certs/client.pem', received_opts[:client_certificate_file]
+    assert_equal '/etc/ssl/private/client.key', received_opts[:client_key_file]
+    refute received_opts.key?(:certificate_file), 'certificate_file should be absent when not configured'
+  end
+
+  def test_otlp_exporter_omits_cert_keys_when_nil
+    client    = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
+    discovery = Concurrent::Atom.new(nil)
+    received_opts = nil
+
+    with_otlp_config(enabled: true) do
+      capture = lambda { |**opts|
+        received_opts = opts
+        Minitest::Mock.new
+      }
+      OpenTelemetry::Exporter::OTLP::Exporter.stub(:new, capture) do
+        Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
+      end
+    end
+
+    refute received_opts.key?(:certificate_file),        'certificate_file should not be set when nil'
+    refute received_opts.key?(:client_certificate_file), 'client_certificate_file should not be set when nil'
+    refute received_opts.key?(:client_key_file),         'client_key_file should not be set when nil'
   end
 
   def test_otlp_export_enabled_exports_spans
