@@ -718,6 +718,7 @@ class OtlpConfigTest < Minitest::Test
     OTEL_EXPORTER_OTLP_ENDPOINT
     OTEL_EXPORTER_OTLP_TIMEOUT
     OTEL_EXPORTER_OTLP_COMPRESSION
+    OTEL_EXPORTER_OTLP_TRACES_HEADERS
     OTEL_EXPORTER_OTLP_HEADERS
     OTEL_EXPORTER_OTLP_CERTIFICATE
     OTEL_EXPORTER_OTLP_CLIENT_KEY
@@ -852,6 +853,23 @@ class OtlpConfigTest < Minitest::Test
     subject = Instana::Config.new(logger: Logger.new('/dev/null'))
 
     assert_equal({ 'authorization' => 'Bearer token123' }, subject[:otlp][:headers])
+  end
+
+  def test_traces_headers_takes_precedence_over_general_headers
+    ENV['OTEL_EXPORTER_OTLP_TRACES_HEADERS'] = 'x-traces-key=traces-secret'
+    ENV['OTEL_EXPORTER_OTLP_HEADERS']        = 'x-general-key=general-secret'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal({ 'x-traces-key' => 'traces-secret' }, subject[:otlp][:headers])
+  end
+
+  def test_general_headers_used_when_no_traces_headers
+    ENV['OTEL_EXPORTER_OTLP_HEADERS'] = 'x-general-key=general-secret'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal({ 'x-general-key' => 'general-secret' }, subject[:otlp][:headers])
   end
 
   # ── TLS fields ────────────────────────────────────────────────────────────
