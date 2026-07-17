@@ -12,7 +12,8 @@ class MessagingConverterTest < Minitest::Test
     attrs = converter.send(:convert_attributes)
 
     assert_equal 'rabbitmq', attrs['messaging.system']
-    assert_equal 'orders', attrs['messaging.destination.name']
+    # Composite: exchange:key  (producer side)
+    assert_equal 'orders:order.created', attrs['messaging.destination.name']
     assert_equal 'order.created', attrs['messaging.rabbitmq.destination.routing_key']
     assert_equal 'order_queue', attrs['messaging.rabbitmq.queue']
     assert_equal 'rabbitmq.local', attrs['server.address']
@@ -27,9 +28,32 @@ class MessagingConverterTest < Minitest::Test
     attrs = converter.send(:convert_attributes)
 
     assert_equal 'rabbitmq', attrs['messaging.system']
-    assert_equal 'events', attrs['messaging.destination.name']
+    # Composite: exchange:key  (no queue present)
+    assert_equal 'events:user.signup', attrs['messaging.destination.name']
     assert_equal 'user.signup', attrs['messaging.rabbitmq.destination.routing_key']
     assert_equal 'receive', attrs['messaging.operation.type']
+  end
+
+  def test_rabbitmq_consume_with_distinct_queue
+    span = create_span(:rabbitmq, {
+                         rabbitmq: { exchange: 'events', key: 'user.signup', queue: 'signup_queue', address: 'localhost', sort: 'consume' }
+                       })
+    converter = Instana::Exporter::Otlp::MessagingConverter.new(span)
+    attrs = converter.send(:convert_attributes)
+
+    # Composite: exchange:key:queue  (queue differs from key)
+    assert_equal 'events:user.signup:signup_queue', attrs['messaging.destination.name']
+  end
+
+  def test_rabbitmq_consume_deduplicates_key_equals_queue
+    span = create_span(:rabbitmq, {
+                         rabbitmq: { exchange: 'events', key: 'signup_queue', queue: 'signup_queue', sort: 'consume' }
+                       })
+    converter = Instana::Exporter::Otlp::MessagingConverter.new(span)
+    attrs = converter.send(:convert_attributes)
+
+    # queue == key so it is omitted
+    assert_equal 'events:signup_queue', attrs['messaging.destination.name']
   end
 
   def test_rabbitmq_minimal_data
@@ -40,6 +64,7 @@ class MessagingConverterTest < Minitest::Test
     attrs = converter.send(:convert_attributes)
 
     assert_equal 'rabbitmq', attrs['messaging.system']
+    # Only exchange present → no key to append
     assert_equal 'logs', attrs['messaging.destination.name']
     assert_equal 'send', attrs['messaging.operation.type']
     assert_nil attrs['messaging.rabbitmq.destination.routing_key']
