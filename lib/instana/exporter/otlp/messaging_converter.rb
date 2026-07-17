@@ -35,11 +35,11 @@ module Instana
         def convert_attributes
           attributes = {}
 
-          # RabbitMQ
           rabbitmq_data = span[:data]&.[](:rabbitmq)
           if rabbitmq_data
             add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_SYSTEM, 'rabbitmq')
-            add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_DESTINATION_NAME, rabbitmq_data[:exchange])
+            add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_DESTINATION_NAME,
+                          rabbitmq_destination_name(rabbitmq_data))
             add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_RABBITMQ_DESTINATION_ROUTING_KEY, rabbitmq_data[:key])
             add_attribute(attributes, 'messaging.rabbitmq.queue', rabbitmq_data[:queue])
             add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_ADDRESS, rabbitmq_data[:address])
@@ -49,6 +49,32 @@ module Instana
           end
 
           attributes
+        end
+
+        private
+
+        # Build the composite destination name per spec:
+        #   Producer (publish): "{exchange}:{key}"  — omit absent parts
+        #   Consumer (receive): "{exchange}:{key}:{queue}" — omit absent; deduplicate key==queue
+        #
+        # @param data [Hash] rabbitmq span data
+        # @return [String, nil]
+        def rabbitmq_destination_name(data)
+          exchange = data[:exchange].to_s.strip
+          key      = data[:key].to_s.strip
+          queue    = data[:queue].to_s.strip
+          sort     = data[:sort].to_s
+
+          if sort == 'publish'
+            parts = [exchange, key].reject(&:empty?)
+            parts.empty? ? nil : parts.join(':')
+          else
+            # Consumer: exchange:key:queue, dedup key==queue
+            parts = [exchange, key]
+            parts << queue unless queue.empty? || queue == key
+            parts = parts.reject(&:empty?)
+            parts.empty? ? nil : parts.join(':')
+          end
         end
       end
     end
