@@ -89,7 +89,7 @@ module Instana
           return nil unless host_str
 
           part = host_str.to_s.split(':').first
-          (part && !part.empty?) ? part : host_str
+          part && !part.empty? ? part : host_str
         end
 
         # Extract the port from a "host:port" string, falling back to the URL port
