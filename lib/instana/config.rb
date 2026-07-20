@@ -328,7 +328,7 @@ module Instana
         endpoint: ENV.fetch('OTEL_EXPORTER_OTLP_TRACES_ENDPOINT', nil) || ENV.fetch('OTEL_EXPORTER_OTLP_ENDPOINT', nil),
         timeout_raw: ENV.fetch('OTEL_EXPORTER_OTLP_TIMEOUT', nil),
         compression: ENV.fetch('OTEL_EXPORTER_OTLP_COMPRESSION', nil),
-        headers_raw: ENV.fetch('OTEL_EXPORTER_OTLP_HEADERS', nil),
+        headers_raw: ENV.fetch('OTEL_EXPORTER_OTLP_TRACES_HEADERS', nil) || ENV.fetch('OTEL_EXPORTER_OTLP_HEADERS', nil),
         certificate: ENV.fetch('OTEL_EXPORTER_OTLP_CERTIFICATE', nil),
         client_key: ENV.fetch('OTEL_EXPORTER_OTLP_CLIENT_KEY', nil),
         client_cert: ENV.fetch('OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE', nil)
