@@ -67,14 +67,13 @@ module Instana
 
           if sort == 'publish'
             parts = [exchange, key].reject(&:empty?)
-            parts.empty? ? nil : parts.join(':')
           else
             # Consumer: exchange:key:queue, dedup key==queue
             parts = [exchange, key]
             parts << queue unless queue.empty? || queue == key
             parts = parts.reject(&:empty?)
-            parts.empty? ? nil : parts.join(':')
           end
+          parts.empty? ? nil : parts.join(':')
         end
       end
     end
