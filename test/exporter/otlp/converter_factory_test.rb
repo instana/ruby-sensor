@@ -130,26 +130,26 @@ class ConverterFactoryTest < Minitest::Test
   end
 
   # ============================================================================
-  # INTERNAL SPAN TYPE TESTS
+  # UNKNOWN/FALLBACK SPAN TYPE TESTS
   # ============================================================================
 
-  def test_returns_internal_converter_for_internal_spans
-    internal_span_names = %w[internal unknown other test]
+  def test_returns_base_converter_for_unknown_spans
+    unknown_span_names = %w[internal unknown other test]
 
-    internal_span_names.each do |name|
+    unknown_span_names.each do |name|
       span = create_test_span(name: name)
       converter = @factory.create(span)
 
-      assert_equal 'Instana::Exporter::Otlp::InternalConverter', converter.class.name,
-                   "Should return InternalConverter for '#{name}' span"
+      assert_equal 'Instana::Exporter::Otlp::BaseConverter', converter.class.name,
+                   "Should return BaseConverter for '#{name}' span"
     end
   end
 
-  def test_determine_span_type_returns_internal_as_default
+  def test_determine_span_type_returns_nil_as_default
     span = create_test_span(name: 'unknown_span_type')
     span_type = @factory.send(:determine_span_type, span)
 
-    assert_equal 'internal', span_type
+    assert_nil span_type
   end
 
   # ============================================================================
@@ -191,8 +191,7 @@ class ConverterFactoryTest < Minitest::Test
       'messaging' => 'Instana::Exporter::Otlp::MessagingConverter',
       'background_job' => 'Instana::Exporter::Otlp::BackgroundJobConverter',
       'rpc' => 'Instana::Exporter::Otlp::RpcConverter',
-      'custom' => 'Instana::Exporter::Otlp::CustomConverter',
-      'internal' => 'Instana::Exporter::Otlp::InternalConverter'
+      'custom' => 'Instana::Exporter::Otlp::CustomConverter'
     }
 
     expected_converters.each do |span_type, expected_class_name|
@@ -248,14 +247,14 @@ class ConverterFactoryTest < Minitest::Test
     span = create_test_span(name: nil)
     converter = @factory.create(span)
 
-    assert_equal 'Instana::Exporter::Otlp::InternalConverter', converter.class.name
+    assert_equal 'Instana::Exporter::Otlp::BaseConverter', converter.class.name
   end
 
   def test_handles_empty_span_name
     span = create_test_span(name: '')
     converter = @factory.create(span)
 
-    assert_equal 'Instana::Exporter::Otlp::InternalConverter', converter.class.name
+    assert_equal 'Instana::Exporter::Otlp::BaseConverter', converter.class.name
   end
 
   def test_returns_background_job_converter_for_background_job_spans

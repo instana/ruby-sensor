@@ -12,7 +12,6 @@ require_relative 'rpc_converter'
 require_relative 'rails_converter'
 require_relative 'graphql_converter'
 require_relative 'custom_converter'
-require_relative 'internal_converter'
 require_relative '../../trace/span_kind'
 
 module Instana
@@ -31,7 +30,6 @@ module Instana
           rpc: 'rpc',
           rails: 'rails',
           graphql: 'graphql',
-          internal: 'internal',
           custom: 'custom'
         }.freeze
 
@@ -62,20 +60,21 @@ module Instana
             return SPAN_TYPES[:rpc] if rpc_span?(span)
             return SPAN_TYPES[:custom] if custom_span?(span)
 
-            SPAN_TYPES[:internal]
+            nil
           end
 
           # Get the appropriate converter class for the span type
           # @param span_type [String] The type of span
           # @return [Class] The converter class
           def get_converter_class(span_type)
+            return BaseConverter unless span_type
+
             # Convert snake_case to CamelCase (e.g., 'background_job' -> 'BackgroundJob')
             class_name = "#{span_type.split('_').map(&:capitalize).join}Converter"
 
             begin
               const_get("Instana::Exporter::Otlp::#{class_name}")
             rescue NameError
-              # Fall back to base converter if specific converter not found
               BaseConverter
             end
           end
