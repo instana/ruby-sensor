@@ -3,7 +3,7 @@
 require 'test_helper'
 require 'instana/exporter/otlp/http_converter'
 
-class HttpConverterTest < Minitest::Test
+class HttpConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
   def setup
     @base_span_data = {
       t: '1234567890abcdef',
