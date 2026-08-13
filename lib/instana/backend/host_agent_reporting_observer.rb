@@ -145,7 +145,8 @@ module Instana
         end
 
         if ::Instana.config[:metrics][:gc][:enabled]
-          payload[:gc] = GCSnapshot.instance.report
+          poll_rate = discovery&.dig('plugin', 'ruby', 'poll_rate') || 1
+          payload[:gc] = GCSnapshot.instance.report(poll_rate)
         end
 
         if ::Instana.config[:metrics][:thread][:enabled]
