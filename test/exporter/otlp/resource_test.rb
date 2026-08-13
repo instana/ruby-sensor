@@ -229,6 +229,74 @@ class ResourceTest < Minitest::Test
     ENV.delete('AWS_LAMBDA_FUNCTION_NAME')
   end
 
+  # ─── container runtime detection ──────────────────────────────────────────
+
+  def test_docker_detected_on_linux
+    FakeFS.with_fresh do
+      FileUtils.touch('/.dockerenv')
+      stub_rbconfig('linux-gnu') do
+        R.reset!
+        assert_equal 'docker', R.instance[SC::CONTAINER_RUNTIME]
+      end
+    end
+  end
+
+  def test_podman_detected_on_linux_takes_priority_over_dockerenv
+    FakeFS.with_fresh do
+      FileUtils.mkdir_p('/run')
+      FileUtils.touch('/run/.containerenv')
+      FileUtils.touch('/.dockerenv')
+      stub_rbconfig('linux-gnu') do
+        R.reset!
+        assert_equal 'podman', R.instance[SC::CONTAINER_RUNTIME]
+      end
+    end
+  end
+
+  def test_podman_detected_on_linux_without_dockerenv
+    FakeFS.with_fresh do
+      FileUtils.mkdir_p('/run')
+      FileUtils.touch('/run/.containerenv')
+      stub_rbconfig('linux-gnu') do
+        R.reset!
+        assert_equal 'podman', R.instance[SC::CONTAINER_RUNTIME]
+      end
+    end
+  end
+
+  def test_no_container_runtime_detected_on_non_linux
+    FakeFS.with_fresh do
+      # Even if the Linux sentinel files somehow existed, non-Linux must be skipped
+      FileUtils.touch('/.dockerenv')
+      stub_rbconfig('arm-apple-darwin23') do
+        R.reset!
+        refute R.instance.key?(SC::CONTAINER_RUNTIME),
+               'container.runtime must not be set on non-Linux'
+      end
+    end
+  end
+
+  # ─── Lambda is NOT part of container_attributes ───────────────────────────
+
+  def test_lambda_attributes_not_in_container_attrs
+    ENV['AWS_LAMBDA_FUNCTION_NAME'] = 'my-fn'
+    R.reset!
+    container_attrs = R.send(:container_attributes).attributes
+    refute container_attrs.key?(SC::FAAS_NAME),
+           'faas.name must not appear inside container_attributes'
+  ensure
+    ENV.delete('AWS_LAMBDA_FUNCTION_NAME')
+  end
+
+  def test_lambda_attributes_in_faas_attrs
+    ENV['AWS_LAMBDA_FUNCTION_NAME'] = 'my-fn'
+    R.reset!
+    faas_attrs = R.send(:faas_attributes).attributes
+    assert_equal 'my-fn', faas_attrs[SC::FAAS_NAME]
+  ensure
+    ENV.delete('AWS_LAMBDA_FUNCTION_NAME')
+  end
+
   private
 
   def stub_rbconfig(host_os_value)
