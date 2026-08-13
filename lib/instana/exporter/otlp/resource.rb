@@ -13,10 +13,14 @@ module Instana
       # for which telemetry (metrics or traces) is reported.
       # This follows OpenTelemetry semantic conventions for resource attributes
       class Resource
-        PROC_SELF_CGROUP  = '/proc/self/cgroup'
-        MACHINE_ID_PATHS  = %w[/etc/machine-id /var/lib/dbus/machine-id].freeze
+        PROC_SELF_CGROUP    = '/proc/self/cgroup'
+        DOCKER_ENV_FILE     = '/.dockerenv'
+        PODMAN_CONTAINERENV = '/run/.containerenv'
+        # Linux-only stable machine-id paths (systemd and D-Bus fallback).
+        # These files do not exist on macOS or Windows; host_id returns nil there.
+        MACHINE_ID_PATHS   = %w[/etc/machine-id /var/lib/dbus/machine-id].freeze
         # cloud.resource_id is not yet in the installed semconv gem version
-        CLOUD_RESOURCE_ID = 'cloud.resource_id'
+        CLOUD_RESOURCE_ID  = 'cloud.resource_id'
 
         class << self
           private :new
@@ -44,6 +48,7 @@ module Instana
                          .merge(service_name_from_env)
                          .merge(optional_attributes)
                          .merge(container_attributes)
+                         .merge(faas_attributes)
           end
 
           # Get the global resource instance (singleton pattern)
@@ -143,27 +148,51 @@ module Instana
             create(attrs)
           end
 
-          # Returns container and cloud platform resource attributes
+          # Returns container and cloud platform resource attributes.
+          # AWS Lambda is intentionally excluded here — it is a FaaS platform,
+          # not a container runtime. See faas_attributes for Lambda/Cloud Run.
           #
           # @return [Resource]
           def container_attributes
             attrs = {}
 
-            add_docker_attributes(attrs)
+            add_docker_or_podman_attributes(attrs)
             add_kubernetes_attributes(attrs)
             add_aws_ecs_attributes(attrs)
+
+            create(attrs)
+          end
+
+          # Returns FaaS (Function-as-a-Service) platform resource attributes.
+          # Kept separate from container_attributes because Lambda and Cloud Run
+          # are serverless runtimes, not container runtimes.
+          #
+          # @return [Resource]
+          def faas_attributes
+            attrs = {}
+
             add_aws_lambda_attributes(attrs)
             add_cloud_run_attributes(attrs)
 
             create(attrs)
           end
 
-          def add_docker_attributes(attrs)
-            return unless File.exist?('/.dockerenv') || File.exist?(PROC_SELF_CGROUP)
+          # Detects whether we are running inside a Docker or Podman container
+          # and sets container.runtime + container.id accordingly.
+          # Only runs on Linux (/.dockerenv, /proc/self/cgroup and
+          # /run/.containerenv are Linux-specific paths).
+          def add_docker_or_podman_attributes(attrs)
+            return unless linux?
 
-            attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_RUNTIME] = 'docker'
-            container_id = extract_container_id
-            attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_ID] = container_id if container_id
+            if File.exist?(PODMAN_CONTAINERENV)
+              attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_RUNTIME] = 'podman'
+              container_id = extract_container_id
+              attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_ID] = container_id if container_id
+            elsif File.exist?(DOCKER_ENV_FILE) || File.exist?(PROC_SELF_CGROUP)
+              attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_RUNTIME] = 'docker'
+              container_id = extract_container_id
+              attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_ID] = container_id if container_id
+            end
           end
 
           def add_kubernetes_attributes(attrs)
@@ -210,6 +239,13 @@ module Instana
 
             revision = ENV.fetch('K_REVISION', nil)
             attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_VERSION] = revision if revision
+          end
+
+          # Returns true when the current OS is Linux.
+          #
+          # @return [Boolean]
+          def linux?
+            detect_os_type == 'linux'
           end
 
           # Detect the OS type string per OTel semconv os.type values.
