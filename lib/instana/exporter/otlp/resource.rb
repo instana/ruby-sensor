@@ -13,7 +13,10 @@ module Instana
       # for which telemetry (metrics or traces) is reported.
       # This follows OpenTelemetry semantic conventions for resource attributes
       class Resource
-        PROC_SELF_CGROUP = '/proc/self/cgroup'
+        PROC_SELF_CGROUP  = '/proc/self/cgroup'
+        MACHINE_ID_PATHS  = %w[/etc/machine-id /var/lib/dbus/machine-id].freeze
+        # cloud.resource_id is not yet in the installed semconv gem version
+        CLOUD_RESOURCE_ID = 'cloud.resource_id'
 
         class << self
           private :new
@@ -25,7 +28,7 @@ module Instana
           # @return [Resource]
           def create(attributes = {})
             frozen_attributes = attributes.each_with_object({}) do |(k, v), memo|
-              memo[-k] = v.freeze
+              memo[k.freeze] = v.freeze
             end.freeze
 
             new(frozen_attributes)
@@ -98,25 +101,44 @@ module Instana
             create(OpenTelemetry::SemanticConventions::Resource::SERVICE_NAME => service_name)
           end
 
-          # Returns optional resource attributes (host, service version, service instance id)
+          # Returns optional resource attributes:
+          #   os.type, host.name, host.arch, host.id, service.version, service.instance.id
+          #
+          # service.instance.id priority (v2 spec §General Resource Attributes):
+          #   container.id → k8s.pod.uid → host.id → hostname:pid
           #
           # @return [Resource]
           def optional_attributes
             attrs = {}
 
-            # Add service instance id (hostname:pid format)
+            # os.type — Required per v2 spec
+            attrs[OpenTelemetry::SemanticConventions::Resource::OS_TYPE] = detect_os_type
+
             host = hostname
-            attrs[OpenTelemetry::SemanticConventions::Resource::SERVICE_INSTANCE_ID] = "#{host}:#{Process.pid}"
 
-            # Add service version if available
-            version = ENV.fetch('OTEL_SERVICE_VERSION', nil) || ENV.fetch('INSTANA_SERVICE_VERSION', nil) || detect_app_version
-            attrs[OpenTelemetry::SemanticConventions::Resource::SERVICE_VERSION] = version if version
-
-            # Add host attributes if available
+            # host.name — Recommended (Conditional) per v2 spec
             attrs[OpenTelemetry::SemanticConventions::Resource::HOST_NAME] = host if host && host != 'unknown'
 
+            # host.arch
             arch = host_architecture
             attrs[OpenTelemetry::SemanticConventions::Resource::HOST_ARCH] = arch if arch
+
+            # host.id — Recommended per v2 spec; stable machine identifier
+            hid = host_id
+            attrs[OpenTelemetry::SemanticConventions::Resource::HOST_ID] = hid if hid
+
+            # service.version
+            version = ENV.fetch('OTEL_SERVICE_VERSION', nil) ||
+                      ENV.fetch('INSTANA_SERVICE_VERSION', nil) ||
+                      detect_app_version
+            attrs[OpenTelemetry::SemanticConventions::Resource::SERVICE_VERSION] = version if version
+
+            # service.instance.id — priority: container.id > k8s.pod.uid > host.id > hostname:pid
+            instance_id = extract_container_id ||
+                          ENV.fetch('MY_POD_UID', nil) ||
+                          hid ||
+                          "#{host}:#{Process.pid}"
+            attrs[OpenTelemetry::SemanticConventions::Resource::SERVICE_INSTANCE_ID] = instance_id
 
             create(attrs)
           end
@@ -137,7 +159,13 @@ module Instana
             # Check for Kubernetes
             if ENV.fetch('KUBERNETES_SERVICE_HOST', nil)
               attrs[OpenTelemetry::SemanticConventions::Resource::K8S_POD_NAME] = ENV.fetch('HOSTNAME', nil)
-              attrs[OpenTelemetry::SemanticConventions::Resource::K8S_NAMESPACE_NAME] = ENV.fetch('KUBERNETES_NAMESPACE', nil) if ENV.fetch('KUBERNETES_NAMESPACE', nil)
+
+              # k8s.pod.uid — Recommended (Conditional) per v2 spec; set via downward API as MY_POD_UID
+              pod_uid = ENV.fetch('MY_POD_UID', nil)
+              attrs[OpenTelemetry::SemanticConventions::Resource::K8S_POD_UID] = pod_uid if pod_uid
+
+              ns = ENV.fetch('KUBERNETES_NAMESPACE', nil)
+              attrs[OpenTelemetry::SemanticConventions::Resource::K8S_NAMESPACE_NAME] = ns if ns
             end
 
             # Check for AWS ECS/Fargate
@@ -147,11 +175,19 @@ module Instana
             end
 
             # Check for AWS Lambda
-            if ENV.fetch('AWS_LAMBDA_FUNCTION_NAME', nil)
+            lambda_name = ENV.fetch('AWS_LAMBDA_FUNCTION_NAME', nil)
+            if lambda_name
               attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PROVIDER] = 'aws'
               attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PLATFORM] = 'aws_lambda'
-              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_NAME] = ENV.fetch('AWS_LAMBDA_FUNCTION_NAME', nil)
-              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_VERSION] = ENV.fetch('AWS_LAMBDA_FUNCTION_VERSION', nil) if ENV.fetch('AWS_LAMBDA_FUNCTION_VERSION', nil)
+              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_NAME]      = lambda_name
+
+              version = ENV.fetch('AWS_LAMBDA_FUNCTION_VERSION', nil)
+              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_VERSION] = version if version
+
+              # cloud.region, cloud.account.id, cloud.resource_id — parsed from ARN
+              # ARN format: arn:aws:lambda:REGION:ACCOUNT:function:NAME[:VERSION]
+              arn = ENV.fetch('AWS_LAMBDA_FUNCTION_ARN', nil)
+              attrs.merge!(parse_lambda_arn(arn)) if arn
             end
 
             # Check for Google Cloud Run
@@ -163,6 +199,54 @@ module Instana
             end
 
             create(attrs)
+          end
+
+          # Detect the OS type string per OTel semconv os.type values.
+          # Returns one of: "linux", "darwin", "windows", or the raw RbConfig string.
+          #
+          # @return [String]
+          def detect_os_type
+            raw = RbConfig::CONFIG['host_os'].to_s.downcase
+            case raw
+            when /linux/              then 'linux'
+            when /darwin/             then 'darwin'
+            when /mingw|mswin|cygwin/ then 'windows'
+            else raw
+            end
+          end
+
+          # Returns a stable machine-level identifier.
+          # Reads /etc/machine-id (Linux systemd standard) or
+          # /var/lib/dbus/machine-id as fallback. Returns nil on macOS/Windows.
+          #
+          # @return [String, nil]
+          def host_id
+            MACHINE_ID_PATHS.each do |path|
+              next unless File.exist?(path)
+
+              id = File.read(path).strip
+              return id unless id.empty?
+            end
+            nil
+          rescue StandardError
+            nil
+          end
+
+          # Parses a Lambda ARN and returns a hash of cloud.* resource attributes.
+          #
+          # @param arn [String] e.g. "arn:aws:lambda:us-east-1:123456789012:function:my-fn"
+          # @return [Hash]
+          def parse_lambda_arn(arn)
+            return {} if arn.nil? || arn.empty?
+
+            parts = arn.split(':')
+            result = {}
+            result[OpenTelemetry::SemanticConventions::Resource::CLOUD_REGION]     = parts[3] if parts[3] && !parts[3].empty?
+            result[OpenTelemetry::SemanticConventions::Resource::CLOUD_ACCOUNT_ID] = parts[4] if parts[4] && !parts[4].empty?
+            result[CLOUD_RESOURCE_ID]                                              = arn
+            result
+          rescue StandardError
+            {}
           end
 
           # Get hostname
