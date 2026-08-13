@@ -31,15 +31,15 @@ module Instana
 
         def convert_attributes
           attributes = {}
+          span_type  = span[:n].to_s
 
-          case span[:n].to_s
-          when 'sidekiq-client'
+          if span_type == 'sidekiq-client' # rubocop:disable Style/CaseLikeIf
             convert_job_attributes(attributes, span[:'sidekiq-client'] || span[:data]&.[](:'sidekiq-client'), 'sidekiq', 'publish')
-          when 'sidekiq-worker'
+          elsif span_type == 'sidekiq-worker'
             convert_job_attributes(attributes, span[:'sidekiq-worker'] || span[:data]&.[](:'sidekiq-worker'), 'sidekiq', 'process')
-          when 'resque-client'
+          elsif span_type == 'resque-client'
             convert_job_attributes(attributes, span[:'resque-client'] || span[:data]&.[](:'resque-client'), 'resque', 'publish')
-          when 'resque-worker'
+          elsif span_type == 'resque-worker'
             convert_job_attributes(attributes, span[:'resque-worker'] || span[:data]&.[](:'resque-worker'), 'resque', 'process')
           end
 

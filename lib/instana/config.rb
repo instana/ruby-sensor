@@ -5,16 +5,20 @@ require 'yaml'
 
 module Instana
   class Config
-    def initialize(logger: ::Instana.logger, agent_host: ENV['INSTANA_AGENT_HOST'], agent_port: ENV['INSTANA_AGENT_PORT']) # rubocop:disable Metrics/MethodLength
+
+    LEGACY_TRACING_KEY = 'com.instana.tracing'.freeze
+    TRACING_KEY = 'tracing'.freeze
+
+    def initialize(logger: ::Instana.logger, agent_host: ENV.fetch('INSTANA_AGENT_HOST', nil), agent_port: ENV.fetch('INSTANA_AGENT_PORT', nil)) # rubocop:disable Metrics/MethodLength
       @config = {}
       if agent_host
-        logger.debug "Using custom agent host location specified in INSTANA_AGENT_HOST (#{ENV['INSTANA_AGENT_HOST']})"
+        logger.debug "Using custom agent host location specified in INSTANA_AGENT_HOST (#{agent_host})"
         @config[:agent_host] = agent_host
       else
         @config[:agent_host] = '127.0.0.1'
       end
       if agent_port
-        logger.debug "Using custom agent port specified in INSTANA_AGENT_PORT (#{ENV['INSTANA_AGENT_PORT']})"
+        logger.debug "Using custom agent port specified in INSTANA_AGENT_PORT (#{agent_port})"
         @config[:agent_port] = agent_port
       else
         @config[:agent_port] = 42699
@@ -30,7 +34,7 @@ module Instana
       @config[:tracing] = { :enabled => true }
 
       # Enable/disable tracing exit spans as root spans
-      @config[:allow_exit_as_root] = ENV['INSTANA_ALLOW_EXIT_AS_ROOT'] == '1'
+      @config[:allow_exit_as_root] = ENV.fetch('INSTANA_ALLOW_EXIT_AS_ROOT', nil) == '1'
 
       # Enable/Disable logging
       @config[:logging] = { :enabled => true }
@@ -74,7 +78,7 @@ module Instana
       @config[:sanitize_sql] = true
 
       # W3C Trace Context Support
-      @config[:w3c_trace_correlation] = ENV['INSTANA_DISABLE_W3C_TRACE_CORRELATION'].nil?
+      @config[:w3c_trace_correlation] = ENV.fetch('INSTANA_DISABLE_W3C_TRACE_CORRELATION', nil).nil?
 
       @config[:post_fork_proc] = proc { ::Instana.agent.spawn_background_thread }
 
@@ -108,7 +112,7 @@ module Instana
     # Priority: Environment variables > YAML file > Agent discovery > Defaults
     def read_span_stack_config
       # Try environment variables first
-      if ENV['INSTANA_STACK_TRACE'] || ENV['INSTANA_STACK_TRACE_LENGTH']
+      if ENV.fetch('INSTANA_STACK_TRACE', nil) || ENV.fetch('INSTANA_STACK_TRACE_LENGTH', nil)
         read_span_stack_config_from_env
         @config[:back_trace_technologies] = {}
         return
@@ -159,17 +163,17 @@ module Instana
     # Read stack trace configuration from YAML file
     # Returns hash with :global and :technologies keys or nil if not found
     def read_span_stack_config_from_yaml
-      config_path = ENV['INSTANA_CONFIG_PATH']
+      config_path = ENV.fetch('INSTANA_CONFIG_PATH', nil)
       return nil unless config_path && File.exist?(config_path)
 
       begin
         yaml_content = YAML.safe_load(File.read(config_path))
 
         # Support both "tracing" and "com.instana.tracing" as top-level keys
-        if yaml_content['com.instana.tracing']
-          ::Instana.logger.warn('Please use "tracing" instead of "com.instana.tracing"')
+        if yaml_content[LEGACY_TRACING_KEY]
+          ::Instana.logger.warn("Please use \"#{TRACING_KEY}\" instead of \"#{LEGACY_TRACING_KEY}\"")
         end
-        tracing_config = yaml_content['tracing'] || yaml_content['com.instana.tracing']
+        tracing_config = yaml_content[TRACING_KEY] || yaml_content[LEGACY_TRACING_KEY]
         return nil unless tracing_config
 
         result = {}
@@ -194,8 +198,8 @@ module Instana
     # Read stack trace configuration from environment variables
     def read_span_stack_config_from_env
       @config[:back_trace] = {
-        stack_trace_level: ENV['INSTANA_STACK_TRACE'] || 'error',
-        stack_trace_length: ENV['INSTANA_STACK_TRACE_LENGTH']&.to_i || 30,
+        stack_trace_level: ENV.fetch('INSTANA_STACK_TRACE', 'error'),
+        stack_trace_length: ENV.fetch('INSTANA_STACK_TRACE_LENGTH', 30).to_i,
         config_source: 'env'
       }
     end
@@ -279,27 +283,30 @@ module Instana
 
       begin
         yaml_content = YAML.safe_load(File.read(config_path))
-        tracing_config = yaml_content['tracing'] || yaml_content['com.instana.tracing']
+        tracing_config = yaml_content[TRACING_KEY] || yaml_content[LEGACY_TRACING_KEY]
         return nil unless tracing_config
 
         otlp_yaml = tracing_config['otlp']
         return nil unless otlp_yaml.is_a?(Hash)
 
-        result = {}
-        result[:enabled]            = truthy?(otlp_yaml['enabled'])            unless otlp_yaml['enabled'].nil?
-        result[:endpoint]           = otlp_yaml['endpoint']                    if otlp_yaml['endpoint']
-        result[:timeout]            = otlp_yaml['timeout'].to_i                if otlp_yaml['timeout']
-        result[:compression]        = otlp_yaml['compression']                 if otlp_yaml['compression']
-        result[:headers]            = otlp_yaml['headers']                     if otlp_yaml['headers'].is_a?(Hash)
-        result[:certificate]        = otlp_yaml['certificate']                 if otlp_yaml['certificate']
-        result[:client_key]         = otlp_yaml['client_key']                  if otlp_yaml['client_key']
-        result[:client_certificate] = otlp_yaml['client_certificate']          if otlp_yaml['client_certificate']
-
-        result.empty? ? nil : result
+        build_otlp_yaml_result(otlp_yaml)
       rescue => e
         ::Instana.logger.warn("Failed to load OTLP configuration from YAML: #{e.message}")
         nil
       end
+    end
+
+    def build_otlp_yaml_result(otlp_yaml)
+      result = {}
+      result[:enabled]            = truthy?(otlp_yaml['enabled'])   unless otlp_yaml['enabled'].nil?
+      result[:endpoint]           = otlp_yaml['endpoint']           if otlp_yaml['endpoint']
+      result[:timeout]            = otlp_yaml['timeout'].to_i       if otlp_yaml['timeout']
+      result[:compression]        = otlp_yaml['compression']        if otlp_yaml['compression']
+      result[:headers]            = otlp_yaml['headers']            if otlp_yaml['headers'].is_a?(Hash)
+      result[:certificate]        = otlp_yaml['certificate']        if otlp_yaml['certificate']
+      result[:client_key]         = otlp_yaml['client_key']         if otlp_yaml['client_key']
+      result[:client_certificate] = otlp_yaml['client_certificate'] if otlp_yaml['client_certificate']
+      result.empty? ? nil : result
     end
 
     # Parse OTLP config from environment variables

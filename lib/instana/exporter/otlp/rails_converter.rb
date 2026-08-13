@@ -51,15 +51,15 @@ module Instana
 
         def convert_attributes
           attributes = {}
+          span_type  = span[:n].to_s
 
-          case span[:n].to_s
-          when 'actioncontroller'
+          if span_type == 'actioncontroller' # rubocop:disable Style/CaseLikeIf
             convert_action_controller_attributes(attributes)
-          when 'actionview'
+          elsif span_type == 'actionview'
             convert_action_view_attributes(attributes)
-          when 'render'
+          elsif span_type == 'render'
             convert_render_attributes(attributes)
-          when ACTIONMAILER_SPAN
+          elsif span_type == ACTIONMAILER_SPAN
             convert_action_mailer_attributes(attributes)
           end
 
