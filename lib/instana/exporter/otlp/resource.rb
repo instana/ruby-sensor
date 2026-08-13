@@ -177,21 +177,28 @@ module Instana
             create(attrs)
           end
 
-          # Detects whether we are running inside a Docker or Podman container
-          # and sets container.runtime + container.id accordingly.
-          # Only runs on Linux (/.dockerenv, /proc/self/cgroup and
-          # /run/.containerenv are Linux-specific paths).
+          # Sets container.runtime and container.id attributes when a container
+          # engine is detected. Only runs on Linux since all sentinel paths are
+          # Linux-specific.
           def add_docker_or_podman_attributes(attrs)
             return unless linux?
 
+            engine = extract_container_engine
+            attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_RUNTIME] = engine if engine
+
+            container_id = extract_container_id
+            attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_ID] = container_id if container_id
+          end
+
+          # Detects the container engine by inspecting Linux sentinel files.
+          # Returns 'podman', 'docker', or nil if no container environment is found.
+          #
+          # @return [String, nil]
+          def extract_container_engine
             if File.exist?(PODMAN_CONTAINERENV)
-              attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_RUNTIME] = 'podman'
-              container_id = extract_container_id
-              attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_ID] = container_id if container_id
+              'podman'
             elsif File.exist?(DOCKER_ENV_FILE) || File.exist?(PROC_SELF_CGROUP)
-              attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_RUNTIME] = 'docker'
-              container_id = extract_container_id
-              attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_ID] = container_id if container_id
+              'docker'
             end
           end
 
