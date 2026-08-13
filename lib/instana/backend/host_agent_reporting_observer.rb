@@ -100,11 +100,11 @@ module Instana
               ::Instana::Exporter::Otlp::ConverterFactory.create(span).convert
             end
             result_code = @otlp_exporter.export(converted_spans)
-            Instana.logger.debug("using otlp exporter to export result code: #{result_code}")
+            Instana.logger.debug("Using OTLP Exporter to export result code: #{result_code}")
             success = result_code == OpenTelemetry::SDK::Trace::Export::SUCCESS
           else
             response = @client.send_request('POST', path, spans)
-            Instana.logger.debug("using instana native exporter to export result code: #{response}")
+            Instana.logger.debug("Using Instana Native Exporter to export result code: #{response}")
             success = response&.ok?
           end
 
