@@ -149,56 +149,67 @@ module Instana
           def container_attributes
             attrs = {}
 
-            # Check for Docker
-            if File.exist?('/.dockerenv') || File.exist?(PROC_SELF_CGROUP)
-              attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_RUNTIME] = 'docker'
-              container_id = extract_container_id
-              attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_ID] = container_id if container_id
-            end
-
-            # Check for Kubernetes
-            if ENV.fetch('KUBERNETES_SERVICE_HOST', nil)
-              attrs[OpenTelemetry::SemanticConventions::Resource::K8S_POD_NAME] = ENV.fetch('HOSTNAME', nil)
-
-              # k8s.pod.uid — Recommended (Conditional) per v2 spec; set via downward API as MY_POD_UID
-              pod_uid = ENV.fetch('MY_POD_UID', nil)
-              attrs[OpenTelemetry::SemanticConventions::Resource::K8S_POD_UID] = pod_uid if pod_uid
-
-              ns = ENV.fetch('KUBERNETES_NAMESPACE', nil)
-              attrs[OpenTelemetry::SemanticConventions::Resource::K8S_NAMESPACE_NAME] = ns if ns
-            end
-
-            # Check for AWS ECS/Fargate
-            if ENV.fetch('ECS_CONTAINER_METADATA_URI', nil) || ENV.fetch('ECS_CONTAINER_METADATA_URI_V4', nil)
-              attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PROVIDER] = 'aws'
-              attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PLATFORM] = 'aws_ecs'
-            end
-
-            # Check for AWS Lambda
-            lambda_name = ENV.fetch('AWS_LAMBDA_FUNCTION_NAME', nil)
-            if lambda_name
-              attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PROVIDER] = 'aws'
-              attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PLATFORM] = 'aws_lambda'
-              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_NAME]      = lambda_name
-
-              version = ENV.fetch('AWS_LAMBDA_FUNCTION_VERSION', nil)
-              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_VERSION] = version if version
-
-              # cloud.region, cloud.account.id, cloud.resource_id — parsed from ARN
-              # ARN format: arn:aws:lambda:REGION:ACCOUNT:function:NAME[:VERSION]
-              arn = ENV.fetch('AWS_LAMBDA_FUNCTION_ARN', nil)
-              attrs.merge!(parse_lambda_arn(arn)) if arn
-            end
-
-            # Check for Google Cloud Run
-            if ENV.fetch('K_SERVICE', nil)
-              attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PROVIDER] = 'gcp'
-              attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PLATFORM] = 'gcp_cloud_run'
-              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_NAME] = ENV.fetch('K_SERVICE', nil)
-              attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_VERSION] = ENV.fetch('K_REVISION', nil) if ENV.fetch('K_REVISION', nil)
-            end
+            add_docker_attributes(attrs)
+            add_kubernetes_attributes(attrs)
+            add_aws_ecs_attributes(attrs)
+            add_aws_lambda_attributes(attrs)
+            add_cloud_run_attributes(attrs)
 
             create(attrs)
+          end
+
+          def add_docker_attributes(attrs)
+            return unless File.exist?('/.dockerenv') || File.exist?(PROC_SELF_CGROUP)
+
+            attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_RUNTIME] = 'docker'
+            container_id = extract_container_id
+            attrs[OpenTelemetry::SemanticConventions::Resource::CONTAINER_ID] = container_id if container_id
+          end
+
+          def add_kubernetes_attributes(attrs)
+            return unless ENV.fetch('KUBERNETES_SERVICE_HOST', nil)
+
+            attrs[OpenTelemetry::SemanticConventions::Resource::K8S_POD_NAME] = ENV.fetch('HOSTNAME', nil)
+
+            pod_uid = ENV.fetch('MY_POD_UID', nil)
+            attrs[OpenTelemetry::SemanticConventions::Resource::K8S_POD_UID] = pod_uid if pod_uid
+
+            ns = ENV.fetch('KUBERNETES_NAMESPACE', nil)
+            attrs[OpenTelemetry::SemanticConventions::Resource::K8S_NAMESPACE_NAME] = ns if ns
+          end
+
+          def add_aws_ecs_attributes(attrs)
+            return unless ENV.fetch('ECS_CONTAINER_METADATA_URI', nil) || ENV.fetch('ECS_CONTAINER_METADATA_URI_V4', nil)
+
+            attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PROVIDER] = 'aws'
+            attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PLATFORM] = 'aws_ecs'
+          end
+
+          def add_aws_lambda_attributes(attrs)
+            lambda_name = ENV.fetch('AWS_LAMBDA_FUNCTION_NAME', nil)
+            return unless lambda_name
+
+            attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PROVIDER] = 'aws'
+            attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PLATFORM] = 'aws_lambda'
+            attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_NAME] = lambda_name
+
+            version = ENV.fetch('AWS_LAMBDA_FUNCTION_VERSION', nil)
+            attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_VERSION] = version if version
+
+            arn = ENV.fetch('AWS_LAMBDA_FUNCTION_ARN', nil)
+            attrs.merge!(parse_lambda_arn(arn)) if arn
+          end
+
+          def add_cloud_run_attributes(attrs)
+            service = ENV.fetch('K_SERVICE', nil)
+            return unless service
+
+            attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PROVIDER] = 'gcp'
+            attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PLATFORM] = 'gcp_cloud_run'
+            attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_NAME] = service
+
+            revision = ENV.fetch('K_REVISION', nil)
+            attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_VERSION] = revision if revision
           end
 
           # Detect the OS type string per OTel semconv os.type values.
@@ -221,12 +232,12 @@ module Instana
           #
           # @return [String, nil]
           def host_id
-            MACHINE_ID_PATHS.each do |path|
-              next unless File.exist?(path)
+            path = MACHINE_ID_PATHS.find { |machine_id_path| File.exist?(machine_id_path) }
+            return nil unless path
 
-              id = File.read(path).strip
-              return id unless id.empty?
-            end
+            id = File.read(path).strip
+            return id unless id.empty?
+
             nil
           rescue StandardError
             nil
