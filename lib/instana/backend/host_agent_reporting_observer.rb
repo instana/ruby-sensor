@@ -1,5 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
+require 'opentelemetry/exporter/otlp'
+require_relative '../exporter/otlp/converter_factory'
 
 module Instana
   module Backend
@@ -22,7 +24,7 @@ module Instana
         @timer_class = timer_class
         @nonce = Time.now
         @processor = processor
-
+        initialize_otlp_exporter
         # Initialize timers with default 1 second interval
         @metrics_timer = @timer_class.new(execution_interval: 1, run_now: true) { report_metrics_to_backend }
         @traces_timer = @timer_class.new(execution_interval: 1, run_now: true) { report_traces_to_backend }
@@ -36,6 +38,8 @@ module Instana
         if new_version.nil?
           @metrics_timer&.shutdown
           @traces_timer&.shutdown
+          @otlp_exporter&.shutdown
+          @otlp_exporter = nil
         else
           # Read poll_rate from discovery payload - it's nested under plugin.ruby.poll_rate
           discovery = @discovery.value
@@ -90,10 +94,22 @@ module Instana
         path = format(TRACES_DATA_URL, discovery['pid'])
 
         @processor.send do |spans|
-          response = @client.send_request('POST', path, spans)
+          success = false
+          if @otlp_exporter
+            converted_spans = spans.map do |span|
+              ::Instana::Exporter::Otlp::ConverterFactory.create(span).convert
+            end
+            result_code = @otlp_exporter.export(converted_spans)
+            Instana.logger.debug("Using OTLP Exporter to export result code: #{result_code}")
+            success = result_code == OpenTelemetry::SDK::Trace::Export::SUCCESS
+          else
+            response = @client.send_request('POST', path, spans)
+            Instana.logger.debug("Using Instana Native Exporter to export result code: #{response}")
+            success = response&.ok?
+          end
 
-          unless response.ok?
-            @logger.warn("Failed to send `#{spans.count}` spans to `#{path}`. Response: #{response.code} - #{response.body}")
+          unless success
+            @logger.warn("Failed to send `#{spans.count}` spans to `#{path}`.")
             trigger_rediscovery
             break
           end
@@ -159,6 +175,44 @@ module Instana
       def trigger_rediscovery
         @discovery.swap { nil }
         ::Instana.agent.announce
+      end
+
+      def initialize_otlp_exporter
+        config = ::Instana.config[:otlp]
+        unless config[:enabled]
+          @otlp_exporter = nil
+          return
+        end
+
+        endpoint = resolve_otlp_endpoint(config[:endpoint], config[:config_source])
+        opts = { endpoint: endpoint, timeout: config[:timeout] / 1000.0 }
+        opts[:compression]            = config[:compression]         if config[:compression]
+        opts[:headers]                = config[:headers]             if config[:headers]&.any?
+        opts[:certificate_file]       = config[:certificate] if config[:certificate]
+        opts[:client_certificate_file] = config[:client_certificate] if config[:client_certificate]
+        opts[:client_key_file] = config[:client_key] if config[:client_key]
+
+        @otlp_exporter = OpenTelemetry::Exporter::OTLP::Exporter.new(**opts)
+      rescue StandardError => e
+        @logger.error("Failed to initialize OTLP exporter: #{e.message}")
+        @otlp_exporter = nil
+      end
+
+      # Derive the OTLP endpoint from the discovered agent host when no explicit
+      # endpoint has been configured (config_source == 'default').
+      OTLP_DEFAULT_PORT = 4318
+      OTLP_TRACES_PATH  = '/v1/traces'.freeze
+
+      def resolve_otlp_endpoint(endpoint, config_source)
+        return endpoint unless config_source == 'default'
+
+        # Use the host that was discovered by HostAgentLookup (same host the
+        # metrics/traces client is already talking to) and append the standard
+        # OTLP HTTP port and traces path.
+        agent_host = @client&.host
+        return endpoint unless agent_host
+
+        "http://#{agent_host}:#{OTLP_DEFAULT_PORT}#{OTLP_TRACES_PATH}"
       end
     end
   end

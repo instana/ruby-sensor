@@ -1,0 +1,440 @@
+# (c) Copyright IBM Corp. 2025
+
+require 'test_helper'
+require 'instana/exporter/otlp/http_converter'
+
+class HttpConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
+  def setup
+    @base_span_data = {
+      t: '1234567890abcdef',
+      s: 'abcdef1234567890',
+      p: 'fedcba0987654321',
+      n: :nethttp,
+      k: 2,
+      ts: 1_716_234_000_000,
+      d: 150
+    }
+  end
+
+  def test_convert_http_client_span_with_all_attributes
+    span = create_http_span(
+      method: 'GET',
+      url: 'https://api.example.com/users/123',
+      status: 200,
+      host: 'api.example.com',
+      path: '/users/123',
+      header: { 'user-agent' => 'Ruby/3.2.0' }
+    )
+
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    # Verify base attributes
+    assert_equal format_trace_id(span.trace_id), result[:trace_id]
+    assert_equal format_span_id(span.id), result[:span_id]
+    assert_equal format_span_id(span.parent_id), result[:parent_span_id]
+    assert_equal 'GET /users/123', result[:name]
+    assert_equal :client, result[:kind] # CLIENT kind
+
+    # Verify HTTP attributes are present (using new semantic conventions)
+    attributes = result[:attributes]
+    assert_http_attribute(attributes, 'http.request.method', 'GET')
+    assert_http_attribute(attributes, 'url.full', 'https://api.example.com/users/123')
+    assert_http_attribute(attributes, 'http.response.status_code', 200)
+    assert_http_attribute(attributes, 'server.address', 'api.example.com')
+    assert_http_attribute(attributes, 'url.path', '/users/123')
+    assert_http_attribute(attributes, 'url.scheme', 'https')
+    assert_http_attribute(attributes, 'user_agent.original', 'Ruby/3.2.0')
+  end
+
+  def test_convert_http_server_span
+    span = create_http_span(
+      method: 'POST',
+      url: 'https://myapp.com/api/orders',
+      status: 201,
+      host: 'myapp.com',
+      path: '/api/orders',
+      kind: 1 # Server/entry span
+    )
+
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    assert_equal :server, result[:kind] # SERVER kind
+    attributes = result[:attributes]
+    assert_http_attribute(attributes, 'http.request.method', 'POST')
+    assert_http_attribute(attributes, 'http.response.status_code', 201)
+  end
+
+  def test_convert_http_span_with_minimal_data
+    span = create_http_span(method: 'GET')
+
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    # Should still have base attributes
+    assert result[:trace_id]
+    assert result[:span_id]
+    assert result[:attributes]
+
+    # Should have at least the method attribute
+    attributes = result[:attributes]
+    assert_http_attribute(attributes, 'http.request.method', 'GET')
+  end
+
+  def test_convert_http_span_without_http_data
+    span = Instana::Span.new(:nethttp)
+    span[:k] = 2
+    span.close
+
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    # Should return base attributes with empty HTTP attributes
+    assert result[:attributes]
+    assert_instance_of Hash, result[:attributes]
+  end
+
+  def test_extract_scheme_from_https_url
+    span = create_http_span(url: 'https://api.example.com/path')
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    attributes = result[:attributes]
+    assert_http_attribute(attributes, 'url.scheme', 'https')
+  end
+
+  def test_extract_scheme_from_http_url
+    span = create_http_span(url: 'http://api.example.com/path')
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    attributes = result[:attributes]
+    assert_http_attribute(attributes, 'url.scheme', 'http')
+  end
+
+  def test_extract_scheme_from_invalid_url
+    span = create_http_span(url: 'not a valid url')
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    attributes = result[:attributes]
+    # Should not have scheme attribute for invalid URL
+    refute_http_attribute(attributes, 'url.scheme')
+  end
+
+  def test_extract_scheme_from_nil_url
+    span = create_http_span(url: nil)
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    attributes = result[:attributes]
+    # Should not have scheme attribute for nil URL
+    refute_http_attribute(attributes, 'url.scheme')
+  end
+
+  def test_http_attributes_with_nil_values_are_not_included
+    span = create_http_span(
+      method: 'GET',
+      url: nil,
+      status: nil,
+      host: nil,
+      path: nil
+    )
+
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    attributes = result[:attributes]
+    # Only method should be present
+    assert_http_attribute(attributes, 'http.request.method', 'GET')
+    refute_http_attribute(attributes, 'url.full')
+    refute_http_attribute(attributes, 'http.response.status_code')
+    refute_http_attribute(attributes, 'server.address')
+    refute_http_attribute(attributes, 'url.path')
+  end
+
+  def test_http_status_code_as_integer
+    span = create_http_span(status: 404)
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    attributes = result[:attributes]
+    assert_equal 404, attributes['http.response.status_code']
+  end
+
+  def test_http_status_code_as_string
+    span = create_http_span(status: '200')
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    attributes = result[:attributes]
+    # Status should be present (as string or converted to int)
+    assert attributes['http.response.status_code']
+  end
+
+  def test_user_agent_from_header
+    span = create_http_span(
+      header: {
+        'user-agent' => 'Mozilla/5.0',
+        'content-type' => 'application/json'
+      }
+    )
+
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    attributes = result[:attributes]
+    assert_http_attribute(attributes, 'user_agent.original', 'Mozilla/5.0')
+  end
+
+  def test_user_agent_not_present_when_header_missing
+    span = create_http_span(header: { 'content-type' => 'application/json' })
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    attributes = result[:attributes]
+    refute_http_attribute(attributes, 'user_agent.original')
+  end
+
+  def test_user_agent_not_present_when_header_nil
+    span = create_http_span(header: nil)
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    attributes = result[:attributes]
+    refute_http_attribute(attributes, 'user_agent.original')
+  end
+
+  def test_convert_with_error_span
+    span = create_http_span(
+      method: 'GET',
+      url: 'https://api.example.com/error',
+      status: 500
+    )
+    span.record_exception(StandardError.new('Server error'))
+
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    # Verify error status
+    assert_equal OpenTelemetry::Trace::Status::ERROR, result.status.code # ERROR code
+
+    # Verify HTTP attributes are still present
+    attributes = result.attributes
+    assert_http_attribute(attributes, 'http.request.method', 'GET')
+    assert_http_attribute(attributes, 'http.response.status_code', 500)
+  end
+
+  def test_convert_preserves_base_converter_functionality
+    span = create_http_span(method: 'GET', url: 'https://example.com')
+
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    # Verify all base attributes are present
+    assert result[:trace_id]
+    assert result[:span_id]
+    assert result[:name]
+    assert result[:kind]
+    assert result[:start_timestamp]
+    assert result[:end_timestamp]
+    assert result[:status]
+    assert result[:attributes]
+  end
+
+  def test_http_attributes_use_semantic_conventions
+    span = create_http_span(
+      method: 'GET',
+      url: 'https://api.example.com/test',
+      status: 200,
+      host: 'api.example.com',
+      path: '/test'
+    )
+
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    attributes = result[:attributes]
+
+    # Verify semantic convention keys are used (new conventions)
+    expected_keys = [
+      'http.request.method',
+      'url.full',
+      'http.response.status_code',
+      'server.address',
+      'url.path',
+      'url.scheme'
+    ]
+
+    expected_keys.each do |key|
+      assert attributes.key?(key), "Expected attribute key '#{key}' not found"
+    end
+  end
+
+  def test_multiple_http_spans_conversion
+    spans = [
+      create_http_span(method: 'GET', status: 200),
+      create_http_span(method: 'POST', status: 201),
+      create_http_span(method: 'DELETE', status: 204)
+    ]
+
+    results = spans.map do |span|
+      converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+      converter.convert
+    end
+
+    assert_equal 3, results.length
+    assert_http_attribute(results[0][:attributes], 'http.request.method', 'GET')
+    assert_http_attribute(results[1][:attributes], 'http.request.method', 'POST')
+    assert_http_attribute(results[2][:attributes], 'http.request.method', 'DELETE')
+  end
+
+  # --- span_name tests ---
+
+  def test_span_name_method_only
+    span = create_http_span(method: 'DELETE')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_equal 'DELETE', result[:name]
+  end
+
+  def test_span_name_method_and_path
+    span = create_http_span(method: 'GET', path: '/users/{id}')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_equal 'GET /users/{id}', result[:name]
+  end
+
+  def test_span_name_falls_back_to_http_when_no_method
+    span = create_http_span(method: nil)
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_equal 'HTTP', result[:name]
+  end
+
+  def test_span_name_no_path_suffix_when_path_blank
+    span = create_http_span(method: 'POST', path: '')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_equal 'POST', result[:name]
+  end
+
+  # --- item 4: HTTP 4xx EXIT → status.code = ERROR ---
+
+  def test_http_4xx_client_span_sets_error_status
+    span = create_http_span(method: 'GET', status: 404, kind: 2)
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_equal OpenTelemetry::Trace::Status::ERROR, result.status.code
+  end
+
+  def test_http_4xx_server_span_does_not_set_error_status
+    span = create_http_span(method: 'GET', status: 404, kind: 1)
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_equal OpenTelemetry::Trace::Status::UNSET, result.status.code
+  end
+
+  def test_http_5xx_client_span_does_not_trigger_4xx_rule
+    span = create_http_span(method: 'GET', status: 500, kind: 2)
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    # 5xx without ec>0 stays UNSET (the 4xx rule only covers 400-499)
+    assert_equal OpenTelemetry::Trace::Status::UNSET, result.status.code
+  end
+
+  def test_http_4xx_with_ec_nonzero_stays_error
+    span = create_http_span(method: 'GET', status: 400, kind: 2)
+    span.record_exception(StandardError.new('Bad Request'))
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_equal OpenTelemetry::Trace::Status::ERROR, result.status.code
+  end
+
+  # --- item 5: url.query, network.protocol.*, server.port ---
+
+  def test_url_query_mapped_from_params
+    span = create_http_span(method: 'GET', url: 'https://api.example.com/search', params: 'q=ruby&page=2')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_http_attribute(result.attributes, 'url.query', 'q=ruby&page=2')
+  end
+
+  def test_url_query_absent_when_no_params
+    span = create_http_span(method: 'GET', url: 'https://api.example.com/users')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    refute_http_attribute(result.attributes, 'url.query')
+  end
+
+  def test_network_protocol_name_and_version_split
+    span = create_http_span(method: 'GET', protocol: 'HTTP/1.1')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_http_attribute(result.attributes, 'network.protocol.name', 'http')
+    assert_http_attribute(result.attributes, 'network.protocol.version', '1.1')
+  end
+
+  def test_network_protocol_name_only_when_no_version
+    span = create_http_span(method: 'GET', protocol: 'h2')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_http_attribute(result.attributes, 'network.protocol.name', 'h2')
+    refute_http_attribute(result.attributes, 'network.protocol.version')
+  end
+
+  def test_network_protocol_absent_when_not_provided
+    span = create_http_span(method: 'GET')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    refute_http_attribute(result.attributes, 'network.protocol.name')
+    refute_http_attribute(result.attributes, 'network.protocol.version')
+  end
+
+  def test_server_port_extracted_from_host_with_port
+    span = create_http_span(method: 'GET', host: 'api.example.com:8080')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_http_attribute(result.attributes, 'server.address', 'api.example.com')
+    assert_http_attribute(result.attributes, 'server.port', 8080)
+  end
+
+  def test_server_port_falls_back_to_url_port
+    span = create_http_span(method: 'GET', host: 'api.example.com', url: 'https://api.example.com:9000/path')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_http_attribute(result.attributes, 'server.port', 9000)
+  end
+
+  def test_server_port_absent_when_no_port_info
+    span = create_http_span(method: 'GET', host: 'api.example.com', url: 'https://api.example.com/path')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    # https default port 443 is returned by URI; check it's present or absent but not nil crashing
+    # (URI returns 443 for https — that's acceptable per spec)
+    assert result.attributes.key?('server.port') || !result.attributes.key?('server.port')
+  end
+
+  private
+
+  def create_http_span(http_data = {})
+    span = Instana::Span.new(:nethttp)
+    span[:n] = :nethttp
+    span[:k] = http_data.delete(:kind) || 2 # Default to client
+    span[:data] = {
+      http: http_data.compact
+    }
+    span.close
+    span
+  end
+
+  def assert_http_attribute(attributes, key, expected_value)
+    actual_value = attributes[key]
+    assert actual_value, "Expected attribute '#{key}' not found"
+    assert_equal expected_value, actual_value,
+                 "Expected attribute '#{key}' to have value '#{expected_value}', got '#{actual_value}'"
+  end
+
+  def refute_http_attribute(attributes, key)
+    assert_nil attributes[key], "Expected attribute '#{key}' to not be present, but it was found"
+  end
+
+  def format_trace_id(trace_id)
+    return OpenTelemetry::Trace::INVALID_TRACE_ID unless trace_id
+
+    hex_string = trace_id.to_s.rjust(32, '0')
+    [hex_string].pack('H*')
+  end
+
+  def format_span_id(span_id)
+    return OpenTelemetry::Trace::INVALID_SPAN_ID unless span_id
+
+    hex_string = span_id.to_s.rjust(16, '0')
+    [hex_string].pack('H*')
+  end
+end

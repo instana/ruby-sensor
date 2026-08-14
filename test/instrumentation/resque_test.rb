@@ -4,6 +4,8 @@
 require 'test_helper'
 require 'support/apps/resque/boot'
 
+Warning[:deprecated] = false if Gem::Version.new(RUBY_VERSION) > Gem::Version.new('3.4')
+
 ::Resque.redis = ENV['REDIS_URL']
 
 class ResqueClientTest < Minitest::Test
