@@ -17,18 +17,18 @@ module Instana
         @last_minor_count = 0
       end
 
-      def report
+      def report(poll_rate = 1)
         stats = ::GC.stat
         total_time = ::GC::Profiler.total_time * 1000
 
         ::GC::Profiler.clear
 
         payload = {
-          totalTime: total_time,
+          totalTime: total_time / poll_rate,
           heap_live: stats[:heap_live_slots] || stats[:heap_live_num],
           heap_free: stats[:heap_free_slots] || stats[:heap_free_num],
-          minorGcs: stats[:minor_gc_count] - @last_minor_count,
-          majorGcs: stats[:major_gc_count] - @last_major_count
+          minorGcs: (stats[:minor_gc_count] - @last_minor_count) / poll_rate.to_f,
+          majorGcs: (stats[:major_gc_count] - @last_major_count) / poll_rate.to_f
         }
 
         @last_major_count = stats[:major_gc_count]
