@@ -648,7 +648,7 @@ class HostAgentReportingObserverTest < Minitest::Test # rubocop:disable Metrics/
     discovery = Concurrent::Atom.new({'pid' => 1234})
 
     test_spans = [
-      {n: 'rack',        t: '1111', s: '2222'},
+      {n: 'rack', t: '1111', s: '2222'},
       {n: 'activerecord', t: '1111', s: '3333', p: '2222'},
       {n: 'redis',        t: '1111', s: '4444', p: '2222'}
     ]
