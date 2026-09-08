@@ -103,8 +103,8 @@ class SidekiqClientTest < Minitest::Test
     assert_equal 'SidekiqJobOne', job_message['class']
     assert_equal [1, 2, 3], job_message['args']
     assert_equal false, job_message['retry']
-    refute_nil   job_message['X-Instana-T']
-    refute_nil   job_message['X-Instana-S']
+    refute_nil job_message['X-Instana-T']
+    refute_nil job_message['X-Instana-S']
   end
 
   def assert_normal_trace_recorded(job)
