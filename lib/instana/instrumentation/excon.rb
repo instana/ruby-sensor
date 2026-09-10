@@ -1,6 +1,8 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2016
 
+require 'instana/util'
+
 module Instana
   module Instrumentation
     class Excon < ::Excon::Middleware::Base
@@ -60,17 +62,18 @@ module Instana
           status = datum[:response][:status]
         end
 
-        if status >= 500
-          # Because of the 5xx response, we flag this span as errored but
-          # without a backtrace (no exception)
+        http_kv = { status: status }
+        if ::Instana::Util.should_mark_http_exit_as_error?(status)
+          reason = ::Instana::Util.http_reason_phrase(status)
+          http_kv[:error] = reason ? "#{status} #{reason}" : status.to_s
           ::Instana.tracer.log_error(nil)
         end
 
         if datum[:pipeline] == true
           # Pickup context of this async span from datum[:instana_span]
-          ::Instana.tracer.log_async_exit(:excon, { :http => {:status => status } }, datum[:instana_span])
+          ::Instana.tracer.log_async_exit(:excon, { :http => http_kv }, datum[:instana_span])
         else
-          ::Instana.tracer.log_exit(:excon, { :http => {:status => status } })
+          ::Instana.tracer.log_exit(:excon, { :http => http_kv })
         end
         result
       end

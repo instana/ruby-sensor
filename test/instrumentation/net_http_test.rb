@@ -75,10 +75,9 @@ class NetHTTPTest < Minitest::Test
     uri = URI.parse(url)
     req = Net::HTTP::Get.new(uri)
 
-    response = nil
     Instana.tracer.in_span('net-http-test') do
       Net::HTTP.start(req.uri.hostname, req.uri.port, :open_timeout => 1, :read_timeout => 1) do |http|
-        response = http.request(req)
+        http.request(req)
       end
     end
 
@@ -117,10 +116,9 @@ class NetHTTPTest < Minitest::Test
     clear_all!
     WebMock.allow_net_connect!
 
-    response = nil
     Instana.tracer.in_span('net-http-test') do
       http = Net::HTTP.new("127.0.0.1", 6511)
-      response = http.request(Net::HTTP::Post.new("/"))
+      http.request(Net::HTTP::Post.new("/"))
     end
 
     spans = ::Instana.processor.queued_spans
@@ -188,16 +186,14 @@ class NetHTTPTest < Minitest::Test
     clear_all!
     WebMock.allow_net_connect!
 
-    response = nil
     Instana.tracer.in_span('net-http-error-test') do
       http = Net::HTTP.new("127.0.0.1", 6511)
-      response = http.request(Net::HTTP::Get.new("/error"))
+      http.request(Net::HTTP::Get.new("/error"))
     end
 
     spans = ::Instana.processor.queued_spans
     assert_equal 3, spans.length
 
-    rack_span = find_first_span_by_name(spans, :rack)
     sdk_span = find_first_span_by_name(spans, :'net-http-error-test')
     http_span = find_first_span_by_name(spans, :'net-http')
 
@@ -235,5 +231,108 @@ class NetHTTPTest < Minitest::Test
     assert_empty ::Instana.processor.queued_spans
 
     WebMock.disable_net_connect!
+  end
+end
+
+class NetHTTP4xxClassificationTest < Minitest::Test
+  include Instana::TestHelpers
+
+  def setup
+    @orig_classify_all   = ::Instana.config[:http_exit_classify_all_4xx_as_errors]
+    @orig_classify_codes = ::Instana.config[:http_exit_classify_as_errors]
+  end
+
+  def teardown
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = @orig_classify_all
+    ::Instana.config[:http_exit_classify_as_errors]         = @orig_classify_codes
+    WebMock.disable_net_connect!
+  end
+
+  def test_4xx_not_an_error_by_default
+    clear_all!
+    WebMock.allow_net_connect!
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = false
+    ::Instana.config[:http_exit_classify_as_errors]         = []
+
+    Instana.tracer.in_span(:'net-http-4xx-test') do
+      Net::HTTP.get_response(URI('http://127.0.0.1:6511/status/401'))
+    end
+
+    spans = ::Instana.processor.queued_spans
+    http_span = find_first_span_by_name(spans, :'net-http')
+
+    assert_nil http_span[:error]
+    assert_nil http_span[:ec]
+    assert_equal '401', http_span[:data][:http][:status]
+  end
+
+  def test_4xx_is_error_when_classify_all_is_true
+    clear_all!
+    WebMock.allow_net_connect!
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = true
+    ::Instana.config[:http_exit_classify_as_errors]         = []
+
+    Instana.tracer.in_span(:'net-http-4xx-test') do
+      Net::HTTP.get_response(URI('http://127.0.0.1:6511/status/401'))
+    end
+
+    spans     = ::Instana.processor.queued_spans
+    http_span = find_first_span_by_name(spans, :'net-http')
+
+    assert_equal true, http_span[:error]
+    assert_equal 1,    http_span[:ec]
+    assert_match(/\A401 /, http_span[:data][:http][:error], 'http.error must start with status code')
+  end
+
+  def test_listed_4xx_code_is_error
+    clear_all!
+    WebMock.allow_net_connect!
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = false
+    ::Instana.config[:http_exit_classify_as_errors]         = [401]
+
+    Instana.tracer.in_span(:'net-http-4xx-test') do
+      Net::HTTP.get_response(URI('http://127.0.0.1:6511/status/401'))
+    end
+
+    spans     = ::Instana.processor.queued_spans
+    http_span = find_first_span_by_name(spans, :'net-http')
+
+    assert_equal true, http_span[:error]
+    assert_equal 1,    http_span[:ec]
+    assert_match(/\A401 /, http_span[:data][:http][:error], 'http.error must start with status code')
+  end
+
+  def test_unlisted_4xx_code_is_not_error
+    clear_all!
+    WebMock.allow_net_connect!
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = false
+    ::Instana.config[:http_exit_classify_as_errors]         = [401]
+
+    Instana.tracer.in_span(:'net-http-4xx-test') do
+      Net::HTTP.get_response(URI('http://127.0.0.1:6511/status/404'))
+    end
+
+    spans     = ::Instana.processor.queued_spans
+    http_span = find_first_span_by_name(spans, :'net-http')
+
+    assert_nil http_span[:error]
+    assert_nil http_span[:ec]
+  end
+
+  def test_5xx_still_errors_regardless_of_config
+    clear_all!
+    WebMock.allow_net_connect!
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = false
+    ::Instana.config[:http_exit_classify_as_errors]         = []
+
+    Instana.tracer.in_span(:'net-http-4xx-test') do
+      Net::HTTP.get_response(URI('http://127.0.0.1:6511/error'))
+    end
+
+    spans     = ::Instana.processor.queued_spans
+    http_span = find_first_span_by_name(spans, :'net-http')
+
+    assert_equal true, http_span[:error]
+    assert_equal 1,    http_span[:ec]
   end
 end

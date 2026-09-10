@@ -1078,3 +1078,112 @@ class OtlpConfigTest < Minitest::Test
     refute subject.send(:should_read_from_agent?, :otlp)
   end
 end
+
+class HttpExitClassificationConfigTest < Minitest::Test
+  def logger
+    Logger.new('/dev/null')
+  end
+
+  # -------------------------------------------------------------------------
+  # Default values
+  # -------------------------------------------------------------------------
+
+  def test_defaults_are_off
+    subject = Instana::Config.new(logger: logger)
+    assert_equal false, subject[:http_exit_classify_all_4xx_as_errors]
+    assert_equal [],    subject[:http_exit_classify_as_errors]
+  end
+
+  # -------------------------------------------------------------------------
+  # Env var: INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS
+  # -------------------------------------------------------------------------
+
+  def test_env_classify_all_4xx_sets_flag
+    ENV['INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS'] = '1'
+    subject = Instana::Config.new(logger: logger)
+    assert_equal true, subject[:http_exit_classify_all_4xx_as_errors]
+    assert_equal [],   subject[:http_exit_classify_as_errors]
+  ensure
+    ENV.delete('INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS')
+  end
+
+  # -------------------------------------------------------------------------
+  # Env var: INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS
+  # -------------------------------------------------------------------------
+
+  def test_env_classify_as_errors_parses_csv
+    ENV['INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS'] = '401,404,429'
+    subject = Instana::Config.new(logger: logger)
+    assert_equal [401, 404, 429], subject[:http_exit_classify_as_errors]
+    assert_equal false,           subject[:http_exit_classify_all_4xx_as_errors]
+  ensure
+    ENV.delete('INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS')
+  end
+
+  def test_env_classify_as_errors_ignores_out_of_range_codes
+    ENV['INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS'] = '401,500,200'
+    subject = Instana::Config.new(logger: logger)
+    assert_equal [401], subject[:http_exit_classify_as_errors]
+  ensure
+    ENV.delete('INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS')
+  end
+
+  def test_env_classify_as_errors_ignores_non_integer_values
+    ENV['INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS'] = '401,foo,404'
+    subject = Instana::Config.new(logger: logger)
+    assert_equal [401, 404], subject[:http_exit_classify_as_errors]
+  ensure
+    ENV.delete('INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS')
+  end
+
+  def test_env_classify_as_errors_takes_priority_over_classify_all
+    ENV['INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS'] = '401'
+    ENV['INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS'] = '1'
+    subject = Instana::Config.new(logger: logger)
+    assert_equal [401], subject[:http_exit_classify_as_errors]
+    assert_equal false, subject[:http_exit_classify_all_4xx_as_errors]
+  ensure
+    ENV.delete('INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS')
+    ENV.delete('INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS')
+  end
+
+  # -------------------------------------------------------------------------
+  # Agent config (lowest priority)
+  # -------------------------------------------------------------------------
+
+  def test_agent_config_classify_all_4xx
+    subject = Instana::Config.new(logger: logger)
+    subject.read_config_from_agent('tracing' => {
+                                     'http' => { 'exit' => { 'classify-all-4xx-as-errors' => true } }
+                                   })
+    assert_equal true, subject[:http_exit_classify_all_4xx_as_errors]
+  end
+
+  def test_agent_config_classify_as_errors
+    subject = Instana::Config.new(logger: logger)
+    subject.read_config_from_agent('tracing' => {
+                                     'http' => { 'exit' => { 'classify-as-errors' => [401, 429] } }
+                                   })
+    assert_equal [401, 429], subject[:http_exit_classify_as_errors]
+  end
+
+  def test_agent_config_ignored_when_env_var_already_set
+    ENV['INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS'] = '1'
+    subject = Instana::Config.new(logger: logger)
+    # Agent says false — env var must win
+    subject.read_config_from_agent('tracing' => {
+                                     'http' => { 'exit' => { 'classify-all-4xx-as-errors' => false } }
+                                   })
+    assert_equal true, subject[:http_exit_classify_all_4xx_as_errors]
+  ensure
+    ENV.delete('INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS')
+  end
+
+  def test_agent_config_ignores_invalid_codes
+    subject = Instana::Config.new(logger: logger)
+    subject.read_config_from_agent('tracing' => {
+                                     'http' => { 'exit' => { 'classify-as-errors' => [401, 500, 'bad'] } }
+                                   })
+    assert_equal [401], subject[:http_exit_classify_as_errors]
+  end
+end

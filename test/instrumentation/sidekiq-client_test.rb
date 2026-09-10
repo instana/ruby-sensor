@@ -82,7 +82,8 @@ class SidekiqClientTest < Minitest::Test
           'args' => [1, 2, 3],
           'retry' => false
         )
-      rescue
+      rescue StandardError
+        nil
       end
       enable_redis_instrumentation
       remove_sidekiq_exception_middleware
