@@ -107,7 +107,8 @@ class ExconTest < Minitest::Test
       Instana.tracer.in_span('excon-test') do
         connection.get(:path => '/error')
       end
-    rescue
+    rescue StandardError
+      nil
     end
 
     spans = ::Instana.processor.queued_spans
@@ -225,5 +226,104 @@ class ExconTest < Minitest::Test
 
     assert_nil error
     assert_empty ::Instana.processor.queued_spans
+  end
+end
+
+class Excon4xxClassificationTest < Minitest::Test
+  include Instana::TestHelpers
+
+  def setup
+    @orig_classify_all   = ::Instana.config[:http_exit_classify_all_4xx_as_errors]
+    @orig_classify_codes = ::Instana.config[:http_exit_classify_as_errors]
+    Excon.defaults[:middlewares].delete(::WebMock::HttpLibAdapters::ExconAdapter)
+    Excon.defaults[:middlewares].delete(::Excon::Middleware::Mock)
+  end
+
+  def teardown
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = @orig_classify_all
+    ::Instana.config[:http_exit_classify_as_errors]         = @orig_classify_codes
+  end
+
+  def test_4xx_not_an_error_by_default
+    clear_all!
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = false
+    ::Instana.config[:http_exit_classify_as_errors]         = []
+
+    Instana.tracer.in_span(:'excon-4xx-test') do
+      Excon.get('http://127.0.0.1:6511/status/401')
+    end
+
+    spans      = ::Instana.processor.queued_spans
+    excon_span = find_first_span_by_name(spans, :excon)
+
+    assert_nil excon_span[:error]
+    assert_nil excon_span[:ec]
+    assert_equal 401, excon_span[:data][:http][:status]
+  end
+
+  def test_4xx_is_error_when_classify_all_is_true
+    clear_all!
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = true
+    ::Instana.config[:http_exit_classify_as_errors]         = []
+
+    Instana.tracer.in_span(:'excon-4xx-test') do
+      Excon.get('http://127.0.0.1:6511/status/401')
+    end
+
+    spans      = ::Instana.processor.queued_spans
+    excon_span = find_first_span_by_name(spans, :excon)
+
+    assert_equal true,          excon_span[:error]
+    assert_equal 1,             excon_span[:ec]
+    assert_equal '401 Unauthorized', excon_span[:data][:http][:error]
+  end
+
+  def test_listed_4xx_code_is_error
+    clear_all!
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = false
+    ::Instana.config[:http_exit_classify_as_errors]         = [401]
+
+    Instana.tracer.in_span(:'excon-4xx-test') do
+      Excon.get('http://127.0.0.1:6511/status/401')
+    end
+
+    spans      = ::Instana.processor.queued_spans
+    excon_span = find_first_span_by_name(spans, :excon)
+
+    assert_equal true,          excon_span[:error]
+    assert_equal 1,             excon_span[:ec]
+    assert_equal '401 Unauthorized', excon_span[:data][:http][:error]
+  end
+
+  def test_unlisted_4xx_code_is_not_error
+    clear_all!
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = false
+    ::Instana.config[:http_exit_classify_as_errors]         = [401]
+
+    Instana.tracer.in_span(:'excon-4xx-test') do
+      Excon.get('http://127.0.0.1:6511/status/404')
+    end
+
+    spans      = ::Instana.processor.queued_spans
+    excon_span = find_first_span_by_name(spans, :excon)
+
+    assert_nil excon_span[:error]
+    assert_nil excon_span[:ec]
+  end
+
+  def test_5xx_still_errors_regardless_of_config
+    clear_all!
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = false
+    ::Instana.config[:http_exit_classify_as_errors]         = []
+
+    Instana.tracer.in_span(:'excon-4xx-test') do
+      Excon.get('http://127.0.0.1:6511/error')
+    end
+
+    spans      = ::Instana.processor.queued_spans
+    excon_span = find_first_span_by_name(spans, :excon)
+
+    assert_equal true, excon_span[:error]
+    assert_equal 1,    excon_span[:ec]
   end
 end

@@ -194,6 +194,41 @@ module Instana
 
         headers
       end
+
+      # Return true if an HTTP exit span with +status_code+ should be marked as errored.
+      #
+      # Rules (in priority order):
+      # 1. status >= 500  → always an error.
+      # 2. 400 <= status <= 499 and +config[:http_exit_classify_as_errors]+ is non-empty
+      #    → error only if +status_code+ is in that list.
+      # 3. 400 <= status <= 499 and +config[:http_exit_classify_all_4xx_as_errors]+ is true
+      #    → error for every 4xx code.
+      # 4. Otherwise → not an error.
+      #
+      # Entry (server/rack) spans must never be passed here; this helper is for exit spans only.
+      def should_mark_http_exit_as_error?(status_code)
+        return true if status_code >= 500
+
+        if (400..499).cover?(status_code)
+          codes = ::Instana.config[:http_exit_classify_as_errors]
+          return codes.include?(status_code) if codes&.any?
+
+          return ::Instana.config[:http_exit_classify_all_4xx_as_errors]
+        end
+
+        false
+      end
+
+      # Return the HTTP reason phrase for a numeric status code, or nil if unknown.
+      # Uses Ruby stdlib Net::HTTPResponse::CODE_TO_OBJ to derive the phrase from
+      # the response class name (e.g. Net::HTTPUnauthorized → "Unauthorized").
+      def http_reason_phrase(status_code)
+        require 'net/http'
+        klass = Net::HTTPResponse::CODE_TO_OBJ[status_code.to_s]
+        return nil unless klass
+
+        klass.name.sub('Net::HTTP', '').gsub(/([A-Z])/, ' \1').strip
+      end
     end
   end
 end

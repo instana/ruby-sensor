@@ -125,3 +125,98 @@ class RestClientTest < Minitest::Test
     WebMock.disable_net_connect!
   end
 end
+
+class RestClient4xxClassificationTest < Minitest::Test
+  include Instana::TestHelpers
+
+  def setup
+    @orig_classify_all   = ::Instana.config[:http_exit_classify_all_4xx_as_errors]
+    @orig_classify_codes = ::Instana.config[:http_exit_classify_as_errors]
+  end
+
+  def teardown
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = @orig_classify_all
+    ::Instana.config[:http_exit_classify_as_errors]         = @orig_classify_codes
+    WebMock.disable_net_connect!
+  end
+
+  # Helper: fire a RestClient GET, swallowing ExceptionWithResponse so the
+  # test can inspect spans regardless of whether RestClient raised.
+  def get_ignoring_http_errors(url)
+    RestClient.get(url)
+  rescue RestClient::ExceptionWithResponse
+    nil
+  end
+
+  def test_4xx_rest_client_span_not_errored_by_default
+    clear_all!
+    WebMock.allow_net_connect!
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = false
+    ::Instana.config[:http_exit_classify_as_errors]         = []
+
+    Instana.tracer.in_span(:'restclient-4xx-test') do
+      get_ignoring_http_errors('http://127.0.0.1:6511/status/401')
+    end
+
+    spans = ::Instana.processor.queued_spans
+    rc_span   = find_first_span_by_name(spans, :'rest-client')
+    http_span = find_first_span_by_name(spans, :'net-http')
+
+    assert_nil rc_span[:error],   'rest-client span must not be errored in default mode'
+    assert_nil http_span[:error], 'net-http span must not be errored in default mode'
+  end
+
+  def test_4xx_both_spans_errored_when_classify_all_is_true
+    clear_all!
+    WebMock.allow_net_connect!
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = true
+    ::Instana.config[:http_exit_classify_as_errors]         = []
+
+    Instana.tracer.in_span(:'restclient-4xx-test') do
+      get_ignoring_http_errors('http://127.0.0.1:6511/status/401')
+    end
+
+    spans = ::Instana.processor.queued_spans
+    rc_span   = find_first_span_by_name(spans, :'rest-client')
+    http_span = find_first_span_by_name(spans, :'net-http')
+
+    assert_equal true, rc_span[:error],   'rest-client span must be errored'
+    assert_equal true, http_span[:error], 'net-http span must be errored'
+  end
+
+  def test_listed_code_errors_both_spans
+    clear_all!
+    WebMock.allow_net_connect!
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = false
+    ::Instana.config[:http_exit_classify_as_errors]         = [401]
+
+    Instana.tracer.in_span(:'restclient-4xx-test') do
+      get_ignoring_http_errors('http://127.0.0.1:6511/status/401')
+    end
+
+    spans = ::Instana.processor.queued_spans
+    rc_span   = find_first_span_by_name(spans, :'rest-client')
+    http_span = find_first_span_by_name(spans, :'net-http')
+
+    assert_equal true, rc_span[:error]
+    assert_equal true, http_span[:error]
+  end
+
+  def test_unlisted_code_does_not_error_either_span
+    clear_all!
+    WebMock.allow_net_connect!
+    ::Instana.config[:http_exit_classify_all_4xx_as_errors] = false
+    ::Instana.config[:http_exit_classify_as_errors]         = [401]
+
+    Instana.tracer.in_span(:'restclient-4xx-test') do
+      get_ignoring_http_errors('http://127.0.0.1:6511/status/404')
+    end
+
+    spans = ::Instana.processor.queued_spans
+    rc_span   = find_first_span_by_name(spans, :'rest-client')
+    http_span = find_first_span_by_name(spans, :'net-http')
+
+    assert_nil rc_span[:error],   'rest-client span must not be errored for unlisted code'
+    assert_nil http_span[:error], 'net-http span must not be errored for unlisted code'
+  end
+end

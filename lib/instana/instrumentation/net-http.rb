@@ -2,6 +2,7 @@
 # (c) Copyright Instana Inc. 2016
 
 require 'net/http'
+require 'instana/util'
 
 module Instana
   module Instrumentation
@@ -51,9 +52,8 @@ module Instana
         response = super(*args, &block)
 
         kv_payload[:http][:status] = response.code
-        if response.code.to_i >= 500
-          # Because of the 5xx response, we flag this span as errored but
-          # without a backtrace (no exception)
+        if ::Instana::Util.should_mark_http_exit_as_error?(response.code.to_i)
+          kv_payload[:http][:error] = "#{response.code} #{response.message}"
           current_span.record_exception(nil)
         end
         extra_headers = ::Instana::Util.extra_header_tags(response)&.merge(::Instana::Util.extra_header_tags(request))

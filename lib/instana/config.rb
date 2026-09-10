@@ -80,6 +80,10 @@ module Instana
       # W3C Trace Context Support
       @config[:w3c_trace_correlation] = ENV.fetch('INSTANA_DISABLE_W3C_TRACE_CORRELATION', nil).nil?
 
+      # HTTP exit span 4xx error classification (opt-in, default: off)
+      # Priority: env vars > agent config > default (false / [])
+      read_http_exit_config
+
       @config[:post_fork_proc] = proc { ::Instana.agent.spawn_background_thread }
 
       @config[:action_controller]  = { :enabled => true }
@@ -142,6 +146,8 @@ module Instana
       read_span_stack_config_from_agent(tracing_config) if should_read_from_agent?(:back_trace)
       # Read OTLP configuration from agent if not already set from YAML or env
       read_otlp_config_from_agent(tracing_config) if should_read_from_agent?(:otlp)
+      # Read HTTP exit 4xx classification from agent if env vars did not already set it
+      read_http_exit_classification_from_agent(tracing_config) unless env_http_exit_classification_set?
       # Read span filtering configuration from agent
       ::Instana.span_filtering_config&.read_config_from_agent(discovery)
     rescue => e
@@ -255,6 +261,75 @@ module Instana
     end
 
     private
+
+    # Read HTTP exit 4xx error classification config (wrapper — same pattern as read_span_stack_config / read_otlp_config)
+    def read_http_exit_config
+      @config[:http_exit_classify_all_4xx_as_errors] = false
+      @config[:http_exit_classify_as_errors] = []
+      read_http_exit_classification_from_env
+    end
+
+    # Read HTTP exit 4xx classification from environment variables (highest priority).
+    def read_http_exit_classification_from_env
+      classify_codes_raw = ENV.fetch('INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS', nil)
+      if classify_codes_raw
+        codes = classify_codes_raw.split(',').filter_map do |part|
+          part = part.strip
+          if part.match?(/\A\d+\z/)
+            code = part.to_i
+            if (400..499).cover?(code)
+              code
+            else
+              msg = "Ignoring out-of-range value in INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS: #{code}, must be 400-499"
+              ::Instana.logger.warn(msg)
+              nil
+            end
+          elsif part != ''
+            ::Instana.logger.warn("Ignoring non-integer value in INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS: #{part}")
+            nil
+          end
+        end
+        @config[:http_exit_classify_as_errors] = codes unless codes.empty?
+      else
+        classify_all_raw = ENV.fetch('INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS', nil)
+        @config[:http_exit_classify_all_4xx_as_errors] = truthy?(classify_all_raw) if classify_all_raw
+      end
+    end
+
+    # Return true if env vars have already configured HTTP exit 4xx classification.
+    def env_http_exit_classification_set?
+      ENV.key?('INSTANA_TRACING_HTTP_EXIT_CLASSIFY_AS_ERRORS') ||
+        ENV.key?('INSTANA_TRACING_HTTP_EXIT_CLASSIFY_ALL_4XX_AS_ERRORS')
+    end
+
+    # Read HTTP exit 4xx classification from agent discovery response (lowest priority).
+    # @param tracing_config [Hash] the tracing sub-hash from the discovery payload
+    def read_http_exit_classification_from_agent(tracing_config)
+      http_cfg = tracing_config['http']
+      return unless http_cfg.is_a?(Hash)
+
+      exit_cfg = http_cfg['exit']
+      return unless exit_cfg.is_a?(Hash)
+
+      if exit_cfg.key?('classify-as-errors')
+        codes = Array(exit_cfg['classify-as-errors']).filter_map do |code|
+          if code.is_a?(Integer) && (400..499).cover?(code)
+            code
+          else
+            ::Instana.logger.warn("Ignoring invalid value in agent config tracing.http.exit.classify-as-errors: #{code}")
+            nil
+          end
+        end
+        @config[:http_exit_classify_as_errors] = codes unless codes.empty?
+      elsif exit_cfg.key?('classify-all-4xx-as-errors')
+        val = exit_cfg['classify-all-4xx-as-errors']
+        if [true, false].include?(val)
+          @config[:http_exit_classify_all_4xx_as_errors] = val
+        else
+          ::Instana.logger.warn("Ignoring non-boolean value in agent config tracing.http.exit.classify-all-4xx-as-errors: #{val}")
+        end
+      end
+    end
 
     # Read OTLP configuration — precedence: YAML > env vars > defaults (agent handled separately)
     def read_otlp_config
