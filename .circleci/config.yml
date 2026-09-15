@@ -303,7 +303,7 @@ jobs:
   lint:
     executor: ruby_34_lint
     environment:
-      BUNDLE_GEMFILE: "./gemfiles/rubocop_162.gemfile"
+      BUNDLE_GEMFILE: "./gemfiles/rubocop_190.gemfile"
     steps:
       - checkout
       - run:

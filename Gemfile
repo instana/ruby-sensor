@@ -18,5 +18,5 @@ gemspec
 
 gem "opentelemetry-api", "~> 1.4"
 
-gem "rubocop", "~> 1.71"
+gem "rubocop", "<= 1.90"
 gem "opentelemetry-common", "~> 0.22.0"
