@@ -60,7 +60,7 @@ executors:
         command: ["server", "/data"]
       - image: s12v/sns
       - image: public.ecr.aws/docker/library/rabbitmq:latest
-      - image: public.ecr.aws/sprig/elasticmq-native
+      - image: public.ecr.aws/adslot/softwaremill/elasticmq-native:1.7.1
       - image: public.ecr.aws/docker/library/mongo:5-focal
   mysql2:
     parameters:
