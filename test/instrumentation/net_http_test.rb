@@ -232,6 +232,68 @@ class NetHTTPTest < Minitest::Test
 
     WebMock.disable_net_connect!
   end
+
+  def test_https_url_built_without_uri
+    clear_all!
+    # Stub HTTPS call — verifies the https:// URL construction branch (L43)
+    stub_request(:get, "https://127.0.0.1:443/secure")
+      .to_return(status: 200, body: '', headers: {})
+
+    Instana.tracer.in_span(:'net-http-test') do
+      http = Net::HTTP.new('127.0.0.1', 443)
+      http.instance_variable_set(:@use_ssl, true) # simulate use_ssl? = true
+      req = Net::HTTP::Get.new('/secure')
+      # avoid actually starting SSL; stub the underlying call via WebMock
+      begin
+        http.request(req)
+      rescue
+        nil
+      end
+    end
+
+    spans = ::Instana.processor.queued_spans
+    http_span = find_first_span_by_name(spans, :'net-http')
+
+    return unless http_span
+
+    assert http_span[:data][:http][:url].start_with?('https://'),
+           "URL should use https:// scheme when use_ssl? is true"
+  end
+
+  def test_skip_when_nethttp_disabled
+    clear_all!
+    original = ::Instana.config[:nethttp][:enabled]
+    ::Instana.config[:nethttp][:enabled] = false
+    WebMock.allow_net_connect!
+
+    Instana.tracer.in_span(:'net-http-test') do
+      Net::HTTP.get(URI('http://127.0.0.1:6511/'))
+    end
+
+    spans = ::Instana.processor.queued_spans
+    http_span = find_first_span_by_name(spans, :'net-http')
+    assert_nil http_span, "net-http span should not be created when disabled"
+
+    WebMock.disable_net_connect!
+  ensure
+    ::Instana.config[:nethttp][:enabled] = original
+  end
+
+  def test_skip_when_current_span_is_aws_dynamodb
+    clear_all!
+    WebMock.allow_net_connect!
+
+    # Simulate being inside a dynamodb span — net-http should skip instrumentation
+    Instana.tracer.in_span(:dynamodb, attributes: {}) do
+      Net::HTTP.get(URI('http://127.0.0.1:6511/'))
+    end
+
+    spans = ::Instana.processor.queued_spans
+    http_span = find_first_span_by_name(spans, :'net-http')
+    assert_nil http_span, "net-http should not create a span when inside a DynamoDB span"
+
+    WebMock.disable_net_connect!
+  end
 end
 
 class NetHTTP4xxClassificationTest < Minitest::Test

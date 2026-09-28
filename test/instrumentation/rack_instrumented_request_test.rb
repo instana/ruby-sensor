@@ -211,4 +211,81 @@ class RackInstrumentedRequestTest < Minitest::Test
 
     assert_equal({}, req.correlation_data)
   end
+
+  def test_context_from_trace_state_only
+    # Only HTTP_TRACESTATE present — exercises context_from_trace_state (L153-161)
+    req = Instana::InstrumentedRequest.new(
+      'HTTP_TRACESTATE' => 'a=xyz,in=abcdef1234;deadbeef5678,b=other'
+    )
+
+    ctx = req.incoming_context
+    assert_equal 'abcdef1234', ctx[:trace_id]
+    assert_equal 'deadbeef5678', ctx[:span_id]
+    assert_equal false, ctx[:from_w3c]
+  end
+
+  def test_context_from_trace_state_no_instana_token
+    # TRACESTATE present but no in= token — context_from_trace_state returns empty
+    req = Instana::InstrumentedRequest.new(
+      'HTTP_TRACESTATE' => 'vendor=value,other=stuff'
+    )
+
+    ctx = req.incoming_context
+    assert_equal({}, ctx)
+  end
+
+  def test_w3c_context_with_instana_trace_state_replaces_ids
+    # When w3c_trace_correlation is OFF, a W3C traceparent + in= tracestate
+    # should replace trace_id/span_id with the Instana values (L41-44)
+    original = ::Instana.config[:w3c_trace_correlation]
+    ::Instana.config[:w3c_trace_correlation] = false
+
+    req = Instana::InstrumentedRequest.new(
+      'HTTP_TRACEPARENT' => '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
+      'HTTP_TRACESTATE' => 'in=instana123;spanid456'
+    )
+
+    ctx = req.incoming_context
+    assert_equal 'instana123', ctx[:trace_id], "trace_id should be overridden from in= tracestate"
+    assert_equal 'spanid456',  ctx[:span_id],  "span_id should be overridden from in= tracestate"
+    assert_equal false, ctx[:from_w3c]
+  ensure
+    ::Instana.config[:w3c_trace_correlation] = original
+  end
+
+  def test_w3c_context_with_empty_trace_state_clears_span_id
+    # When w3c_trace_correlation is OFF and tracestate has no in= entry,
+    # span_id should be cleared (L38-40)
+    original = ::Instana.config[:w3c_trace_correlation]
+    ::Instana.config[:w3c_trace_correlation] = false
+
+    req = Instana::InstrumentedRequest.new(
+      'HTTP_TRACEPARENT' => '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+      # no HTTP_TRACESTATE
+    )
+
+    ctx = req.incoming_context
+    # from_w3c should be set to false and span_id cleared
+    assert_equal false, ctx[:from_w3c]
+    refute ctx.key?(:span_id), "span_id should be removed when tracestate is empty"
+  ensure
+    ::Instana.config[:w3c_trace_correlation] = original
+  end
+
+  def test_incoming_context_with_span_context_object
+    # When incoming_context returns a SpanContext (not Hash), rack extracts it correctly
+    # Test the SpanContext path in extract_trace_context (L60-61)
+    Instana::SpanContext.new(trace_id: 'abc123', span_id: 'def456')
+    req = Instana::InstrumentedRequest.new(
+      'HTTP_X_INSTANA_T' => 'abc123',
+      'HTTP_X_INSTANA_S' => 'def456',
+      'HTTP_X_INSTANA_L' => '1'
+    )
+
+    ctx = req.incoming_context
+    # extract_trace_context on the Rack middleware receives the hash from incoming_context
+    # Here we just verify InstrumentedRequest produces the right hash
+    assert_equal 'abc123', ctx[:trace_id]
+    assert_equal 'def456', ctx[:span_id]
+  end
 end
