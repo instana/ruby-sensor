@@ -18,6 +18,38 @@ class DatabaseConverterTest < Minitest::Test
     assert_equal 'db.example.com', attrs['server.address']
   end
 
+  def test_activerecord_adapter_normalization_mysql2
+    span = create_span(:activerecord, {
+                         activerecord: { adapter: 'mysql2', db: 'mydb', sql: 'SELECT 1' }
+                       })
+    attrs = Instana::Exporter::Otlp::DatabaseConverter.new(span).send(:convert_attributes)
+    assert_equal 'mysql', attrs['db.system.name']
+  end
+
+  def test_activerecord_adapter_normalization_sqlite3
+    span = create_span(:activerecord, {
+                         activerecord: { adapter: 'sqlite3', db: 'dev.db', sql: 'SELECT 1' }
+                       })
+    attrs = Instana::Exporter::Otlp::DatabaseConverter.new(span).send(:convert_attributes)
+    assert_equal 'sqlite', attrs['db.system.name']
+  end
+
+  def test_activerecord_with_table_sets_collection_name
+    span = create_span(:activerecord, {
+                         activerecord: { adapter: 'postgresql', db: 'mydb', sql: 'SELECT * FROM users', table: 'users' }
+                       })
+    attrs = Instana::Exporter::Otlp::DatabaseConverter.new(span).send(:convert_attributes)
+    assert_equal 'users', attrs['db.collection.name']
+  end
+
+  def test_activerecord_without_table_omits_collection_name
+    span = create_span(:activerecord, {
+                         activerecord: { adapter: 'postgresql', db: 'mydb', sql: 'SELECT 1' }
+                       })
+    attrs = Instana::Exporter::Otlp::DatabaseConverter.new(span).send(:convert_attributes)
+    assert_nil attrs['db.collection.name']
+  end
+
   def test_sequel_conversion
     span = create_span(:sequel, {
                          sequel: { adapter: 'mysql2', db: 'testdb', sql: 'INSERT INTO logs', username: 'root', host: 'localhost' }
@@ -25,11 +57,19 @@ class DatabaseConverterTest < Minitest::Test
     converter = Instana::Exporter::Otlp::DatabaseConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'mysql2', attrs['db.system.name']
+    assert_equal 'mysql', attrs['db.system.name']
     assert_equal 'testdb', attrs['db.namespace']
     assert_equal 'INSERT INTO logs', attrs['db.query.text']
     assert_equal 'root', attrs['db.user']
     assert_equal 'localhost', attrs['server.address']
+  end
+
+  def test_sequel_with_table_sets_collection_name
+    span = create_span(:sequel, {
+                         sequel: { adapter: 'postgresql', db: 'mydb', sql: 'SELECT 1', table: 'orders' }
+                       })
+    attrs = Instana::Exporter::Otlp::DatabaseConverter.new(span).send(:convert_attributes)
+    assert_equal 'orders', attrs['db.collection.name']
   end
 
   def test_redis_conversion
@@ -40,8 +80,10 @@ class DatabaseConverterTest < Minitest::Test
     attrs = converter.send(:convert_attributes)
 
     assert_equal 'redis', attrs['db.system.name']
+    assert_equal 'GET key', attrs['db.operation.name']
     assert_equal 'GET key', attrs['db.query.text']
-    assert_equal 2, attrs['db.redis.database_index']
+    assert_equal '2', attrs['db.namespace']
+    assert_nil attrs['db.redis.database_index']
     assert_equal 'redis.local', attrs['server.address']
     assert_equal 6379, attrs['server.port']
   end
@@ -56,7 +98,8 @@ class DatabaseConverterTest < Minitest::Test
     assert_equal 'memcached', attrs['db.system.name']
     assert_equal 'get', attrs['db.operation.name']
     assert_equal 'user:123', attrs['db.memcached.key']
-    assert_equal 'app', attrs['db.memcached.namespace']
+    assert_equal 'app', attrs['db.namespace']
+    assert_nil attrs['db.memcached.namespace']
     assert_equal '127.0.0.1', attrs['server.address']
     assert_equal 11211, attrs['server.port']
   end
@@ -84,6 +127,22 @@ class DatabaseConverterTest < Minitest::Test
     assert_equal '{"name":"John"}', attrs['db.query.text']
     assert_equal 'mongo.local', attrs['server.address']
     assert_equal 27017, attrs['server.port']
+  end
+
+  def test_mongodb_with_collection_sets_collection_name
+    span = create_span(:mongo, {
+                         mongo: { namespace: 'mydb', command: 'insert', collection: 'users', peer: { hostname: 'localhost', port: 27017 } }
+                       })
+    attrs = Instana::Exporter::Otlp::DatabaseConverter.new(span).send(:convert_attributes)
+    assert_equal 'users', attrs['db.collection.name']
+  end
+
+  def test_mongodb_without_collection_omits_collection_name
+    span = create_span(:mongo, {
+                         mongo: { namespace: 'mydb', command: 'find', peer: { hostname: 'localhost', port: 27017 } }
+                       })
+    attrs = Instana::Exporter::Otlp::DatabaseConverter.new(span).send(:convert_attributes)
+    assert_nil attrs['db.collection.name']
   end
 
   def test_extract_host

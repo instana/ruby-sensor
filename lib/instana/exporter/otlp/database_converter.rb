@@ -82,32 +82,51 @@ module Instana
           parts.empty? ? 'mongodb' : parts.join('.')
         end
 
+        # Normalize an ActiveRecord/Sequel adapter name to OTel db.system.name.
+        # Only adapters that are actively instrumented and tested are listed here.
+        DB_SYSTEM_NORMALIZATION = {
+          'mysql2'       => 'mysql',
+          'sqlite3'      => 'sqlite',
+          'postgresql'   => 'postgresql',
+          'mysql'        => 'mysql',
+          'sqlite'       => 'sqlite'
+        }.freeze
+
+        def normalize_db_system(adapter)
+          return unless adapter
+
+          DB_SYSTEM_NORMALIZATION.fetch(adapter.to_s.downcase, adapter.to_s.downcase)
+        end
+
         def convert_activerecord_attributes(attributes, ar_data)
           return unless ar_data
 
-          add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM_NAME, ar_data[:adapter])
+          add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM_NAME, normalize_db_system(ar_data[:adapter]))
           add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_NAMESPACE, ar_data[:db])
           add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_QUERY_TEXT, ar_data[:sql])
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::DB::DB_USER, ar_data[:username])
           add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_ADDRESS, ar_data[:host])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::DB::DB_COLLECTION_NAME, ar_data[:table])
         end
 
         def convert_sequel_attributes(attributes, seq_data)
           return unless seq_data
 
-          add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM_NAME, seq_data[:adapter])
+          add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM_NAME, normalize_db_system(seq_data[:adapter]))
           add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_NAMESPACE, seq_data[:db])
           add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_QUERY_TEXT, seq_data[:sql])
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::DB::DB_USER, seq_data[:username])
           add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_ADDRESS, seq_data[:host])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::DB::DB_COLLECTION_NAME, seq_data[:table])
         end
 
         def convert_redis_attributes(attributes, redis_data)
           return unless redis_data
 
           add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM_NAME, 'redis')
+          add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_OPERATION_NAME, redis_data[:command])
           add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_QUERY_TEXT, redis_data[:command])
-          add_attribute(attributes, 'db.redis.database_index', redis_data[:db])
+          add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_NAMESPACE, redis_data[:db]&.to_s)
           add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_ADDRESS, extract_host(redis_data[:connection]))
           add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_PORT, extract_port(redis_data[:connection]))
         end
@@ -119,7 +138,7 @@ module Instana
           add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_OPERATION_NAME, mc_data[:command])
           add_attribute(attributes, 'db.memcached.key', mc_data[:key])
           add_attribute(attributes, 'db.memcached.keys', mc_data[:keys])
-          add_attribute(attributes, 'db.memcached.namespace', mc_data[:namespace])
+          add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_NAMESPACE, mc_data[:namespace])
           add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_ADDRESS, extract_host(mc_data[:server]))
           add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_PORT, extract_port(mc_data[:server]))
         end
@@ -131,6 +150,7 @@ module Instana
           add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_NAMESPACE, mongo_data[:namespace])
           add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_OPERATION_NAME, mongo_data[:command])
           add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_QUERY_TEXT, mongo_data[:json])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::DB::DB_COLLECTION_NAME, mongo_data[:collection])
           add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_ADDRESS, mongo_data.dig(:peer, :hostname))
           add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_PORT, mongo_data.dig(:peer, :port))
         end
