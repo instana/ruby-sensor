@@ -4,7 +4,7 @@
 require 'yaml'
 
 module Instana
-  class Config
+  class Config # rubocop:disable Metrics/ClassLength
 
     LEGACY_TRACING_KEY = 'com.instana.tracing'.freeze
     TRACING_KEY = 'tracing'.freeze
@@ -63,6 +63,9 @@ module Instana
         certificate: nil,
         client_key: nil,
         client_certificate: nil,
+        protocol: 'http/protobuf',
+        semconv_stability: 'stable',
+        insecure: false,
         config_source: 'default'
       }
       read_otlp_config
@@ -257,6 +260,9 @@ module Instana
       @config[:otlp][:certificate]        = otlp_config['certificate']              if otlp_config['certificate']
       @config[:otlp][:client_key]         = otlp_config['client_key']               if otlp_config['client_key']
       @config[:otlp][:client_certificate] = otlp_config['client_certificate']       if otlp_config['client_certificate']
+      @config[:otlp][:protocol]           = otlp_config['protocol']                 if otlp_config['protocol']
+      @config[:otlp][:semconv_stability]  = otlp_config['semconv_stability']        if otlp_config['semconv_stability']
+      @config[:otlp][:insecure]           = truthy?(otlp_config['insecure'])        unless otlp_config['insecure'].nil?
       @config[:otlp][:config_source]      = 'agent'
     end
 
@@ -381,6 +387,9 @@ module Instana
       result[:certificate]        = otlp_yaml['certificate']        if otlp_yaml['certificate']
       result[:client_key]         = otlp_yaml['client_key']         if otlp_yaml['client_key']
       result[:client_certificate] = otlp_yaml['client_certificate'] if otlp_yaml['client_certificate']
+      result[:protocol]           = otlp_yaml['protocol']           if otlp_yaml['protocol']
+      result[:semconv_stability]  = otlp_yaml['semconv_stability']  if otlp_yaml['semconv_stability']
+      result[:insecure]           = truthy?(otlp_yaml['insecure'])  unless otlp_yaml['insecure'].nil?
       result.empty? ? nil : result
     end
 
@@ -399,6 +408,9 @@ module Instana
       result[:certificate]        = raw[:certificate]                       if raw[:certificate]
       result[:client_key]         = raw[:client_key]                        if raw[:client_key]
       result[:client_certificate] = raw[:client_cert]                       if raw[:client_cert]
+      result[:protocol]           = raw[:protocol]                          if raw[:protocol]
+      result[:semconv_stability]  = raw[:semconv_stability]                 if raw[:semconv_stability]
+      result[:insecure]           = truthy?(raw[:insecure_raw])             unless raw[:insecure_raw].nil?
       result
     end
 
@@ -413,7 +425,10 @@ module Instana
         headers_raw: ENV.fetch('OTEL_EXPORTER_OTLP_TRACES_HEADERS', nil) || ENV.fetch('OTEL_EXPORTER_OTLP_HEADERS', nil),
         certificate: ENV.fetch('OTEL_EXPORTER_OTLP_CERTIFICATE', nil),
         client_key: ENV.fetch('OTEL_EXPORTER_OTLP_CLIENT_KEY', nil),
-        client_cert: ENV.fetch('OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE', nil)
+        client_cert: ENV.fetch('OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE', nil),
+        protocol: ENV.fetch('OTEL_EXPORTER_OTLP_PROTOCOL', nil),
+        semconv_stability: ENV.fetch('OTEL_SEMCONV_STABILITY_OPT_IN', nil),
+        insecure_raw: ENV.fetch('OTEL_EXPORTER_OTLP_INSECURE', nil)
       }
     end
 
