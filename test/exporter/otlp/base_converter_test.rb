@@ -177,7 +177,7 @@ class BaseConverterTest < Minitest::Test
     assert_equal 1, events.size
     event = events.first
     assert_equal 'exception', event.name
-    assert_equal 'rack', event.attributes['exception.type']
+    refute event.attributes.key?('exception.type'), 'exception.type must not be set to span_name'
     assert_equal 'Timeout', event.attributes['exception.message']
     assert_equal '/app/lib/client.rb:7 in in `call`', event.attributes['exception.stacktrace']
     assert_kind_of Integer, event.timestamp
@@ -192,7 +192,8 @@ class BaseConverterTest < Minitest::Test
     assert_equal 1, events.size
     event = events.first
     assert_equal 'error', event.name
-    assert_equal 'rack', event.attributes['error.type']
+    refute event.attributes.key?('error.type'), 'error.type must not be set to span_name'
+    assert_empty event.attributes
   end
 
   def test_convert_returns_span_data_with_events_on_error

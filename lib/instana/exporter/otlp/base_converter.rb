@@ -312,12 +312,12 @@ module Instana
           timestamp = calculate_end_timestamp
 
           if stacktrace
-            attrs = { 'exception.type' => span_name }
+            attrs = {}
             attrs['exception.message']    = error_msg if error_msg
             attrs['exception.stacktrace'] = stacktrace
             [Event.new('exception', attrs, timestamp)]
           else
-            [Event.new('error', { 'error.type' => span_name }, timestamp)]
+            [Event.new('error', {}, timestamp)]
           end
         end
 
