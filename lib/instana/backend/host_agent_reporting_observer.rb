@@ -186,11 +186,12 @@ module Instana
 
         endpoint = resolve_otlp_endpoint(config[:endpoint], config[:config_source])
         opts = { endpoint: endpoint, timeout: config[:timeout] / 1000.0 }
-        opts[:compression]            = config[:compression]         if config[:compression]
-        opts[:headers]                = config[:headers]             if config[:headers]&.any?
-        opts[:certificate_file]       = config[:certificate] if config[:certificate]
-        opts[:client_certificate_file] = config[:client_certificate] if config[:client_certificate]
-        opts[:client_key_file] = config[:client_key] if config[:client_key]
+        opts[:compression]             = config[:compression]          if config[:compression]
+        opts[:headers]                 = config[:headers]              if config[:headers]&.any?
+        opts[:certificate_file]        = config[:certificate]          if config[:certificate]
+        opts[:client_certificate_file] = config[:client_certificate]   if config[:client_certificate]
+        opts[:client_key_file]         = config[:client_key]           if config[:client_key]
+        opts[:ssl_verify_mode]         = OpenSSL::SSL::VERIFY_NONE     if config[:insecure]
 
         @otlp_exporter = OpenTelemetry::Exporter::OTLP::Exporter.new(**opts)
       rescue StandardError => e
