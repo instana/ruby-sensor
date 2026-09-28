@@ -6,7 +6,7 @@ require 'instana/exporter/otlp/messaging_converter'
 class MessagingConverterTest < Minitest::Test
   def test_rabbitmq_publish_conversion
     span = create_span(:rabbitmq, {
-                         rabbitmq: { exchange: 'orders', key: 'order.created', queue: 'order_queue', address: 'rabbitmq.local', sort: 'publish' }
+                         rabbitmq: { exchange: 'orders', key: 'order.created', queue: 'order_queue', address: 'rabbitmq.local:5672', sort: 'publish' }
                        })
     converter = Instana::Exporter::Otlp::MessagingConverter.new(span)
     attrs = converter.send(:convert_attributes)
@@ -17,7 +17,17 @@ class MessagingConverterTest < Minitest::Test
     assert_equal 'order.created', attrs['messaging.rabbitmq.destination.routing_key']
     assert_equal 'order_queue', attrs['messaging.rabbitmq.queue']
     assert_equal 'rabbitmq.local', attrs['server.address']
+    assert_equal 5672, attrs['server.port']
     assert_equal 'send', attrs['messaging.operation.type']
+    assert_equal 'publish', attrs['messaging.operation.name']
+  end
+
+  def test_rabbitmq_with_body_size
+    span = create_span(:rabbitmq, {
+                         rabbitmq: { exchange: 'logs', key: 'log.event', sort: 'publish', size: 512 }
+                       })
+    attrs = Instana::Exporter::Otlp::MessagingConverter.new(span).send(:convert_attributes)
+    assert_equal 512, attrs['messaging.message.body.size']
   end
 
   def test_rabbitmq_consume_conversion
@@ -54,6 +64,38 @@ class MessagingConverterTest < Minitest::Test
 
     # queue == key so it is omitted
     assert_equal 'events:signup_queue', attrs['messaging.destination.name']
+  end
+
+  def test_kafka_send_conversion
+    span = create_span(:kafka, {
+                         kafka: { service: 'orders-topic', access: 'send' }
+                       })
+    converter = Instana::Exporter::Otlp::MessagingConverter.new(span)
+    attrs = converter.send(:convert_attributes)
+
+    assert_equal 'kafka', attrs['messaging.system']
+    assert_equal 'orders-topic', attrs['messaging.destination.name']
+    assert_equal 'send', attrs['messaging.operation.name']
+    assert_equal 'send', attrs['messaging.operation.type']
+  end
+
+  def test_kafka_consume_conversion
+    span = create_span(:kafka, {
+                         kafka: { service: 'events-topic', access: 'consume' }
+                       })
+    converter = Instana::Exporter::Otlp::MessagingConverter.new(span)
+    attrs = converter.send(:convert_attributes)
+
+    assert_equal 'kafka', attrs['messaging.system']
+    assert_equal 'events-topic', attrs['messaging.destination.name']
+    assert_equal 'consume', attrs['messaging.operation.name']
+    assert_equal 'consume', attrs['messaging.operation.type']
+  end
+
+  def test_span_name_kafka
+    span = create_span(:kafka, { kafka: { service: 'orders', access: 'send' } })
+    result = Instana::Exporter::Otlp::MessagingConverter.new(span).convert
+    assert_equal 'orders send', result[:name]
   end
 
   def test_rabbitmq_minimal_data
