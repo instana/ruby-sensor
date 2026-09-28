@@ -6,6 +6,9 @@ require_relative 'base_converter'
 require 'opentelemetry/semconv/incubating/messaging'
 require 'opentelemetry/semconv/db'
 require 'opentelemetry/semconv/incubating/db'
+require 'opentelemetry/semconv/incubating/rpc'
+require 'opentelemetry/semconv/incubating/cloud'
+require 'opentelemetry/semconv/incubating/faas'
 
 module Instana
   module Exporter
@@ -128,10 +131,18 @@ module Instana
         def convert_s3_attributes(attributes, s3_data)
           return unless s3_data
 
-          add_attribute(attributes, 'aws.service', 's3')
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::RPC::RPC_SYSTEM_NAME, 'aws-api')
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::RPC::RPC_METHOD, s3_rpc_method(s3_data[:op]))
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::CLOUD::CLOUD_PROVIDER, 'aws')
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::CLOUD::CLOUD_REGION, s3_data[:region])
           add_attribute(attributes, 'aws.s3.bucket', s3_data[:bucket])
           add_attribute(attributes, 'aws.s3.key', s3_data[:key])
-          add_attribute(attributes, 'aws.s3.operation', s3_data[:op])
+        end
+
+        def s3_rpc_method(operation)
+          return unless operation
+
+          "S3.#{operation}"
         end
 
         def convert_lambda_attributes(attributes, lambda_data)
@@ -140,7 +151,7 @@ module Instana
           add_attribute(attributes, 'aws.service', 'lambda')
           add_attribute(attributes, 'aws.lambda.function_name', lambda_data[:function])
           add_attribute(attributes, 'aws.lambda.invocation_type', lambda_data[:type])
-          add_attribute(attributes, 'faas.invoked_name', lambda_data[:function])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::FAAS::FAAS_INVOKED_NAME, lambda_data[:function])
         end
       end
     end
