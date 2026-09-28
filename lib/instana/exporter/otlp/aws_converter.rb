@@ -131,7 +131,7 @@ module Instana
         def convert_s3_attributes(attributes, s3_data)
           return unless s3_data
 
-          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::RPC::RPC_SYSTEM_NAME, 'aws-api')
+          add_attribute(attributes, Instana::Exporter::Otlp::RPC_SYSTEM_ATTR, 'aws-api')
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::RPC::RPC_METHOD, s3_rpc_method(s3_data[:op]))
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::CLOUD::CLOUD_PROVIDER, 'aws')
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::CLOUD::CLOUD_REGION, s3_data[:region])

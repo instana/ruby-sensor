@@ -5,10 +5,22 @@
 require_relative 'resource'
 require 'opentelemetry/trace'
 require 'forwardable'
+require 'opentelemetry/semconv/incubating/rpc'
 
 module Instana
   module Exporter
     module Otlp
+      # Compatibility shim: RPC_SYSTEM_NAME was added in a newer release of
+      # opentelemetry-semantic_conventions.  Fall back to the deprecated
+      # RPC_SYSTEM constant ('rpc.system') on older installs (e.g. Ruby 3.2
+      # lockfiles that resolve an earlier gem version).
+      RPC_SYSTEM_ATTR =
+        if OpenTelemetry::SemConv::Incubating::RPC.const_defined?(:RPC_SYSTEM_NAME)
+          OpenTelemetry::SemConv::Incubating::RPC::RPC_SYSTEM_NAME
+        else
+          OpenTelemetry::SemConv::Incubating::RPC::RPC_SYSTEM
+        end
+
       # Base class for all OTLP span converters
       #
       # Provides common interface and shared functionality for converting Instana spans

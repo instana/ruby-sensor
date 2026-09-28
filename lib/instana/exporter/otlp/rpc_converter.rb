@@ -55,7 +55,7 @@ module Instana
         # Convert gRPC span attributes
         def convert_grpc_attributes(attributes, rpc_data)
           # RPC system
-          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::RPC::RPC_SYSTEM_NAME, 'grpc')
+          add_attribute(attributes, Instana::Exporter::Otlp::RPC_SYSTEM_ATTR, 'grpc')
 
           # RPC service and method
           if rpc_data[:call]
@@ -86,7 +86,7 @@ module Instana
         # Convert ActionCable span attributes
         def convert_action_cable_attributes(attributes, rpc_data)
           # RPC system
-          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::RPC::RPC_SYSTEM_NAME, 'actioncable')
+          add_attribute(attributes, Instana::Exporter::Otlp::RPC_SYSTEM_ATTR, 'actioncable')
 
           # ActionCable-specific attributes
           add_attribute(attributes, 'rails.actioncable.channel', rpc_data[:call])
