@@ -79,4 +79,15 @@ class RailsActionMailerTest < Minitest::Test
     assert_nil error
     assert_empty ::Instana.processor.queued_spans
   end
+
+  def test_unknown_method_falls_through_to_super
+    # Calling a method that is NOT an action_method should call super (method_missing else branch)
+    # ActionMailer::Base raises NoMethodError for unknown methods, which is the expected super behaviour
+    assert_raises(NoMethodError) do
+      TestMailer.this_method_does_not_exist
+    end
+
+    # No span should have been created since the method is not an action
+    assert_empty ::Instana.processor.queued_spans
+  end
 end
