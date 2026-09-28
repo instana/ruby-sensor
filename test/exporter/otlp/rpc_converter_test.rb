@@ -11,21 +11,55 @@ class RpcConverterTest < Minitest::Test
     converter = Instana::Exporter::Otlp::RpcConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'grpc', attrs['rpc.system']
+    assert_equal 'grpc', attrs['rpc.system.name']
     assert_equal 'package.Service', attrs['rpc.service']
     assert_equal 'Method', attrs['rpc.method']
     assert_equal 'grpc.example.com', attrs['server.address']
     assert_equal 'unary', attrs['rpc.grpc.call_type']
+    assert_equal 0, attrs['rpc.grpc.status_code']
   end
 
-  def test_grpc_with_peer_address
+  def test_grpc_with_port
     span = create_span(:grpc, {
-                         rpc: { call: '/test.API/Get', peer: { address: '10.0.0.1' } }
+                         rpc: { call: '/test.API/Get', host: 'grpc.example.com', port: '50051' }
                        })
     converter = Instana::Exporter::Otlp::RpcConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal '10.0.0.1', attrs['server.address']
+    assert_equal 'grpc.example.com', attrs['server.address']
+    assert_equal 50_051, attrs['server.port']
+  end
+
+  def test_grpc_with_peer_address
+    span = create_span(:grpc, {
+                         rpc: { call: '/test.API/Get', peer: { address: '10.0.0.1', port: 50_051 } }
+                       })
+    converter = Instana::Exporter::Otlp::RpcConverter.new(span)
+    attrs = converter.send(:convert_attributes)
+
+    assert_equal '10.0.0.1', attrs['network.peer.address']
+    assert_equal 50_051, attrs['network.peer.port']
+    assert_nil attrs['server.address']
+  end
+
+  def test_grpc_status_code_ok_on_success
+    span = create_span(:grpc, { rpc: { call: '/svc/Method', host: 'h' } })
+    attrs = Instana::Exporter::Otlp::RpcConverter.new(span).send(:convert_attributes)
+    assert_equal 0, attrs['rpc.grpc.status_code']
+  end
+
+  def test_grpc_status_code_from_error_message
+    span = create_span(:grpc, { rpc: { call: '/svc/Method', error: 'DEADLINE_EXCEEDED: context deadline exceeded' } })
+    span[:ec] = 1
+    attrs = Instana::Exporter::Otlp::RpcConverter.new(span).send(:convert_attributes)
+    assert_equal 4, attrs['rpc.grpc.status_code']
+  end
+
+  def test_grpc_status_code_unknown_on_unrecognized_error
+    span = create_span(:grpc, { rpc: { call: '/svc/Method', error: 'some unknown error' } })
+    span[:ec] = 1
+    attrs = Instana::Exporter::Otlp::RpcConverter.new(span).send(:convert_attributes)
+    assert_equal 2, attrs['rpc.grpc.status_code']
   end
 
   def test_actioncable_conversion
@@ -36,7 +70,7 @@ class RpcConverterTest < Minitest::Test
     converter = Instana::Exporter::Otlp::RpcConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'actioncable', attrs['rpc.system']
+    assert_equal 'actioncable', attrs['rpc.system.name']
     assert_equal 'ChatChannel#speak', attrs['rails.actioncable.channel']
     assert_equal 'action', attrs['rails.actioncable.call_type']
     assert_equal 'my-app', attrs['rpc.service']
