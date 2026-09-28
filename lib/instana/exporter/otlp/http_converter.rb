@@ -7,6 +7,7 @@ require 'opentelemetry/semconv/http'
 require 'opentelemetry/semconv/url'
 require 'opentelemetry/semconv/server'
 require 'opentelemetry/semconv/user_agent'
+require 'opentelemetry/semconv/network'
 
 module Instana
   module Exporter
@@ -120,8 +121,8 @@ module Instana
           name    = parts[0].downcase
           version = parts[1]
 
-          add_attribute(attributes, 'network.protocol.name', name)
-          add_attribute(attributes, 'network.protocol.version', version)
+          add_attribute(attributes, OpenTelemetry::SemConv::NETWORK::NETWORK_PROTOCOL_NAME, name)
+          add_attribute(attributes, OpenTelemetry::SemConv::NETWORK::NETWORK_PROTOCOL_VERSION, version)
         end
       end
     end

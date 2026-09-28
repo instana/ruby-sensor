@@ -711,7 +711,7 @@ end
 # OTLP configuration tests
 # ============================================================================
 
-class OtlpConfigTest < Minitest::Test
+class OtlpConfigTest < Minitest::Test # rubocop:disable Metrics/ClassLength
   OTLP_ENV_VARS = %w[
     INSTANA_TRACING_OTLP_ENABLED
     OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
@@ -723,6 +723,9 @@ class OtlpConfigTest < Minitest::Test
     OTEL_EXPORTER_OTLP_CERTIFICATE
     OTEL_EXPORTER_OTLP_CLIENT_KEY
     OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE
+    OTEL_EXPORTER_OTLP_PROTOCOL
+    OTEL_SEMCONV_STABILITY_OPT_IN
+    OTEL_EXPORTER_OTLP_INSECURE
     INSTANA_CONFIG_PATH
   ].freeze
 
@@ -872,6 +875,71 @@ class OtlpConfigTest < Minitest::Test
     assert_equal({ 'x-general-key' => 'general-secret' }, subject[:otlp][:headers])
   end
 
+  # ── protocol ──────────────────────────────────────────────────────────────
+
+  def test_protocol_from_env
+    ENV['OTEL_EXPORTER_OTLP_PROTOCOL'] = 'grpc'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal 'grpc', subject[:otlp][:protocol]
+  end
+
+  def test_protocol_default_is_http_protobuf
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal 'http/protobuf', subject[:otlp][:protocol]
+  end
+
+  # ── semconv_stability ─────────────────────────────────────────────────────
+
+  def test_semconv_stability_from_env
+    ENV['OTEL_SEMCONV_STABILITY_OPT_IN'] = 'development'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal 'development', subject[:otlp][:semconv_stability]
+  end
+
+  def test_semconv_stability_default_is_stable
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal 'stable', subject[:otlp][:semconv_stability]
+  end
+
+  # ── insecure ──────────────────────────────────────────────────────────────
+
+  def test_insecure_true_from_env
+    ENV['OTEL_EXPORTER_OTLP_INSECURE'] = 'true'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal true, subject[:otlp][:insecure]
+  end
+
+  def test_insecure_false_by_default
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal false, subject[:otlp][:insecure]
+  end
+
+  def test_insecure_truthy_variants
+    %w[1 yes YES True TRUE].each do |val|
+      ENV['OTEL_EXPORTER_OTLP_INSECURE'] = val
+      subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+      assert subject[:otlp][:insecure], "Expected insecure=true for OTEL_EXPORTER_OTLP_INSECURE=#{val}"
+    end
+  end
+
+  def test_insecure_false_string_leaves_disabled
+    ENV['OTEL_EXPORTER_OTLP_INSECURE'] = 'false'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal false, subject[:otlp][:insecure]
+    assert_equal 'env', subject[:otlp][:config_source]
+  end
+
   # ── TLS fields ────────────────────────────────────────────────────────────
 
   def test_tls_fields_from_env
@@ -884,6 +952,28 @@ class OtlpConfigTest < Minitest::Test
     assert_equal '/etc/certs/ca.pem',     subject[:otlp][:certificate]
     assert_equal '/etc/certs/client.key', subject[:otlp][:client_key]
     assert_equal '/etc/certs/client.crt', subject[:otlp][:client_certificate]
+  end
+
+  # ── protocol, semconv_stability, insecure via YAML ────────────────────────
+
+  def test_yaml_protocol_and_semconv_stability
+    yaml_content = <<~YAML
+      tracing:
+        otlp:
+          enabled: true
+          protocol: grpc
+          semconv_stability: development
+          insecure: true
+    YAML
+
+    File.write('test_otlp_config.yaml', yaml_content)
+    ENV['INSTANA_CONFIG_PATH'] = 'test_otlp_config.yaml'
+
+    subject = Instana::Config.new(logger: Logger.new('/dev/null'))
+
+    assert_equal 'grpc',        subject[:otlp][:protocol]
+    assert_equal 'development', subject[:otlp][:semconv_stability]
+    assert_equal true,          subject[:otlp][:insecure]
   end
 
   # ── YAML configuration ────────────────────────────────────────────────────
@@ -976,7 +1066,10 @@ class OtlpConfigTest < Minitest::Test
         'otlp' => {
           'enabled' => 'true',
           'endpoint' => 'http://agent.example.com/v1/traces',
-          'timeout' => 8000
+          'timeout' => 8000,
+          'protocol' => 'grpc',
+          'semconv_stability' => 'development',
+          'insecure' => 'true'
         }
       }
     }
@@ -984,8 +1077,11 @@ class OtlpConfigTest < Minitest::Test
 
     assert_equal true, subject[:otlp][:enabled]
     assert_equal 'http://agent.example.com/v1/traces', subject[:otlp][:endpoint]
-    assert_equal 8000,                                    subject[:otlp][:timeout]
-    assert_equal 'agent',                                 subject[:otlp][:config_source]
+    assert_equal 8000,                                  subject[:otlp][:timeout]
+    assert_equal 'grpc',                                subject[:otlp][:protocol]
+    assert_equal 'development',                         subject[:otlp][:semconv_stability]
+    assert_equal true,                                  subject[:otlp][:insecure]
+    assert_equal 'agent',                               subject[:otlp][:config_source]
   end
 
   def test_agent_discovery_does_not_override_env_config
