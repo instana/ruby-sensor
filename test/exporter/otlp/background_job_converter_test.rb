@@ -13,7 +13,7 @@ class BackgroundJobConverterTest < Minitest::Test
 
     assert_equal 'sidekiq', attrs['messaging.system']
     assert_equal 'default', attrs['messaging.destination.name']
-    assert_equal 'publish', attrs['messaging.operation']
+    assert_equal 'publish', attrs['messaging.operation.name']
     assert_equal '123', attrs['messaging.message.id']
     assert_equal 'TestWorker', attrs['messaging.consumer.group.name']
     assert_equal 'localhost', attrs['server.address']
@@ -29,7 +29,7 @@ class BackgroundJobConverterTest < Minitest::Test
 
     assert_equal 'sidekiq', attrs['messaging.system']
     assert_equal 'critical', attrs['messaging.destination.name']
-    assert_equal 'process', attrs['messaging.operation']
+    assert_equal 'process', attrs['messaging.operation.name']
     assert_equal '456', attrs['messaging.message.id']
     assert_equal 'EmailWorker', attrs['messaging.consumer.group.name']
   end
@@ -43,7 +43,7 @@ class BackgroundJobConverterTest < Minitest::Test
 
     assert_equal 'resque', attrs['messaging.system']
     assert_equal 'low', attrs['messaging.destination.name']
-    assert_equal 'publish', attrs['messaging.operation']
+    assert_equal 'publish', attrs['messaging.operation.name']
   end
 
   def test_resque_worker_conversion
@@ -54,7 +54,31 @@ class BackgroundJobConverterTest < Minitest::Test
     attrs = converter.send(:convert_attributes)
 
     assert_equal 'resque', attrs['messaging.system']
-    assert_equal 'process', attrs['messaging.operation']
+    assert_equal 'process', attrs['messaging.operation.name']
+  end
+
+  def test_activejob_conversion
+    span = create_span('activejob', {
+                         activejob: { queue: 'mailers', action: 'perform', job_id: 'abc-123' }
+                       })
+    converter = Instana::Exporter::Otlp::BackgroundJobConverter.new(span)
+    attrs = converter.send(:convert_attributes)
+
+    assert_equal 'activejob', attrs['messaging.system']
+    assert_equal 'mailers', attrs['messaging.destination.name']
+    assert_equal 'perform', attrs['messaging.operation.name']
+    assert_equal 'abc-123', attrs['messaging.message.id']
+  end
+
+  def test_activejob_without_job_id
+    span = create_span('activejob', {
+                         activejob: { queue: 'default', action: 'perform' }
+                       })
+    attrs = Instana::Exporter::Otlp::BackgroundJobConverter.new(span).send(:convert_attributes)
+
+    assert_equal 'activejob', attrs['messaging.system']
+    assert_equal 'default', attrs['messaging.destination.name']
+    assert_nil attrs['messaging.message.id']
   end
 
   def test_extract_host

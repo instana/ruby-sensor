@@ -41,6 +41,8 @@ module Instana
             convert_job_attributes(attributes, span[:'resque-client'] || span[:data]&.[](:'resque-client'), 'resque', 'publish')
           elsif span_type == 'resque-worker'
             convert_job_attributes(attributes, span[:'resque-worker'] || span[:data]&.[](:'resque-worker'), 'resque', 'process')
+          elsif span_type == 'activejob'
+            convert_activejob_attributes(attributes, span[:data]&.[](:activejob))
           end
 
           attributes
@@ -53,11 +55,20 @@ module Instana
 
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_SYSTEM, system)
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_DESTINATION_NAME, data[:queue] || data['queue'])
-          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION, operation)
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_NAME, operation)
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_MESSAGE_ID, data[:job_id] || data['job_id'])
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_CONSUMER_GROUP_NAME, data[:job] || data['job'])
           add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_ADDRESS, extract_host(data[:'redis-url'] || data['redis-url']))
           add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_PORT, extract_port(data[:'redis-url'] || data['redis-url']))
+        end
+
+        def convert_activejob_attributes(attributes, data)
+          return unless data
+
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_SYSTEM, 'activejob')
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_DESTINATION_NAME, data[:queue] || data['queue'])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_NAME, data[:action] || data['action'])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_MESSAGE_ID, data[:job_id] || data['job_id'])
         end
 
         def extract_host(connection)
