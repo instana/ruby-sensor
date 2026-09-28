@@ -125,4 +125,75 @@ class SequelTest < Minitest::Test
     assert_nil error
     assert_empty ::Instana.processor.queued_spans
   end
+
+  def test_sanitize_sql_disabled_keeps_raw_values
+    original = ::Instana.config[:sanitize_sql]
+    ::Instana.config[:sanitize_sql] = false
+    clear_all!
+
+    Instana.tracer.in_span(:sequel_test) do
+      @model.insert(name: 'plaintext_value', color: 'blue')
+    end
+
+    spans = ::Instana.processor.queued_spans
+    span = find_first_span_by_name(spans, :sequel)
+    data = span[:data][:sequel]
+
+    assert data[:sql].include?('plaintext_value'), "Raw value should appear in SQL when sanitize_sql is false"
+  ensure
+    ::Instana.config[:sanitize_sql] = original
+  end
+
+  def test_pragma_queries_are_ignored
+    clear_all!
+
+    Instana.tracer.in_span(:sequel_test) do
+      # PRAGMA is on the ignored list for Sequel
+      begin
+        @db.run('PRAGMA table_info(blocks)')
+      rescue StandardError
+        nil # sqlite3 adapter may not accept this form via run
+      end
+      @db.send(:log_connection_yield, 'PRAGMA table_info(blocks)', nil) { nil }
+    end
+
+    spans = ::Instana.processor.queued_spans
+    sequel_span = find_first_span_by_name(spans, :sequel)
+    assert_nil sequel_span, "PRAGMA queries should not be traced"
+  end
+
+  def test_version_select_is_ignored
+    clear_all!
+
+    Instana.tracer.in_span(:sequel_test) do
+      @db.send(:log_connection_yield, 'SELECT VERSION()', nil) { nil }
+    end
+
+    spans = ::Instana.processor.queued_spans
+    sequel_span = find_first_span_by_name(spans, :sequel)
+    assert_nil sequel_span, "SELECT VERSION() should not be traced"
+  end
+
+  def test_not_tracing_skips_span
+    clear_all!
+
+    @model.insert(name: 'no_trace', color: 'green')
+
+    spans = ::Instana.processor.queued_spans
+    sequel_span = find_first_span_by_name(spans, :sequel)
+    assert_nil sequel_span, "No sequel span should be created outside an active trace"
+  end
+
+  def test_begin_commit_ignored_by_sequel
+    clear_all!
+
+    Instana.tracer.in_span(:sequel_test) do
+      @db.send(:log_connection_yield, 'BEGIN', nil) { nil }
+      @db.send(:log_connection_yield, 'COMMIT', nil) { nil }
+    end
+
+    spans = ::Instana.processor.queued_spans
+    sequel_span = find_first_span_by_name(spans, :sequel)
+    assert_nil sequel_span, "BEGIN/COMMIT should not be traced by Sequel instrumentation"
+  end
 end

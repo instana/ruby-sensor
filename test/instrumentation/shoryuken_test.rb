@@ -64,4 +64,42 @@ class ShoryukenTest < Minitest::Test
     assert_nil error
     assert_empty ::Instana.processor.queued_spans
   end
+
+  def test_array_message_yields_without_span
+    # When sqs_message is an Array, call should just yield without creating a span
+    result = @middleware.call(nil, nil, ['msg1', 'msg2'], nil) { :batch_result }
+
+    assert_equal :batch_result, result
+    assert_empty ::Instana.processor.queued_spans
+  end
+
+  def test_message_with_nil_attributes
+    # message_attributes present but keys missing — read_message_header returns nil
+    message = OpenStruct.new(
+      queue_url: 'http://example.com',
+      message_attributes: {}
+    )
+
+    @middleware.call(nil, nil, message, nil) {}
+
+    span = ::Instana.processor.queued_spans.first
+    assert_nil span[:p], "No parent context when headers are absent"
+    assert_equal 'entry', span[:data][:sqs][:sort]
+  end
+
+  def test_message_with_non_string_value_attribute
+    # attribute exists but does not respond to string_value — should be ignored
+    message = OpenStruct.new(
+      queue_url: 'http://example.com',
+      message_attributes: {
+        'X_INSTANA_T' => OpenStruct.new # no string_value method
+      }
+    )
+
+    @middleware.call(nil, nil, message, nil) {}
+
+    span = ::Instana.processor.queued_spans.first
+    refute_nil span
+    assert_nil span[:p]
+  end
 end
