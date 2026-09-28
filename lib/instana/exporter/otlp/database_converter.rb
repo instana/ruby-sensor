@@ -85,11 +85,11 @@ module Instana
         # Normalize an ActiveRecord/Sequel adapter name to OTel db.system.name.
         # Only adapters that are actively instrumented and tested are listed here.
         DB_SYSTEM_NORMALIZATION = {
-          'mysql2'       => 'mysql',
-          'sqlite3'      => 'sqlite',
-          'postgresql'   => 'postgresql',
-          'mysql'        => 'mysql',
-          'sqlite'       => 'sqlite'
+          'mysql2' => 'mysql',
+          'sqlite3' => 'sqlite',
+          'postgresql' => 'postgresql',
+          'mysql' => 'mysql',
+          'sqlite' => 'sqlite'
         }.freeze
 
         def normalize_db_system(adapter)
