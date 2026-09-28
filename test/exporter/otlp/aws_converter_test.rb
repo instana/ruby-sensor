@@ -207,10 +207,13 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     converter = Instana::Exporter::Otlp::AwsConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 's3', attrs['aws.service']
+    assert_equal 'aws-api', attrs['rpc.system.name']
+    assert_equal 'S3.GetObject', attrs['rpc.method']
+    assert_equal 'aws', attrs['cloud.provider']
     assert_equal 'my-bucket', attrs['aws.s3.bucket']
     assert_equal 'path/to/file.txt', attrs['aws.s3.key']
-    assert_equal 'GetObject', attrs['aws.s3.operation']
+    assert_nil attrs['aws.service']
+    assert_nil attrs['aws.s3.operation']
   end
 
   def test_s3_put_object_operation
@@ -220,10 +223,10 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     converter = Instana::Exporter::Otlp::AwsConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 's3', attrs['aws.service']
+    assert_equal 'aws-api', attrs['rpc.system.name']
+    assert_equal 'S3.PutObject', attrs['rpc.method']
     assert_equal 'uploads-bucket', attrs['aws.s3.bucket']
     assert_equal 'uploads/image.jpg', attrs['aws.s3.key']
-    assert_equal 'PutObject', attrs['aws.s3.operation']
   end
 
   def test_s3_delete_object_operation
@@ -233,10 +236,10 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     converter = Instana::Exporter::Otlp::AwsConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 's3', attrs['aws.service']
+    assert_equal 'aws-api', attrs['rpc.system.name']
+    assert_equal 'S3.DeleteObject', attrs['rpc.method']
     assert_equal 'temp-bucket', attrs['aws.s3.bucket']
     assert_equal 'temp/file.tmp', attrs['aws.s3.key']
-    assert_equal 'DeleteObject', attrs['aws.s3.operation']
   end
 
   def test_s3_list_objects_operation
@@ -246,10 +249,47 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     converter = Instana::Exporter::Otlp::AwsConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 's3', attrs['aws.service']
+    assert_equal 'aws-api', attrs['rpc.system.name']
+    assert_equal 'S3.ListObjects', attrs['rpc.method']
     assert_equal 'data-bucket', attrs['aws.s3.bucket']
     assert_nil attrs['aws.s3.key']
-    assert_equal 'ListObjects', attrs['aws.s3.operation']
+    assert_nil attrs['aws.s3.operation']
+  end
+
+  def test_s3_with_region
+    span = create_span('aws.s3', {
+                         s3: { bucket: 'regional-bucket', op: 'PutObject', region: 'us-west-2' }
+                       })
+    converter = Instana::Exporter::Otlp::AwsConverter.new(span)
+    attrs = converter.send(:convert_attributes)
+
+    assert_equal 'aws-api', attrs['rpc.system.name']
+    assert_equal 'S3.PutObject', attrs['rpc.method']
+    assert_equal 'aws', attrs['cloud.provider']
+    assert_equal 'us-west-2', attrs['cloud.region']
+    assert_equal 'regional-bucket', attrs['aws.s3.bucket']
+  end
+
+  def test_s3_without_region_omits_cloud_region
+    span = create_span('aws.s3', {
+                         s3: { bucket: 'no-region-bucket', op: 'GetObject' }
+                       })
+    converter = Instana::Exporter::Otlp::AwsConverter.new(span)
+    attrs = converter.send(:convert_attributes)
+
+    assert_equal 'aws', attrs['cloud.provider']
+    assert_nil attrs['cloud.region']
+  end
+
+  def test_s3_without_op_omits_rpc_method
+    span = create_span('aws.s3', {
+                         s3: { bucket: 'some-bucket' }
+                       })
+    converter = Instana::Exporter::Otlp::AwsConverter.new(span)
+    attrs = converter.send(:convert_attributes)
+
+    assert_equal 'aws-api', attrs['rpc.system.name']
+    assert_nil attrs['rpc.method']
   end
 
   # AWS Lambda Tests
