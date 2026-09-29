@@ -11,7 +11,7 @@ class RpcConverterTest < Minitest::Test
     converter = Instana::Exporter::Otlp::RpcConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'grpc', attrs['rpc.system.name']
+    assert_equal 'grpc', attrs[Instana::Exporter::Otlp::RPC_SYSTEM_ATTR]
     assert_equal 'package.Service', attrs['rpc.service']
     assert_equal 'Method', attrs['rpc.method']
     assert_equal 'grpc.example.com', attrs['server.address']
@@ -70,7 +70,7 @@ class RpcConverterTest < Minitest::Test
     converter = Instana::Exporter::Otlp::RpcConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'actioncable', attrs['rpc.system.name']
+    assert_equal 'actioncable', attrs[Instana::Exporter::Otlp::RPC_SYSTEM_ATTR]
     assert_equal 'ChatChannel#speak', attrs['rails.actioncable.channel']
     assert_equal 'action', attrs['rails.actioncable.call_type']
     assert_equal 'my-app', attrs['rpc.service']
