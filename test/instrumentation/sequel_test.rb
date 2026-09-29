@@ -158,7 +158,7 @@ class SequelTest < Minitest::Test
     end
 
     spans = ::Instana.processor.queued_spans
-    sequel_span = find_first_span_by_name(spans, :sequel)
+    sequel_span = find_first_span_by_name(spans, :sequel) rescue nil
     assert_nil sequel_span, "PRAGMA queries should not be traced"
   end
 
@@ -170,7 +170,7 @@ class SequelTest < Minitest::Test
     end
 
     spans = ::Instana.processor.queued_spans
-    sequel_span = find_first_span_by_name(spans, :sequel)
+    sequel_span = find_first_span_by_name(spans, :sequel) rescue nil
     assert_nil sequel_span, "SELECT VERSION() should not be traced"
   end
 
@@ -180,7 +180,7 @@ class SequelTest < Minitest::Test
     @model.insert(name: 'no_trace', color: 'green')
 
     spans = ::Instana.processor.queued_spans
-    sequel_span = find_first_span_by_name(spans, :sequel)
+    sequel_span = find_first_span_by_name(spans, :sequel) rescue nil
     assert_nil sequel_span, "No sequel span should be created outside an active trace"
   end
 
@@ -193,7 +193,7 @@ class SequelTest < Minitest::Test
     end
 
     spans = ::Instana.processor.queued_spans
-    sequel_span = find_first_span_by_name(spans, :sequel)
+    sequel_span = find_first_span_by_name(spans, :sequel) rescue nil
     assert_nil sequel_span, "BEGIN/COMMIT should not be traced by Sequel instrumentation"
   end
 end

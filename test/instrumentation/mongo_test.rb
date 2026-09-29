@@ -116,6 +116,7 @@ class MongoTest < Minitest::Test
     fake_event.expect(:database_name, 'instana')
     fake_event.expect(:command_name, 'find')
     fake_event.expect(:address, fake_address)
+    fake_event.expect(:address, fake_address)
     fake_event.expect(:request_id, 999)
     fake_event.expect(:command, { 'find' => 'people', 'lsid' => 'abc', '$db' => 'instana', 'documents' => [] })
 
