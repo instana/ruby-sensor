@@ -180,8 +180,7 @@ class RailsActiveRecordTest < Minitest::Test
     end
 
     spans = ::Instana.processor.queued_spans
-    ar_span = find_first_span_by_name(spans, :activerecord)
-    assert_nil ar_span, "SCHEMA queries should not be traced"
+    refute spans.any? { |s| s[:n] == :activerecord }, "SCHEMA queries should not be traced"
   end
 
   def test_begin_commit_queries_are_ignored
@@ -191,15 +190,13 @@ class RailsActiveRecordTest < Minitest::Test
     end
 
     spans = ::Instana.processor.queued_spans
-    ar_span = find_first_span_by_name(spans, :activerecord)
-    assert_nil ar_span, "BEGIN/COMMIT should not be traced"
+    refute spans.any? { |s| s[:n] == :activerecord }, "BEGIN/COMMIT should not be traced"
   end
 
   def test_no_span_when_not_tracing
     Block.create(name: 'no_trace', color: 'red')
 
     spans = ::Instana.processor.queued_spans
-    ar_span = find_first_span_by_name(spans, :activerecord)
-    assert_nil ar_span, "No activerecord span outside an active trace"
+    refute spans.any? { |s| s[:n] == :activerecord }, "No activerecord span outside an active trace"
   end
 end

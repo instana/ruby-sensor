@@ -211,8 +211,7 @@ class ResqueClientTest < Minitest::Test
     Resque.reserve('critical') # consume it
 
     spans = ::Instana.processor.queued_spans
-    resque_span = find_first_span_by_name(spans, :'resque-client')
-    assert_nil resque_span, "No resque-client span should be created when not tracing"
+    refute spans.any? { |s| s[:n] == :'resque-client' }, "No resque-client span should be created when not tracing"
   end
 
   def test_dequeue_not_tracing_skips_span
@@ -220,8 +219,7 @@ class ResqueClientTest < Minitest::Test
     ::Resque.dequeue(FastJob)
 
     spans = ::Instana.processor.queued_spans
-    resque_span = find_first_span_by_name(spans, :'resque-client')
-    assert_nil resque_span, "No resque-client span when dequeue is called outside trace"
+    refute spans.any? { |s| s[:n] == :'resque-client' }, "No resque-client span when dequeue is called outside trace"
   end
 
   def test_enqueue_to_not_tracing_skips_span
@@ -229,8 +227,7 @@ class ResqueClientTest < Minitest::Test
     Resque.reserve('critical')
 
     spans = ::Instana.processor.queued_spans
-    resque_span = find_first_span_by_name(spans, :'resque-client')
-    assert_nil resque_span, "No resque-client span when enqueue_to called outside trace"
+    refute spans.any? { |s| s[:n] == :'resque-client' }, "No resque-client span when enqueue_to called outside trace"
   end
 
   def test_resque_job_fail_logs_error_when_tracing

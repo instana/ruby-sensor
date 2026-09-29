@@ -225,29 +225,31 @@ class RackInstrumentedRequestTest < Minitest::Test
   end
 
   def test_context_from_trace_state_no_instana_token
-    # TRACESTATE present but no in= token — context_from_trace_state returns empty
+    # TRACESTATE present but no in= token — context_from_trace_state returns empty hash
+    # (from_w3c: false is still set since it's a non-w3c path)
     req = Instana::InstrumentedRequest.new(
       'HTTP_TRACESTATE' => 'vendor=value,other=stuff'
     )
 
     ctx = req.incoming_context
-    assert_equal({}, ctx)
+    assert_equal({ from_w3c: false }, ctx)
   end
 
   def test_w3c_context_with_instana_trace_state_replaces_ids
     # When w3c_trace_correlation is OFF, a W3C traceparent + in= tracestate
     # should replace trace_id/span_id with the Instana values (L41-44)
+    # IDs must be lowercase hex to match INSTANA_TRACE_STATE regex
     original = ::Instana.config[:w3c_trace_correlation]
     ::Instana.config[:w3c_trace_correlation] = false
 
     req = Instana::InstrumentedRequest.new(
       'HTTP_TRACEPARENT' => '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
-      'HTTP_TRACESTATE' => 'in=instana123;spanid456'
+      'HTTP_TRACESTATE' => 'in=aabbccdd11223344;ff00ee11dd22cc33'
     )
 
     ctx = req.incoming_context
-    assert_equal 'instana123', ctx[:trace_id], "trace_id should be overridden from in= tracestate"
-    assert_equal 'spanid456',  ctx[:span_id],  "span_id should be overridden from in= tracestate"
+    assert_equal 'aabbccdd11223344', ctx[:trace_id], "trace_id should be overridden from in= tracestate"
+    assert_equal 'ff00ee11dd22cc33', ctx[:span_id],  "span_id should be overridden from in= tracestate"
     assert_equal false, ctx[:from_w3c]
   ensure
     ::Instana.config[:w3c_trace_correlation] = original
@@ -273,19 +275,18 @@ class RackInstrumentedRequestTest < Minitest::Test
   end
 
   def test_incoming_context_with_span_context_object
-    # When incoming_context returns a SpanContext (not Hash), rack extracts it correctly
-    # Test the SpanContext path in extract_trace_context (L60-61)
-    Instana::SpanContext.new(trace_id: 'abc123', span_id: 'def456')
+    # Verify InstrumentedRequest produces the right hash from X-INSTANA-T/S headers.
+    # header_to_id requires 16-32 lowercase hex chars.
+    trace_id = 'aabbccddeeff0011'
+    span_id  = '1122334455667788'
     req = Instana::InstrumentedRequest.new(
-      'HTTP_X_INSTANA_T' => 'abc123',
-      'HTTP_X_INSTANA_S' => 'def456',
+      'HTTP_X_INSTANA_T' => trace_id,
+      'HTTP_X_INSTANA_S' => span_id,
       'HTTP_X_INSTANA_L' => '1'
     )
 
     ctx = req.incoming_context
-    # extract_trace_context on the Rack middleware receives the hash from incoming_context
-    # Here we just verify InstrumentedRequest produces the right hash
-    assert_equal 'abc123', ctx[:trace_id]
-    assert_equal 'def456', ctx[:span_id]
+    assert_equal trace_id, ctx[:trace_id]
+    assert_equal span_id,  ctx[:span_id]
   end
 end

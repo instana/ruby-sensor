@@ -319,8 +319,7 @@ class AwsSnsTest < Minitest::Test
     end
 
     spans = ::Instana.processor.queued_spans
-    sns_span = find_first_span_by_name(spans, :sns)
-    assert_nil sns_span, "create_topic should not produce an :sns span"
+    refute spans.any? { |s| s[:n] == :sns }, "create_topic should not produce an :sns span"
   end
 end
 
@@ -480,8 +479,7 @@ class AwsSqsTest < Minitest::Test
     end
 
     spans = ::Instana.processor.queued_spans
-    sqs_span = find_first_span_by_name(spans, :sqs)
-    assert_nil sqs_span
+    refute spans.any? { |s| s[:n] == :sqs }, "create_queue without an active trace should not produce an :sqs span"
   end
 end
 

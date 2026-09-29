@@ -252,7 +252,7 @@ class NetHTTPTest < Minitest::Test
     end
 
     spans = ::Instana.processor.queued_spans
-    http_span = find_first_span_by_name(spans, :'net-http')
+    http_span = spans.find { |s| s[:n] == :'net-http' }
 
     return unless http_span
 
@@ -271,8 +271,7 @@ class NetHTTPTest < Minitest::Test
     end
 
     spans = ::Instana.processor.queued_spans
-    http_span = find_first_span_by_name(spans, :'net-http')
-    assert_nil http_span, "net-http span should not be created when disabled"
+    refute spans.any? { |s| s[:n] == :'net-http' }, "net-http span should not be created when disabled"
 
     WebMock.disable_net_connect!
   ensure
@@ -289,8 +288,7 @@ class NetHTTPTest < Minitest::Test
     end
 
     spans = ::Instana.processor.queued_spans
-    http_span = find_first_span_by_name(spans, :'net-http')
-    assert_nil http_span, "net-http should not create a span when inside a DynamoDB span"
+    refute spans.any? { |s| s[:n] == :'net-http' }, "net-http should not create a span when inside a DynamoDB span"
 
     WebMock.disable_net_connect!
   end
