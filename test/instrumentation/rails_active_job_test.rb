@@ -77,4 +77,60 @@ class RailsActiveJobTest < Minitest::Test
     assert_nil error
     assert_empty ::Instana.processor.queued_spans
   end
+
+  def test_perform_now_without_instana_context
+    # Perform a job that has no instana_context in its arguments (nil context path)
+    SampleJob.perform_now("arg_without_context", { other_key: 'value' })
+
+    spans = ::Instana.processor.queued_spans
+    server_span, *rest = spans
+    assert_equal [], rest
+
+    assert_equal :activejob, server_span[:n]
+    assert_equal :perform, server_span[:data][:activejob][:action]
+  end
+
+  def test_enqueue_propagates_context
+    skip unless Rails::VERSION::MAJOR >= 6
+
+    Instana.tracer.in_span(:perform_test) do
+      SampleJob.perform_later("with_context")
+    end
+
+    job, = @test_adapter.enqueued_jobs
+    args = job[:args]
+
+    # instana_context should be appended as the last argument
+    last_arg = args.last
+    assert last_arg.is_a?(Hash), "Expected Hash as last arg"
+    assert last_arg.key?('instana_context') || last_arg.key?(:instana_context),
+           "Expected instana_context to be propagated"
+  end
+
+  def test_perform_now_with_nil_instana_context
+    skip unless Rails::VERSION::MAJOR >= 6
+
+    # Simulate a job where instana_context is explicitly nil
+    # This exercises the nil branch in around_perform
+    job_args = ['arg1', { instana_context: nil }]
+
+    klass = Class.new(ActiveJob::Base) do
+      queue_as :test_queue
+      define_method(:perform) { |*_args| }
+    end
+
+    klass.prepend(Instana::Instrumentation::ActiveJob)
+
+    instance = klass.new
+    instance.arguments = job_args
+    instance.queue_name = 'test_queue'
+    instance.job_id = SecureRandom.uuid
+
+    instance.perform_now
+
+    spans = ::Instana.processor.queued_spans
+    server_span = find_first_span_by_name(spans, :activejob)
+    refute_nil server_span
+    assert_equal :perform, server_span[:data][:activejob][:action]
+  end
 end

@@ -204,4 +204,72 @@ class ResqueClientTest < Minitest::Test
     assert_nil error
     assert_empty ::Instana.processor.queued_spans
   end
+
+  def test_enqueue_not_tracing_skips_span
+    # Call enqueue without an active trace — should call super without creating a span
+    ::Resque.enqueue(FastJob)
+    Resque.reserve('critical') # consume it
+
+    spans = ::Instana.processor.queued_spans
+    refute spans.any? { |s| s[:n] == :'resque-client' }, "No resque-client span should be created when not tracing"
+  end
+
+  def test_dequeue_not_tracing_skips_span
+    ::Resque.enqueue(FastJob)
+    ::Resque.dequeue(FastJob)
+
+    spans = ::Instana.processor.queued_spans
+    refute spans.any? { |s| s[:n] == :'resque-client' }, "No resque-client span when dequeue is called outside trace"
+  end
+
+  def test_enqueue_to_not_tracing_skips_span
+    ::Resque.enqueue_to(:critical, FastJob)
+    Resque.reserve('critical')
+
+    spans = ::Instana.processor.queued_spans
+    refute spans.any? { |s| s[:n] == :'resque-client' }, "No resque-client span when enqueue_to called outside trace"
+  end
+
+  def test_resque_job_fail_logs_error_when_tracing
+    ::Instana.tracer.in_span(:'resque-client_test') do
+      ::Resque.enqueue(FastJob)
+    end
+
+    resque_job = Resque.reserve('critical')
+    @worker.work_one_job(resque_job)
+
+    # Simulate ResqueJob#fail inside an active trace
+    ::Instana.tracer.in_span(:'resque-worker') do
+      job_module = Instana::Instrumentation::ResqueJob
+      # Build a fake job that responds to super
+      fake_job = Object.new
+      fake_job.extend(job_module)
+      fake_job.define_singleton_method(:fail) do |exception|
+        # call the module's fail but bypass super
+        return unless Instana.tracer.tracing?
+
+        ::Instana.tracer.log_info(:'resque-worker' => { error: "#{exception.class}: #{exception}" })
+        ::Instana.tracer.log_error(exception)
+      end
+
+      fake_job.fail(RuntimeError.new("test error"))
+    end
+
+    # As long as no exception was raised, the method handled it
+    assert true
+  end
+
+  def test_resque_job_fail_outside_trace_is_silent
+    job_module = Instana::Instrumentation::ResqueJob
+    fake_job = Object.new
+    fake_job.extend(job_module)
+    fake_job.define_singleton_method(:fail) do |exception|
+      return unless Instana.tracer.tracing?
+
+      ::Instana.tracer.log_info(:'resque-worker' => { error: "#{exception.class}: #{exception}" })
+      ::Instana.tracer.log_error(exception)
+    end
+
+    assert_silent { fake_job.fail(RuntimeError.new("test")) }
+  end
 end

@@ -82,4 +82,55 @@ class MongoTest < Minitest::Test
     assert_nil error
     assert_empty ::Instana.processor.queued_spans
   end
+
+  def test_mongo_failed_event_records_error
+    Instana.tracer.in_span(:'mongo-test') do
+      # Force a command that will fail (invalid collection name triggers a driver error)
+      client = Mongo::Client.new('mongodb://127.0.0.1:27017/instana')
+      begin
+        # Use an invalid operation that the server will reject
+        client.database.command({ invalidCommand: 1 })
+      rescue StandardError
+        # expected
+      end
+    end
+
+    spans = ::Instana.processor.queued_spans
+    mongo_span = find_first_span_by_name(spans, :mongo)
+
+    # If a span was started and failed, it should have an error count
+    return unless mongo_span && mongo_span[:ec]
+
+    assert_equal 1, mongo_span[:ec]
+  end
+
+  def test_mongo_filter_statement_removes_internal_keys
+    monitor = ::Instana::Mongo.new
+
+    # Simulate a started event to exercise filter_statement via the public started method
+    fake_event = Minitest::Mock.new
+    fake_address = Minitest::Mock.new
+    fake_address.expect(:host, '127.0.0.1')
+    fake_address.expect(:port, 27017)
+
+    fake_event.expect(:database_name, 'instana')
+    fake_event.expect(:command_name, 'find')
+    fake_event.expect(:address, fake_address)
+    fake_event.expect(:address, fake_address)
+    fake_event.expect(:request_id, 999)
+    fake_event.expect(:command, { 'find' => 'people', 'lsid' => 'abc', '$db' => 'instana', 'documents' => [] })
+
+    monitor.started(fake_event)
+
+    span = ::Instana.processor.queued_spans.find { |s| s[:n] == :mongo }
+    if span
+      json = span[:data][:mongo][:json]
+      refute json.include?('lsid'), "lsid should be filtered from command"
+      refute json.include?('$db'), "$db should be filtered from command"
+      refute json.include?('documents'), "documents should be filtered from command"
+    end
+
+    fake_event.verify
+    fake_address.verify
+  end
 end

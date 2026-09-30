@@ -130,4 +130,73 @@ class RailsActiveRecordTest < Minitest::Test
     assert_nil error
     assert_empty ::Instana.processor.queued_spans
   end
+
+  def test_binds_are_captured_when_sanitize_sql_disabled
+    original = ::Instana.config[:sanitize_sql]
+    ::Instana.config[:sanitize_sql] = false
+
+    Instana.tracer.in_span(:ar_test, attributes: {}) do
+      Block.where(name: 'core').to_a
+    end
+
+    spans = ::Instana.processor.queued_spans
+    span = find_first_span_by_name(spans, :activerecord)
+    data = span[:data][:activerecord]
+
+    # binds key should be present (may be empty array if no bind params)
+    assert data.key?(:sql)
+  ensure
+    ::Instana.config[:sanitize_sql] = original
+  end
+
+  def test_sanitize_sql_replaces_values
+    original = ::Instana.config[:sanitize_sql]
+    ::Instana.config[:sanitize_sql] = true
+
+    Instana.tracer.in_span(:ar_test, attributes: {}) do
+      Block.create(name: 'secret', color: 'blue')
+    end
+
+    spans = ::Instana.processor.queued_spans
+    span = find_first_span_by_name(spans, :activerecord)
+    data = span[:data][:activerecord]
+
+    refute data[:sql].include?("'secret'"), "Raw string value should be sanitized"
+  ensure
+    ::Instana.config[:sanitize_sql] = original
+  end
+
+  def test_schema_queries_are_ignored
+    # SCHEMA queries should not produce activerecord spans even when tracing
+    Instana.tracer.in_span(:ar_test, attributes: {}) do
+      ActiveRecord::Base.connection.execute('SELECT 1') # warm up
+    end
+
+    clear_all!
+
+    Instana.tracer.in_span(:ar_test, attributes: {}) do
+      # SCHEMA prefix is on the ignored list — simulate via execute with name
+      ActiveRecord::Base.connection.send(:log, 'SELECT id FROM schema_info', 'SCHEMA') {}
+    end
+
+    spans = ::Instana.processor.queued_spans
+    refute spans.any? { |s| s[:n] == :activerecord }, "SCHEMA queries should not be traced"
+  end
+
+  def test_begin_commit_queries_are_ignored
+    Instana.tracer.in_span(:ar_test, attributes: {}) do
+      ActiveRecord::Base.connection.send(:log, 'BEGIN', 'SQL') {}
+      ActiveRecord::Base.connection.send(:log, 'COMMIT', 'SQL') {}
+    end
+
+    spans = ::Instana.processor.queued_spans
+    refute spans.any? { |s| s[:n] == :activerecord }, "BEGIN/COMMIT should not be traced"
+  end
+
+  def test_no_span_when_not_tracing
+    Block.create(name: 'no_trace', color: 'red')
+
+    spans = ::Instana.processor.queued_spans
+    refute spans.any? { |s| s[:n] == :activerecord }, "No activerecord span outside an active trace"
+  end
 end

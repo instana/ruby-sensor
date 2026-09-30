@@ -124,6 +124,48 @@ class RestClientTest < Minitest::Test
 
     WebMock.disable_net_connect!
   end
+
+  def test_error_with_http_response_not_marked_as_error_when_below_five_hundred
+    clear_all!
+    WebMock.allow_net_connect!
+
+    begin
+      Instana.tracer.in_span('restclient-test') do
+        RestClient.get 'http://127.0.0.1:6511/status/404'
+      end
+    rescue RestClient::ExceptionWithResponse
+      nil
+    end
+
+    spans = ::Instana.processor.queued_spans
+    rest_span = find_first_span_by_name(spans, :'rest-client')
+
+    # 404 is not a 5xx — error_span? should return false, span should not be errored
+    assert_nil rest_span[:error]
+
+    WebMock.disable_net_connect!
+  end
+
+  def test_error_without_response_marks_span_as_error
+    clear_all!
+
+    stub_request(:get, "http://example.com/no-response")
+      .to_raise(SocketError.new("connection refused"))
+
+    begin
+      Instana.tracer.in_span('restclient-test') do
+        RestClient.get 'http://example.com/no-response'
+      end
+    rescue StandardError
+      nil
+    end
+
+    spans = ::Instana.processor.queued_spans
+    rest_span = find_first_span_by_name(spans, :'rest-client')
+
+    # Exception without a response: error_span? should return true
+    assert rest_span[:error], "Span should be errored for exceptions without HTTP response"
+  end
 end
 
 class RestClient4xxClassificationTest < Minitest::Test
