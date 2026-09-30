@@ -199,21 +199,32 @@ module Instana
         @otlp_exporter = nil
       end
 
-      # Derive the OTLP endpoint from the discovered agent host when no explicit
-      # endpoint has been configured (config_source == 'default').
       OTLP_DEFAULT_PORT = 4318
       OTLP_TRACES_PATH  = '/v1/traces'.freeze
 
+      # Returns a fully-qualified OTLP traces endpoint.
+      #
+      # When config_source is 'default', builds the endpoint from the discovered
+      # agent host so OTLP traffic goes to the same host as metrics/traces.
+      #
+      # For user-supplied endpoints, appends '/v1/traces' when the URL has no
+      # path, because OTEL_EXPORTER_OTLP_ENDPOINT is a base URL and the
+      # opentelemetry-exporter-otlp gem only auto-appends the path when no
+      # endpoint is given at all.
       def resolve_otlp_endpoint(endpoint, config_source)
-        return endpoint unless config_source == 'default'
+        if config_source == 'default'
+          agent_host = @client&.host
+          return endpoint unless agent_host
 
-        # Use the host that was discovered by HostAgentLookup (same host the
-        # metrics/traces client is already talking to) and append the standard
-        # OTLP HTTP port and traces path.
-        agent_host = @client&.host
-        return endpoint unless agent_host
+          return "http://#{agent_host}:#{OTLP_DEFAULT_PORT}#{OTLP_TRACES_PATH}"
+        end
 
-        "http://#{agent_host}:#{OTLP_DEFAULT_PORT}#{OTLP_TRACES_PATH}"
+        # User-supplied: append the traces path if no path was given.
+        uri = URI.parse(endpoint)
+        uri.path = OTLP_TRACES_PATH if uri.path.empty? || uri.path == '/'
+        uri.to_s
+      rescue URI::InvalidURIError
+        endpoint
       end
     end
   end

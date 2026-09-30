@@ -506,6 +506,48 @@ class HostAgentReportingObserverTest < Minitest::Test # rubocop:disable Metrics/
     refute received_opts.key?(:client_key_file),         'client_key_file should not be set when nil'
   end
 
+  # OTEL_EXPORTER_OTLP_ENDPOINT is a base URL — the sensor must append
+  # '/v1/traces' before passing it to the exporter.
+  def test_otlp_exporter_appends_traces_path_to_base_endpoint
+    client    = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
+    discovery = Concurrent::Atom.new(nil)
+    received_opts = nil
+
+    with_otlp_config(enabled: true, endpoint: 'http://127.0.0.1:4318', config_source: 'env') do
+      capture = lambda { |**opts|
+        received_opts = opts
+        Minitest::Mock.new
+      }
+      OpenTelemetry::Exporter::OTLP::Exporter.stub(:new, capture) do
+        Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
+      end
+    end
+
+    assert_equal 'http://127.0.0.1:4318/v1/traces', received_opts[:endpoint],
+                 'Base URL without path must have /v1/traces appended'
+  end
+
+  # OTEL_EXPORTER_OTLP_TRACES_ENDPOINT is already a fully-qualified URL
+  # and must be passed to the exporter unchanged.
+  def test_otlp_exporter_preserves_fully_qualified_traces_endpoint
+    client    = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
+    discovery = Concurrent::Atom.new(nil)
+    received_opts = nil
+
+    with_otlp_config(enabled: true, endpoint: 'http://127.0.0.1:4318/v1/traces', config_source: 'env') do
+      capture = lambda { |**opts|
+        received_opts = opts
+        Minitest::Mock.new
+      }
+      OpenTelemetry::Exporter::OTLP::Exporter.stub(:new, capture) do
+        Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
+      end
+    end
+
+    assert_equal 'http://127.0.0.1:4318/v1/traces', received_opts[:endpoint],
+                 'Fully-qualified URL must be passed through unchanged'
+  end
+
   def test_otlp_export_enabled_exports_spans
     stub_request(:post, "http://10.10.10.10:9292/com.instana.plugin.ruby.1234")
       .to_return(status: 200)
