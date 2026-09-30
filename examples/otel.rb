@@ -1,7 +1,16 @@
-# Simple Instana Tracing Examples
-# ===========================
+# Simple Instana Tracing Examples — Tracing API
+# ==============================================
 
 # (c) Copyright IBM Corp. 2025
+
+# This file demonstrates the Instana tracing API (in_span / start_span).
+# It covers how to create spans, nest them, record errors, and set tags.
+#
+# For OTLP-specific setup (enabling export to the Instana agent via
+# HTTP/protobuf), see:
+#   - examples/otlp_http.rb          — HTTP/protobuf export (quickstart)
+#   - examples/otlp_with_headers.rb  — authentication headers and TLS/mTLS
+#   - examples/README.md             — prerequisites and how to run
 
 #######################################
 ## in_span Method Examples
@@ -94,5 +103,3 @@ child = Instana.tracer.start_span('child_task', with_parent: parent.context)
 
 child.finish
 parent.finish
-
-# Made with Bob
