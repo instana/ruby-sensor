@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# (c) Copyright IBM Corp. 2025
+# (c) Copyright IBM Corp. 2026
 
 # OTLP HTTP/protobuf Export Example
 # ==================================
