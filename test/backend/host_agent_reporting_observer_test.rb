@@ -508,11 +508,14 @@ class HostAgentReportingObserverTest < Minitest::Test # rubocop:disable Metrics/
 
   # OTEL_EXPORTER_OTLP_ENDPOINT is a base URL — the sensor must append
   # '/v1/traces' before passing it to the exporter.
-  def test_otlp_exporter_appends_traces_path_to_base_endpoint
+  # Also covers the rescue URI::InvalidURIError branch: an unparseable
+  # endpoint must be passed through to the exporter unchanged.
+  def test_otlp_exporter_resolves_user_supplied_endpoint
     client    = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
     discovery = Concurrent::Atom.new(nil)
     received_opts = nil
 
+    # Base URL — path must be appended
     with_otlp_config(enabled: true, endpoint: 'http://127.0.0.1:4318', config_source: 'env') do
       capture = lambda { |**opts|
         received_opts = opts
@@ -525,15 +528,33 @@ class HostAgentReportingObserverTest < Minitest::Test # rubocop:disable Metrics/
 
     assert_equal 'http://127.0.0.1:4318/v1/traces', received_opts[:endpoint],
                  'Base URL without path must have /v1/traces appended'
+
+    # Invalid URI — must be returned as-is (exercises rescue URI::InvalidURIError)
+    invalid_endpoint = "not a valid\turi %%"
+    with_otlp_config(enabled: true, endpoint: invalid_endpoint, config_source: 'env') do
+      capture = lambda { |**opts|
+        received_opts = opts
+        Minitest::Mock.new
+      }
+      OpenTelemetry::Exporter::OTLP::Exporter.stub(:new, capture) do
+        Instana::Backend::HostAgentReportingObserver.new(client, discovery, timer_class: MockTimer)
+      end
+    end
+
+    assert_equal invalid_endpoint, received_opts[:endpoint],
+                 'Invalid URI must be passed through unchanged'
   end
 
   # OTEL_EXPORTER_OTLP_TRACES_ENDPOINT is already a fully-qualified URL
   # and must be passed to the exporter unchanged.
+  # Also covers the config_source == 'default' + nil agent_host early-return:
+  # when the client has no host yet, the configured endpoint is used as-is.
   def test_otlp_exporter_preserves_fully_qualified_traces_endpoint
     client    = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
     discovery = Concurrent::Atom.new(nil)
     received_opts = nil
 
+    # Fully-qualified user-supplied URL — must pass through unchanged
     with_otlp_config(enabled: true, endpoint: 'http://127.0.0.1:4318/v1/traces', config_source: 'env') do
       capture = lambda { |**opts|
         received_opts = opts
@@ -546,6 +567,23 @@ class HostAgentReportingObserverTest < Minitest::Test # rubocop:disable Metrics/
 
     assert_equal 'http://127.0.0.1:4318/v1/traces', received_opts[:endpoint],
                  'Fully-qualified URL must be passed through unchanged'
+
+    # config_source 'default' with no agent host — exercises `return endpoint unless agent_host`
+    clientless = Instana::Backend::RequestClient.new('10.10.10.10', 9292)
+    clientless.define_singleton_method(:host) { nil }
+    fallback_endpoint = 'http://fallback:4318/v1/traces'
+    with_otlp_config(enabled: true, endpoint: fallback_endpoint, config_source: 'default') do
+      capture = lambda { |**opts|
+        received_opts = opts
+        Minitest::Mock.new
+      }
+      OpenTelemetry::Exporter::OTLP::Exporter.stub(:new, capture) do
+        Instana::Backend::HostAgentReportingObserver.new(clientless, discovery, timer_class: MockTimer)
+      end
+    end
+
+    assert_equal fallback_endpoint, received_opts[:endpoint],
+                 'Endpoint must be returned unchanged when agent host is not yet known'
   end
 
   def test_otlp_export_enabled_exports_spans
