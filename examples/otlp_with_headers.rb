@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# (c) Copyright IBM Corp. 2025
+# (c) Copyright IBM Corp. 2026
 
 # OTLP Authenticated Export Example — Headers and TLS/mTLS
 # =========================================================
