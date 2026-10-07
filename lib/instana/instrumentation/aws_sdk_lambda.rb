@@ -9,15 +9,19 @@ module Instana
         def call(context)
           return @handler.call(context) unless [:invoke_async, :invoke].include?(context.operation_name)
 
-          if context.params[:client_context].nil? && ::Instana.tracer.tracing? && context.operation_name == :invoke
-            span_context = ::Instana.tracer.context
-            payload = {
+          if ::Instana.tracer.tracing? && context.operation_name == :invoke
+            span_context  = ::Instana.tracer.context
+            trace_payload = {
               'X-INSTANA-T' => span_context.trace_id,
               'X-INSTANA-S' => span_context.span_id,
               'X-INSTANA-L' => span_context.level.to_s
             }
-
-            context.params[:client_context] = Base64.strict_encode64(JSON.dump(payload))
+            merged = if context.params[:client_context]
+                       JSON.parse(Base64.strict_decode64(context.params[:client_context])).merge(trace_payload)
+                     else
+                       trace_payload
+                     end
+            context.params[:client_context] = Base64.strict_encode64(JSON.dump(merged))
           end
 
           tags = {
