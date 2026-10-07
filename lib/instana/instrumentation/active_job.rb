@@ -1,19 +1,5 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2021
-module OpenTelemetry
-  module Trace
-    module Propagation
-      module TraceContext
-        # A TraceParent is an implementation of the W3C trace context specification
-        # https://www.w3.org/TR/trace-context/
-        # {Trace::SpanContext}
-        class TraceParent
-          REGEXP = /^(?<version>[A-Fa-f0-9]{2})-(?<trace_id>[A-Fa-f0-9]{32})-(?<span_id>[A-Fa-f0-9]{32})-(?<flags>[A-Fa-f0-9]{2})(?<ignored>-.*)?$/
-        end
-      end
-    end
-  end
-end
 
 module Instana
   module Instrumentation
@@ -48,16 +34,60 @@ module Instana
               job_id: job.job_id
             }
           }
-          incoming_context = if job.arguments.is_a?(Array) && job.arguments.last.is_a?(Hash) && job.arguments.last.key?(:instana_context)
-                               instana_context = job.arguments.last[:instana_context]
-                               job.arguments.pop
-                               instana_context ? ::Instana::SpanContext.new(trace_id: instana_context[:trace_id], span_id: instana_context[:span_id]) : nil
-                             end
+          incoming_context = ::Instana::Instrumentation::ActiveJob.extract_context(job)
+
           Trace.with_span(OpenTelemetry::Trace.non_recording_span(incoming_context)) do
             ::Instana.tracer.in_span(:activejob, attributes: tags) do
               block.call
             end
           end
+        end
+      end
+
+      def self.extract_context(job)
+        # 1. From job arguments (Instana payload)
+        if job.arguments.is_a?(Array) && job.arguments.last.is_a?(Hash) && job.arguments.last.key?(:instana_context)
+          instana_context = job.arguments.last[:instana_context]
+          job.arguments.pop
+          return instana_context ? ::Instana::SpanContext.new(
+            trace_id: instana_context[:trace_id],
+            span_id: instana_context[:span_id],
+            level: instana_context[:level] || 1
+          ) : nil
+        end
+
+        # 2. From job.__otel_headers (if opentelemetry-instrumentation-active_job is active)
+        if job.respond_to?(:__otel_headers) && job.__otel_headers.is_a?(Hash)
+          headers = job.__otel_headers
+          tp = headers['traceparent'] || headers[:traceparent]
+          if tp
+            ctx = parse_w3c_traceparent(tp, headers['tracestate'] || headers[:tracestate])
+            return ctx if ctx
+          end
+        end
+
+        nil
+      end
+
+      def self.parse_w3c_traceparent(traceparent, tracestate)
+        m = traceparent.match(/[0-9a-f]{2}-(?<trace>[0-9a-f]{32})-(?<parent>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})/)
+        return nil unless m
+
+        w3c_sampled = (m['flags'].to_i(16) & 0x01) == 1
+        ts_match = tracestate&.match(/in=(?<t>[0-9a-f]+);(?<s>[0-9a-f]+)/)
+
+        if ts_match
+          ::Instana::SpanContext.new(
+            trace_id: ::Instana::Util.header_to_id(ts_match['t']),
+            span_id: ::Instana::Util.header_to_id(ts_match['s']),
+            level: w3c_sampled ? 1 : 0
+          )
+        else
+          ::Instana::SpanContext.new(
+            trace_id: ::Instana::Util.header_to_id(m['trace'][16..]),
+            span_id: ::Instana::Util.header_to_id(m['parent']),
+            level: w3c_sampled ? 1 : 0
+          )
         end
       end
     end
