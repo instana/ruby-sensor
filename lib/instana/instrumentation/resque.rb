@@ -79,7 +79,8 @@ module Instana
                           context_from_wire = job.payload['args'].pop
                           ::Instana::SpanContext.new(
                             trace_id: context_from_wire['trace_id'],
-                            span_id: context_from_wire['span_id']
+                            span_id: context_from_wire['span_id'],
+                            level: context_from_wire['level'] || 1
                           )
                         end
         span = OpenTelemetry::Trace.non_recording_span(trace_context) if trace_context
