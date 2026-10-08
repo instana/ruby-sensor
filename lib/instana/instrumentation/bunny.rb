@@ -23,6 +23,8 @@ module Instana
             options[:headers]['X-Instana-T'] = span.context.trace_id
             options[:headers]['X-Instana-S'] = span.context.span_id
             options[:headers]['X-Instana-L'] = span.context.level.to_s
+            options[:headers]['traceparent']  = span.context.trace_parent_header
+            options[:headers]['tracestate']   = span.context.trace_state_header
 
             super(payload, options)
           end
@@ -113,11 +115,32 @@ module Instana
         return {} unless properties && properties.headers
 
         headers = properties.headers
-        {
-          trace_id: headers['X-Instana-T'],
-          span_id: headers['X-Instana-S'],
-          level: headers['X-Instana-L']&.to_i
-        }.reject { |_, v| v.nil? }
+
+        if headers['X-Instana-T']
+          {
+            trace_id: headers['X-Instana-T'],
+            span_id: headers['X-Instana-S'],
+            level: headers['X-Instana-L']&.to_i || 1
+          }.reject { |_, v| v.nil? }
+        elsif headers['traceparent']
+          m = headers['traceparent'].match(
+            /[0-9a-f][0-9a-e]-(?<trace>[0-9a-f]{32})-(?<parent>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})/
+          )
+          return {} unless m
+
+          w3c_sampled = (m['flags'].to_i(16) & 0x01) == 1
+          ts_match    = headers['tracestate']&.match(/in=(?<t>[0-9a-f]+);(?<s>[0-9a-f]+)/)
+
+          if ts_match
+            { trace_id: ts_match['t'], span_id: ts_match['s'], level: w3c_sampled ? 1 : 0 }
+          else
+            { trace_id: ::Instana::Util.header_to_id(m['trace'][16..]),
+              span_id: ::Instana::Util.header_to_id(m['parent']),
+              level: w3c_sampled ? 1 : 0 }
+          end
+        else
+          {}
+        end
       end
 
       def log_error(error)
