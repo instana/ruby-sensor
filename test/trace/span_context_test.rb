@@ -6,7 +6,7 @@ require 'test_helper'
 class SpanContextTest < Minitest::Test
   def test_to_hash
     subject = Instana::SpanContext.new(trace_id: 'trace', span_id: 'span')
-    assert_equal({trace_id: 'trace', span_id: 'span'}, subject.to_hash)
+    assert_equal({trace_id: 'trace', span_id: 'span', level: 1}, subject.to_hash)
   end
 
   def test_invalid
