@@ -32,6 +32,12 @@ module Instana
 
       context[:level] = @env['HTTP_X_INSTANA_L'][0] if @env['HTTP_X_INSTANA_L']
 
+      # Honour W3C sampled bit when no X-Instana-L is present.
+      if context[:level].nil? && context[:external_trace_flags]
+        w3c_sampled = (context[:external_trace_flags].to_i(16) & 0x01) == 1
+        context[:level] = w3c_sampled ? '1' : '0'
+      end
+
       unless ::Instana.config[:w3c_trace_correlation]
         trace_state = parse_trace_state
 
