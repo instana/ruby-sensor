@@ -8,8 +8,8 @@ module Instana
     module GRPCCientInstrumentation
       CALL_TYPES = [:request_response, :client_streamer, :server_streamer, :bidi_streamer]
 
-      CALL_TYPES.each do |call_type|
-        define_method(call_type) do |method, *others, **options|
+      CALL_TYPES.each do |call_type| # rubocop:disable Metrics/BlockLength
+        define_method(call_type) do |method, *others, **options| # rubocop:disable Metrics/BlockLength
           begin
             kvs = { rpc: {} }
 

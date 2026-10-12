@@ -3,7 +3,7 @@
 
 require 'test_helper'
 
-class AwsTest < Minitest::Test
+class AwsTest < Minitest::Test # rubocop:disable Metrics/ClassLength
   def setup
     clear_all!
   end
