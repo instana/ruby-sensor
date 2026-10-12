@@ -123,7 +123,7 @@ class RackInstrumentedRequestTest < Minitest::Test
     assert_equal '0', req.incoming_context[:level]
   end
 
-  def test_w3c_sampled_flag_sets_level_1
+  def test_w3c_sampled_flag_sets_level_one
     req = Instana::InstrumentedRequest.new(
       'HTTP_TRACEPARENT' => '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
     )
