@@ -30,10 +30,12 @@ module Instana
         trace_context = nil
         if msg.key?('X-Instana-T')
           trace_id = msg.delete('X-Instana-T')
-          span_id = msg.delete('X-Instana-S')
+          span_id  = msg.delete('X-Instana-S')
+          level    = msg.delete('X-Instana-L')
           trace_context = ::Instana::SpanContext.new(
             trace_id: ::Instana::Util.header_to_id(trace_id),
-            span_id: span_id ? ::Instana::Util.header_to_id(span_id) : nil
+            span_id: span_id ? ::Instana::Util.header_to_id(span_id) : nil,
+            level: level || 1
           )
         end
 
