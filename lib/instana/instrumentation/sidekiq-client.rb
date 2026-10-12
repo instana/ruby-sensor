@@ -31,6 +31,7 @@ module Instana
           if context
             msg['X-Instana-T'] = context.trace_id_header
             msg['X-Instana-S'] = context.span_id_header
+            msg['X-Instana-L'] = context.level.to_s
           end
 
           result = yield

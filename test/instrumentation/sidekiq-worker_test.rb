@@ -139,6 +139,29 @@ class SidekiqServerTest < Minitest::Test
     $sidekiq_mode = :client
   end
 
+  def test_worker_reads_x_instana_l_zero
+    clear_all!
+    captured_context = nil
+
+    msg = {
+      'class' => 'SidekiqJobOne',
+      'args' => [1, 2, 3],
+      'queue' => 'important',
+      'jid' => 'abc123',
+      'retry' => false,
+      'X-Instana-T' => ::Instana::Util.id_to_header(::Instana::Trace.generate_trace_id),
+      'X-Instana-S' => ::Instana::Util.id_to_header(::Instana::Trace.generate_span_id),
+      'X-Instana-L' => '0'
+    }
+
+    middleware = ::Instana::Instrumentation::SidekiqWorker.new
+    middleware.call(nil, msg, 'important') do
+      captured_context = ::Instana.tracer.context
+    end
+
+    assert_equal 0, captured_context.level
+  end
+
   private
 
   def inject_instrumentation
