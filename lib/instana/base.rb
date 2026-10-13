@@ -6,6 +6,11 @@ require "instana/version"
 require "instana/util"
 
 module Instana
+  # Instana trace context header names
+  INSTANA_TRACE_ID_HEADER = 'X-Instana-T'.freeze
+  INSTANA_SPAN_ID_HEADER = 'X-Instana-S'.freeze
+  INSTANA_LEVEL_HEADER = 'X-Instana-L'.freeze
+
   class << self
     attr_accessor :agent
     attr_accessor :tracer

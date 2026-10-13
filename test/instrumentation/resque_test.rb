@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2018
 
+require 'json'
 require 'test_helper'
 require 'support/apps/resque/boot'
 
@@ -189,7 +190,6 @@ class ResqueClientTest < Minitest::Test
   end
 
   def test_level_key_survives_json_round_trip
-    require 'json'
     span_context = ::Instana::SpanContext.new(trace_id: 'abc123', span_id: 'def456', level: 0)
     round_tripped = JSON.parse(JSON.dump(span_context.to_hash))
     assert round_tripped.key?('level'), "Expected 'level' key after JSON round-trip"
@@ -198,7 +198,6 @@ class ResqueClientTest < Minitest::Test
 
   def test_worker_propagates_suppressed_level
     # the reconstructed SpanContext must reflect level 0.
-    require 'json'
     # Simulate what the worker extract block does with a level:0 payload
     context_from_wire = JSON.parse(JSON.dump({ 'trace_id' => 'abc123def456',
                                                'span_id' => 'fedcba987654',
