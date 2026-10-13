@@ -38,18 +38,7 @@ module Instana
         context[:level] = w3c_sampled ? '1' : '0'
       end
 
-      unless ::Instana.config[:w3c_trace_correlation]
-        trace_state = parse_trace_state
-
-        if context[:from_w3c] && trace_state.empty?
-          context.delete(:span_id)
-          context[:from_w3c] = false
-        elsif context[:from_w3c] && !trace_state.empty?
-          context[:trace_id] = trace_state[:t]
-          context[:span_id] = trace_state[:p]
-          context[:from_w3c] = false
-        end
-      end
+      apply_legacy_w3c_override(context) unless ::Instana.config[:w3c_trace_correlation]
 
       context
     end
@@ -112,6 +101,21 @@ module Instana
     end
 
     private
+
+    def apply_legacy_w3c_override(context)
+      return unless context[:from_w3c]
+
+      trace_state = parse_trace_state
+
+      if trace_state.empty?
+        context.delete(:span_id)
+      else
+        context[:trace_id] = trace_state[:t]
+        context[:span_id] = trace_state[:p]
+      end
+
+      context[:from_w3c] = false
+    end
 
     def context_from_instana_headers
       sanitized_t = ::Instana::Util.header_to_id(@env['HTTP_X_INSTANA_T'])
