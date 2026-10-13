@@ -95,6 +95,24 @@ class SidekiqClientTest < Minitest::Test
     assert_failure_trace_recorded
   end
 
+  def test_enqueue_injects_x_instana_l
+    clear_all!
+    Instana.tracer.in_span(:sidekiqtests) do
+      disable_redis_instrumentation
+      ::Sidekiq::Client.push(
+        'queue' => 'some_random_queue',
+        'class' => ::SidekiqJobOne,
+        'args' => [1, 2, 3],
+        'retry' => false
+      )
+      enable_redis_instrumentation
+    end
+
+    queue = ::Sidekiq::Queue.new('some_random_queue')
+    job_message = JSON.parse(queue.first.value)
+    refute_nil job_message['X-Instana-L']
+  end
+
   private
 
   def assert_job_enqueued(job)
@@ -106,6 +124,7 @@ class SidekiqClientTest < Minitest::Test
     assert_equal false, job_message['retry']
     refute_nil job_message['X-Instana-T']
     refute_nil job_message['X-Instana-S']
+    refute_nil job_message['X-Instana-L']
   end
 
   def assert_normal_trace_recorded(job)

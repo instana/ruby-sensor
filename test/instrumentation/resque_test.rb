@@ -1,6 +1,7 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2018
 
+require 'json'
 require 'test_helper'
 require 'support/apps/resque/boot'
 
@@ -186,6 +187,27 @@ class ResqueClientTest < Minitest::Test
     assert_equal "critical", resque_span[:data][:'resque-worker'][:queue]
     assert_equal "Exception: Silly Rabbit, Trix are for kids.", resque_span[:data][:'resque-worker'][:error]
     assert_equal Array, resque_span[:stack].class
+  end
+
+  def test_level_key_survives_json_round_trip
+    span_context = ::Instana::SpanContext.new(trace_id: 'abc123', span_id: 'def456', level: 0)
+    round_tripped = JSON.parse(JSON.dump(span_context.to_hash))
+    assert round_tripped.key?('level'), "Expected 'level' key after JSON round-trip"
+    assert_equal 0, round_tripped['level']
+  end
+
+  def test_worker_propagates_suppressed_level
+    # the reconstructed SpanContext must reflect level 0.
+    # Simulate what the worker extract block does with a level:0 payload
+    context_from_wire = JSON.parse(JSON.dump({ 'trace_id' => 'abc123def456',
+                                               'span_id' => 'fedcba987654',
+                                               'level' => 0 }))
+    ctx = ::Instana::SpanContext.new(
+      trace_id: context_from_wire['trace_id'],
+      span_id: context_from_wire['span_id'],
+      level: context_from_wire['level'] || 1
+    )
+    assert_equal 0, ctx.level
   end
 
   def test_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready

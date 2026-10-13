@@ -20,9 +20,11 @@ module Instana
           ::Instana.tracer.in_span(:rabbitmq, attributes: kvs) do |span|
             # Inject trace context into message headers
             options[:headers] ||= {}
-            options[:headers]['X-Instana-T'] = span.context.trace_id
-            options[:headers]['X-Instana-S'] = span.context.span_id
-            options[:headers]['X-Instana-L'] = span.context.level.to_s
+            options[:headers][INSTANA_TRACE_ID_HEADER] = span.context.trace_id
+            options[:headers][INSTANA_SPAN_ID_HEADER] = span.context.span_id
+            options[:headers][INSTANA_LEVEL_HEADER] = span.context.level.to_s
+            options[:headers]['traceparent']  = span.context.trace_parent_header
+            options[:headers]['tracestate']   = span.context.trace_state_header
 
             super(payload, options)
           end
@@ -113,11 +115,40 @@ module Instana
         return {} unless properties && properties.headers
 
         headers = properties.headers
+
+        if headers[INSTANA_TRACE_ID_HEADER]
+          extract_instana_context(headers)
+        elsif headers['traceparent']
+          extract_w3c_context(headers)
+        else
+          {}
+        end
+      end
+
+      def extract_instana_context(headers)
         {
-          trace_id: headers['X-Instana-T'],
-          span_id: headers['X-Instana-S'],
-          level: headers['X-Instana-L']&.to_i
+          trace_id: headers[INSTANA_TRACE_ID_HEADER],
+          span_id: headers[INSTANA_SPAN_ID_HEADER],
+          level: headers[INSTANA_LEVEL_HEADER]&.to_i || 1
         }.reject { |_, v| v.nil? }
+      end
+
+      def extract_w3c_context(headers)
+        m = headers['traceparent'].match(
+          /[0-9a-f][0-9a-e]-(?<trace>[0-9a-f]{32})-(?<parent>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})/
+        )
+        return {} unless m
+
+        level = (m['flags'].to_i(16) & 0x01) == 1 ? 1 : 0
+        ts_match = headers['tracestate']&.match(/in=(?<t>[0-9a-f]+);(?<s>[0-9a-f]+)/)
+
+        if ts_match
+          { trace_id: ts_match['t'], span_id: ts_match['s'], level: level }
+        else
+          { trace_id: ::Instana::Util.header_to_id(m['trace'][16..]),
+            span_id: ::Instana::Util.header_to_id(m['parent']),
+            level: level }
+        end
       end
 
       def log_error(error)

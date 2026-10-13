@@ -14,7 +14,18 @@ module Instana
           }.reject { |_, v| v.nil? }
 
           if context.operation_name == :publish
-            ::Instana.tracer.in_span(:sns, attributes: {sns: sns_tags}) { @handler.call(context) }
+            ::Instana.tracer.in_span(:sns, attributes: {sns: sns_tags}) do |_span|
+              if ::Instana.tracer.tracing?
+                span_context = ::Instana.tracer.context
+                context.params[:message_attributes] ||= {}
+                context.params[:message_attributes].merge!(
+                  'X_INSTANA_T' => { data_type: 'String', string_value: span_context.trace_id_header },
+                  'X_INSTANA_S' => { data_type: 'String', string_value: span_context.span_id_header },
+                  'X_INSTANA_L' => { data_type: 'String', string_value: span_context.level.to_s }
+                )
+              end
+              @handler.call(context)
+            end
           else
             @handler.call(context)
           end

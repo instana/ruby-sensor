@@ -8,8 +8,8 @@ module Instana
     module GRPCCientInstrumentation
       CALL_TYPES = [:request_response, :client_streamer, :server_streamer, :bidi_streamer]
 
-      CALL_TYPES.each do |call_type|
-        define_method(call_type) do |method, *others, **options|
+      CALL_TYPES.each do |call_type| # rubocop:disable Metrics/BlockLength
+        define_method(call_type) do |method, *others, **options| # rubocop:disable Metrics/BlockLength
           begin
             kvs = { rpc: {} }
 
@@ -26,10 +26,15 @@ module Instana
 
             context = ::Instana.tracer.context
             if context
-              options[:metadata] = (options[:metadata] || {}).merge(
+              extra = {
                 'x-instana-t' => context.trace_id_header,
-                'x-instana-s' => context.span_id_header
-              )
+                'x-instana-s' => context.span_id_header,
+                'x-instana-l' => context.level.to_s,
+                'traceparent' => context.trace_parent_header,
+                'tracestate' => context.trace_state_header
+              }
+              extra.reject! { |_, v| v.nil? || v.empty? }
+              options[:metadata] = (options[:metadata] || {}).merge(extra)
             end
 
             super(method, *others, **options)
@@ -58,12 +63,7 @@ module Instana
             kvs = { rpc: {} }
             metadata = active_call.metadata
 
-            incoming_context = nil
-            if metadata.key?('x-instana-t')
-              incoming_context = SpanContext.new(trace_id: ::Instana::Util.header_to_id(metadata['x-instana-t']),
-                                                 span_id: metadata.key?('x-instana-s') ? ::Instana::Util.header_to_id(metadata['x-instana-s']) : nil,
-                                                 level: metadata.key?('x-instana-l') ? metadata['x-instana-l'] : nil)
-            end
+            incoming_context = extract_grpc_context(metadata)
 
             kvs[:rpc][:flavor] = :grpc
             kvs[:rpc][:host] = Socket.gethostname
@@ -85,6 +85,49 @@ module Instana
           ensure
             current_span&.finish
           end
+        end
+      end
+
+      private
+
+      def extract_grpc_context(metadata)
+        if metadata.key?('x-instana-t')
+          extract_instana_grpc_context(metadata)
+        elsif metadata.key?('traceparent')
+          extract_w3c_grpc_context(metadata)
+        end
+      end
+
+      def extract_instana_grpc_context(metadata)
+        SpanContext.new(
+          trace_id: ::Instana::Util.header_to_id(metadata['x-instana-t']),
+          span_id: metadata.key?('x-instana-s') ? ::Instana::Util.header_to_id(metadata['x-instana-s']) : nil,
+          level: metadata['x-instana-l'] || 1
+        )
+      end
+
+      def extract_w3c_grpc_context(metadata)
+        m = metadata['traceparent'].match(
+          /[0-9a-f][0-9a-e]-(?<trace>[0-9a-f]{32})-(?<parent>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})/
+        )
+        return nil unless m
+
+        level    = (m['flags'].to_i(16) & 0x01) == 1 ? 1 : 0
+        ts_match = metadata['tracestate']&.match(/in=(?<t>[0-9a-f]+);(?<s>[0-9a-f]+)/)
+        baggage  = {
+          external_trace_id: m['trace'],
+          external_trace_flags: m['flags'],
+          external_state: metadata['tracestate']
+        }
+
+        if ts_match
+          SpanContext.new(trace_id: ::Instana::Util.header_to_id(ts_match['t']),
+                          span_id: ::Instana::Util.header_to_id(ts_match['s']),
+                          level: level, baggage: baggage)
+        else
+          SpanContext.new(trace_id: ::Instana::Util.header_to_id(m['trace'][16..]),
+                          span_id: ::Instana::Util.header_to_id(m['parent']),
+                          level: level, baggage: baggage)
         end
       end
     end
