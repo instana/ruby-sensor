@@ -235,26 +235,22 @@ class NetHTTPTest < Minitest::Test
 
   def test_https_url_built_without_uri
     clear_all!
-    # Stub HTTPS call — verifies the https:// URL construction branch (L43)
-    stub_request(:get, "https://127.0.0.1:443/secure")
-      .to_return(status: 200, body: '', headers: {})
+    # Verifies the https:// URL construction branch for requests without a URI.
+    # The connection is opened over plain HTTP; flipping @use_ssl afterwards
+    # avoids a real TLS handshake while use_ssl? still reports true.
+    # net_http_connect_on_start makes WebMock open the real socket in start.
+    WebMock.allow_net_connect!(net_http_connect_on_start: true)
 
     Instana.tracer.in_span(:'net-http-test') do
-      http = Net::HTTP.new('127.0.0.1', 443)
-      http.instance_variable_set(:@use_ssl, true) # simulate use_ssl? = true
-      req = Net::HTTP::Get.new('/secure')
-      # avoid actually starting SSL; stub the underlying call via WebMock
-      begin
-        http.request(req)
-      rescue
-        nil
+      Net::HTTP.start('127.0.0.1', 6511) do |http|
+        http.instance_variable_set(:@use_ssl, true)
+        http.request(Net::HTTP::Get.new('/secure'))
       end
     end
 
     spans = ::Instana.processor.queued_spans
     http_span = spans.find { |s| s[:n] == :'net-http' }
-
-    return unless http_span
+    refute_nil http_span, "Expected a :net-http span to be generated"
 
     assert http_span[:data][:http][:url].start_with?('https://'),
            "URL should use https:// scheme when use_ssl? is true"
