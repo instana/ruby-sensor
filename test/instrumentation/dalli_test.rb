@@ -357,10 +357,7 @@ class DalliTest < Minitest::Test
 
     spans = ::Instana.processor.queued_spans
     span = spans.find { |s| s[:n] == :memcache }
-
-    # Dalli 3.x swallows unreachable-host errors (returns {} instead of raising),
-    # so no memcache span is created. Skip remaining assertions if no span exists.
-    return unless span
+    refute_nil span, "Expected a :memcache span to be generated"
 
     assert_equal :get_multi, span[:data][:memcache][:command]
     # :error is only present when Dalli actually raised (pre-3.x behaviour).

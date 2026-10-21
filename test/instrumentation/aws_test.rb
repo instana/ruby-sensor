@@ -6,19 +6,18 @@ require 'test_helper'
 class AwsDynamoDbTest < Minitest::Test
   def setup
     clear_all!
-  end
-
-  def test_dynamo_db
-    dynamo = Aws::DynamoDB::Client.new(
+    @dynamo_client = Aws::DynamoDB::Client.new(
       region: "local",
       access_key_id: "placeholder",
       secret_access_key: "placeholder",
       endpoint: "http://localhost:8000"
     )
+  end
 
+  def test_dynamo_db
     assert_raises Aws::DynamoDB::Errors::ResourceNotFoundException do
       Instana.tracer.in_span(:dynamo_test, attributes: {}) do
-        dynamo.get_item(
+        @dynamo_client.get_item(
           table_name: 'sample_table',
           key: { s: 'sample_item' }
         )
@@ -36,13 +35,6 @@ class AwsDynamoDbTest < Minitest::Test
   end
 
   def test_dynamo_db_operations
-    dynamo = Aws::DynamoDB::Client.new(
-      region: "local",
-      access_key_id: "placeholder",
-      secret_access_key: "placeholder",
-      endpoint: "http://localhost:8000"
-    )
-
     op_map = {
       [:create_table, { table_name: 'tbl',
                         attribute_definitions: [{ attribute_name: 'id', attribute_type: 'S' }],
@@ -61,7 +53,7 @@ class AwsDynamoDbTest < Minitest::Test
       clear_all!
       begin
         Instana.tracer.in_span(:dynamo_test) do
-          dynamo.send(op_name, params)
+          @dynamo_client.send(op_name, params)
         end
       rescue StandardError
         # expected – local endpoint not running
@@ -69,7 +61,7 @@ class AwsDynamoDbTest < Minitest::Test
 
       spans = ::Instana.processor.queued_spans
       dynamo_span = find_first_span_by_name(spans, :dynamodb)
-      next unless dynamo_span
+      refute_nil dynamo_span, "Expected a :dynamodb span for #{op_name}"
 
       assert_equal expected_op, dynamo_span[:data][:dynamodb][:op],
                    "Expected op #{expected_op} for #{op_name}"
@@ -77,16 +69,9 @@ class AwsDynamoDbTest < Minitest::Test
   end
 
   def test_dynamo_db_unknown_operation
-    dynamo = Aws::DynamoDB::Client.new(
-      region: "local",
-      access_key_id: "placeholder",
-      secret_access_key: "placeholder",
-      endpoint: "http://localhost:8000"
-    )
-
     begin
       Instana.tracer.in_span(:dynamo_test) do
-        dynamo.describe_table(table_name: 'some_table')
+        @dynamo_client.describe_table(table_name: 'some_table')
       end
     rescue StandardError
       # expected
@@ -94,20 +79,15 @@ class AwsDynamoDbTest < Minitest::Test
 
     spans = ::Instana.processor.queued_spans
     dynamo_span = find_first_span_by_name(spans, :dynamodb)
-    assert_equal 'describe_table', dynamo_span[:data][:dynamodb][:op] if dynamo_span
+    refute_nil dynamo_span, "Expected a :dynamodb span to be generated"
+
+    assert_equal 'describe_table', dynamo_span[:data][:dynamodb][:op]
   end
 
   def test_dynamo_db_global_table_name_fallback
-    dynamo = Aws::DynamoDB::Client.new(
-      region: "local",
-      access_key_id: "placeholder",
-      secret_access_key: "placeholder",
-      endpoint: "http://localhost:8000"
-    )
-
     begin
       Instana.tracer.in_span(:dynamo_test) do
-        dynamo.describe_global_table(global_table_name: 'my_global_table')
+        @dynamo_client.describe_global_table(global_table_name: 'my_global_table')
       end
     rescue StandardError
       # expected
@@ -115,27 +95,28 @@ class AwsDynamoDbTest < Minitest::Test
 
     spans = ::Instana.processor.queued_spans
     dynamo_span = find_first_span_by_name(spans, :dynamodb)
-    assert_equal 'my_global_table', dynamo_span[:data][:dynamodb][:table] if dynamo_span
+    refute_nil dynamo_span, "Expected a :dynamodb span to be generated"
+
+    assert_equal 'my_global_table', dynamo_span[:data][:dynamodb][:table]
   end
 end
 
 class AwsS3Test < Minitest::Test
   def setup
     clear_all!
-  end
-
-  def test_s3
-    s3_client = Aws::S3::Client.new(
+    @s3_client = Aws::S3::Client.new(
       region: "local",
       access_key_id: "minioadmin",
       secret_access_key: "minioadmin",
       force_path_style: "true",
       endpoint: "http://localhost:9000"
     )
+  end
 
+  def test_s3
     assert_raises Aws::S3::Errors::NoSuchBucket do
       Instana.tracer.in_span(:s3_test, attributes: {}) do
-        s3_client.get_object(
+        @s3_client.get_object(
           bucket: 'sample-bucket',
           key: 'sample_key'
         )
@@ -154,14 +135,6 @@ class AwsS3Test < Minitest::Test
   end
 
   def test_s3_operations
-    s3_client = Aws::S3::Client.new(
-      region: "local",
-      access_key_id: "minioadmin",
-      secret_access_key: "minioadmin",
-      force_path_style: "true",
-      endpoint: "http://localhost:9000"
-    )
-
     operations = {
       create_bucket: { bucket: 'b' },
       delete_bucket: { bucket: 'b' },
@@ -184,7 +157,7 @@ class AwsS3Test < Minitest::Test
       clear_all!
       begin
         Instana.tracer.in_span(:s3_test) do
-          s3_client.send(op_name, params)
+          @s3_client.send(op_name, params)
         end
       rescue StandardError
         # expected – local endpoint not running
@@ -192,7 +165,7 @@ class AwsS3Test < Minitest::Test
 
       spans = ::Instana.processor.queued_spans
       s3_span = find_first_span_by_name(spans, :s3)
-      next unless s3_span # skip if agent not ready
+      refute_nil s3_span, "Expected an :s3 span for #{op_name}"
 
       assert_equal expected_ops[op_name], s3_span[:data][:s3][:op],
                    "Expected op #{expected_ops[op_name]} for #{op_name}"
@@ -200,17 +173,9 @@ class AwsS3Test < Minitest::Test
   end
 
   def test_s3_unknown_operation
-    s3_client = Aws::S3::Client.new(
-      region: "local",
-      access_key_id: "minioadmin",
-      secret_access_key: "minioadmin",
-      force_path_style: "true",
-      endpoint: "http://localhost:9000"
-    )
-
     begin
       Instana.tracer.in_span(:s3_test) do
-        s3_client.list_buckets
+        @s3_client.list_buckets
       end
     rescue StandardError
       # expected
@@ -218,21 +183,15 @@ class AwsS3Test < Minitest::Test
 
     spans = ::Instana.processor.queued_spans
     s3_span = find_first_span_by_name(spans, :s3)
-    assert_equal 'list_buckets', s3_span[:data][:s3][:op] if s3_span
+    refute_nil s3_span, "Expected an :s3 span to be generated"
+
+    assert_equal 'list_buckets', s3_span[:data][:s3][:op]
   end
 
   def test_s3_key_nil_excluded_from_tags
-    s3_client = Aws::S3::Client.new(
-      region: "local",
-      access_key_id: "minioadmin",
-      secret_access_key: "minioadmin",
-      force_path_style: "true",
-      endpoint: "http://localhost:9000"
-    )
-
     begin
       Instana.tracer.in_span(:s3_test) do
-        s3_client.list_objects(bucket: 'sample-bucket')
+        @s3_client.list_objects(bucket: 'sample-bucket')
       end
     rescue StandardError
       # expected
@@ -240,28 +199,29 @@ class AwsS3Test < Minitest::Test
 
     spans = ::Instana.processor.queued_spans
     s3_span = find_first_span_by_name(spans, :s3)
-    return unless s3_span
+    refute_nil s3_span, "Expected an :s3 span to be generated"
 
-    refute s3_span[:data][:s3].key?(:key), "key should be absent when nil"
+    s3_data = s3_span.dig(:data, :s3)
+    refute_nil s3_data, "Expected span to contain :data -> :s3 payload"
+    refute s3_data.key?(:key), "key should be absent from s3 tags when nil"
   end
 end
 
 class AwsSnsTest < Minitest::Test
   def setup
     clear_all!
-  end
-
-  def test_sns_publish
-    sns = Aws::SNS::Client.new(
+    @sns_client = Aws::SNS::Client.new(
       region: "local",
       access_key_id: "test",
       secret_access_key: "test",
       endpoint: "http://localhost:9911"
     )
+  end
 
+  def test_sns_publish
     assert_raises Aws::SNS::Errors::NotFound do
       Instana.tracer.in_span(:sns_test, attributes: {}) do
-        sns.publish(
+        @sns_client.publish(
           topic_arn: 'topic:arn',
           target_arn: 'target:arn',
           phone_number: '555-0100',
@@ -284,15 +244,8 @@ class AwsSnsTest < Minitest::Test
   end
 
   def test_sns_other
-    sns = Aws::SNS::Client.new(
-      region: "local",
-      access_key_id: "test",
-      secret_access_key: "test",
-      endpoint: "http://localhost:9911"
-    )
-
     Instana.tracer.in_span(:sns_test, attributes: {}) do
-      sns.list_subscriptions
+      @sns_client.list_subscriptions
     end
 
     spans = ::Instana.processor.queued_spans
@@ -305,15 +258,8 @@ class AwsSnsTest < Minitest::Test
 
   def test_sns_non_publish_does_not_create_sns_span
     # Operations other than :publish bypass the SNS span entirely
-    sns = Aws::SNS::Client.new(
-      region: "local",
-      access_key_id: "test",
-      secret_access_key: "test",
-      endpoint: "http://localhost:9911"
-    )
-
     Instana.tracer.in_span(:sns_test, attributes: {}) do
-      sns.create_topic(name: 'test-topic')
+      @sns_client.create_topic(name: 'test-topic')
     rescue StandardError
       # expected — local endpoint not available
     end
@@ -326,30 +272,29 @@ end
 class AwsSqsTest < Minitest::Test
   def setup
     clear_all!
-  end
-
-  def test_sqs
-    sqs = Aws::SQS::Client.new(
+    @sqs_client = Aws::SQS::Client.new(
       region: "local",
       access_key_id: "test",
       secret_access_key: "test",
       endpoint: "http://localhost:9324"
     )
+  end
 
+  def test_sqs
     create_response = nil
     get_url_response = nil
 
     Instana.tracer.in_span(:sqs_test, attributes: {}) do
-      create_response = sqs.create_queue(queue_name: 'test')
-      get_url_response = sqs.get_queue_url(queue_name: 'test')
-      sqs.send_message(queue_url: create_response.queue_url, message_body: 'Sample')
+      create_response = @sqs_client.create_queue(queue_name: 'test')
+      get_url_response = @sqs_client.get_queue_url(queue_name: 'test')
+      @sqs_client.send_message(queue_url: create_response.queue_url, message_body: 'Sample')
     end
 
-    received = sqs.receive_message(
+    received = @sqs_client.receive_message(
       queue_url: create_response.queue_url,
       message_attribute_names: ['All']
     )
-    sqs.delete_queue(queue_url: create_response.queue_url)
+    @sqs_client.delete_queue(queue_url: create_response.queue_url)
     message = received.messages.first
     create_span, get_span, send_span, _root = ::Instana.processor.queued_spans
 
@@ -373,17 +318,10 @@ class AwsSqsTest < Minitest::Test
   end
 
   def test_sqs_send_message_batch
-    sqs = Aws::SQS::Client.new(
-      region: "local",
-      access_key_id: "test",
-      secret_access_key: "test",
-      endpoint: "http://localhost:9324"
-    )
-
-    queue_url = sqs.create_queue(queue_name: 'batch_test').queue_url
+    queue_url = @sqs_client.create_queue(queue_name: 'batch_test').queue_url
 
     Instana.tracer.in_span(:sqs_test) do
-      sqs.send_message_batch(
+      @sqs_client.send_message_batch(
         queue_url: queue_url,
         entries: [
           { id: '1', message_body: 'msg1' },
@@ -392,7 +330,7 @@ class AwsSqsTest < Minitest::Test
       )
     end
 
-    sqs.delete_queue(queue_url: queue_url)
+    @sqs_client.delete_queue(queue_url: queue_url)
 
     spans = ::Instana.processor.queued_spans
     batch_span = find_first_span_by_name(spans, :sqs)
@@ -404,24 +342,17 @@ class AwsSqsTest < Minitest::Test
   end
 
   def test_sqs_delete_message
-    sqs = Aws::SQS::Client.new(
-      region: "local",
-      access_key_id: "test",
-      secret_access_key: "test",
-      endpoint: "http://localhost:9324"
-    )
-
-    queue_url = sqs.create_queue(queue_name: 'delete_test').queue_url
-    sqs.send_message(queue_url: queue_url, message_body: 'to_delete')
-    msg = sqs.receive_message(queue_url: queue_url).messages.first
+    queue_url = @sqs_client.create_queue(queue_name: 'delete_test').queue_url
+    @sqs_client.send_message(queue_url: queue_url, message_body: 'to_delete')
+    msg = @sqs_client.receive_message(queue_url: queue_url).messages.first
 
     clear_all!
 
     Instana.tracer.in_span(:sqs_test) do
-      sqs.delete_message(queue_url: queue_url, receipt_handle: msg.receipt_handle)
+      @sqs_client.delete_message(queue_url: queue_url, receipt_handle: msg.receipt_handle)
     end
 
-    sqs.delete_queue(queue_url: queue_url)
+    @sqs_client.delete_queue(queue_url: queue_url)
 
     spans = ::Instana.processor.queued_spans
     delete_span = find_first_span_by_name(spans, :sqs)
@@ -432,27 +363,20 @@ class AwsSqsTest < Minitest::Test
   end
 
   def test_sqs_delete_message_batch
-    sqs = Aws::SQS::Client.new(
-      region: "local",
-      access_key_id: "test",
-      secret_access_key: "test",
-      endpoint: "http://localhost:9324"
-    )
-
-    queue_url = sqs.create_queue(queue_name: 'delete_batch_test').queue_url
-    sqs.send_message(queue_url: queue_url, message_body: 'to_delete')
-    msg = sqs.receive_message(queue_url: queue_url).messages.first
+    queue_url = @sqs_client.create_queue(queue_name: 'delete_batch_test').queue_url
+    @sqs_client.send_message(queue_url: queue_url, message_body: 'to_delete')
+    msg = @sqs_client.receive_message(queue_url: queue_url).messages.first
 
     clear_all!
 
     Instana.tracer.in_span(:sqs_test) do
-      sqs.delete_message_batch(
+      @sqs_client.delete_message_batch(
         queue_url: queue_url,
         entries: [{ id: '1', receipt_handle: msg.receipt_handle }]
       )
     end
 
-    sqs.delete_queue(queue_url: queue_url)
+    @sqs_client.delete_queue(queue_url: queue_url)
 
     spans = ::Instana.processor.queued_spans
     delete_span = find_first_span_by_name(spans, :sqs)
@@ -464,16 +388,9 @@ class AwsSqsTest < Minitest::Test
   end
 
   def test_sqs_not_tracing_skips_span
-    sqs = Aws::SQS::Client.new(
-      region: "local",
-      access_key_id: "test",
-      secret_access_key: "test",
-      endpoint: "http://localhost:9324"
-    )
-
     # Call without an active trace — should not produce an sqs span
     begin
-      sqs.create_queue(queue_name: 'no_trace_test')
+      @sqs_client.create_queue(queue_name: 'no_trace_test')
     rescue StandardError
       # expected if endpoint unavailable
     end
@@ -486,6 +403,12 @@ end
 class AwsLambdaTest < Minitest::Test
   def setup
     clear_all!
+    @lambda_client = Aws::Lambda::Client.new(
+      endpoint: 'https://lambda.local.amazonaws.com',
+      region: 'local',
+      access_key_id: "test",
+      secret_access_key: "test"
+    )
   end
 
   def test_lambda
@@ -498,15 +421,8 @@ class AwsLambdaTest < Minitest::Test
       )
       .to_return(status: 200, body: "", headers: {})
 
-    lambda = Aws::Lambda::Client.new(
-      endpoint: 'https://lambda.local.amazonaws.com',
-      region: 'local',
-      access_key_id: "test",
-      secret_access_key: "test"
-    )
-
     Instana.tracer.in_span(:lambda_test, attributes: {}) do
-      lambda.invoke(
+      @lambda_client.invoke(
         function_name: 'Test',
         invocation_type: 'Event',
         payload: 'data'
@@ -536,16 +452,9 @@ class AwsLambdaTest < Minitest::Test
       )
       .to_return(status: 500, body: '{"message": "Internal Server Error" }', headers: {})
 
-    lambda = Aws::Lambda::Client.new(
-      endpoint: 'https://lambda.local.amazonaws.com',
-      region: 'local',
-      access_key_id: "test",
-      secret_access_key: "test"
-    )
-
     assert_raises(RuntimeError) do
       Instana.tracer.in_span(:lambda_test, attributes: {}) do
-        lambda.invoke(
+        @lambda_client.invoke(
           function_name: 'Test',
           invocation_type: 'Event',
           payload: 'data'
@@ -707,7 +616,7 @@ class AwsAgentReadyTest < Minitest::Test
     error = nil
 
     ::Instana.agent.stub(:ready?, false) do
-      dynamo = Aws::DynamoDB::Client.new(
+      dynamo_client = Aws::DynamoDB::Client.new(
         region: "local",
         access_key_id: "placeholder",
         secret_access_key: "placeholder",
@@ -715,7 +624,7 @@ class AwsAgentReadyTest < Minitest::Test
       )
 
       assert_silent do
-        dynamo.get_item(
+        dynamo_client.get_item(
           table_name: 'sample_table',
           key: { s: 'sample_item' }
         )
