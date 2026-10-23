@@ -205,6 +205,15 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install jq and curl
+          command: |
+            apt-get update
+            apt-get install -y jq curl
+      - run:
+          name: Wait for all workflow test suites and retries to finish
+          command: |
+            ./.circleci/wait_for_workflows.sh
+      - run:
           name: Update RubyGems and Bundler
           command: |
             gem update --system
@@ -214,9 +223,9 @@ jobs:
           name: Capture installed gem versions and test with latest versions
           command: |
             #!/usr/bin/env bash
-            set -e
             mkdir -p bundle-list
             mkdir -p test-results
+            mkdir -p _junit
 
             run_bundle_list_and_test() {
               local label="$1"
@@ -224,16 +233,19 @@ jobs:
               echo "=== Processing $label from $gemfile ==="
               
               # Install dependencies
-              BUNDLE_GEMFILE="$gemfile" bundle check 2>/dev/null \
-                || BUNDLE_GEMFILE="$gemfile" bundle install --quiet
+              if ! (BUNDLE_GEMFILE="$gemfile" bundle check 2>/dev/null || BUNDLE_GEMFILE="$gemfile" bundle install --quiet); then
+                echo "  ✗ bundle install failed for $label"
+                echo "FAIL" > "test-results/${label}_status.txt"
+                return 0
+              fi
               
               # Capture installed versions
-              BUNDLE_GEMFILE="$gemfile" bundle list > "bundle-list/installed_${label}.txt"
-              echo "  Captured $(grep -c '^\s\+\*' bundle-list/installed_${label}.txt) gems"
+              BUNDLE_GEMFILE="$gemfile" bundle list > "bundle-list/installed_${label}.txt" || true
+              echo "  Captured $(grep -c '^\s\+\*' "bundle-list/installed_${label}.txt" 2>/dev/null || echo 0) gems"
               
-              # Run tests to verify the versions work
+              # Run tests with APPRAISAL_INITIALIZED=1 so Rakefile runs only this gem's tests
               echo "  Running tests for $label..."
-              if BUNDLE_GEMFILE="$gemfile" bundle exec rake test 2>&1 | tee "test-results/${label}_test.log"; then
+              if APPRAISAL_INITIALIZED="1" BUNDLE_GEMFILE="$gemfile" bundle exec rake test 2>&1 | tee "test-results/${label}_test.log"; then
                 echo "PASS" > "test-results/${label}_status.txt"
                 echo "  ✓ Tests passed for $label"
               else
@@ -260,6 +272,27 @@ jobs:
             run_bundle_list_and_test "graphql"     "./gemfiles/graphql_20.gemfile"
             run_bundle_list_and_test "roda"        "./gemfiles/roda_30.gemfile"
             run_bundle_list_and_test "net-http"    "./gemfiles/net_http_01.gemfile"
+
+            # Assemble test-status.json in bundle-list directory
+            JSON="{"
+            FIRST=1
+            for STATUS_FILE in test-results/*_status.txt; do
+              [ -f "$STATUS_FILE" ] || continue
+              LABEL=$(basename "$STATUS_FILE" _status.txt)
+              STATUS=$(cat "$STATUS_FILE" | tr -d '[:space:]')
+              if [ "$STATUS" = "FAIL" ]; then
+                [ $FIRST -eq 0 ] && JSON="${JSON},"
+                JSON="${JSON} \"${LABEL}\": \"fail\""
+                FIRST=0
+              fi
+            done
+            JSON="${JSON} }"
+            echo "$JSON" > bundle-list/test-status.json
+
+            echo "=== test-status.json ==="
+            cat bundle-list/test-status.json
+            echo ""
+            ls -la bundle-list/
       - store_artifacts:
           path: bundle-list
       - store_artifacts:
@@ -355,11 +388,11 @@ workflows:
               only:
                 - master
           requires:
-            - lint
-            - test_core-ruby-base-3.2
-            - test_core-ruby-base-3.3
-            - test_core-ruby-base-3.4
-            - test_core-ruby-base-4.0
+            - lint: terminal
+            - test_core-ruby-base-3.2: terminal
+            - test_core-ruby-base-3.3: terminal
+            - test_core-ruby-base-3.4: terminal
+            - test_core-ruby-base-4.0: terminal
   libraries_ruby_32_33:
     max_auto_reruns: 2
     jobs:
@@ -386,17 +419,14 @@ workflows:
               ruby_version:
                 - "3.4"
                 - "4.0"
-            # Currently compiling the native extensions for `grpc`
-            # exceeds an internal RAM and/or CPU limit of CircleCI executor,
-            # and the job gets terminated with:
-            # `Received "killed" signal`
-            # Hence we exclude it here for the time being.
-            # TODO: Remove this exclusion as soon as pre-built binaries are available
-            # on https://rubygems.org/gems/grpc/versions
-            exclude:
-            - stack: base
-              ruby_version: "4.0"
-              gemfile: "./gemfiles/grpc_10.gemfile"
+            # NOTE: Compiling native extensions for `grpc` previously exceeded CircleCI executor
+            # RAM/CPU limits and terminated with `Received "killed" signal`. This exclusion has been
+            # commented out, but if the error recurs in the future (or with upcoming releases like
+            # Ruby 4.1 before pre-built binaries are available), re-enable this exclusion.
+            # exclude:
+            #   - stack: base
+            #     ruby_version: "4.0"
+            #     gemfile: "./gemfiles/grpc_10.gemfile"
   rails_ruby_32_40:
     max_auto_reruns: 2
     jobs:
