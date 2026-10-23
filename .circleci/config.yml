@@ -393,10 +393,10 @@ workflows:
             # Hence we exclude it here for the time being.
             # TODO: Remove this exclusion as soon as pre-built binaries are available
             # on https://rubygems.org/gems/grpc/versions
-            exclude:
-            - stack: base
-              ruby_version: "4.0"
-              gemfile: "./gemfiles/grpc_10.gemfile"
+            # exclude:
+            # - stack: base
+            #   ruby_version: "4.0"
+            #   gemfile: "./gemfiles/grpc_10.gemfile"
   rails_ruby_32_40:
     max_auto_reruns: 2
     jobs:
