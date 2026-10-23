@@ -201,7 +201,7 @@ jobs:
   update-currency-versions:
     executor:
       name: base
-      ruby_version: "3.4"
+      ruby_version: "4.0"
     steps:
       - checkout
       - run:
@@ -419,17 +419,14 @@ workflows:
               ruby_version:
                 - "3.4"
                 - "4.0"
-            # Currently compiling the native extensions for `grpc`
-            # exceeds an internal RAM and/or CPU limit of CircleCI executor,
-            # and the job gets terminated with:
-            # `Received "killed" signal`
-            # Hence we exclude it here for the time being.
-            # TODO: Remove this exclusion as soon as pre-built binaries are available
-            # on https://rubygems.org/gems/grpc/versions
-            exclude:
-            - stack: base
-              ruby_version: "4.0"
-              gemfile: "./gemfiles/grpc_10.gemfile"
+            # NOTE: Compiling native extensions for `grpc` previously exceeded CircleCI executor
+            # RAM/CPU limits and terminated with `Received "killed" signal`. This exclusion has been
+            # commented out, but if the error recurs in the future (or with upcoming releases like
+            # Ruby 4.1 before pre-built binaries are available), re-enable this exclusion.
+            # exclude:
+            #   - stack: base
+            #     ruby_version: "4.0"
+            #     gemfile: "./gemfiles/grpc_10.gemfile"
   rails_ruby_32_40:
     max_auto_reruns: 2
     jobs:
