@@ -139,6 +139,8 @@ module Instana
       end
 
       headers['Traceparent'] = trace_context.trace_parent_header
+      return if ::Instana.config[:disable_server_timing]
+
       headers['Server-Timing'] = "intid;desc=#{trace_context.trace_id_header}"
     end
   end

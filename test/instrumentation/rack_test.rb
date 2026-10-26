@@ -33,6 +33,12 @@ class RackTest < Minitest::Test
     end
   end
 
+  class ServerTimingApp
+    def call(_env)
+      [200, { 'Server-Timing' => 'db;dur=53' }, ['Ok']]
+    end
+  end
+
   class NoHeadersApp
     def call(_env)
       [501, nil, ['No']]
@@ -53,7 +59,34 @@ class RackTest < Minitest::Test
       map("/path_tpl") { run PathTemplateApp.new }
       map("/error") { run ErrorApp.new }
       map("/five_zero_one") { run FiveZeroOneApp.new }
+      map("/server_timing") { run ServerTimingApp.new }
     end
+  end
+
+  def test_server_timing_not_added_when_disabled
+    clear_all!
+    ::Instana.config[:disable_server_timing] = true
+
+    get '/mrlobster'
+    assert last_response.ok?
+
+    assert !last_response.headers.key?("Server-Timing")
+    assert last_response.headers.key?("X-Instana-T")
+    assert last_response.headers.key?("Traceparent")
+  ensure
+    ::Instana.config[:disable_server_timing] = false
+  end
+
+  def test_existing_server_timing_preserved_when_disabled
+    clear_all!
+    ::Instana.config[:disable_server_timing] = true
+
+    get '/server_timing'
+    assert last_response.ok?
+
+    assert_equal 'db;dur=53', last_response.headers["Server-Timing"]
+  ensure
+    ::Instana.config[:disable_server_timing] = false
   end
 
   def test_basic_get
