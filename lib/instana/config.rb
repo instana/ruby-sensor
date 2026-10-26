@@ -83,6 +83,10 @@ module Instana
       # W3C Trace Context Support
       @config[:w3c_trace_correlation] = ENV.fetch('INSTANA_DISABLE_W3C_TRACE_CORRELATION', nil).nil?
 
+      # Server-Timing response header injection (default: injected)
+      # Priority: YAML > env var > agent config > default (false)
+      read_disable_server_timing_config
+
       # HTTP exit span 4xx error classification (opt-in, default: off)
       # Priority: env vars > agent config > default (false / [])
       read_http_exit_config
@@ -151,6 +155,8 @@ module Instana
       read_otlp_config_from_agent(tracing_config) if should_read_from_agent?(:otlp)
       # Read HTTP exit 4xx classification from agent if env vars did not already set it
       read_http_exit_classification_from_agent(tracing_config) unless env_http_exit_classification_set?
+      # Read Server-Timing disable flag from agent if not already set from YAML or env
+      read_disable_server_timing_from_agent(tracing_config) if @config[:disable_server_timing_source] == 'default'
       # Read span filtering configuration from agent
       ::Instana.span_filtering_config&.read_config_from_agent(discovery)
     rescue => e
@@ -267,6 +273,49 @@ module Instana
     end
 
     private
+
+    # Read disable-server-timing from YAML (tracing.global) or INSTANA_TRACING_DISABLE_SERVER_TIMING.
+    # Agent value is applied later via read_config_from_agent if neither is set.
+    def read_disable_server_timing_config
+      @config[:disable_server_timing] = false
+      @config[:disable_server_timing_source] = 'default'
+
+      yaml_value = parse_disable_server_timing_from_yaml
+      unless yaml_value.nil?
+        @config[:disable_server_timing] = truthy?(yaml_value)
+        @config[:disable_server_timing_source] = 'yaml'
+        return
+      end
+
+      env_value = ENV.fetch('INSTANA_TRACING_DISABLE_SERVER_TIMING', nil)
+      return if env_value.nil? || env_value.strip.empty?
+
+      @config[:disable_server_timing] = truthy?(env_value.strip)
+      @config[:disable_server_timing_source] = 'env'
+    end
+
+    # @return [Object, nil] raw YAML value of tracing.global.disable-server-timing, or nil if not set
+    def parse_disable_server_timing_from_yaml
+      config_path = ENV.fetch('INSTANA_CONFIG_PATH', nil)
+      return nil unless config_path && File.exist?(config_path)
+
+      yaml_content = YAML.safe_load(File.read(config_path))
+      tracing_config = yaml_content[TRACING_KEY] || yaml_content[LEGACY_TRACING_KEY]
+      global_config = tracing_config && tracing_config['global']
+      global_config.is_a?(Hash) ? global_config['disable-server-timing'] : nil
+    rescue => e
+      ::Instana.logger.warn("Failed to load disable-server-timing configuration from YAML: #{e.message}")
+      nil
+    end
+
+    # @param tracing_config [Hash] the tracing sub-hash from the discovery payload
+    def read_disable_server_timing_from_agent(tracing_config)
+      global_config = tracing_config['global']
+      return unless global_config.is_a?(Hash) && !global_config['disable-server-timing'].nil?
+
+      @config[:disable_server_timing] = truthy?(global_config['disable-server-timing'])
+      @config[:disable_server_timing_source] = 'agent'
+    end
 
     # Read HTTP exit 4xx error classification config (wrapper — same pattern as read_span_stack_config / read_otlp_config)
     def read_http_exit_config

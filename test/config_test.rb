@@ -1283,3 +1283,99 @@ class HttpExitClassificationConfigTest < Minitest::Test
     assert_equal [401], subject[:http_exit_classify_as_errors]
   end
 end
+
+class DisableServerTimingConfigTest < Minitest::Test
+  YAML_FILE = 'test_disable_server_timing.yaml'.freeze
+
+  def logger
+    Logger.new('/dev/null')
+  end
+
+  def setup
+    ENV.delete('INSTANA_TRACING_DISABLE_SERVER_TIMING')
+    ENV.delete('INSTANA_CONFIG_PATH')
+  end
+
+  def teardown
+    ENV.delete('INSTANA_TRACING_DISABLE_SERVER_TIMING')
+    ENV.delete('INSTANA_CONFIG_PATH')
+    File.unlink(YAML_FILE) if File.exist?(YAML_FILE)
+  end
+
+  def write_yaml(top_key, value)
+    File.write(YAML_FILE, "#{top_key}:\n  global:\n    disable-server-timing: #{value}\n")
+    ENV['INSTANA_CONFIG_PATH'] = YAML_FILE
+  end
+
+  def agent_discovery(value)
+    { 'tracing' => { 'global' => { 'disable-server-timing' => value } } }
+  end
+
+  def test_default_is_false
+    subject = Instana::Config.new(logger: logger)
+    assert_equal false, subject[:disable_server_timing]
+  end
+
+  def test_env_truthy_values
+    %w[true 1 TRUE yes].each do |value|
+      ENV['INSTANA_TRACING_DISABLE_SERVER_TIMING'] = value
+      assert_equal true, Instana::Config.new(logger: logger)[:disable_server_timing], "expected #{value} to be truthy"
+    end
+  end
+
+  def test_env_falsy_or_empty_values
+    ['false', '0', ''].each do |value|
+      ENV['INSTANA_TRACING_DISABLE_SERVER_TIMING'] = value
+      assert_equal false, Instana::Config.new(logger: logger)[:disable_server_timing], "expected #{value.inspect} to be falsy"
+    end
+  end
+
+  def test_yaml_tracing_key
+    write_yaml('tracing', 'true')
+    assert_equal true, Instana::Config.new(logger: logger)[:disable_server_timing]
+  end
+
+  def test_yaml_legacy_key
+    write_yaml('com.instana.tracing', 'true')
+    assert_equal true, Instana::Config.new(logger: logger)[:disable_server_timing]
+  end
+
+  def test_yaml_takes_precedence_over_env
+    write_yaml('tracing', 'false')
+    ENV['INSTANA_TRACING_DISABLE_SERVER_TIMING'] = 'true'
+    assert_equal false, Instana::Config.new(logger: logger)[:disable_server_timing]
+  end
+
+  def test_invalid_yaml_falls_back_to_env
+    File.write(YAML_FILE, "tracing: [unclosed")
+    ENV['INSTANA_CONFIG_PATH'] = YAML_FILE
+    ENV['INSTANA_TRACING_DISABLE_SERVER_TIMING'] = 'true'
+    assert_equal true, Instana::Config.new(logger: logger)[:disable_server_timing]
+  end
+
+  def test_agent_sets_value_when_nothing_else_configured
+    subject = Instana::Config.new(logger: logger)
+    subject.read_config_from_agent(agent_discovery(true))
+    assert_equal true, subject[:disable_server_timing]
+  end
+
+  def test_env_takes_precedence_over_agent
+    ENV['INSTANA_TRACING_DISABLE_SERVER_TIMING'] = 'true'
+    subject = Instana::Config.new(logger: logger)
+    subject.read_config_from_agent(agent_discovery(false))
+    assert_equal true, subject[:disable_server_timing]
+  end
+
+  def test_yaml_takes_precedence_over_agent
+    write_yaml('tracing', 'true')
+    subject = Instana::Config.new(logger: logger)
+    subject.read_config_from_agent(agent_discovery(false))
+    assert_equal true, subject[:disable_server_timing]
+  end
+
+  def test_agent_without_key_keeps_default
+    subject = Instana::Config.new(logger: logger)
+    subject.read_config_from_agent('tracing' => { 'global' => { 'stack-trace' => 'all' } })
+    assert_equal false, subject[:disable_server_timing]
+  end
+end
