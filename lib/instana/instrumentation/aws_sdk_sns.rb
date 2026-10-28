@@ -43,24 +43,26 @@ module Instana
           params[:message_attributes] ||= {}
           available_slots = 10 - params[:message_attributes].size
 
-          extra =
-            if available_slots >= 5
-              {
-                'X_INSTANA_T' => { data_type: 'String', string_value: span_context.trace_id_header },
-                'X_INSTANA_S' => { data_type: 'String', string_value: span_context.span_id_header },
-                'X_INSTANA_L' => { data_type: 'String', string_value: span_context.level.to_s },
-                'traceparent' => { data_type: 'String', string_value: span_context.trace_parent_header },
-                'tracestate' => { data_type: 'String', string_value: span_context.trace_state_header }
-              }
-            else
-              {
-                'traceparent' => { data_type: 'String', string_value: span_context.trace_parent_header },
-                'tracestate' => { data_type: 'String', string_value: span_context.trace_state_header }
-              }
-            end
+          extra = w3c_headers(span_context)
+          extra.merge!(instana_headers(span_context)) if available_slots >= 5
 
           extra.reject! { |_, v| v[:string_value].nil? || v[:string_value].empty? }
           params[:message_attributes].merge!(extra)
+        end
+
+        def w3c_headers(span_context)
+          {
+            'traceparent' => { data_type: 'String', string_value: span_context.trace_parent_header },
+            'tracestate' => { data_type: 'String', string_value: span_context.trace_state_header }
+          }
+        end
+
+        def instana_headers(span_context)
+          {
+            'X_INSTANA_T' => { data_type: 'String', string_value: span_context.trace_id_header },
+            'X_INSTANA_S' => { data_type: 'String', string_value: span_context.span_id_header },
+            'X_INSTANA_L' => { data_type: 'String', string_value: span_context.level.to_s }
+          }
         end
       end
 
