@@ -14,21 +14,53 @@ module Instana
           }.reject { |_, v| v.nil? }
 
           if context.operation_name == :publish
-            ::Instana.tracer.in_span(:sns, attributes: {sns: sns_tags}) do |_span|
+            ::Instana.tracer.in_span(:sns, attributes: { sns: sns_tags }) do |_span|
               if ::Instana.tracer.tracing?
-                span_context = ::Instana.tracer.context
-                context.params[:message_attributes] ||= {}
-                context.params[:message_attributes].merge!(
-                  'X_INSTANA_T' => { data_type: 'String', string_value: span_context.trace_id_header },
-                  'X_INSTANA_S' => { data_type: 'String', string_value: span_context.span_id_header },
-                  'X_INSTANA_L' => { data_type: 'String', string_value: span_context.level.to_s }
-                )
+                inject_trace_attributes(context.params)
+              end
+              @handler.call(context)
+            end
+          elsif context.operation_name == :publish_batch
+            ::Instana.tracer.in_span(:sns, attributes: { sns: sns_tags }) do |_span|
+              if ::Instana.tracer.tracing?
+                context.params[:publish_batch_request_entries]&.each do |entry|
+                  inject_trace_attributes(entry)
+                end
               end
               @handler.call(context)
             end
           else
             @handler.call(context)
           end
+        end
+
+        private
+
+        def inject_trace_attributes(params)
+          span_context = ::Instana.tracer.context
+          return unless span_context
+
+          params[:message_attributes] ||= {}
+          available_slots = 10 - params[:message_attributes].size
+
+          extra =
+            if available_slots >= 5
+              {
+                'X_INSTANA_T' => { data_type: 'String', string_value: span_context.trace_id_header },
+                'X_INSTANA_S' => { data_type: 'String', string_value: span_context.span_id_header },
+                'X_INSTANA_L' => { data_type: 'String', string_value: span_context.level.to_s },
+                'traceparent' => { data_type: 'String', string_value: span_context.trace_parent_header },
+                'tracestate' => { data_type: 'String', string_value: span_context.trace_state_header }
+              }
+            else
+              {
+                'traceparent' => { data_type: 'String', string_value: span_context.trace_parent_header },
+                'tracestate' => { data_type: 'String', string_value: span_context.trace_state_header }
+              }
+            end
+
+          extra.reject! { |_, v| v[:string_value].nil? || v[:string_value].empty? }
+          params[:message_attributes].merge!(extra)
         end
       end
 

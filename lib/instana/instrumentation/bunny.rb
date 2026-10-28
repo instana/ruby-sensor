@@ -134,21 +134,7 @@ module Instana
       end
 
       def extract_w3c_context(headers)
-        m = headers['traceparent'].match(
-          /[0-9a-f][0-9a-e]-(?<trace>[0-9a-f]{32})-(?<parent>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})/
-        )
-        return {} unless m
-
-        level = (m['flags'].to_i(16) & 0x01) == 1 ? 1 : 0
-        ts_match = headers['tracestate']&.match(/in=(?<t>[0-9a-f]+);(?<s>[0-9a-f]+)/)
-
-        if ts_match
-          { trace_id: ts_match['t'], span_id: ts_match['s'], level: level }
-        else
-          { trace_id: ::Instana::Util.header_to_id(m['trace'][16..]),
-            span_id: ::Instana::Util.header_to_id(m['parent']),
-            level: level }
-        end
+        ::Instana::Util.parse_w3c_trace_context(headers['traceparent'], headers['tracestate']) || {}
       end
 
       def log_error(error)

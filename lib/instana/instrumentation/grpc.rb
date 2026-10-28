@@ -107,28 +107,13 @@ module Instana
       end
 
       def extract_w3c_grpc_context(metadata)
-        m = metadata['traceparent'].match(
-          /[0-9a-f][0-9a-e]-(?<trace>[0-9a-f]{32})-(?<parent>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})/
-        )
-        return nil unless m
+        ctx = ::Instana::Util.parse_w3c_trace_context(metadata['traceparent'], metadata['tracestate'])
+        return nil unless ctx
 
-        level    = (m['flags'].to_i(16) & 0x01) == 1 ? 1 : 0
-        ts_match = metadata['tracestate']&.match(/in=(?<t>[0-9a-f]+);(?<s>[0-9a-f]+)/)
-        baggage  = {
-          external_trace_id: m['trace'],
-          external_trace_flags: m['flags'],
-          external_state: metadata['tracestate']
-        }
-
-        if ts_match
-          SpanContext.new(trace_id: ::Instana::Util.header_to_id(ts_match['t']),
-                          span_id: ::Instana::Util.header_to_id(ts_match['s']),
-                          level: level, baggage: baggage)
-        else
-          SpanContext.new(trace_id: ::Instana::Util.header_to_id(m['trace'][16..]),
-                          span_id: ::Instana::Util.header_to_id(m['parent']),
-                          level: level, baggage: baggage)
-        end
+        SpanContext.new(trace_id: ctx[:trace_id],
+                        span_id: ctx[:span_id],
+                        level: ctx[:level],
+                        baggage: ctx.slice(:external_trace_id, :external_trace_flags, :external_state))
       end
     end
   end

@@ -70,25 +70,10 @@ module Instana
       end
 
       def self.parse_w3c_traceparent(traceparent, tracestate)
-        m = traceparent.match(/[0-9a-f]{2}-(?<trace>[0-9a-f]{32})-(?<parent>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})/)
-        return nil unless m
+        ctx = ::Instana::Util.parse_w3c_trace_context(traceparent, tracestate)
+        return nil unless ctx
 
-        w3c_sampled = (m['flags'].to_i(16) & 0x01) == 1
-        ts_match = tracestate&.match(/in=(?<t>[0-9a-f]+);(?<s>[0-9a-f]+)/)
-
-        if ts_match
-          ::Instana::SpanContext.new(
-            trace_id: ::Instana::Util.header_to_id(ts_match['t']),
-            span_id: ::Instana::Util.header_to_id(ts_match['s']),
-            level: w3c_sampled ? 1 : 0
-          )
-        else
-          ::Instana::SpanContext.new(
-            trace_id: ::Instana::Util.header_to_id(m['trace'][16..]),
-            span_id: ::Instana::Util.header_to_id(m['parent']),
-            level: w3c_sampled ? 1 : 0
-          )
-        end
+        ::Instana::SpanContext.new(trace_id: ctx[:trace_id], span_id: ctx[:span_id], level: ctx[:level])
       end
     end
   end
