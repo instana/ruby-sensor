@@ -2,7 +2,7 @@
 # (c) Copyright Instana Inc. 2016
 
 module Instana
-  module Util
+  module Util # rubocop:disable Metrics/ModuleLength
     class << self
       ID_RANGE = -2**63..2**63-1
       # Retrieves and returns the source code for any ruby

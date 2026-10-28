@@ -478,6 +478,23 @@ class AwsLambdaTest < Minitest::Test
 end
 
 class AwsAgentReadyTest < Minitest::Test
+  SQS_SEND_MESSAGE_XML_RESPONSE = '<SendMessageResponse><SendMessageResult>' \
+                                  '<MD5OfMessageBody>d41d8cd98f00b204e9800998ecf8427e</MD5OfMessageBody>' \
+                                  '<MessageId>msg-123</MessageId>' \
+                                  '</SendMessageResult>' \
+                                  '<ResponseMetadata><RequestId>req-123</RequestId></ResponseMetadata>' \
+                                  '</SendMessageResponse>'.freeze
+
+  SQS_SEND_MESSAGE_BATCH_XML_RESPONSE = '<SendMessageBatchResponse><SendMessageBatchResult>' \
+                                        '<SendMessageBatchResultEntry>' \
+                                        '<Id>1</Id>' \
+                                        '<MessageId>msg-1</MessageId>' \
+                                        '<MD5OfMessageBody>d41d8cd98f00b204e9800998ecf8427e</MD5OfMessageBody>' \
+                                        '</SendMessageBatchResultEntry>' \
+                                        '</SendMessageBatchResult>' \
+                                        '<ResponseMetadata><RequestId>req-123</RequestId></ResponseMetadata>' \
+                                        '</SendMessageBatchResponse>'.freeze
+
   def setup
     clear_all!
   end
@@ -522,11 +539,15 @@ class AwsAgentReadyTest < Minitest::Test
   end
 
   def test_sqs_send_message_injects_trace_attributes
+    xml_proto = defined?(Aws::SQS::Client) && Aws::SQS::Client.api.metadata['protocol'] == 'query'
+    body = xml_proto ? SQS_SEND_MESSAGE_XML_RESPONSE : '{}'
+    headers = xml_proto ? { 'Content-Type' => 'text/xml' } : { 'Content-Type' => 'application/x-amz-json-1.0' }
+
     stub_request(:post, %r{http://localhost:9324/.*})
       .to_return(
         status: 200,
-        body: "{}",
-        headers: { 'Content-Type' => 'application/x-amz-json-1.0' }
+        body: body,
+        headers: headers
       )
 
     injected = nil
@@ -562,8 +583,12 @@ class AwsAgentReadyTest < Minitest::Test
   end
 
   def test_sqs_send_message_batch_injects_trace_attributes
+    xml_proto = defined?(Aws::SQS::Client) && Aws::SQS::Client.api.metadata['protocol'] == 'query'
+    body = xml_proto ? SQS_SEND_MESSAGE_BATCH_XML_RESPONSE : '{}'
+    headers = xml_proto ? { 'Content-Type' => 'text/xml' } : { 'Content-Type' => 'application/x-amz-json-1.0' }
+
     stub_request(:post, %r{http://localhost:9324/.*})
-      .to_return(status: 200, body: "{}", headers: { 'Content-Type' => 'application/x-amz-json-1.0' })
+      .to_return(status: 200, body: body, headers: headers)
 
     injected_entries = []
     sqs = Aws::SQS::Client.new(
@@ -748,7 +773,12 @@ class AwsContextPropagationTest < Minitest::Test
                                    '</PublishBatchResult></PublishBatchResponse>'.freeze
 
   SNS_XML_HEADERS = { 'Content-Type' => 'text/xml' }.freeze
-  SQS_JSON_HEADERS = { 'Content-Type' => 'application/x-amz-json-1.0' }.freeze
+  SQS_XML_RESPONSE = '<SendMessageResponse><SendMessageResult>' \
+                     '<MD5OfMessageBody>d41d8cd98f00b204e9800998ecf8427e</MD5OfMessageBody>' \
+                     '<MessageId>msg-123</MessageId>' \
+                     '</SendMessageResult>' \
+                     '<ResponseMetadata><RequestId>req-123</RequestId></ResponseMetadata>' \
+                     '</SendMessageResponse>'.freeze
 
   def setup
     clear_all!
@@ -917,8 +947,12 @@ class AwsContextPropagationTest < Minitest::Test
   # ---------------------------------------------------------------------------
 
   def test_sqs_send_message_injects_only_w3c_headers_when_attributes_almost_full
+    xml_proto = defined?(Aws::SQS::Client) && Aws::SQS::Client.api.metadata['protocol'] == 'query'
+    body = xml_proto ? SQS_XML_RESPONSE : '{}'
+    headers = xml_proto ? { 'Content-Type' => 'text/xml' } : { 'Content-Type' => 'application/x-amz-json-1.0' }
+
     stub_request(:post, %r{http://localhost:9324/.*})
-      .to_return(status: 200, body: '{}', headers: SQS_JSON_HEADERS)
+      .to_return(status: 200, body: body, headers: headers)
 
     injected = nil
     sqs = build_sqs_client
