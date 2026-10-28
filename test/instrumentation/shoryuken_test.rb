@@ -102,4 +102,50 @@ class ShoryukenTest < Minitest::Test
     refute_nil span
     assert_nil span[:p]
   end
+
+  def test_start_trace_with_w3c_traceparent
+    message = OpenStruct.new(
+      queue_url: 'http://example.com',
+      message_attributes: {
+        'traceparent' => OpenStruct.new(string_value: '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01')
+      }
+    )
+
+    @middleware.call(nil, nil, message, nil) {}
+
+    span = ::Instana.processor.queued_spans.first
+    assert_equal 'a3ce929d0e0e4736', span[:t]
+    assert_equal '00f067aa0ba902b7', span[:p]
+    assert_equal 'entry', span[:data][:sqs][:sort]
+  end
+
+  def test_start_trace_with_w3c_traceparent_and_tracestate
+    message = OpenStruct.new(
+      queue_url: 'http://example.com',
+      message_attributes: {
+        'traceparent' => OpenStruct.new(string_value: '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'),
+        'tracestate' => OpenStruct.new(string_value: 'in=1234567890abcdef;fedcba0987654321')
+      }
+    )
+
+    @middleware.call(nil, nil, message, nil) {}
+
+    span = ::Instana.processor.queued_spans.first
+    assert_equal '1234567890abcdef', span[:t]
+    assert_equal 'fedcba0987654321', span[:p]
+  end
+
+  def test_start_trace_with_w3c_traceparent_unsampled
+    message = OpenStruct.new(
+      queue_url: 'http://example.com',
+      message_attributes: {
+        'traceparent' => OpenStruct.new(string_value: '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00')
+      }
+    )
+
+    @middleware.call(nil, nil, message, nil) {}
+
+    # Since level is 0 (unsampled), no recording span should be queued
+    assert_empty ::Instana.processor.queued_spans
+  end
 end

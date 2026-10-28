@@ -36,11 +36,29 @@ module Instana
 
         def inject_instana_headers(span, params)
           params[:message_attributes] ||= {}
-          params[:message_attributes].merge!({
-                                               "X_INSTANA_T" => {data_type: 'String', string_value: span.context.trace_id},
-                                               "X_INSTANA_S" => {data_type: 'String', string_value: span.context.span_id},
-                                               "X_INSTANA_L" => {data_type: 'String', string_value: span.context.level.to_s}
-                                             })
+          span_context = span.context
+          return unless span_context
+
+          available_slots = 10 - params[:message_attributes].size
+
+          extra =
+            if available_slots >= 5
+              {
+                "X_INSTANA_T" => { data_type: 'String', string_value: span_context.trace_id },
+                "X_INSTANA_S" => { data_type: 'String', string_value: span_context.span_id },
+                "X_INSTANA_L" => { data_type: 'String', string_value: span_context.level.to_s },
+                "traceparent" => { data_type: 'String', string_value: span_context.trace_parent_header },
+                "tracestate" => { data_type: 'String', string_value: span_context.trace_state_header }
+              }
+            else
+              {
+                "traceparent" => { data_type: 'String', string_value: span_context.trace_parent_header },
+                "tracestate" => { data_type: 'String', string_value: span_context.trace_state_header }
+              }
+            end
+
+          extra.reject! { |_, v| v[:string_value].nil? || v[:string_value].empty? }
+          params[:message_attributes].merge!(extra)
         end
 
         def tags_for(operation_name, params)

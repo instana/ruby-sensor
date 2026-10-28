@@ -171,6 +171,44 @@ module Instana
         given
       end
 
+      # Parse W3C +traceparent+ / +tracestate+ values using the OpenTelemetry
+      # trace-context propagator.
+      #
+      # When the tracestate carries an Instana entry (+in=<trace>;<span>+) it
+      # takes precedence over the ids in the traceparent.
+      #
+      # @param traceparent [String] the traceparent header value
+      # @param tracestate [String, nil] the tracestate header value
+      #
+      # @return [Hash, nil] +nil+ when the traceparent is missing or invalid,
+      #   otherwise a hash with:
+      #   - +:trace_id+, +:span_id+, +:level+ for continuing the trace
+      #   - +:external_trace_id+, +:external_trace_flags+, +:external_state+
+      #     for re-emitting the W3C context downstream
+      #
+      def parse_w3c_trace_context(traceparent, tracestate = nil)
+        return nil unless traceparent.is_a?(String)
+
+        carrier = { 'traceparent' => traceparent, 'tracestate' => tracestate.is_a?(String) ? tracestate : nil }
+        extracted = OpenTelemetry::Trace::Propagation::TraceContext.text_map_propagator.extract(
+          carrier, context: OpenTelemetry::Context.empty
+        )
+        span_context = OpenTelemetry::Trace.current_span(extracted).context
+        return nil unless span_context.valid?
+
+        sampled = span_context.trace_flags.sampled?
+        instana_state = span_context.tracestate.value('in')&.match(/\A(?<trace>[0-9a-f]+);(?<span>[0-9a-f]+)\z/)
+
+        {
+          trace_id: header_to_id(instana_state ? instana_state[:trace] : span_context.hex_trace_id[16..]),
+          span_id: header_to_id(instana_state ? instana_state[:span] : span_context.hex_span_id),
+          level: sampled ? 1 : 0,
+          external_trace_id: span_context.hex_trace_id,
+          external_trace_flags: sampled ? '01' : '00',
+          external_state: tracestate
+        }
+      end
+
       def timeout_timestamp
         Process.clock_gettime(Process::CLOCK_MONOTONIC)
       end

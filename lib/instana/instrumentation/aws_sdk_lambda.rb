@@ -10,18 +10,23 @@ module Instana
           return @handler.call(context) unless [:invoke_async, :invoke].include?(context.operation_name)
 
           if ::Instana.tracer.tracing? && context.operation_name == :invoke
-            span_context  = ::Instana.tracer.context
-            trace_payload = {
-              'X-INSTANA-T' => span_context.trace_id,
-              'X-INSTANA-S' => span_context.span_id,
-              'X-INSTANA-L' => span_context.level.to_s
-            }
-            merged = if context.params[:client_context]
-                       JSON.parse(Base64.strict_decode64(context.params[:client_context])).merge(trace_payload)
-                     else
-                       trace_payload
-                     end
-            context.params[:client_context] = Base64.strict_encode64(JSON.dump(merged))
+            span_context = ::Instana.tracer.context
+            if span_context
+              trace_payload = {
+                'X-INSTANA-T' => span_context.trace_id,
+                'X-INSTANA-S' => span_context.span_id,
+                'X-INSTANA-L' => span_context.level.to_s,
+                'traceparent' => span_context.trace_parent_header,
+                'tracestate' => span_context.trace_state_header
+              }.reject { |_, v| v.nil? || v.empty? }
+
+              merged = if context.params[:client_context]
+                         JSON.parse(Base64.strict_decode64(context.params[:client_context])).merge(trace_payload)
+                       else
+                         trace_payload
+                       end
+              context.params[:client_context] = Base64.strict_encode64(JSON.dump(merged))
+            end
           end
 
           tags = {

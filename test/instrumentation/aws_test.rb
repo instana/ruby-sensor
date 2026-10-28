@@ -514,8 +514,88 @@ class AwsAgentReadyTest < Minitest::Test
     assert injected.key?('X_INSTANA_T'), 'Expected X_INSTANA_T in message_attributes'
     assert injected.key?('X_INSTANA_S'), 'Expected X_INSTANA_S in message_attributes'
     assert injected.key?('X_INSTANA_L'), 'Expected X_INSTANA_L in message_attributes'
+    assert injected.key?('traceparent'), 'Expected traceparent in message_attributes'
     assert_equal 'String', injected['X_INSTANA_T'][:data_type]
     assert_equal 'String', injected['X_INSTANA_L'][:data_type]
+    assert_equal 'String', injected['traceparent'][:data_type]
+    assert_match(/00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}/, injected['traceparent'][:string_value])
+  end
+
+  def test_sqs_send_message_injects_trace_attributes
+    stub_request(:post, %r{http://localhost:9324/.*})
+      .to_return(
+        status: 200,
+        body: "{}",
+        headers: { 'Content-Type' => 'application/x-amz-json-1.0' }
+      )
+
+    injected = nil
+    sqs = Aws::SQS::Client.new(
+      region: "local",
+      access_key_id: "test",
+      secret_access_key: "test",
+      endpoint: "http://localhost:9324"
+    )
+    sqs.handlers.remove(Aws::SQS::Plugins::Md5s::Handler) if defined?(Aws::SQS::Plugins::Md5s::Handler)
+    sqs.handlers.add(
+      Class.new(Seahorse::Client::Handler) do
+        define_method(:call) do |ctx|
+          injected = ctx.params[:message_attributes]&.dup
+          super(ctx)
+        end
+      end,
+      step: :initialize, priority: 0
+    )
+
+    Instana.tracer.in_span(:sqs_attrs_test, attributes: {}) do
+      sqs.send_message(queue_url: 'http://localhost:9324/queue/test', message_body: 'Hello SQS')
+    end
+
+    refute_nil injected, 'Expected message_attributes to be set'
+    assert injected.key?('X_INSTANA_T'), 'Expected X_INSTANA_T in message_attributes'
+    assert injected.key?('X_INSTANA_S'), 'Expected X_INSTANA_S in message_attributes'
+    assert injected.key?('X_INSTANA_L'), 'Expected X_INSTANA_L in message_attributes'
+    assert injected.key?('traceparent'), 'Expected traceparent in message_attributes'
+    assert_equal 'String', injected['X_INSTANA_T'][:data_type]
+    assert_equal 'String', injected['traceparent'][:data_type]
+    assert_match(/00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}/, injected['traceparent'][:string_value])
+  end
+
+  def test_sqs_send_message_batch_injects_trace_attributes
+    stub_request(:post, %r{http://localhost:9324/.*})
+      .to_return(status: 200, body: "{}", headers: { 'Content-Type' => 'application/x-amz-json-1.0' })
+
+    injected_entries = []
+    sqs = Aws::SQS::Client.new(
+      region: "local",
+      access_key_id: "test",
+      secret_access_key: "test",
+      endpoint: "http://localhost:9324"
+    )
+    sqs.handlers.remove(Aws::SQS::Plugins::Md5s::Handler) if defined?(Aws::SQS::Plugins::Md5s::Handler)
+    sqs.handlers.add(
+      Class.new(Seahorse::Client::Handler) do
+        define_method(:call) do |ctx|
+          injected_entries = ctx.params[:entries]&.map { |e| e[:message_attributes]&.dup }
+          super(ctx)
+        end
+      end,
+      step: :initialize, priority: 0
+    )
+
+    Instana.tracer.in_span(:sqs_batch_attrs_test, attributes: {}) do
+      sqs.send_message_batch(
+        queue_url: 'http://localhost:9324/queue/test',
+        entries: [{ id: '1', message_body: 'Hello batch' }]
+      )
+    end
+
+    refute_empty injected_entries
+    entry_attrs = injected_entries.first
+    refute_nil entry_attrs
+    assert entry_attrs.key?('X_INSTANA_T')
+    assert entry_attrs.key?('traceparent')
+    assert_equal 'String', entry_attrs['traceparent'][:data_type]
   end
 
   def test_sns_non_publish_not_modified
@@ -577,6 +657,8 @@ class AwsAgentReadyTest < Minitest::Test
     assert decoded.key?('X-INSTANA-T'), 'Expected X-INSTANA-T in ClientContext'
     assert decoded.key?('X-INSTANA-S'), 'Expected X-INSTANA-S in ClientContext'
     assert decoded.key?('X-INSTANA-L'), 'Expected X-INSTANA-L in ClientContext'
+    assert decoded.key?('traceparent'), 'Expected traceparent in ClientContext'
+    assert_match(/00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}/, decoded['traceparent'])
   end
 
   def test_lambda_invoke_merges_existing_client_context
@@ -610,9 +692,17 @@ class AwsAgentReadyTest < Minitest::Test
     assert decoded.key?('X-INSTANA-T'), 'Expected X-INSTANA-T merged in'
     assert decoded.key?('X-INSTANA-S'), 'Expected X-INSTANA-S merged in'
     assert decoded.key?('X-INSTANA-L'), 'Expected X-INSTANA-L merged in'
+    assert decoded.key?('traceparent'), 'Expected traceparent merged in'
   end
 
   def test_no_error_is_raised_and_no_spans_are_created_when_agent_is_not_ready
+    stub_request(:post, "http://localhost:8000/")
+      .to_return(
+        status: 400,
+        body: '{"__type":"com.amazonaws.dynamodb.v20120810#ResourceNotFoundException","message":"Cannot find table"}',
+        headers: { 'Content-Type' => 'application/x-amz-json-1.0' }
+      )
+
     error = nil
 
     ::Instana.agent.stub(:ready?, false) do
@@ -636,5 +726,218 @@ class AwsAgentReadyTest < Minitest::Test
     # Should not raise instrumentation errors, only the expected AWS error
     assert error.is_a?(Aws::DynamoDB::Errors::ServiceError)
     assert_empty ::Instana.processor.queued_spans
+  end
+end
+
+class AwsContextPropagationTest < Minitest::Test
+  SNS_PUBLISH_RESPONSE = '<PublishResponse><PublishResult>' \
+                         '<MessageId>abc</MessageId>' \
+                         '</PublishResult></PublishResponse>'.freeze
+
+  SNS_PUBLISH_BATCH_TWO_RESPONSE = '<PublishBatchResponse><PublishBatchResult>' \
+                                   '<Successful>' \
+                                   '<member><Id>1</Id><MessageId>m1</MessageId></member>' \
+                                   '<member><Id>2</Id><MessageId>m2</MessageId></member>' \
+                                   '</Successful><Failed/>' \
+                                   '</PublishBatchResult></PublishBatchResponse>'.freeze
+
+  SNS_PUBLISH_BATCH_ONE_RESPONSE = '<PublishBatchResponse><PublishBatchResult>' \
+                                   '<Successful>' \
+                                   '<member><Id>1</Id><MessageId>m1</MessageId></member>' \
+                                   '</Successful><Failed/>' \
+                                   '</PublishBatchResult></PublishBatchResponse>'.freeze
+
+  SNS_XML_HEADERS = { 'Content-Type' => 'text/xml' }.freeze
+  SQS_JSON_HEADERS = { 'Content-Type' => 'application/x-amz-json-1.0' }.freeze
+
+  def setup
+    clear_all!
+  end
+
+  # ---------------------------------------------------------------------------
+  # SNS helpers
+  # ---------------------------------------------------------------------------
+
+  def build_sns_client
+    Aws::SNS::Client.new(
+      region: "local",
+      access_key_id: "test",
+      secret_access_key: "test",
+      endpoint: "http://localhost:9911"
+    )
+  end
+
+  def add_sns_message_attribute_interceptor(client, &block)
+    client.handlers.add(
+      Class.new(Seahorse::Client::Handler) do
+        define_method(:call) do |ctx|
+          block.call(ctx)
+          super(ctx)
+        end
+      end,
+      step: :initialize, priority: 0
+    )
+  end
+
+  # ---------------------------------------------------------------------------
+  # SQS helpers
+  # ---------------------------------------------------------------------------
+
+  def build_sqs_client
+    sqs = Aws::SQS::Client.new(
+      region: "local",
+      access_key_id: "test",
+      secret_access_key: "test",
+      endpoint: "http://localhost:9324"
+    )
+    sqs.handlers.remove(Aws::SQS::Plugins::Md5s::Handler) if defined?(Aws::SQS::Plugins::Md5s::Handler)
+    sqs
+  end
+
+  def add_sqs_message_attribute_interceptor(client, &block)
+    client.handlers.add(
+      Class.new(Seahorse::Client::Handler) do
+        define_method(:call) do |ctx|
+          block.call(ctx)
+          super(ctx)
+        end
+      end,
+      step: :initialize, priority: 0
+    )
+  end
+
+  def full_attrs
+    (1..6).each_with_object({}) do |i, h|
+      h["app_attr_#{i}"] = { data_type: 'String', string_value: "val#{i}" }
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # SNS publish — all 5 headers injected when slots are available
+  # ---------------------------------------------------------------------------
+
+  def test_sns_publish_injects_only_w3c_headers_when_attributes_almost_full
+    stub_request(:post, "http://localhost:9911/")
+      .to_return(status: 200, body: SNS_PUBLISH_RESPONSE, headers: SNS_XML_HEADERS)
+
+    injected = nil
+    sns = build_sns_client
+    add_sns_message_attribute_interceptor(sns) { |ctx| injected = ctx.params[:message_attributes]&.dup }
+
+    Instana.tracer.in_span(:sns_fallback_test, attributes: {}) do
+      sns.publish(topic_arn: 'topic:arn', message: 'Hello', message_attributes: full_attrs)
+    end
+
+    refute_nil injected
+    assert injected.key?('traceparent'), 'Expected traceparent when slots < 5'
+    assert injected.key?('tracestate'),  'Expected tracestate when slots < 5'
+    refute injected.key?('X_INSTANA_T'), 'Expected X_INSTANA_T to be omitted when slots < 5'
+    refute injected.key?('X_INSTANA_S'), 'Expected X_INSTANA_S to be omitted when slots < 5'
+    refute injected.key?('X_INSTANA_L'), 'Expected X_INSTANA_L to be omitted when slots < 5'
+    assert injected.size <= 10, 'Total message attributes must not exceed SNS limit of 10'
+  end
+
+  # ---------------------------------------------------------------------------
+  # SNS publish_batch — all 5 headers injected into every entry (empty attrs)
+  # ---------------------------------------------------------------------------
+
+  def test_sns_publish_batch_injects_trace_attributes_into_each_entry
+    stub_request(:post, "http://localhost:9911/")
+      .to_return(status: 200, body: SNS_PUBLISH_BATCH_TWO_RESPONSE, headers: SNS_XML_HEADERS)
+
+    injected_entries = []
+    sns = build_sns_client
+    add_sns_message_attribute_interceptor(sns) do |ctx|
+      injected_entries = ctx.params[:publish_batch_request_entries]&.map do |e|
+        e[:message_attributes]&.dup
+      end
+    end
+
+    Instana.tracer.in_span(:sns_batch_test, attributes: {}) do
+      sns.publish_batch(
+        topic_arn: 'topic:arn',
+        publish_batch_request_entries: [
+          { id: '1', message: 'First' },
+          { id: '2', message: 'Second' }
+        ]
+      )
+    end
+
+    assert_equal 2, injected_entries.size, 'Expected attributes captured for both entries'
+    injected_entries.each_with_index do |attrs, i|
+      refute_nil attrs, "Expected message_attributes on entry #{i + 1}"
+      assert attrs.key?('X_INSTANA_T'), "Expected X_INSTANA_T on entry #{i + 1}"
+      assert attrs.key?('X_INSTANA_S'), "Expected X_INSTANA_S on entry #{i + 1}"
+      assert attrs.key?('X_INSTANA_L'), "Expected X_INSTANA_L on entry #{i + 1}"
+      assert attrs.key?('traceparent'), "Expected traceparent on entry #{i + 1}"
+      assert_match(
+        /00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}/,
+        attrs['traceparent'][:string_value]
+      )
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # SNS publish_batch — falls back to W3C-only when entry slots < 5
+  # ---------------------------------------------------------------------------
+
+  def test_sns_publish_batch_injects_only_w3c_headers_when_entry_attributes_almost_full
+    stub_request(:post, "http://localhost:9911/")
+      .to_return(status: 200, body: SNS_PUBLISH_BATCH_ONE_RESPONSE, headers: SNS_XML_HEADERS)
+
+    injected_entries = []
+    sns = build_sns_client
+    add_sns_message_attribute_interceptor(sns) do |ctx|
+      injected_entries = ctx.params[:publish_batch_request_entries]&.map do |e|
+        e[:message_attributes]&.dup
+      end
+    end
+
+    Instana.tracer.in_span(:sns_batch_fallback_test, attributes: {}) do
+      sns.publish_batch(
+        topic_arn: 'topic:arn',
+        publish_batch_request_entries: [
+          { id: '1', message: 'Hello', message_attributes: full_attrs }
+        ]
+      )
+    end
+
+    attrs = injected_entries.first
+    refute_nil attrs
+    assert attrs.key?('traceparent'), 'Expected traceparent when slots < 5'
+    assert attrs.key?('tracestate'),  'Expected tracestate when slots < 5'
+    refute attrs.key?('X_INSTANA_T'), 'Expected X_INSTANA_T to be omitted when slots < 5'
+    refute attrs.key?('X_INSTANA_S'), 'Expected X_INSTANA_S to be omitted when slots < 5'
+    refute attrs.key?('X_INSTANA_L'), 'Expected X_INSTANA_L to be omitted when slots < 5'
+    assert attrs.size <= 10, 'Total message attributes per batch entry must not exceed SNS limit of 10'
+  end
+
+  # ---------------------------------------------------------------------------
+  # SQS send_message — falls back to W3C-only when slots < 5
+  # ---------------------------------------------------------------------------
+
+  def test_sqs_send_message_injects_only_w3c_headers_when_attributes_almost_full
+    stub_request(:post, %r{http://localhost:9324/.*})
+      .to_return(status: 200, body: '{}', headers: SQS_JSON_HEADERS)
+
+    injected = nil
+    sqs = build_sqs_client
+    add_sqs_message_attribute_interceptor(sqs) { |ctx| injected = ctx.params[:message_attributes]&.dup }
+
+    Instana.tracer.in_span(:sqs_fallback_test, attributes: {}) do
+      sqs.send_message(
+        queue_url: 'http://localhost:9324/queue/test',
+        message_body: 'Hello SQS',
+        message_attributes: full_attrs
+      )
+    end
+
+    refute_nil injected
+    assert injected.key?('traceparent'), 'Expected traceparent when slots < 5'
+    assert injected.key?('tracestate'),  'Expected tracestate when slots < 5'
+    refute injected.key?('X_INSTANA_T'), 'Expected X_INSTANA_T to be omitted when slots < 5'
+    refute injected.key?('X_INSTANA_S'), 'Expected X_INSTANA_S to be omitted when slots < 5'
+    refute injected.key?('X_INSTANA_L'), 'Expected X_INSTANA_L to be omitted when slots < 5'
+    assert injected.size <= 10, 'Total message attributes must not exceed SQS limit of 10'
   end
 end
