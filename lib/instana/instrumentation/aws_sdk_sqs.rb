@@ -41,26 +41,11 @@ module Instana
 
           available_slots = 10 - params[:message_attributes].size
 
-          extra = w3c_headers(span_context)
-          extra.merge!(instana_headers(span_context)) if available_slots >= 5
+          extra = ::Instana::Util.aws_message_attributes_w3c(span_context)
+          extra.merge!(::Instana::Util.aws_message_attributes_instana(span_context)) if available_slots >= 5
 
           extra.reject! { |_, v| v[:string_value].nil? || v[:string_value].empty? }
           params[:message_attributes].merge!(extra)
-        end
-
-        def w3c_headers(span_context)
-          {
-            "traceparent" => { data_type: 'String', string_value: span_context.trace_parent_header },
-            "tracestate" => { data_type: 'String', string_value: span_context.trace_state_header }
-          }
-        end
-
-        def instana_headers(span_context)
-          {
-            "X_INSTANA_T" => { data_type: 'String', string_value: span_context.trace_id },
-            "X_INSTANA_S" => { data_type: 'String', string_value: span_context.span_id },
-            "X_INSTANA_L" => { data_type: 'String', string_value: span_context.level.to_s }
-          }
         end
 
         def tags_for(operation_name, params)

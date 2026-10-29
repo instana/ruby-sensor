@@ -267,6 +267,35 @@ module Instana
 
         klass.name.sub('Net::HTTP', '').gsub(/([A-Z])/, ' \1').strip
       end
+
+      # Build the W3C trace-context message attributes for an AWS message
+      # (SQS or SNS).  Returns a hash suitable for merging into
+      # +params[:message_attributes]+.
+      #
+      # @param span_context [Instana::SpanContext]
+      # @return [Hash]
+      #
+      def aws_message_attributes_w3c(span_context)
+        {
+          'traceparent' => { data_type: 'String', string_value: span_context.trace_parent_header },
+          'tracestate' => { data_type: 'String', string_value: span_context.trace_state_header }
+        }
+      end
+
+      # Build the Instana proprietary message attributes for an AWS message
+      # (SQS or SNS).  Returns a hash suitable for merging into
+      # +params[:message_attributes]+.
+      #
+      # @param span_context [Instana::SpanContext]
+      # @return [Hash]
+      #
+      def aws_message_attributes_instana(span_context)
+        {
+          'X_INSTANA_T' => { data_type: 'String', string_value: span_context.trace_id },
+          'X_INSTANA_S' => { data_type: 'String', string_value: span_context.span_id },
+          'X_INSTANA_L' => { data_type: 'String', string_value: span_context.level.to_s }
+        }
+      end
     end
   end
 end
