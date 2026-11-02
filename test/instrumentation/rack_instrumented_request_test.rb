@@ -70,8 +70,7 @@ class RackInstrumentedRequestTest < Minitest::Test
       trace_id: 'a3ce929d0e0e4736',
       span_id: '00f067aa0ba902b7',
       external_trace_flags: "01",
-      from_w3c: true,
-      level: '1'
+      from_w3c: true
     }
 
     assert_equal expected, req.incoming_context
@@ -89,8 +88,7 @@ class RackInstrumentedRequestTest < Minitest::Test
       trace_id: 'a3ce929d0e0e4736',
       span_id: '00f067aa0ba902b7',
       external_trace_flags: "01",
-      from_w3c: true,
-      level: '1'
+      from_w3c: true
     }
 
     assert_equal expected, req.incoming_context
@@ -108,26 +106,29 @@ class RackInstrumentedRequestTest < Minitest::Test
       trace_id: 'a3ce929d0e0e4736',
       span_id: '00f067aa0ba902b7',
       external_trace_flags: "ff",
-      from_w3c: true,
-      level: '1'
+      from_w3c: true
     }
 
     assert_equal expected, req.incoming_context
     assert req.continuing_from_trace_parent?
   end
 
-  def test_w3c_not_sampled_flag_suppresses_trace
+  def test_w3c_not_sampled_flag_does_not_suppress_trace
+    # Instana ignores the W3C sampled bit from foreign tracers.
+    # Suppression is only via X-Instana-L.
     req = Instana::InstrumentedRequest.new(
       'HTTP_TRACEPARENT' => '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00'
     )
-    assert_equal '0', req.incoming_context[:level]
+    assert_nil req.incoming_context[:level]
+    assert req.continuing_from_trace_parent?
   end
 
-  def test_w3c_sampled_flag_sets_level_one
+  def test_w3c_sampled_flag_does_not_set_level
+    # The W3C sampled bit is stored but does not set level; level comes from X-Instana-L only.
     req = Instana::InstrumentedRequest.new(
       'HTTP_TRACEPARENT' => '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
     )
-    assert_equal '1', req.incoming_context[:level]
+    assert_nil req.incoming_context[:level]
   end
 
   def test_x_instana_l_wins_over_w3c_sampled_flag
