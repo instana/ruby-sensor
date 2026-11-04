@@ -34,12 +34,13 @@ Gem::Specification.new do |spec|
   spec.platform      = defined?(JRUBY_VERSION) ? 'java' : Gem::Platform::RUBY
 
   # spec.add_development_dependency "bundler", "=> 2.0"
-  spec.add_development_dependency "rake", "~> 12.0"
+  spec.add_development_dependency "rake", ">= 12.0"
   spec.add_development_dependency "minitest", "~> 5.20"
   spec.add_development_dependency "appraisal"
   spec.add_development_dependency "fakefs"
   spec.add_development_dependency "irb"
   spec.add_development_dependency "benchmark"
+  spec.add_development_dependency "ostruct"
   spec.add_development_dependency "rack"
 
   spec.add_runtime_dependency('base64', '>= 0.1')
