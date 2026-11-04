@@ -2,15 +2,39 @@
 # (c) Copyright Instana Inc. 2017
 
 require 'google/protobuf'
+require 'google/protobuf/descriptor_pb'
 
-Google::Protobuf::DescriptorPool.generated_pool.build do
-  add_message "PingPongService.PingRequest" do
-    optional :message, :string, 1
-  end
-  add_message "PingPongService.PongReply" do
-    optional :message, :string, 1
-  end
+# The `DescriptorPool#build` DSL was removed in google-protobuf 4.x, so the
+# messages are registered through a serialized file descriptor, which works
+# with both 3.x and 4.x.
+message_with_string_field = lambda do |name|
+  Google::Protobuf::DescriptorProto.new(
+    name: name,
+    field: [
+      Google::Protobuf::FieldDescriptorProto.new(
+        name: 'message',
+        number: 1,
+        label: :LABEL_OPTIONAL,
+        type: :TYPE_STRING,
+        json_name: 'message'
+      )
+    ]
+  )
 end
+
+ping_pong_file = Google::Protobuf::FileDescriptorProto.new(
+  name: 'ping_pong_service.proto',
+  package: 'PingPongService',
+  syntax: 'proto3',
+  message_type: [
+    message_with_string_field.call('PingRequest'),
+    message_with_string_field.call('PongReply')
+  ]
+)
+
+Google::Protobuf::DescriptorPool.generated_pool.add_serialized_file(
+  Google::Protobuf::FileDescriptorProto.encode(ping_pong_file)
+)
 
 module PingPongService
   PingRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("PingPongService.PingRequest").msgclass
