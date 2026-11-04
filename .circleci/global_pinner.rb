@@ -76,7 +76,11 @@ module GlobalPinner
       .sort_by { |_, created_at| created_at }
       .reverse
 
-    # Find first safe version with grace period reset logic
+    # Collect all safe versions (grace period reset logic); the highest major
+    # version wins so that backport releases on older major lines are not
+    # preferred just because they were published last.
+    candidates = []
+
     sorted_versions.each_with_index do |(version, created_at), i|
       # Skip if within grace period
       next if created_at > grace_cutoff
@@ -99,10 +103,10 @@ module GlobalPinner
         next
       end
 
-      return number
+      candidates << number
     end
 
-    nil
+    candidates.max_by { |number| Gem::Version.new(number) }
   rescue StandardError => e
     warn "[Date Pinner] Failed to pin #{name}: #{e.class}: #{e.message}"
     nil
