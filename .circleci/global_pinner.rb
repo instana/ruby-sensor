@@ -8,7 +8,7 @@ require 'rubygems/requirement'
 DAYS_BACK = 5
 SECONDS_PER_DAY = 24 * 60 * 60
 TARGET_DATE = Time.now.utc - (DAYS_BACK * SECONDS_PER_DAY)
-RUBYGEMS_HOST = 'https://rubygems.org'
+RUBYGEMS_HOST = 'https://rubygems.org'.freeze
 PINNER_DISABLED = ENV['INSTANA_DISABLE_GLOBAL_PINNER'] == 'true'
 GLOBAL_PINNER_PATH = File.expand_path(__FILE__)
 GLOBAL_PINNER_DIR = File.dirname(GLOBAL_PINNER_PATH)
@@ -71,10 +71,10 @@ module GlobalPinner
 
     # Filter and sort versions by created_at descending
     sorted_versions = versions
-      .select { |v| v['created_at'] && !v['prerelease'] }
-      .map { |v| [v, Time.parse(v['created_at'])] }
-      .sort_by { |_, created_at| created_at }
-      .reverse
+                      .select { |v| v['created_at'] && !v['prerelease'] }
+                      .map { |v| [v, Time.parse(v['created_at'])] }
+                      .sort_by { |_, created_at| created_at }
+                      .reverse
 
     # Collect all safe versions (grace period reset logic); the highest major
     # version wins so that backport releases on older major lines are not
@@ -98,8 +98,11 @@ module GlobalPinner
       next unless requirement_for(requirements).satisfied_by?(Gem::Version.new(number))
 
       # Check Ruby version compatibility
+      # RubyGems reports combined requirements as a single string (e.g.
+      # ">= 3.2, < 4.1.dev"), which Gem::Requirement.new rejects unsplit.
       ruby_requirement = version['ruby_version']
-      if ruby_requirement && !Gem::Requirement.new(ruby_requirement).satisfied_by?(current_ruby_version)
+      if ruby_requirement &&
+         !Gem::Requirement.new(*ruby_requirement.split(',').map(&:strip)).satisfied_by?(current_ruby_version)
         next
       end
 
