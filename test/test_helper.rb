@@ -45,6 +45,10 @@ end
 require 'bundler/setup'
 Bundler.require
 
+# Many tests use OpenStruct; it is no longer loaded implicitly by rake 13
+# and is a bundled (non-default) gem since Ruby 4.0.
+require 'ostruct'
+
 require "minitest/spec"
 require "minitest/autorun"
 require "minitest/reporters"
