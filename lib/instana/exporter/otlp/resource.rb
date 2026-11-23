@@ -295,6 +295,7 @@ module Instana
             id = case detect_os_type
                  when 'linux'  then linux_host_id
                  when 'darwin' then darwin_host_id
+                 else '' # unsupported OS: normalized to nil below
                  end
             id = id&.strip
             id unless id.nil? || id.empty?
