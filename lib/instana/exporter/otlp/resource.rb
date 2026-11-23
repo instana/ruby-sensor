@@ -2,6 +2,7 @@
 
 # (c) Copyright IBM Corp. 2026
 
+require 'open3'
 require 'socket'
 require 'opentelemetry/semantic_conventions'
 require_relative '../../util'
@@ -14,10 +15,16 @@ module Instana
       # This follows OpenTelemetry semantic conventions for resource attributes
       class Resource
         PROC_SELF_CGROUP    = '/proc/self/cgroup'
+        PROC_SELF_MOUNTINFO = '/proc/self/mountinfo'
+        # cgroup v1 and systemd-driver paths: /docker/<id>, docker-<id>.scope, cri-containerd-<id>.scope,
+        # crio-<id>.scope, libpod-<id>.scope
+        CGROUP_CONTAINER_ID_REGEX = %r{(?:/docker/|/(?:docker|cri-containerd|crio|libpod)-)([a-f0-9]{64})}
+        # cgroup v2 mount paths: /docker/containers/<id>/..., .../overlay-containers/<id>/...
+        MOUNTINFO_CONTAINER_ID_REGEX = %r{/(?:docker/containers|overlay-containers)/([a-f0-9]{64})/}
         DOCKER_ENV_FILE     = '/.dockerenv'
         PODMAN_CONTAINERENV = '/run/.containerenv'
-        # Linux-only stable machine-id paths (systemd and D-Bus fallback).
-        # These files do not exist on macOS or Windows; host_id returns nil there.
+        # Linux stable machine-id paths (systemd and D-Bus fallback).
+        # macOS uses a command-based lookup instead (see host_id).
         MACHINE_ID_PATHS   = %w[/etc/machine-id /var/lib/dbus/machine-id].freeze
         # cloud.resource_id is not yet in the installed semconv gem version
         CLOUD_RESOURCE_ID  = 'cloud.resource_id'
@@ -173,6 +180,7 @@ module Instana
 
             add_aws_lambda_attributes(attrs)
             add_cloud_run_attributes(attrs)
+            add_azure_functions_attributes(attrs)
 
             create(attrs)
           end
@@ -248,6 +256,15 @@ module Instana
             attrs[OpenTelemetry::SemanticConventions::Resource::FAAS_VERSION] = revision if revision
           end
 
+          # Detects Azure Functions. FUNCTIONS_WORKER_RUNTIME is set only for Functions,
+          # and WEBSITE_SITE_NAME is injected only when running on Azure (not local `func start`).
+          def add_azure_functions_attributes(attrs)
+            return unless ENV.fetch('FUNCTIONS_WORKER_RUNTIME', nil) && ENV.fetch('WEBSITE_SITE_NAME', nil)
+
+            attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PROVIDER] = 'azure'
+            attrs[OpenTelemetry::SemanticConventions::Resource::CLOUD_PLATFORM] = 'azure_functions'
+          end
+
           # Returns true when the current OS is Linux.
           #
           # @return [Boolean]
@@ -270,18 +287,37 @@ module Instana
           end
 
           # Returns a stable machine-level identifier.
-          # Reads /etc/machine-id (Linux systemd standard) or
-          # /var/lib/dbus/machine-id as fallback. Returns nil on macOS/Windows.
+          #   Linux:   /etc/machine-id, falling back to /var/lib/dbus/machine-id
+          #   macOS:   IOPlatformUUID from `ioreg`
           #
           # @return [String, nil]
           def host_id
-            path = MACHINE_ID_PATHS.find { |machine_id_path| File.exist?(machine_id_path) }
-            return nil unless path
-
-            id = File.read(path).strip
-            return id unless id.empty?
-
+            id = case detect_os_type
+                 when 'linux'  then linux_host_id
+                 when 'darwin' then darwin_host_id
+                 end
+            id = id&.strip
+            id unless id.nil? || id.empty?
+          rescue StandardError
             nil
+          end
+
+          def linux_host_id
+            path = MACHINE_ID_PATHS.find { |machine_id_path| File.exist?(machine_id_path) }
+            File.read(path) if path
+          end
+
+          def darwin_host_id
+            output = run_command('ioreg', '-rd1', '-c', 'IOPlatformExpertDevice')
+            output&.[](/"IOPlatformUUID"\s*=\s*"([^"]+)"/, 1)
+          end
+
+          # Runs an external command without a shell and returns stdout, or nil on failure.
+          #
+          # @return [String, nil]
+          def run_command(*cmd)
+            output, status = Open3.capture2(*cmd, err: File::NULL)
+            output if status.success?
           rescue StandardError
             nil
           end
@@ -319,20 +355,26 @@ module Instana
             RbConfig::CONFIG['host_cpu']
           end
 
-          # Extract container ID from cgroup file
+          # Extract the 64-hex container ID.
+          #
+          # cgroup v1 exposes it in /proc/self/cgroup (e.g. /docker/<id>, docker-<id>.scope,
+          # cri-containerd-<id>.scope). On cgroup v2 that file is just "0::/", so the ID is
+          # taken from the container paths in /proc/self/mountinfo instead.
           #
           # @return [String, nil] Container ID
           def extract_container_id
-            return nil unless File.exist?(PROC_SELF_CGROUP)
+            container_id_from_file(PROC_SELF_CGROUP, CGROUP_CONTAINER_ID_REGEX) ||
+              container_id_from_file(PROC_SELF_MOUNTINFO, MOUNTINFO_CONTAINER_ID_REGEX)
+          end
 
-            line = File.readlines(PROC_SELF_CGROUP).find do |l|
-              l.match?(%r{/docker/([a-f0-9]{64})})
+          def container_id_from_file(path, regex)
+            return nil unless File.exist?(path)
+
+            File.foreach(path) do |line|
+              match = line.match(regex)
+              return match[1] if match
             end
-
-            return nil unless line
-
-            match = line.match(%r{/docker/([a-f0-9]{64})})
-            match[1]
+            nil
           rescue StandardError
             nil
           end

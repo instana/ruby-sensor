@@ -132,6 +132,7 @@ class AwsS3Test < Minitest::Test
     assert_equal 'get', s3_span[:data][:s3][:op]
     assert_equal 'sample-bucket', s3_span[:data][:s3][:bucket]
     assert_equal 'sample_key', s3_span[:data][:s3][:key]
+    assert_equal 'local', s3_span[:data][:s3][:region]
   end
 
   def test_s3_operations

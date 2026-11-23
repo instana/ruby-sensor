@@ -9,7 +9,8 @@ module Instana
           s3_tags = {
             op: format_operation(context.operation_name),
             bucket: bucket_name_from(context),
-            key: key_from_context(context)
+            key: key_from_context(context),
+            region: context.config.region
           }.reject { |_, v| v.nil? }
 
           ::Instana.tracer.in_span(:s3, attributes: {s3: s3_tags}) { @handler.call(context) }

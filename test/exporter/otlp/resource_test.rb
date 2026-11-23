@@ -5,7 +5,7 @@
 require 'test_helper'
 require 'instana/exporter/otlp/resource'
 
-class ResourceTest < Minitest::Test
+class ResourceTest < Minitest::Test # rubocop:disable Metrics/ClassLength
   R = Instana::Exporter::Otlp::Resource
   SC = OpenTelemetry::SemanticConventions::Resource
 
@@ -21,7 +21,7 @@ class ResourceTest < Minitest::Test
       AWS_LAMBDA_FUNCTION_NAME AWS_LAMBDA_FUNCTION_VERSION AWS_LAMBDA_FUNCTION_ARN
       KUBERNETES_SERVICE_HOST MY_POD_UID KUBERNETES_NAMESPACE
       ECS_CONTAINER_METADATA_URI ECS_CONTAINER_METADATA_URI_V4
-      K_SERVICE K_REVISION
+      K_SERVICE K_REVISION FUNCTIONS_WORKER_RUNTIME WEBSITE_SITE_NAME
     ].each { |k| ENV.delete(k) }
   end
 
@@ -110,7 +110,7 @@ class ResourceTest < Minitest::Test
       FileUtils.mkdir_p('/etc')
       File.write('/etc/machine-id', "abc123\n")
       R.reset!
-      assert_equal 'abc123', R.send(:host_id)
+      stub_rbconfig('linux-gnu') { assert_equal 'abc123', R.send(:host_id) }
     end
   end
 
@@ -119,14 +119,14 @@ class ResourceTest < Minitest::Test
       FileUtils.mkdir_p('/var/lib/dbus')
       File.write('/var/lib/dbus/machine-id', "fallback-id\n")
       R.reset!
-      assert_equal 'fallback-id', R.send(:host_id)
+      stub_rbconfig('linux-gnu') { assert_equal 'fallback-id', R.send(:host_id) }
     end
   end
 
   def test_host_id_returns_nil_when_no_file
     FakeFS.with_fresh do
       R.reset!
-      assert_nil R.send(:host_id)
+      stub_rbconfig('linux-gnu') { assert_nil R.send(:host_id) }
     end
   end
 
@@ -134,9 +134,41 @@ class ResourceTest < Minitest::Test
     FakeFS.with_fresh do
       FileUtils.mkdir_p('/etc')
       File.write('/etc/machine-id', "machine-xyz\n")
-      R.reset!
-      assert_equal 'machine-xyz', R.instance[SC::HOST_ID]
+      stub_rbconfig('linux-gnu') do
+        R.reset!
+        assert_equal 'machine-xyz', R.instance[SC::HOST_ID]
+      end
     end
+  end
+
+  def test_host_id_on_macos_reads_ioplatformuuid
+    output = <<~IOREG
+      +-o Root  <class IORegistryEntry>
+        +-o MacBookPro  <class IOPlatformExpertDevice>
+          {
+            "IOPlatformUUID" = "11111111-2222-3333-4444-555555555555"
+            "manufacturer" = <"Apple Inc.">
+          }
+    IOREG
+    stub_rbconfig('arm-apple-darwin23') do
+      with_run_command(output) { assert_equal '11111111-2222-3333-4444-555555555555', R.send(:host_id) }
+    end
+  end
+
+  def test_host_id_on_macos_returns_nil_when_command_fails
+    stub_rbconfig('arm-apple-darwin23') do
+      with_run_command(nil) { assert_nil R.send(:host_id) }
+    end
+  end
+
+  def test_host_id_on_macos_returns_nil_when_output_unparseable
+    stub_rbconfig('arm-apple-darwin23') do
+      with_run_command('garbage') { assert_nil R.send(:host_id) }
+    end
+  end
+
+  def test_host_id_returns_nil_on_unknown_os
+    stub_rbconfig('aix7.1') { assert_nil R.send(:host_id) }
   end
 
   # ─── service.instance.id priority ─────────────────────────────────────────
@@ -155,16 +187,20 @@ class ResourceTest < Minitest::Test
     FakeFS.with_fresh do
       FileUtils.mkdir_p('/etc')
       File.write('/etc/machine-id', "stable-host-id\n")
-      R.reset!
-      assert_equal 'stable-host-id', R.instance[SC::SERVICE_INSTANCE_ID]
+      stub_rbconfig('linux-gnu') do
+        R.reset!
+        assert_equal 'stable-host-id', R.instance[SC::SERVICE_INSTANCE_ID]
+      end
     end
   end
 
   def test_service_instance_id_falls_back_to_hostname_pid
     FakeFS.with_fresh do
-      R.reset!
-      instance_id = R.instance[SC::SERVICE_INSTANCE_ID]
-      assert_match(/.+:\d+/, instance_id, 'fallback should be hostname:pid')
+      stub_rbconfig('linux-gnu') do
+        R.reset!
+        instance_id = R.instance[SC::SERVICE_INSTANCE_ID]
+        assert_match(/.+:\d+/, instance_id, 'fallback should be hostname:pid')
+      end
     end
   end
 
@@ -276,6 +312,88 @@ class ResourceTest < Minitest::Test
     end
   end
 
+  # ─── Azure Functions ───────────────────────────────────────────────────────
+
+  def test_azure_functions_attributes_set_when_env_present
+    ENV['FUNCTIONS_WORKER_RUNTIME'] = 'ruby'
+    ENV['WEBSITE_SITE_NAME']        = 'my-func-app'
+    R.reset!
+    attrs = R.instance
+    assert_equal 'azure',           attrs[SC::CLOUD_PROVIDER]
+    assert_equal 'azure_functions', attrs[SC::CLOUD_PLATFORM]
+  end
+
+  def test_azure_functions_not_detected_without_website_site_name
+    ENV['FUNCTIONS_WORKER_RUNTIME'] = 'ruby'
+    R.reset!
+    refute R.instance.key?(SC::CLOUD_PROVIDER)
+    refute R.instance.key?(SC::CLOUD_PLATFORM)
+  end
+
+  def test_azure_functions_not_detected_without_functions_worker_runtime
+    ENV['WEBSITE_SITE_NAME'] = 'my-web-app'
+    R.reset!
+    refute R.instance.key?(SC::CLOUD_PROVIDER)
+  end
+
+  def test_azure_attributes_in_faas_attrs_not_container_attrs
+    ENV['FUNCTIONS_WORKER_RUNTIME'] = 'ruby'
+    ENV['WEBSITE_SITE_NAME']        = 'my-func-app'
+    R.reset!
+    assert_equal 'azure_functions', R.send(:faas_attributes).attributes[SC::CLOUD_PLATFORM]
+    refute R.send(:container_attributes).attributes.key?(SC::CLOUD_PLATFORM)
+  end
+
+  # ─── container.id ──────────────────────────────────────────────────────────
+
+  CONTAINER_ID = ('a1b2c3d4' * 8).freeze
+
+  def test_container_id_from_cgroup_v1_docker_path
+    with_proc_files('/proc/self/cgroup' => "12:cpu:/docker/#{CONTAINER_ID}\n") do
+      assert_equal CONTAINER_ID, R.send(:extract_container_id)
+    end
+  end
+
+  def test_container_id_from_cgroup_v1_systemd_scope
+    with_proc_files('/proc/self/cgroup' => "1:name=systemd:/system.slice/docker-#{CONTAINER_ID}.scope\n") do
+      assert_equal CONTAINER_ID, R.send(:extract_container_id)
+    end
+  end
+
+  def test_container_id_from_cgroup_v1_kubernetes_containerd
+    path = "/kubepods.slice/kubepods-pod1.slice/cri-containerd-#{CONTAINER_ID}.scope"
+    with_proc_files('/proc/self/cgroup' => "0::#{path}\n") do
+      assert_equal CONTAINER_ID, R.send(:extract_container_id)
+    end
+  end
+
+  def test_container_id_from_cgroup_v2_docker_mountinfo
+    mountinfo = "612 598 254:1 /var/lib/docker/containers/#{CONTAINER_ID}/hostname /etc/hostname rw - ext4 /dev/vda1 rw\n"
+    with_proc_files('/proc/self/cgroup' => "0::/\n", '/proc/self/mountinfo' => mountinfo) do
+      assert_equal CONTAINER_ID, R.send(:extract_container_id)
+    end
+  end
+
+  def test_container_id_from_cgroup_v2_podman_mountinfo
+    mountinfo = "700 650 0:50 /containers/storage/overlay-containers/#{CONTAINER_ID}/userdata/hostname /etc/hostname rw - tmpfs tmpfs rw\n"
+    with_proc_files('/proc/self/cgroup' => "0::/\n", '/proc/self/mountinfo' => mountinfo) do
+      assert_equal CONTAINER_ID, R.send(:extract_container_id)
+    end
+  end
+
+  def test_container_id_nil_when_not_in_container
+    with_proc_files('/proc/self/cgroup' => "0::/user.slice/session-1.scope\n",
+                    '/proc/self/mountinfo' => "22 28 0:21 / /proc rw - proc proc rw\n") do
+      assert_nil R.send(:extract_container_id)
+    end
+  end
+
+  def test_container_id_nil_when_proc_files_missing
+    FakeFS.with_fresh do
+      assert_nil R.send(:extract_container_id)
+    end
+  end
+
   # ─── Lambda is NOT part of container_attributes ───────────────────────────
 
   def test_lambda_attributes_not_in_container_attrs
@@ -298,6 +416,19 @@ class ResourceTest < Minitest::Test
   end
 
   private
+
+  def with_proc_files(files)
+    FakeFS.with_fresh do
+      FileUtils.mkdir_p('/proc/self')
+      files.each { |path, content| File.write(path, content) }
+      yield
+    end
+  end
+
+  # Replaces Resource.run_command with a stub returning +output+ for the duration of the block.
+  def with_run_command(output, &block)
+    R.stub(:run_command, output, &block)
+  end
 
   def stub_rbconfig(host_os_value)
     original = RbConfig::CONFIG['host_os']

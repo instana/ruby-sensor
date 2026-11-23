@@ -25,6 +25,14 @@ class BaseConverterTest < Minitest::Test
     assert_instance_of String, span_data.span_id
   end
 
+  def test_convert_uses_spec_instrumentation_scope_name
+    span = create_test_span(name: :rack)
+    span_data = Instana::Exporter::Otlp::BaseConverter.new(span).convert
+
+    assert_equal 'instana.ruby.tracer', span_data.instrumentation_scope.name
+    assert_equal ::Instana::VERSION, span_data.instrumentation_scope.version
+  end
+
   def test_convert_span_kind
     # Test explicit internal kind
     span = create_test_span(name: :rack, kind: 3) # Instana intermediate/internal
