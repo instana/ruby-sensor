@@ -422,7 +422,7 @@ module Instana
         #
         # @return [InstrumentationScope] Scope identifying the Instana Ruby sensor
         def instrumentation_scope
-          @instrumentation_scope ||= InstrumentationScope.new('instana-ruby', ::Instana::VERSION)
+          @instrumentation_scope ||= InstrumentationScope.new('instana.ruby.tracer', ::Instana::VERSION)
         end
       end
     end
