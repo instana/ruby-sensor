@@ -226,6 +226,7 @@ class ConverterFactoryTest < Minitest::Test
     assert @factory.send(:background_job_span?, create_test_span(name: 'sidekiq-worker'))
     assert @factory.send(:background_job_span?, create_test_span(name: 'resque-client'))
     assert @factory.send(:background_job_span?, create_test_span(name: 'resque-worker'))
+    assert @factory.send(:background_job_span?, create_test_span(name: 'activejob'))
     refute @factory.send(:background_job_span?, create_test_span(name: :http))
   end
 
@@ -258,7 +259,7 @@ class ConverterFactoryTest < Minitest::Test
   end
 
   def test_returns_background_job_converter_for_background_job_spans
-    %w[sidekiq-client sidekiq-worker resque-client resque-worker].each do |name|
+    %w[sidekiq-client sidekiq-worker resque-client resque-worker activejob].each do |name|
       span = create_test_span(name: name)
       converter = @factory.create(span)
 

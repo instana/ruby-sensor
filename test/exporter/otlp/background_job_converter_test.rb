@@ -14,8 +14,8 @@ class BackgroundJobConverterTest < Minitest::Test
     assert_equal 'sidekiq', attrs['messaging.system']
     assert_equal 'default', attrs['messaging.destination.name']
     assert_equal 'publish', attrs['messaging.operation.name']
+    assert_equal 'send', attrs['messaging.operation.type']
     assert_equal '123', attrs['messaging.message.id']
-    assert_equal 'TestWorker', attrs['messaging.consumer.group.name']
     assert_equal 'localhost', attrs['server.address']
     assert_equal 6379, attrs['server.port']
   end
@@ -29,9 +29,9 @@ class BackgroundJobConverterTest < Minitest::Test
 
     assert_equal 'sidekiq', attrs['messaging.system']
     assert_equal 'critical', attrs['messaging.destination.name']
-    assert_equal 'process', attrs['messaging.operation.name']
+    assert_equal 'consume', attrs['messaging.operation.name']
+    assert_equal 'process', attrs['messaging.operation.type']
     assert_equal '456', attrs['messaging.message.id']
-    assert_equal 'EmailWorker', attrs['messaging.consumer.group.name']
   end
 
   def test_resque_client_conversion
@@ -44,17 +44,25 @@ class BackgroundJobConverterTest < Minitest::Test
     assert_equal 'resque', attrs['messaging.system']
     assert_equal 'low', attrs['messaging.destination.name']
     assert_equal 'publish', attrs['messaging.operation.name']
+    assert_equal 'send', attrs['messaging.operation.type']
+    assert_nil attrs['messaging.message.id']
+    assert_equal '127.0.0.1', attrs['server.address']
+    assert_equal 6379, attrs['server.port']
   end
 
   def test_resque_worker_conversion
     span = create_span('resque-worker', {
-                         'resque-worker': { queue: 'high', job_id: '101', job: 'DataWorker' }
+                         'resque-worker': { queue: 'high', job_id: '101', job: 'DataWorker', 'redis-url': 'redis.internal:6381' }
                        })
     converter = Instana::Exporter::Otlp::BackgroundJobConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
     assert_equal 'resque', attrs['messaging.system']
     assert_equal 'process', attrs['messaging.operation.name']
+    assert_equal 'process', attrs['messaging.operation.type']
+    assert_nil attrs['messaging.message.id']
+    assert_equal 'redis.internal', attrs['server.address']
+    assert_equal 6381, attrs['server.port']
   end
 
   def test_activejob_conversion
@@ -67,6 +75,7 @@ class BackgroundJobConverterTest < Minitest::Test
     assert_equal 'activejob', attrs['messaging.system']
     assert_equal 'mailers', attrs['messaging.destination.name']
     assert_equal 'perform', attrs['messaging.operation.name']
+    assert_equal 'process', attrs['messaging.operation.type']
     assert_equal 'abc-123', attrs['messaging.message.id']
   end
 
@@ -116,10 +125,10 @@ class BackgroundJobConverterTest < Minitest::Test
     assert_equal 'default publish', result[:name]
   end
 
-  def test_span_name_sidekiq_worker_process
+  def test_span_name_sidekiq_worker_consume
     span = create_span('sidekiq-worker', { 'sidekiq-worker': { queue: 'critical', job: 'MyWorker' } })
     result = Instana::Exporter::Otlp::BackgroundJobConverter.new(span).convert
-    assert_equal 'critical process', result[:name]
+    assert_equal 'critical consume', result[:name]
   end
 
   def test_span_name_resque_client_publish
@@ -137,7 +146,7 @@ class BackgroundJobConverterTest < Minitest::Test
   def test_span_name_falls_back_to_operation_when_no_queue
     span = create_span('sidekiq-worker', { 'sidekiq-worker': {} })
     result = Instana::Exporter::Otlp::BackgroundJobConverter.new(span).convert
-    assert_equal 'process', result[:name]
+    assert_equal 'consume', result[:name]
   end
 
   private

@@ -39,10 +39,15 @@ module Instana
 
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::GRAPHQL::GRAPHQL_OPERATION_NAME, graphql_data[:operationName])
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::GRAPHQL::GRAPHQL_OPERATION_TYPE, graphql_data[:operationType])
-          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::GRAPHQL::GRAPHQL_DOCUMENT, format_fields(graphql_data[:fields]))
 
-          # Add arguments as custom attribute
-          add_attribute(attributes, 'graphql.arguments', format_arguments(graphql_data[:arguments])) if graphql_data[:arguments]
+          doc = graphql_data[:document] || format_fields(graphql_data[:fields])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::GRAPHQL::GRAPHQL_DOCUMENT, doc)
+
+          if graphql_data[:errors]
+            error_val = graphql_data[:errors]
+            error_str = error_val.is_a?(Array) ? error_val.join(', ') : error_val.to_s
+            add_attribute(attributes, 'error.type', error_str)
+          end
 
           attributes
         end
@@ -53,12 +58,6 @@ module Instana
           return nil unless fields
 
           fields.map { |obj, flds| "#{obj} { #{flds.join(', ')} }" }.join(', ')
-        end
-
-        def format_arguments(arguments)
-          return nil unless arguments
-
-          arguments.map { |obj, args| "#{obj}(#{args.join(', ')})" }.join(', ')
         end
       end
     end

@@ -16,6 +16,7 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
 
     assert_equal 'aws_sqs', attrs['messaging.system']
     assert_equal 'my-queue', attrs['messaging.destination.name']
+    assert_equal 'send', attrs['messaging.operation.name']
     assert_equal 'group-1', attrs['messaging.aws.sqs.message_group_id']
     assert_equal 5, attrs['messaging.batch.message_count']
     assert_equal 'send', attrs['messaging.operation.type']
@@ -100,8 +101,9 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     converter = Instana::Exporter::Otlp::AwsConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'aws_sns', attrs['messaging.system']
+    assert_equal 'aws.sns', attrs['messaging.system']
     assert_equal 'my-topic', attrs['messaging.destination.name']
+    assert_equal 'send', attrs['messaging.operation.name']
     assert_equal 'arn:aws:sns:us-east-1:123456789:my-topic', attrs['messaging.aws.sns.target_arn']
     assert_equal 'send', attrs['messaging.operation.type']
   end
@@ -113,7 +115,7 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     converter = Instana::Exporter::Otlp::AwsConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'aws_sns', attrs['messaging.system']
+    assert_equal 'aws.sns', attrs['messaging.system']
     assert_equal '+1234567890', attrs['messaging.aws.sns.phone_number']
   end
 
@@ -124,7 +126,7 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     converter = Instana::Exporter::Otlp::AwsConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'aws_sns', attrs['messaging.system']
+    assert_equal 'aws.sns', attrs['messaging.system']
     assert_equal 'Important Alert', attrs['messaging.aws.sns.subject']
   end
 
@@ -140,8 +142,9 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     converter = Instana::Exporter::Otlp::AwsConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'aws_sns', attrs['messaging.system']
+    assert_equal 'aws.sns', attrs['messaging.system']
     assert_equal 'full-topic', attrs['messaging.destination.name']
+    assert_equal 'send', attrs['messaging.operation.name']
     assert_equal 'arn:aws:sns:us-west-2:987654321:full-topic', attrs['messaging.aws.sns.target_arn']
     assert_equal '+9876543210', attrs['messaging.aws.sns.phone_number']
     assert_equal 'Test Subject', attrs['messaging.aws.sns.subject']
@@ -156,10 +159,10 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     converter = Instana::Exporter::Otlp::AwsConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'dynamodb', attrs['db.system.name']
+    assert_equal 'aws.dynamodb', attrs['db.system.name']
     assert_equal 'GetItem', attrs['db.operation.name']
-    assert_equal 'users-table', attrs['db.namespace']
-    assert_equal 'users-table', attrs['aws.dynamodb.table_name']
+    assert_equal ['users-table'], attrs['aws.dynamodb.table_names']
+    assert_nil attrs['db.namespace']
   end
 
   def test_dynamodb_put_item_operation
@@ -169,10 +172,10 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     converter = Instana::Exporter::Otlp::AwsConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'dynamodb', attrs['db.system.name']
+    assert_equal 'aws.dynamodb', attrs['db.system.name']
     assert_equal 'PutItem', attrs['db.operation.name']
-    assert_equal 'orders-table', attrs['db.namespace']
-    assert_equal 'orders-table', attrs['aws.dynamodb.table_name']
+    assert_equal ['orders-table'], attrs['aws.dynamodb.table_names']
+    assert_nil attrs['db.namespace']
   end
 
   def test_dynamodb_query_operation
@@ -182,9 +185,9 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     converter = Instana::Exporter::Otlp::AwsConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'dynamodb', attrs['db.system.name']
+    assert_equal 'aws.dynamodb', attrs['db.system.name']
     assert_equal 'Query', attrs['db.operation.name']
-    assert_equal 'products-table', attrs['db.namespace']
+    assert_equal ['products-table'], attrs['aws.dynamodb.table_names']
   end
 
   def test_dynamodb_scan_operation
@@ -194,9 +197,9 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     converter = Instana::Exporter::Otlp::AwsConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'dynamodb', attrs['db.system.name']
+    assert_equal 'aws.dynamodb', attrs['db.system.name']
     assert_equal 'Scan', attrs['db.operation.name']
-    assert_equal 'analytics-table', attrs['db.namespace']
+    assert_equal ['analytics-table'], attrs['aws.dynamodb.table_names']
   end
 
   # AWS S3 Tests
@@ -293,7 +296,7 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
   end
 
   # AWS Lambda Tests
-  def test_lambda_basic_conversion
+  def test_lambda_invoke_basic_conversion
     span = create_span('aws.lambda', {
                          aws: {
                            lambda: {
@@ -304,13 +307,14 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     converter = Instana::Exporter::Otlp::AwsConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'lambda', attrs['aws.service']
-    assert_equal 'my-function', attrs['aws.lambda.function_name']
-    assert_equal 'RequestResponse', attrs['aws.lambda.invocation_type']
+    assert_equal 'aws-api', attrs[Instana::Exporter::Otlp::RPC_SYSTEM_ATTR]
+    assert_equal 'Lambda.Invoke', attrs['rpc.method']
+    assert_equal 'aws', attrs['cloud.provider']
     assert_equal 'my-function', attrs['faas.invoked_name']
+    assert_equal 'aws', attrs['faas.invoked_provider']
   end
 
-  def test_lambda_event_invocation
+  def test_lambda_invoke_event_invocation
     span = create_span('aws.lambda', {
                          aws: {
                            lambda: {
@@ -321,26 +325,76 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     converter = Instana::Exporter::Otlp::AwsConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'lambda', attrs['aws.service']
-    assert_equal 'async-function', attrs['aws.lambda.function_name']
-    assert_equal 'Event', attrs['aws.lambda.invocation_type']
+    assert_equal 'aws-api', attrs[Instana::Exporter::Otlp::RPC_SYSTEM_ATTR]
+    assert_equal 'Lambda.Invoke', attrs['rpc.method']
     assert_equal 'async-function', attrs['faas.invoked_name']
   end
 
-  def test_lambda_dry_run_invocation
-    span = create_span('aws.lambda', {
-                         aws: {
-                           lambda: {
-                             invoke: { function: 'test-function', type: 'DryRun' }
-                           }
+  def test_lambda_entry_conversion
+    span = create_span('aws.lambda.entry', {
+                         lambda: {
+                           arn: 'arn:aws:lambda:us-east-1:123456789012:function:my-function:1',
+                           functionName: 'my-function',
+                           functionVersion: '1',
+                           trigger: 'aws:api.gateway',
+                           reqId: 'req-12345',
+                           coldStart: 'true'
                          }
                        })
     converter = Instana::Exporter::Otlp::AwsConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
-    assert_equal 'lambda', attrs['aws.service']
-    assert_equal 'test-function', attrs['aws.lambda.function_name']
-    assert_equal 'DryRun', attrs['aws.lambda.invocation_type']
+    assert_equal 'http', attrs['faas.trigger']
+    assert_equal 'my-function', attrs['faas.name']
+    assert_equal '1', attrs['faas.version']
+    assert_equal 'req-12345', attrs['faas.invocation_id']
+    assert_equal true, attrs['faas.coldstart']
+    assert_equal 'aws', attrs['cloud.provider']
+    assert_equal 'aws_lambda', attrs['cloud.platform']
+    assert_equal 'us-east-1', attrs['cloud.region']
+    assert_equal '123456789012', attrs['cloud.account.id']
+    assert_equal 'arn:aws:lambda:us-east-1:123456789012:function:my-function:1', attrs['cloud.resource_id']
+    assert_equal 'my-function', converter.span_name
+  end
+
+  def test_lambda_entry_triggers
+    triggers = {
+      'aws:api.gateway' => 'http',
+      'aws:api.gateway.noproxy' => 'http',
+      'aws:application.load.balancer' => 'http',
+      'aws:s3' => 'datasource',
+      'aws:dynamodb' => 'datasource',
+      'aws:sqs' => 'pubsub',
+      'aws:sns' => 'pubsub',
+      'aws:kinesis' => 'datasource',
+      'aws:kinesis.firehouse' => 'datasource',
+      'aws:cloudwatch.events' => 'timer',
+      'aws:cloudwatch.logs' => 'datasource',
+      'aws:lambda.invoke' => 'other',
+      'unknown.trigger' => 'other'
+    }
+
+    triggers.each do |raw, expected|
+      span = create_span('aws.lambda.entry', {
+                           lambda: {
+                             functionName: 'fn',
+                             trigger: raw
+                           }
+                         })
+      attrs = Instana::Exporter::Otlp::AwsConverter.new(span).send(:convert_attributes)
+      assert_equal expected, attrs['faas.trigger'], "Failed for trigger #{raw}"
+    end
+  end
+
+  def test_lambda_entry_error
+    span = create_span('aws.lambda.entry', {
+                         lambda: {
+                           functionName: 'fn',
+                           error: 'Unhandled runtime error'
+                         }
+                       })
+    attrs = Instana::Exporter::Otlp::AwsConverter.new(span).send(:convert_attributes)
+    assert_equal 'Unhandled runtime error', attrs['exception.message']
   end
 
   # Edge Cases and Mixed Tests
@@ -373,7 +427,7 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
 
     # SNS overwrites SQS since both set messaging.system and messaging.destination.name
     # In practice, a span should only have one AWS service type
-    assert_equal 'aws_sns', attrs['messaging.system']
+    assert_equal 'aws.sns', attrs['messaging.system']
     assert_equal 'test-topic', attrs['messaging.destination.name']
     assert_equal 'send', attrs['messaging.operation.type']
   end
@@ -471,9 +525,9 @@ class AwsConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
 
     # Verify DynamoDB-specific attributes
     attrs = result[:attributes]
-    assert_equal 'dynamodb', attrs['db.system.name']
+    assert_equal 'aws.dynamodb', attrs['db.system.name']
     assert_equal 'BatchGetItem', attrs['db.operation.name']
-    assert_equal 'batch-table', attrs['db.namespace']
+    assert_equal ['batch-table'], attrs['aws.dynamodb.table_names']
   end
 
   private

@@ -12,9 +12,12 @@ module Instana
       class BackgroundJobConverter < BaseConverter
         # Build OTel-compliant span name for background-job spans
         #
-        # Formula per SPAN_NAME_PATTERNS.txt Section 3 (sidekiq / resque):
-        #   client/producer → "{queue} publish"
-        #   worker/consumer → "{queue} process"
+        # Formula per SPAN_NAME_PATTERNS.txt Section 3 (sidekiq / resque / activejob):
+        #   sidekiq client → "{queue} publish"
+        #   sidekiq worker → "{queue} consume"
+        #   resque client  → "{queue} publish"
+        #   resque worker  → "{queue} process"
+        #   activejob      → "{queue} {action}"
         #
         # @return [String] The span name
         def span_name
@@ -25,7 +28,19 @@ module Instana
           queue = job_data[:queue] || job_data['queue']
           queue = queue.to_s.strip
 
-          operation = span_type.end_with?('-client') ? 'publish' : 'process'
+          operation = case span_type
+                      when 'sidekiq-client', 'resque-client'
+                        'publish'
+                      when 'sidekiq-worker'
+                        'consume'
+                      when 'resque-worker'
+                        'process'
+                      when 'activejob'
+                        job_data[:action] || job_data['action'] || 'process'
+                      else
+                        'process'
+                      end
+
           queue.empty? ? operation : "#{queue} #{operation}"
         end
 
@@ -33,16 +48,17 @@ module Instana
           attributes = {}
           span_type  = span[:n].to_s
 
-          if span_type == 'sidekiq-client' # rubocop:disable Style/CaseLikeIf
-            convert_job_attributes(attributes, span[:'sidekiq-client'] || span[:data]&.[](:'sidekiq-client'), 'sidekiq', 'publish')
-          elsif span_type == 'sidekiq-worker'
-            convert_job_attributes(attributes, span[:'sidekiq-worker'] || span[:data]&.[](:'sidekiq-worker'), 'sidekiq', 'process')
-          elsif span_type == 'resque-client'
-            convert_job_attributes(attributes, span[:'resque-client'] || span[:data]&.[](:'resque-client'), 'resque', 'publish')
-          elsif span_type == 'resque-worker'
-            convert_job_attributes(attributes, span[:'resque-worker'] || span[:data]&.[](:'resque-worker'), 'resque', 'process')
-          elsif span_type == 'activejob'
-            convert_activejob_attributes(attributes, span[:data]&.[](:activejob))
+          case span_type
+          when 'sidekiq-client'
+            convert_job_attributes(attributes, span[:'sidekiq-client'] || span[:data]&.[](:'sidekiq-client'), 'sidekiq', 'publish', 'send')
+          when 'sidekiq-worker'
+            convert_job_attributes(attributes, span[:'sidekiq-worker'] || span[:data]&.[](:'sidekiq-worker'), 'sidekiq', 'consume', 'process')
+          when 'resque-client'
+            convert_job_attributes(attributes, span[:'resque-client'] || span[:data]&.[](:'resque-client'), 'resque', 'publish', 'send')
+          when 'resque-worker'
+            convert_job_attributes(attributes, span[:'resque-worker'] || span[:data]&.[](:'resque-worker'), 'resque', 'process', 'process')
+          when 'activejob'
+            convert_activejob_attributes(attributes, span[:activejob] || span[:data]&.[](:activejob))
           end
 
           attributes
@@ -50,14 +66,14 @@ module Instana
 
         private
 
-        def convert_job_attributes(attributes, data, system, operation)
+        def convert_job_attributes(attributes, data, system, operation_name, operation_type)
           return unless data
 
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_SYSTEM, system)
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_DESTINATION_NAME, data[:queue] || data['queue'])
-          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_NAME, operation)
-          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_MESSAGE_ID, data[:job_id] || data['job_id'])
-          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_CONSUMER_GROUP_NAME, data[:job] || data['job'])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_NAME, operation_name)
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_TYPE, operation_type)
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_MESSAGE_ID, data[:job_id] || data['job_id']) unless system == 'resque'
           add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_ADDRESS, extract_host(data[:'redis-url'] || data['redis-url']))
           add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_PORT, extract_port(data[:'redis-url'] || data['redis-url']))
         end
@@ -65,9 +81,13 @@ module Instana
         def convert_activejob_attributes(attributes, data)
           return unless data
 
+          action = data[:action] || data['action'] || 'perform'
+          operation_type = action.to_s == 'perform' ? 'process' : 'send'
+
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_SYSTEM, 'activejob')
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_DESTINATION_NAME, data[:queue] || data['queue'])
-          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_NAME, data[:action] || data['action'])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_NAME, action)
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_TYPE, operation_type)
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_MESSAGE_ID, data[:job_id] || data['job_id'])
         end
 
