@@ -66,13 +66,14 @@ module Instana
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_SYSTEM, 'rabbitmq')
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_DESTINATION_NAME,
                         rabbitmq_destination_name(rabbitmq_data))
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_DESTINATION_TEMPLATE,
+                        rabbitmq_data[:template] || rabbitmq_data[:destination_template])
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_RABBITMQ_DESTINATION_ROUTING_KEY, rabbitmq_data[:key])
-          add_attribute(attributes, 'messaging.rabbitmq.queue', rabbitmq_data[:queue])
           add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_ADDRESS, extract_host(rabbitmq_data[:address]))
           add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_PORT, extract_port(rabbitmq_data[:address]))
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_MESSAGE_BODY_SIZE, rabbitmq_data[:size])
 
-          operation = rabbitmq_data[:sort] == 'publish' ? 'send' : 'receive'
+          operation = rabbitmq_data[:sort].to_s == 'publish' ? 'send' : 'receive'
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_TYPE, operation)
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_NAME, rabbitmq_data[:sort])
         end
@@ -80,10 +81,17 @@ module Instana
         def convert_kafka_attributes(attributes, kafka_data)
           return unless kafka_data
 
+          addr = kafka_data[:address] || kafka_data[:server] || kafka_data[:connection]
+
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_SYSTEM, 'kafka')
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_DESTINATION_NAME, kafka_data[:service])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_DESTINATION_TEMPLATE,
+                        kafka_data[:template] || kafka_data[:destination_template])
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_NAME, kafka_data[:access])
-          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_TYPE, kafka_data[:access])
+          operation = kafka_data[:access].to_s == 'consume' ? 'receive' : 'send'
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_TYPE, operation)
+          add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_ADDRESS, extract_host(addr))
+          add_attribute(attributes, OpenTelemetry::SemConv::SERVER::SERVER_PORT, extract_port(addr))
         end
 
         def extract_host(address)

@@ -15,6 +15,21 @@ module Instana
     module Otlp
       # Converter for AWS SDK spans (SQS, SNS, DynamoDB) to OTLP format
       class AwsConverter < BaseConverter
+        LAMBDA_TRIGGER_MAP = {
+          'aws:api.gateway' => 'http',
+          'aws:api.gateway.noproxy' => 'http',
+          'aws:application.load.balancer' => 'http',
+          'aws:s3' => 'datasource',
+          'aws:dynamodb' => 'datasource',
+          'aws:sqs' => 'pubsub',
+          'aws:sns' => 'pubsub',
+          'aws:kinesis' => 'datasource',
+          'aws:kinesis.firehouse' => 'datasource',
+          'aws:cloudwatch.events' => 'timer',
+          'aws:cloudwatch.logs' => 'datasource',
+          'aws:lambda.invoke' => 'other'
+        }.freeze
+
         # Build OTel-compliant span name for AWS SDK spans
         #
         # Formulas per SPAN_NAME_PATTERNS.txt Section 6:
@@ -24,6 +39,7 @@ module Instana
         #   DynamoDB          → "DynamoDB.{op}"      e.g. "DynamoDB.PutItem"
         #   S3                → "S3.{op}"            e.g. "S3.PutObject"
         #   Lambda invoke     → "Lambda.{function}"
+        #   Lambda entry      → "{functionName}"
         #
         # @return [String] The span name
         def span_name
@@ -32,7 +48,8 @@ module Instana
             sns_span_name(data[:sns]) ||
             dynamodb_span_name(data[:dynamodb]) ||
             s3_span_name(data[:s3]) ||
-            lambda_span_name(data.dig(:aws, :lambda, :invoke)) ||
+            lambda_invoke_span_name(data.dig(:aws, :lambda, :invoke)) ||
+            lambda_entry_span_name(data[:lambda]) ||
             super
         end
 
@@ -45,7 +62,8 @@ module Instana
           convert_sns_attributes(attributes, data[:sns])
           convert_dynamodb_attributes(attributes, data[:dynamodb])
           convert_s3_attributes(attributes, data[:s3])
-          convert_lambda_attributes(attributes, data.dig(:aws, :lambda, :invoke))
+          convert_lambda_invoke_attributes(attributes, data.dig(:aws, :lambda, :invoke))
+          convert_lambda_entry_attributes(attributes, data[:lambda])
 
           attributes
         end
@@ -82,11 +100,18 @@ module Instana
           op.empty? ? 'S3' : "S3.#{op}"
         end
 
-        def lambda_span_name(lambda_data)
+        def lambda_invoke_span_name(lambda_data)
           return unless lambda_data
 
           fn = lambda_data[:function].to_s.strip
-          fn.empty? ? 'Lambda.invoke' : "Lambda.#{fn}"
+          fn.empty? ? 'Lambda.Invoke' : "Lambda.#{fn}"
+        end
+
+        def lambda_entry_span_name(lambda_data)
+          return unless lambda_data
+
+          fn = lambda_data[:functionName].to_s.strip
+          fn.empty? ? nil : fn
         end
 
         def convert_sqs_attributes(attributes, sqs_data)
@@ -94,6 +119,7 @@ module Instana
 
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_SYSTEM, 'aws_sqs')
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_DESTINATION_NAME, sqs_data[:queue])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_NAME, sqs_data[:type] || 'send')
           add_attribute(attributes, 'messaging.aws.sqs.message_group_id', sqs_data[:group])
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_BATCH_MESSAGE_COUNT, sqs_data[:size])
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_TYPE, sqs_operation_type(sqs_data[:type]))
@@ -111,8 +137,9 @@ module Instana
         def convert_sns_attributes(attributes, sns_data)
           return unless sns_data
 
-          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_SYSTEM, 'aws_sns')
-          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_DESTINATION_NAME, sns_data[:topic])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_SYSTEM, 'aws.sns')
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_DESTINATION_NAME, sns_data[:topic] || sns_data[:target])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::MESSAGING::MESSAGING_OPERATION_NAME, 'send')
           add_attribute(attributes, 'messaging.aws.sns.target_arn', sns_data[:target])
           add_attribute(attributes, 'messaging.aws.sns.phone_number', sns_data[:phone])
           add_attribute(attributes, 'messaging.aws.sns.subject', sns_data[:subject])
@@ -122,10 +149,9 @@ module Instana
         def convert_dynamodb_attributes(attributes, dynamodb_data)
           return unless dynamodb_data
 
-          add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM_NAME, 'dynamodb')
-          add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_OPERATION_NAME, dynamodb_data[:op])
-          add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_NAMESPACE, dynamodb_data[:table])
-          add_attribute(attributes, 'aws.dynamodb.table_name', dynamodb_data[:table])
+          add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_SYSTEM_NAME, 'aws.dynamodb')
+          add_attribute(attributes, OpenTelemetry::SemConv::DB::DB_OPERATION_NAME, dynamodb_data[:op] || dynamodb_data[:operation])
+          add_attribute(attributes, 'aws.dynamodb.table_names', [dynamodb_data[:table]].compact) if dynamodb_data[:table]
         end
 
         def convert_s3_attributes(attributes, s3_data)
@@ -145,13 +171,41 @@ module Instana
           "S3.#{operation}"
         end
 
-        def convert_lambda_attributes(attributes, lambda_data)
+        def convert_lambda_invoke_attributes(attributes, lambda_data)
           return unless lambda_data
 
-          add_attribute(attributes, 'aws.service', 'lambda')
-          add_attribute(attributes, 'aws.lambda.function_name', lambda_data[:function])
-          add_attribute(attributes, 'aws.lambda.invocation_type', lambda_data[:type])
+          add_attribute(attributes, Instana::Exporter::Otlp::RPC_SYSTEM_ATTR, 'aws-api')
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::RPC::RPC_METHOD, 'Lambda.Invoke')
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::CLOUD::CLOUD_PROVIDER, 'aws')
           add_attribute(attributes, OpenTelemetry::SemConv::Incubating::FAAS::FAAS_INVOKED_NAME, lambda_data[:function])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::FAAS::FAAS_INVOKED_PROVIDER, 'aws')
+        end
+
+        def convert_lambda_entry_attributes(attributes, lambda_data)
+          return unless lambda_data
+
+          trigger = LAMBDA_TRIGGER_MAP[lambda_data[:trigger].to_s] || 'other' if lambda_data[:trigger]
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::FAAS::FAAS_TRIGGER, trigger)
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::FAAS::FAAS_INVOCATION_ID, lambda_data[:reqId])
+          if lambda_data.key?(:coldStart)
+            cold_start = lambda_data[:coldStart].to_s == 'true' || lambda_data[:coldStart] == true
+            add_attribute(attributes, OpenTelemetry::SemConv::Incubating::FAAS::FAAS_COLDSTART, cold_start)
+          end
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::FAAS::FAAS_NAME, lambda_data[:functionName])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::FAAS::FAAS_VERSION, lambda_data[:functionVersion])
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::CLOUD::CLOUD_PROVIDER, 'aws')
+          add_attribute(attributes, OpenTelemetry::SemConv::Incubating::CLOUD::CLOUD_PLATFORM, 'aws_lambda')
+
+          arn = lambda_data[:arn].to_s
+          if arn =~ /^arn:aws:lambda:([^:]+):([^:]+):function:/
+            add_attribute(attributes, OpenTelemetry::SemConv::Incubating::CLOUD::CLOUD_REGION, Regexp.last_match(1))
+            add_attribute(attributes, OpenTelemetry::SemConv::Incubating::CLOUD::CLOUD_ACCOUNT_ID, Regexp.last_match(2))
+            add_attribute(attributes, OpenTelemetry::SemConv::Incubating::CLOUD::CLOUD_RESOURCE_ID, arn)
+          elsif !arn.empty?
+            add_attribute(attributes, OpenTelemetry::SemConv::Incubating::CLOUD::CLOUD_RESOURCE_ID, arn)
+          end
+
+          add_attribute(attributes, 'exception.message', lambda_data[:error]) if lambda_data[:error]
         end
       end
     end

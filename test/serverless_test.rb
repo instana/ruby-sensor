@@ -57,6 +57,32 @@ class ServerlessTest < Minitest::Test
     assert_equal 'ruby', data[:runtime]
   end
 
+  def test_lambda_request_id_cold_start_and_error
+    clear_all!
+    @mock_agent.expect(:send_bundle, true, [])
+    @mock_agent.expect(:send_bundle, true, [])
+
+    mock_context = OpenStruct.new(
+      invoked_function_arn: 'test_arn',
+      function_name: 'test_function',
+      function_version: '$TEST',
+      aws_request_id: 'req-1'
+    )
+
+    @subject.wrap_aws(nil, mock_context) { 0 }
+    assert_raises(StandardError) { @subject.wrap_aws(nil, mock_context) { raise StandardError, 'boom' } }
+    @subject.wrap_aws(nil, mock_context) { 0 }
+
+    first, second, third = Instana.processor.queued_spans.map { |s| s[:data][:lambda] }
+
+    assert_equal 'req-1', first[:reqId]
+    assert_equal true, first[:coldStart]
+    assert_equal false, second[:coldStart]
+    assert_equal 'boom', second[:error]
+    assert_equal false, third[:coldStart]
+    assert_nil third[:error]
+  end
+
   def test_lambda_http
     clear_all!
 

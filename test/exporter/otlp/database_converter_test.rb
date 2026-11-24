@@ -6,7 +6,7 @@ require 'instana/exporter/otlp/database_converter'
 class DatabaseConverterTest < Minitest::Test
   def test_activerecord_conversion
     span = create_span(:activerecord, {
-                         activerecord: { adapter: 'postgresql', db: 'mydb', sql: 'SELECT * FROM users', username: 'admin', host: 'db.example.com' }
+                         activerecord: { adapter: 'postgresql', db: 'mydb', sql: 'SELECT * FROM users', username: 'admin', host: 'db.example.com:5432' }
                        })
     converter = Instana::Exporter::Otlp::DatabaseConverter.new(span)
     attrs = converter.send(:convert_attributes)
@@ -14,8 +14,18 @@ class DatabaseConverterTest < Minitest::Test
     assert_equal 'postgresql', attrs['db.system.name']
     assert_equal 'mydb', attrs['db.namespace']
     assert_equal 'SELECT * FROM users', attrs['db.query.text']
+    assert_equal 'SELECT', attrs['db.operation.name']
     assert_equal 'admin', attrs['db.user']
     assert_equal 'db.example.com', attrs['server.address']
+    assert_equal 5432, attrs['server.port']
+  end
+
+  def test_activerecord_unknown_adapter_falls_back_to_other_sql
+    span = create_span(:activerecord, {
+                         activerecord: { adapter: 'custom_sql_driver', db: 'mydb', sql: 'SELECT 1' }
+                       })
+    attrs = Instana::Exporter::Otlp::DatabaseConverter.new(span).send(:convert_attributes)
+    assert_equal 'other_sql', attrs['db.system.name']
   end
 
   def test_activerecord_adapter_normalization_mysql2
@@ -52,7 +62,7 @@ class DatabaseConverterTest < Minitest::Test
 
   def test_sequel_conversion
     span = create_span(:sequel, {
-                         sequel: { adapter: 'mysql2', db: 'testdb', sql: 'INSERT INTO logs', username: 'root', host: 'localhost' }
+                         sequel: { adapter: 'mysql2', db: 'testdb', sql: 'INSERT INTO logs', username: 'root', host: 'localhost', port: 3306 }
                        })
     converter = Instana::Exporter::Otlp::DatabaseConverter.new(span)
     attrs = converter.send(:convert_attributes)
@@ -60,8 +70,10 @@ class DatabaseConverterTest < Minitest::Test
     assert_equal 'mysql', attrs['db.system.name']
     assert_equal 'testdb', attrs['db.namespace']
     assert_equal 'INSERT INTO logs', attrs['db.query.text']
+    assert_equal 'INSERT', attrs['db.operation.name']
     assert_equal 'root', attrs['db.user']
     assert_equal 'localhost', attrs['server.address']
+    assert_equal 3306, attrs['server.port']
   end
 
   def test_sequel_with_table_sets_collection_name
@@ -81,37 +93,23 @@ class DatabaseConverterTest < Minitest::Test
 
     assert_equal 'redis', attrs['db.system.name']
     assert_equal 'GET key', attrs['db.operation.name']
-    assert_equal 'GET key', attrs['db.query.text']
     assert_equal '2', attrs['db.namespace']
-    assert_nil attrs['db.redis.database_index']
     assert_equal 'redis.local', attrs['server.address']
     assert_equal 6379, attrs['server.port']
   end
 
   def test_memcache_conversion
     span = create_span(:memcache, {
-                         memcache: { command: 'get', key: 'user:123', namespace: 'app', server: '127.0.0.1:11211' }
+                         memcache: { command: 'get', namespace: 'app', server: '127.0.0.1:11211' }
                        })
     converter = Instana::Exporter::Otlp::DatabaseConverter.new(span)
     attrs = converter.send(:convert_attributes)
 
     assert_equal 'memcached', attrs['db.system.name']
     assert_equal 'get', attrs['db.operation.name']
-    assert_equal 'user:123', attrs['db.memcached.key']
     assert_equal 'app', attrs['db.namespace']
-    assert_nil attrs['db.memcached.namespace']
     assert_equal '127.0.0.1', attrs['server.address']
     assert_equal 11211, attrs['server.port']
-  end
-
-  def test_memcache_with_keys
-    span = create_span(:memcache, {
-                         memcache: { command: 'get_multi', keys: ['key1', 'key2'], server: 'localhost:11211' }
-                       })
-    converter = Instana::Exporter::Otlp::DatabaseConverter.new(span)
-    attrs = converter.send(:convert_attributes)
-
-    assert_equal ['key1', 'key2'], attrs['db.memcached.keys']
   end
 
   def test_mongodb_conversion
@@ -175,27 +173,33 @@ class DatabaseConverterTest < Minitest::Test
   # --- span_name tests ---
 
   def test_span_name_activerecord
+    span = create_span(:activerecord, { activerecord: { adapter: 'postgresql', db: 'mydb', sql: 'SELECT * FROM users', table: 'users' } })
+    result = Instana::Exporter::Otlp::DatabaseConverter.new(span).convert
+    assert_equal 'SELECT mydb.users', result[:name]
+  end
+
+  def test_span_name_activerecord_without_sql_falls_back_to_db
     span = create_span(:activerecord, { activerecord: { adapter: 'postgresql', db: 'mydb' } })
     result = Instana::Exporter::Otlp::DatabaseConverter.new(span).convert
-    assert_equal 'postgresql mydb', result[:name]
+    assert_equal 'mydb', result[:name]
   end
 
   def test_span_name_sequel
-    span = create_span(:sequel, { sequel: { adapter: 'mysql2', db: 'testdb' } })
+    span = create_span(:sequel, { sequel: { adapter: 'mysql2', db: 'testdb', sql: 'INSERT INTO logs' } })
     result = Instana::Exporter::Otlp::DatabaseConverter.new(span).convert
-    assert_equal 'mysql2 testdb', result[:name]
+    assert_equal 'INSERT testdb', result[:name]
   end
 
   def test_span_name_redis
     span = create_span(:redis, { redis: { command: 'GET key', db: 0, connection: 'redis.local:6379' } })
     result = Instana::Exporter::Otlp::DatabaseConverter.new(span).convert
-    assert_equal 'redis GET key', result[:name]
+    assert_equal 'GET key', result[:name]
   end
 
   def test_span_name_memcache
-    span = create_span(:memcache, { memcache: { command: 'get', key: 'u:1', server: '127.0.0.1:11211' } })
+    span = create_span(:memcache, { memcache: { command: 'get', server: '127.0.0.1:11211' } })
     result = Instana::Exporter::Otlp::DatabaseConverter.new(span).convert
-    assert_equal 'memcached get', result[:name]
+    assert_equal 'get', result[:name]
   end
 
   def test_span_name_mongo

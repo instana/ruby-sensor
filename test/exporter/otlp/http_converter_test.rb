@@ -33,7 +33,7 @@ class HttpConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     assert_equal format_trace_id(span.trace_id), result[:trace_id]
     assert_equal format_span_id(span.id), result[:span_id]
     assert_equal format_span_id(span.parent_id), result[:parent_span_id]
-    assert_equal 'GET /users/123', result[:name]
+    assert_equal 'GET', result[:name]
     assert_equal :client, result[:kind] # CLIENT kind
 
     # Verify HTTP attributes are present (using new semantic conventions)
@@ -186,6 +186,41 @@ class HttpConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
 
     attributes = result[:attributes]
     assert_http_attribute(attributes, 'user_agent.original', 'Mozilla/5.0')
+    assert_http_attribute(attributes, 'http.request.header.content-type', 'application/json')
+  end
+
+  def test_custom_headers_capture
+    span = create_http_span(
+      header: {
+        'X-Capture-This' => 'Value1',
+        'X_Custom_Header' => 'Value2'
+      }
+    )
+
+    converter = Instana::Exporter::Otlp::HttpConverter.new(span)
+    result = converter.convert
+
+    attributes = result[:attributes]
+    assert_http_attribute(attributes, 'http.request.header.x-capture-this', 'Value1')
+    assert_http_attribute(attributes, 'http.request.header.x-custom-header', 'Value2')
+  end
+
+  def test_url_template_from_path_tpl_and_route_id
+    span = create_http_span(method: 'GET', path_tpl: '/users/{id}')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_http_attribute(result.attributes, 'url.template', '/users/{id}')
+    assert_equal 'GET /users/{id}', result[:name]
+
+    span2 = create_http_span(method: 'POST', route_id: '/orders/{order_id}')
+    result2 = Instana::Exporter::Otlp::HttpConverter.new(span2).convert
+    assert_http_attribute(result2.attributes, 'url.template', '/orders/{order_id}')
+    assert_equal 'POST /orders/{order_id}', result2[:name]
+  end
+
+  def test_context_root_fallback_for_url_path
+    span = create_http_span(method: 'GET', context_root: '/app/v1')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_http_attribute(result.attributes, 'url.path', '/app/v1')
   end
 
   def test_user_agent_not_present_when_header_missing
@@ -298,10 +333,16 @@ class HttpConverterTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     assert_equal 'DELETE', result[:name]
   end
 
-  def test_span_name_method_and_path
-    span = create_http_span(method: 'GET', path: '/users/{id}')
+  def test_span_name_method_and_path_tpl
+    span = create_http_span(method: 'GET', path_tpl: '/users/{id}')
     result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
     assert_equal 'GET /users/{id}', result[:name]
+  end
+
+  def test_span_name_uses_method_only_when_no_template_even_if_path_present
+    span = create_http_span(method: 'GET', path: '/users/123')
+    result = Instana::Exporter::Otlp::HttpConverter.new(span).convert
+    assert_equal 'GET', result[:name]
   end
 
   def test_span_name_falls_back_to_http_when_no_method

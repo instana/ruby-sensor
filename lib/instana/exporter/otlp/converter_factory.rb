@@ -104,7 +104,7 @@ module Instana
 
           # Check if span is a background job span
           def background_job_span?(span)
-            span[:n]&.match?(/sidekiq-(client|worker)|resque-(client|worker)/i)
+            span[:n]&.match?(/sidekiq-(client|worker)|resque-(client|worker)|activejob/i)
           end
 
           # Check if span is a Rails span

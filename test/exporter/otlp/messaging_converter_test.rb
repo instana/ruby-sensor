@@ -15,7 +15,7 @@ class MessagingConverterTest < Minitest::Test
     # Composite: exchange:key  (producer side)
     assert_equal 'orders:order.created', attrs['messaging.destination.name']
     assert_equal 'order.created', attrs['messaging.rabbitmq.destination.routing_key']
-    assert_equal 'order_queue', attrs['messaging.rabbitmq.queue']
+    assert_nil attrs['messaging.rabbitmq.queue']
     assert_equal 'rabbitmq.local', attrs['server.address']
     assert_equal 5672, attrs['server.port']
     assert_equal 'send', attrs['messaging.operation.type']
@@ -89,7 +89,26 @@ class MessagingConverterTest < Minitest::Test
     assert_equal 'kafka', attrs['messaging.system']
     assert_equal 'events-topic', attrs['messaging.destination.name']
     assert_equal 'consume', attrs['messaging.operation.name']
-    assert_equal 'consume', attrs['messaging.operation.type']
+    assert_equal 'receive', attrs['messaging.operation.type']
+  end
+
+  def test_kafka_with_server_address
+    span = create_span(:kafka, {
+                         kafka: { service: 'orders-topic', access: 'send', address: 'kafka.prod:9092' }
+                       })
+    converter = Instana::Exporter::Otlp::MessagingConverter.new(span)
+    attrs = converter.send(:convert_attributes)
+
+    assert_equal 'kafka.prod', attrs['server.address']
+    assert_equal 9092, attrs['server.port']
+  end
+
+  def test_destination_template_mapping
+    span = create_span(:kafka, {
+                         kafka: { service: 'user-orders-123', access: 'send', template: 'user-orders-{id}' }
+                       })
+    attrs = Instana::Exporter::Otlp::MessagingConverter.new(span).send(:convert_attributes)
+    assert_equal 'user-orders-{id}', attrs['messaging.destination.template']
   end
 
   def test_span_name_kafka

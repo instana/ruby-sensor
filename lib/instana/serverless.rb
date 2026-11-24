@@ -21,6 +21,7 @@ module Instana
       @agent = agent
       @tracer = tracer
       @logger = logger
+      @cold_start = true
     end
 
     def wrap_aws(event, context, &block)
@@ -33,9 +34,12 @@ module Instana
           functionName: context.function_name,
           functionVersion: context.function_version,
           runtime: 'ruby',
-          trigger: trigger
-        }
+          trigger: trigger,
+          reqId: context.aws_request_id,
+          coldStart: @cold_start
+        }.compact
       }
+      @cold_start = false
 
       if event_tags.key?(:http)
         tags = tags.merge(event_tags)
@@ -44,7 +48,12 @@ module Instana
       end
       Trace.with_span(OpenTelemetry::Trace.non_recording_span(::Instana::SpanContext.new(trace_id: span_context[:trace_id], span_id: span_context[:span_id],
                                                                                          level: span_context[:level]))) do
-        @tracer.in_span(:'aws.lambda.entry', attributes: tags, &block)
+        @tracer.in_span(:'aws.lambda.entry', attributes: tags) do |span, ctx|
+          block.call(span, ctx)
+        rescue StandardError => e
+          span.add_attributes(lambda: { error: e.message })
+          raise
+        end
       end
     ensure
       begin

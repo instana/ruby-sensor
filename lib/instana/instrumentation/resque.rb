@@ -16,6 +16,21 @@ module Instana
         begin
           kvs[:job] = klass.to_s
           kvs[:queue] = klass.instance_variable_get(:@queue)
+
+          if defined?(::Resque) && ::Resque.respond_to?(:redis) && ::Resque.redis
+            client = ::Resque.redis
+            client = client.redis if client.respond_to?(:redis)
+
+            host, port = if client.respond_to?(:config) && client.config.respond_to?(:host) && client.config.respond_to?(:port)
+                           [client.config.host, client.config.port]
+                         elsif client.respond_to?(:connection)
+                           [client.connection[:host], client.connection[:port]]
+                         elsif client.respond_to?(:client) && client.client.respond_to?(:options)
+                           [client.client.options[:host], client.client.options[:port]]
+                         end
+
+            kvs[:'redis-url'] = "#{host}:#{port}" if host && port
+          end
         rescue => e
           Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" }
         end
@@ -64,13 +79,28 @@ module Instana
     end
 
     module ResqueWorker
-      def perform(job)
+      def perform(job) # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
         kvs = {}
         kvs[:'resque-worker'] = {}
 
         begin
           kvs[:'resque-worker'][:job] = job.payload['class'].to_s
           kvs[:'resque-worker'][:queue] = job.queue
+
+          if defined?(::Resque) && ::Resque.respond_to?(:redis) && ::Resque.redis
+            client = ::Resque.redis
+            client = client.redis if client.respond_to?(:redis)
+
+            host, port = if client.respond_to?(:config) && client.config.respond_to?(:host) && client.config.respond_to?(:port)
+                           [client.config.host, client.config.port]
+                         elsif client.respond_to?(:connection)
+                           [client.connection[:host], client.connection[:port]]
+                         elsif client.respond_to?(:client) && client.client.respond_to?(:options)
+                           [client.client.options[:host], client.client.options[:port]]
+                         end
+
+            kvs[:'resque-worker'][:'redis-url'] = "#{host}:#{port}" if host && port
+          end
         rescue => e
           ::Instana.logger.debug { "#{__method__}:#{File.basename(__FILE__)}:#{__LINE__}: #{e.message}" } if Instana::Config[:verbose]
         end
