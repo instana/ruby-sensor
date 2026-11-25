@@ -179,7 +179,7 @@ class CustomTracingTest < Minitest::Test
       kvs[:return] = true
 
       span2 = ::Instana.tracer.start_span(:custom_span, attributes: kvs)
-      raise "custom tracing error.  This is only a test"
+      raise StandardError, "custom tracing error.  This is only a test"
     rescue => e
       span2.record_exception(e)
     ensure

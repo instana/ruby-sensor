@@ -47,22 +47,26 @@ module Instana
     end
 
     def find_first_span_by_name(spans, name)
-      spans.each do |span|
-        case span[:n]
+      span = spans.find do |candidate|
+        case candidate[:n]
         when :sdk
-          return span if span[:data][:sdk][:name] == name
+          candidate[:data][:sdk][:name] == name
         when name
-          return span
+          true
+        else
+          false
         end
       end
-      raise StandardError, "Span (#{name}) not found"
+      raise StandardError, "Span (#{name}) not found" unless span
+
+      span
     end
 
     def find_span_by_id(spans, id)
-      spans.each do |span|
-        return span if span[:s] == id
-      end
-      raise StandardError, "Span with id (#{id}) not found"
+      span = spans.find { |candidate| candidate[:s] == id }
+      raise StandardError, "Span with id (#{id}) not found" unless span
+
+      span
     end
 
     # Finds the first span in +spans+ for which +block+ returns true
@@ -76,10 +80,10 @@ module Instana
     # +spans+: +Array+ of spans to search
     # +block+: The Ruby block to evaluate against each span
     def find_first_span_by_qualifier(spans, &block)
-      spans.each do |span|
-        return span if block.call(span)
-      end
-      raise StandardError, 'Span with qualifier not found'
+      span = spans.find(&block)
+      raise StandardError, 'Span with qualifier not found' unless span
+
+      span
     end
   end
 end

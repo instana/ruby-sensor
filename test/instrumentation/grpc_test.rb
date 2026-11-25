@@ -255,7 +255,8 @@ class GrpcTest < Minitest::Test # rubocop:disable Metrics/ClassLength
     Instana.tracer.in_span(:rpctests) do
       begin
         client_stub.fail_to_ping( PingPongService::PingRequest.new(message: 'Hello World'))
-      rescue
+      rescue StandardError
+        # The error is expected; the resulting spans are asserted below
       end
     end
 
@@ -299,7 +300,8 @@ class GrpcTest < Minitest::Test # rubocop:disable Metrics/ClassLength
             PingPongService::PingRequest.new(message: index.to_s)
           end
         )
-      rescue
+      rescue StandardError
+        # The error is expected; the resulting spans are asserted below
       end
     end
 
@@ -342,7 +344,8 @@ class GrpcTest < Minitest::Test # rubocop:disable Metrics/ClassLength
         client_stub.fail_to_ping_with_server_stream(
           PingPongService::PingRequest.new(message: 'Hello World')
         )
-      rescue
+      rescue StandardError
+        # The error is expected; the resulting spans are asserted below
       end
     end
 

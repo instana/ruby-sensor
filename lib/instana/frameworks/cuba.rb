@@ -12,7 +12,7 @@ module Instana
     end
 
     def on(*args, &blk)
-      wrapper = lambda do |*caputres|
+      wrapper = lambda do |*_captures|
         env['INSTANA_PATH_TEMPLATE_FRAGMENTS'] << args
           .select { |a| a.is_a?(String) }
           .join('/')

@@ -63,7 +63,8 @@ class RedisTest < Minitest::Test
     Instana.tracer.in_span(:redis_test) do
       begin
         @redis_client.zadd('hello', 'invalid', 'value')
-      rescue
+      rescue StandardError
+        # The error is expected; the resulting spans are asserted below
       end
     end
 
@@ -92,7 +93,8 @@ class RedisTest < Minitest::Test
           pipeline.set('other', 'world')
           pipeline.call('invalid')
         end
-      rescue
+      rescue StandardError
+        # The error is expected; the resulting spans are asserted below
       end
     end
 
@@ -121,7 +123,8 @@ class RedisTest < Minitest::Test
           multi.set('other', 'world')
           multi.call('invalid')
         end
-      rescue
+      rescue StandardError
+        # The error is expected; the resulting spans are asserted below
       end
     end
 

@@ -281,7 +281,7 @@ class HostAgentReportingObserverTest < Minitest::Test # rubocop:disable Metrics/
 
     processor = Class.new do
       def send
-        raise 'Standard Error'
+        raise StandardError, 'Standard Error'
       end
     end.new
 

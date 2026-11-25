@@ -6,14 +6,7 @@ module Instana
     module ActionView
       module PartialRenderer
         def render_partial(*args)
-          call_payload = {
-            render: {
-              type: :partial,
-              name: @options.is_a?(Hash) ? @options[:partial].to_s : 'Unknown'
-            }
-          }
-
-          ::Instana.tracer.in_span(:render, attributes: call_payload) { super(*args) }
+          ::Instana.tracer.in_span(:render, attributes: partial_call_payload) { super(*args) }
         end
 
         def render_collection(*args)
@@ -28,14 +21,18 @@ module Instana
         end
 
         def render_partial_template(*args)
-          call_payload = {
+          ::Instana.tracer.in_span(:render, attributes: partial_call_payload) { super(*args) }
+        end
+
+        private
+
+        def partial_call_payload
+          {
             render: {
               type: :partial,
               name: @options.is_a?(Hash) ? @options[:partial].to_s : 'Unknown'
             }
           }
-
-          ::Instana.tracer.in_span(:render, attributes: call_payload) { super(*args) }
         end
       end
 

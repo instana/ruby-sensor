@@ -23,7 +23,7 @@ class RackTest < Minitest::Test
 
   class ErrorApp
     def call(_env)
-      raise 'An Error'
+      raise StandardError, 'An Error'
     end
   end
 

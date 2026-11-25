@@ -520,7 +520,7 @@ module Instana
     #
     # @return [self] returns itself
     # Todo Add the vent logic later
-    def add_event(_name, attributes: nil, timestamp: nil) # rubocop:disable Lint/UnusedMethodArgument
+    def add_event(_name, **)
       self
     end
 

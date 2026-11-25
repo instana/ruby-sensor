@@ -51,7 +51,7 @@ module Instana
       end
 
       def response_call(datum)
-        # FIXME: Will connect exceptions call a response?
+        # Open question: will connect exceptions call a response?
         #
         return @stack.response_call(datum) unless traceable?
 

@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/ruby:3.4 as ruby_dependencies_34
+FROM public.ecr.aws/lambda/ruby:3.4 AS ruby_dependencies_34
 
 # Install system dependencies for native extensions
 RUN dnf update -y && \
@@ -13,7 +13,7 @@ RUN echo "source 'https://rubygems.org'; gem 'instana'; gem 'get_process_mem'" >
 RUN mkdir -p ruby/gems/3.4.0 && \
     cp -r vendor/bundle/ruby/3.4.0*/* ruby/gems/3.4.0/
 
-FROM public.ecr.aws/lambda/ruby:3.3 as ruby_dependencies_33
+FROM public.ecr.aws/lambda/ruby:3.3 AS ruby_dependencies_33
 
 # Install system dependencies for native extensions
 RUN dnf update -y && \
@@ -28,7 +28,7 @@ RUN echo "source 'https://rubygems.org'; gem 'instana'; gem 'get_process_mem'" >
 RUN mkdir -p ruby/gems/3.3.0 && \
     cp -r vendor/bundle/ruby/3.3.0*/* ruby/gems/3.3.0/
 
-FROM public.ecr.aws/lambda/ruby:3.2 as ruby_dependencies_32
+FROM public.ecr.aws/lambda/ruby:3.2 AS ruby_dependencies_32
 
 # Install system dependencies for native extensions
 RUN yum update -y && \
@@ -44,7 +44,7 @@ RUN echo "source 'https://rubygems.org'; gem 'instana'; gem 'get_process_mem'" >
 RUN mkdir -p ruby/gems/3.2.0 && \
     cp -r vendor/bundle/ruby/3.2.0*/* ruby/gems/3.2.0/
 
-FROM  public.ecr.aws/docker/library/alpine:3.22 as final
+FROM  public.ecr.aws/docker/library/alpine:3.22 AS final
 
 RUN apk add --no-cache zip unzip
 

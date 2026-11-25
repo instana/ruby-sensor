@@ -10,7 +10,7 @@ module Instana
         klass.send :extend, ::Resque
       end
 
-      def collect_kvs(op, klass, args)
+      def collect_kvs(_op, klass, _args)
         kvs = {}
 
         begin
@@ -85,7 +85,7 @@ module Instana
                         end
         span = OpenTelemetry::Trace.non_recording_span(trace_context) if trace_context
         Trace.with_span(span) do
-          Instana.tracer.in_span(:'resque-worker', attributes: kvs) do |span|
+          Instana.tracer.in_span(:'resque-worker', attributes: kvs) do |_span|
             super(job)
           end
         end

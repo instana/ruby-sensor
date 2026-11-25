@@ -110,39 +110,22 @@ class TracerProviderTest < Minitest::Test
     assert_equal 1, @tracer_provider.instance_variable_get(:@span_processors).length
   end
 
-  def test_internal_start_span_untraced
+  # Todo add proper testcases for the untraced, traced and stopped scenarios
+  def test_internal_start_span
     @tracer_provider = ::Instana::Trace::TracerProvider.new
-    Minitest::Mock.new
     result = @tracer_provider.internal_start_span('test_span', 'kind', {}, [], Time.now, nil, @instrumentation_scope)
     assert_instance_of(Instana::Span, result)
-    # Todo add proper testcase
-  end
-
-  def test_internal_start_span_traced
-    @tracer_provider = ::Instana::Trace::TracerProvider.new
-    Minitest::Mock.new
-    result = @tracer_provider.internal_start_span('test_span', 'kind', {}, [], Time.now, nil, @instrumentation_scope)
-    assert_instance_of(Instana::Span, result)
-    # Todo add proper testcase
-  end
-
-  def test_internal_start_span_stopped
-    @tracer_provider = ::Instana::Trace::TracerProvider.new
-    Minitest::Mock.new
-    result = @tracer_provider.internal_start_span('test_span', 'kind', {}, [], Time.now, nil, @instrumentation_scope)
-    assert_instance_of(Instana::Span, result)
-    # Todo add proper testcase
   end
 end
 
 class DummyProcessor
   def initialize; end
 
-  def shutdown(timeout: nil) # rubocop:disable Lint/UnusedMethodArgument
+  def shutdown(**)
     Instana::Trace::Export::SUCCESS
   end
 
-  def force_flush(timeout: nil) # rubocop:disable Lint/UnusedMethodArgument
+  def force_flush(**)
     Instana::Trace::Export::SUCCESS
   end
 end

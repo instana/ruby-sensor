@@ -53,10 +53,10 @@ def reformat_github_md_to_slack_markup(msg):
     # /c938c67e957345ba6a0015ca3ace1fd779d0979c/lib/Markdown.ts#LL111C1-L116C44
 
     msg = re.sub(r"^(\s*)[-*](\s+)", r"\1•\2", msg, flags=re.MULTILINE)
-    msg = re.sub(r"(\*|_)\1(\S|\S.*?\S)\1\1(?!\1)", r"<bdmkd>\2</bdmkd>", msg)
-    msg = re.sub(r"(\*|_)(?!\1)(\S|\S.*?\S)\1(?!\1)", r"<itmkd>\2</itmkd>", msg)
+    msg = re.sub(r"([*_])\1(\S|\S.*?\S)\1\1(?!\1)", r"<bdmkd>\2</bdmkd>", msg)
+    msg = re.sub(r"([*_])(?!\1)(\S|\S.*?\S)\1(?!\1)", r"<itmkd>\2</itmkd>", msg)
     msg = msg.replace("<bdmkd>", "*").replace("<itmkd>", "_")
-    msg = re.sub(r"^([#]+)\s+([\S ]+)$", r"*\2*", msg, flags=re.MULTILINE)
+    msg = re.sub(r"^#+\s+(\S[\S ]*)$", r"*\1*", msg, flags=re.MULTILINE)
 
     # TODO: The message text has to have a partial entity encoding
     # https://api.slack.com/reference/surfaces/formatting#escaping

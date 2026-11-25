@@ -150,11 +150,8 @@ module Instana
 
           # Attempt to extract gRPC status string from error message
           error_msg = rpc_data[:error].to_s
-          GRPC_STATUS_CODES.each do |name, code|
-            return code if error_msg.include?(name)
-          end
-
-          GRPC_STATUS_CODES['UNKNOWN']
+          _name, code = GRPC_STATUS_CODES.find { |name, _code| error_msg.include?(name) }
+          code || GRPC_STATUS_CODES['UNKNOWN']
         end
       end
     end

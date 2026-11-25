@@ -168,7 +168,7 @@ class SidekiqClientTest < Minitest::Test
 
   SidekiqMiddlewareException = Class.new do
     def call(*_args)
-      raise 'Fail to enqueue job'
+      raise StandardError, 'Fail to enqueue job'
     end
   end
 

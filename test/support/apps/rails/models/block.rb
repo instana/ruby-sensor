@@ -2,7 +2,7 @@
 # (c) Copyright Instana Inc. 2017
 
 class Block < ActiveRecord::Base
-  def do_work(*args)
+  def do_work(*)
     block = Block.first
     block.name = "Charlie"
     block.color = "Black"

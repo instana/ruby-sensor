@@ -66,7 +66,7 @@ module PingPongService
 end
 
 class PingPongServer < PingPongService::Service
-  def ping(ping_request, active_call)
+  def ping(ping_request, _active_call)
     PingPongService::PongReply.new(message: "Hello #{ping_request.message}")
   end
 
@@ -78,7 +78,7 @@ class PingPongServer < PingPongService::Service
     PingPongService::PongReply.new(message: message)
   end
 
-  def ping_with_server_stream(ping_request, active_call)
+  def ping_with_server_stream(_ping_request, _active_call)
     (0..5).map do |index|
       PingPongService::PongReply.new(message: index.to_s)
     end
@@ -91,18 +91,18 @@ class PingPongServer < PingPongService::Service
   end
 
   def fail_to_ping(ping_request, active_call)
-    raise 'Unexpected failed'
+    raise StandardError, 'Unexpected failed'
   end
 
   def fail_to_ping_with_client_stream(active_call)
-    raise 'Unexpected failed'
+    raise StandardError, 'Unexpected failed'
   end
 
   def fail_to_ping_with_server_stream(ping_request, active_call)
-    raise 'Unexpected failed'
+    raise StandardError, 'Unexpected failed'
   end
 
   def fail_to_ping_with_bidi_stream(ping_requests)
-    raise 'Unexpected failed'
+    raise StandardError, 'Unexpected failed'
   end
 end
