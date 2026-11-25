@@ -3,6 +3,7 @@
 
 require 'google/protobuf'
 require 'google/protobuf/descriptor_pb'
+require 'grpc'
 
 # The `DescriptorPool#build` DSL was removed in google-protobuf 4.x, so the
 # messages are registered through a serialized file descriptor, which works
@@ -40,7 +41,6 @@ module PingPongService
   PingRequest = Google::Protobuf::DescriptorPool.generated_pool.lookup("PingPongService.PingRequest").msgclass
   PongReply = Google::Protobuf::DescriptorPool.generated_pool.lookup("PingPongService.PongReply").msgclass
 end
-require 'grpc'
 
 module PingPongService
   # The greeting service definition.

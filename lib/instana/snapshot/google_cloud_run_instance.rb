@@ -20,11 +20,11 @@ module Instana
         {
           runtime: 'ruby',
           region: gcp_region,
-          service: ENV['K_SERVICE'],
-          configuration: ENV['K_CONFIGURATION'],
-          revision: ENV['K_REVISION'],
+          service: ENV.fetch('K_SERVICE', nil),
+          configuration: ENV.fetch('K_CONFIGURATION', nil),
+          revision: ENV.fetch('K_REVISION', nil),
           instanceId: entity_id,
-          port: ENV['PORT'],
+          port: ENV.fetch('PORT', nil),
           numericProjectId: lookup('/computeMetadata/v1/project/numeric-project-id'),
           projectId: lookup('/computeMetadata/v1/project/project-id')
         }.reject { |_, v| v.nil? }
@@ -47,7 +47,7 @@ module Instana
       end
 
       def host_name
-        "gcp:cloud-run:revision:#{ENV['K_REVISION']}"
+        "gcp:cloud-run:revision:#{ENV.fetch('K_REVISION', nil)}"
       end
 
       private

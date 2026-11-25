@@ -21,6 +21,8 @@ module Instana
               inject_instana_headers(span, context.params)
             when :send_message_batch
               context.params[:entries].each { |e| inject_instana_headers(span, e) }
+            else
+              nil # other operations carry no message attributes to inject
             end
 
             response = @handler.call(context)

@@ -10,7 +10,9 @@ class RailsActiveJobTest < Minitest::Test
   class SampleJob < ActiveJob::Base
     queue_as :test_queue
 
-    def perform(*args); end
+    def perform(*args)
+      # Intentionally empty: the test only checks enqueueing
+    end
   end
 
   def setup

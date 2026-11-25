@@ -16,7 +16,9 @@ module Instana
         @agent_connection_task = Concurrent::TimerTask.new(execution_interval: 75) { announce }
       end
 
-      def setup; end
+      def setup
+        # No setup needed: the host agent is activated via the announce timer task
+      end
 
       def spawn_background_thread
         return if ENV.key?('INSTANA_TEST')

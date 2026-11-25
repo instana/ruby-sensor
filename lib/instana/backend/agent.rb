@@ -8,7 +8,7 @@ module Instana
     class Agent
       attr_reader :delegate
 
-      def initialize(fargate_metadata_uri: ENV['ECS_CONTAINER_METADATA_URI'], logger: ::Instana.logger)
+      def initialize(fargate_metadata_uri: ENV.fetch('ECS_CONTAINER_METADATA_URI', nil), logger: ::Instana.logger)
         @delegate = nil
         @logger = logger
         @fargate_metadata_uri = fargate_metadata_uri

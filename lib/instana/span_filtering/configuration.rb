@@ -80,7 +80,7 @@ module Instana
 
       # Load configuration from YAML file specified by INSTANA_CONFIG_PATH
       def load_from_yaml
-        config_path = ENV['INSTANA_CONFIG_PATH']
+        config_path = ENV.fetch('INSTANA_CONFIG_PATH', nil)
         return unless config_path && File.exist?(config_path)
 
         begin
@@ -130,9 +130,9 @@ module Instana
           end
         end
 
-        return unless !ENV["INSTANA_TRACING_DISABLE"].nil? && !%w[True true 1].include?(ENV["INSTANA_TRACING_DISABLE"])
+        return unless !ENV.fetch("INSTANA_TRACING_DISABLE", nil).nil? && !%w[True true 1].include?(ENV.fetch("INSTANA_TRACING_DISABLE", nil))
 
-        process_disable_config(ENV["INSTANA_TRACING_DISABLE"].split(','))
+        process_disable_config(ENV.fetch("INSTANA_TRACING_DISABLE").split(','))
       end
 
       # Process rules from YAML configuration
@@ -219,6 +219,8 @@ module Instana
         when :databases
           # If databases category is disabled, also disable redis
           ::Instana.config[:redis][:enabled] = false
+        else
+          nil # no Instana::Config toggle exists for other technologies
         end
       end
     end

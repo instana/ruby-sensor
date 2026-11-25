@@ -8,7 +8,7 @@ module Instana
       ID = "com.instana.plugin.aws.lambda".freeze
 
       def entity_id
-        Thread.current[:instana_function_arn]
+        Fiber[:instana_function_arn]
       end
 
       def data

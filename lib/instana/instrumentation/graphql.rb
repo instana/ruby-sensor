@@ -4,15 +4,17 @@
 module Instana
   module Instrumentation
     class GraphqlTracing < GraphQL::Tracing::PlatformTracing
+      EXECUTE_GRAPHQL = 'execute.graphql'.freeze
+
       self.platform_keys = {
         'lex' => 'lex.graphql',
         'parse' => 'parse.graphql',
         'validate' => 'validate.graphql',
         'analyze_query' => 'analyze.graphql',
         'analyze_multiplex' => 'analyze.graphql',
-        'execute_multiplex' => 'execute.graphql',
-        'execute_query' => 'execute.graphql',
-        'execute_query_lazy' => 'execute.graphql',
+        'execute_multiplex' => EXECUTE_GRAPHQL,
+        'execute_query' => EXECUTE_GRAPHQL,
+        'execute_query_lazy' => EXECUTE_GRAPHQL,
       }
 
       def platform_trace(platform_key, key, data)

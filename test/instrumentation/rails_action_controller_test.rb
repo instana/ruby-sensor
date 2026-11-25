@@ -5,16 +5,15 @@ require 'test_helper'
 
 class RailsActionControllerTest < Minitest::Test
   include Rack::Test::Methods
+  parsed_app = nil
   begin
     ENV['INSTANA_TEST'] = nil
-    APP = Rack::Builder.parse_file('test/support/apps/action_controller/config.ru')
+    parsed_app = Rack::Builder.parse_file('test/support/apps/action_controller/config.ru')
   ensure
     ENV['INSTANA_TEST'] = 'true'
   end
   railties_version = Gem::Specification.find_by_name('railties').version
-  if railties_version < Gem::Version.new('7.1.0')
-    APP = APP.first
-  end
+  APP = railties_version < Gem::Version.new('7.1.0') ? parsed_app.first : parsed_app
 
   def app
     APP

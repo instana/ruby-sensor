@@ -5,6 +5,9 @@ call_types = [:request_response, :client_streamer, :server_streamer, :bidi_strea
 
 module Instana
   module Instrumentation
+    INSTANA_TRACE_ID_METADATA_KEY = 'x-instana-t'.freeze
+    INSTANA_SPAN_ID_METADATA_KEY = 'x-instana-s'.freeze
+
     module GRPCCientInstrumentation
       CALL_TYPES = [:request_response, :client_streamer, :server_streamer, :bidi_streamer]
 
@@ -27,8 +30,8 @@ module Instana
             context = ::Instana.tracer.context
             if context
               extra = {
-                'x-instana-t' => context.trace_id_header,
-                'x-instana-s' => context.span_id_header,
+                INSTANA_TRACE_ID_METADATA_KEY => context.trace_id_header,
+                INSTANA_SPAN_ID_METADATA_KEY => context.span_id_header,
                 'x-instana-l' => context.level.to_s,
                 'traceparent' => context.trace_parent_header,
                 'tracestate' => context.trace_state_header
@@ -91,7 +94,7 @@ module Instana
       private
 
       def extract_grpc_context(metadata)
-        if metadata.key?('x-instana-t')
+        if metadata.key?(INSTANA_TRACE_ID_METADATA_KEY)
           extract_instana_grpc_context(metadata)
         elsif metadata.key?('traceparent')
           extract_w3c_grpc_context(metadata)
@@ -100,8 +103,8 @@ module Instana
 
       def extract_instana_grpc_context(metadata)
         SpanContext.new(
-          trace_id: ::Instana::Util.header_to_id(metadata['x-instana-t']),
-          span_id: metadata.key?('x-instana-s') ? ::Instana::Util.header_to_id(metadata['x-instana-s']) : nil,
+          trace_id: ::Instana::Util.header_to_id(metadata[INSTANA_TRACE_ID_METADATA_KEY]),
+          span_id: metadata.key?(INSTANA_SPAN_ID_METADATA_KEY) ? ::Instana::Util.header_to_id(metadata[INSTANA_SPAN_ID_METADATA_KEY]) : nil,
           level: metadata['x-instana-l'] || 1
         )
       end

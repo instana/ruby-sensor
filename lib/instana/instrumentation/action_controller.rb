@@ -75,6 +75,8 @@ module Instana
           options[:template]
         when ->(o) { o.key?(:file) }
           options[:file]
+        else
+          nil # unrecognized render option
         end
       end
     end

@@ -9,7 +9,7 @@ module Instana
       include Deltable
       ID = 'com.instana.plugin.docker'.freeze
 
-      def initialize(container, metadata_uri: ENV['ECS_CONTAINER_METADATA_URI'])
+      def initialize(container, metadata_uri: ENV.fetch('ECS_CONTAINER_METADATA_URI', nil))
         @container = container
         @metadata_uri = URI(metadata_uri)
         @client = Backend::RequestClient.new(@metadata_uri.host, @metadata_uri.port, use_ssl: @metadata_uri.scheme == "https")

@@ -5,5 +5,6 @@ class SidekiqJobOne
   include Sidekiq::Worker
 
   def perform(a, b, c)
+    # Intentionally empty: the test only checks that the job is traced
   end
 end

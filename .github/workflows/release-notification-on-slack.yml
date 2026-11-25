@@ -18,8 +18,8 @@ jobs:
       - name: 'Checkout'
         uses: actions/checkout@v3
       - run: |
-          if [[ ${{ github.event_name == 'workflow_dispatch' }} == true ]]; then
-            export GITHUB_RELEASE_TAG=${{ inputs.github_ref }}
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            export GITHUB_RELEASE_TAG="${INPUT_GITHUB_REF}"
           else # release event
             export GITHUB_RELEASE_TAG=$(basename ${GITHUB_REF})
           fi
@@ -29,6 +29,8 @@ jobs:
           ls -lah
           python ./.github/scripts/announce_release_on_slack.py
         env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_GITHUB_REF: ${{ inputs.github_ref }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_TOKEN: ${{ secrets.RUPY_TRACER_RELEASES_TOKEN }}
           SLACK_SERVICE: ${{ secrets.RUPY_TRACER_RELEASES_SERVICE_ID }}

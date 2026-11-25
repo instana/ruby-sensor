@@ -63,7 +63,7 @@ module Instana
         arguments.reject do |a|
           if a.include?('=')
             k, = a.split('=', 2)
-            ENV[k]
+            ENV.fetch(k, nil)
           end
         end
       end
