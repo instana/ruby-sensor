@@ -8,7 +8,7 @@ module Instana
     class FargateProcess
       ID = 'com.instana.plugin.process'.freeze
 
-      def initialize(metadata_uri: ENV['ECS_CONTAINER_METADATA_URI'])
+      def initialize(metadata_uri: ENV.fetch('ECS_CONTAINER_METADATA_URI', nil))
         @metadata_uri = URI(metadata_uri)
         @client = Backend::RequestClient.new(@metadata_uri.host, @metadata_uri.port, use_ssl: @metadata_uri.scheme == "https")
         @start_time = Time.now

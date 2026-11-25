@@ -24,7 +24,7 @@ module Instana
     end
 
     def wrap_aws(event, context, &block)
-      Thread.current[:instana_function_arn] = [context.invoked_function_arn, context.function_version].join(':')
+      Fiber[:instana_function_arn] = [context.invoked_function_arn, context.function_version].join(':')
       trigger, event_tags, span_context = trigger_from_event(event, context)
 
       tags = {
@@ -52,7 +52,7 @@ module Instana
       rescue StandardError => e
         @logger.error(e.message)
       end
-      Thread.current[:instana_function_arn] = nil
+      Fiber[:instana_function_arn] = nil
     end
 
     private

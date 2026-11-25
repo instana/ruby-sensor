@@ -13,7 +13,7 @@ module Instana
                      timer_class: Concurrent::TimerTask,
                      processor: ::Instana.processor,
                      logger: ::Instana.logger,
-                     backend_uri: ENV['INSTANA_ENDPOINT_URL'],
+                     backend_uri: ENV.fetch('INSTANA_ENDPOINT_URL', nil),
                      secrets: ENV.fetch('INSTANA_SECRETS', DEFAULT_SECRETS), headers: ENV.fetch('INSTANA_EXTRA_HTTP_HEADERS', ''))
         @snapshots = snapshots
         @processor = processor
@@ -26,7 +26,9 @@ module Instana
       end
       # rubocop:enable Metrics/ParameterLists
 
-      def setup; end
+      def setup
+        # No setup needed: the serverless agent is ready on construction
+      end
 
       def spawn_background_thread
         @timer.execute
@@ -85,7 +87,7 @@ module Instana
       def request_headers
         {
           'X-Instana-Host' => host_name,
-          'X-Instana-Key' => ENV['INSTANA_AGENT_KEY'],
+          'X-Instana-Key' => ENV.fetch('INSTANA_AGENT_KEY', nil),
           'X-Instana-Time' => (Time.now.to_i * 1000).to_s
         }
       end

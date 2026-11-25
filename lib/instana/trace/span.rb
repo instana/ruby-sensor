@@ -535,7 +535,9 @@ module Instana
     #   status, which is OK.
     #
     # @return [void]
-    def status=(status); end
+    def status=(status)
+      # Intentionally a no-op: Instana spans do not track an OTel status
+    end
 
     def should_collect_stack_trace?
       return false unless exit_span?

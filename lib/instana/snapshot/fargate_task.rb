@@ -8,7 +8,7 @@ module Instana
     class FargateTask
       ID = 'com.instana.plugin.aws.ecs.task'.freeze
 
-      def initialize(metadata_uri: ENV['ECS_CONTAINER_METADATA_URI'])
+      def initialize(metadata_uri: ENV.fetch('ECS_CONTAINER_METADATA_URI', nil))
         @metadata_uri = URI(metadata_uri)
         @client = Backend::RequestClient.new(@metadata_uri.host, @metadata_uri.port, use_ssl: @metadata_uri.scheme == "https")
       end
@@ -49,7 +49,7 @@ module Instana
       end
 
       def instana_zone
-        ENV['INSTANA_ZONE']
+        ENV.fetch('INSTANA_ZONE', nil)
       end
 
       def instana_tags

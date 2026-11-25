@@ -1,6 +1,8 @@
 # (c) Copyright IBM Corp. 2021
 # (c) Copyright Instana Inc. 2016
 
+require 'net/http'
+
 module Instana
   module Util # rubocop:disable Metrics/ModuleLength
     class << self
@@ -71,7 +73,7 @@ module Instana
       # :nocov:
       def get_app_name
         if ENV.key?('INSTANA_SERVICE_NAME')
-          return ENV['INSTANA_SERVICE_NAME']
+          return ENV.fetch('INSTANA_SERVICE_NAME')
         end
 
         if defined?(::Resque)
@@ -261,7 +263,6 @@ module Instana
       # Uses Ruby stdlib Net::HTTPResponse::CODE_TO_OBJ to derive the phrase from
       # the response class name (e.g. Net::HTTPUnauthorized → "Unauthorized").
       def http_reason_phrase(status_code)
-        require 'net/http'
         klass = Net::HTTPResponse::CODE_TO_OBJ[status_code.to_s]
         return nil unless klass
 

@@ -31,7 +31,7 @@ module Instana
           start: @start_time.to_i * 1000,
           containerType: 'gcpCloudRunInstance',
           container: lookup('/computeMetadata/v1/instance/id'),
-          "com.instana.plugin.host.name": "gcp:cloud-run:revision:#{ENV['K_REVISION']}"
+          "com.instana.plugin.host.name": "gcp:cloud-run:revision:#{ENV.fetch('K_REVISION', nil)}"
         }
       end
 

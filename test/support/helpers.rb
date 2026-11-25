@@ -53,6 +53,8 @@ module Instana
           return span if span[:data][:sdk][:name] == name
         when name
           return span
+        else
+          next # not the span we are looking for
         end
       end
       raise StandardError, "Span (#{name}) not found"

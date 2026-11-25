@@ -1,5 +1,10 @@
 # (c) Copyright IBM Corp. 2025
 require 'opentelemetry/context'
+require 'instana/trace/span_context'
+require 'instana/trace/span_kind'
+require 'instana/trace/span'
+require 'instana/trace/tracer'
+
 module Instana
   # The Trace API allows recording a set of events, triggered as a result of a
   # single logical operation, consolidated across various components of an
@@ -67,8 +72,3 @@ module Instana
     end
   end
 end
-
-require 'instana/trace/span_context'
-require 'instana/trace/span_kind'
-require 'instana/trace/span'
-require 'instana/trace/tracer'

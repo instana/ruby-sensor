@@ -8,6 +8,7 @@ module Instana
 
     LEGACY_TRACING_KEY = 'com.instana.tracing'.freeze
     TRACING_KEY = 'tracing'.freeze
+    DISABLE_SERVER_TIMING_KEY = 'disable-server-timing'.freeze
 
     def initialize(logger: ::Instana.logger, agent_host: ENV.fetch('INSTANA_AGENT_HOST', nil), agent_port: ENV.fetch('INSTANA_AGENT_PORT', nil)) # rubocop:disable Metrics/MethodLength
       @config = {}
@@ -302,7 +303,7 @@ module Instana
       yaml_content = YAML.safe_load(File.read(config_path))
       tracing_config = yaml_content[TRACING_KEY] || yaml_content[LEGACY_TRACING_KEY]
       global_config = tracing_config && tracing_config['global']
-      global_config.is_a?(Hash) ? global_config['disable-server-timing'] : nil
+      global_config.is_a?(Hash) ? global_config[DISABLE_SERVER_TIMING_KEY] : nil
     rescue => e
       ::Instana.logger.warn("Failed to load disable-server-timing configuration from YAML: #{e.message}")
       nil
@@ -311,9 +312,9 @@ module Instana
     # @param tracing_config [Hash] the tracing sub-hash from the discovery payload
     def read_disable_server_timing_from_agent(tracing_config)
       global_config = tracing_config['global']
-      return unless global_config.is_a?(Hash) && !global_config['disable-server-timing'].nil?
+      return unless global_config.is_a?(Hash) && !global_config[DISABLE_SERVER_TIMING_KEY].nil?
 
-      @config[:disable_server_timing] = truthy?(global_config['disable-server-timing'])
+      @config[:disable_server_timing] = truthy?(global_config[DISABLE_SERVER_TIMING_KEY])
       @config[:disable_server_timing_source] = 'agent'
     end
 

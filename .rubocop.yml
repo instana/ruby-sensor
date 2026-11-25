@@ -32,3 +32,7 @@ Style/SymbolProc:
 
 Style/MultilineBlockChain:
   Enabled: false
+
+# Allow an explicit `else nil` in case statements (SonarCloud S131 requires a default clause)
+Style/EmptyElse:
+  EnforcedStyle: empty

@@ -5,11 +5,9 @@ require 'test_helper'
 
 class RailsActionViewTest < Minitest::Test
   include Rack::Test::Methods
-  APP = Rack::Builder.parse_file('test/support/apps/action_view/config.ru')
+  parsed_app = Rack::Builder.parse_file('test/support/apps/action_view/config.ru')
   railties_version = Gem::Specification.find_by_name('railties').version
-  if railties_version < Gem::Version.new('7.1.0')
-    APP = APP.first
-  end
+  APP = railties_version < Gem::Version.new('7.1.0') ? parsed_app.first : parsed_app
 
   def app
     APP

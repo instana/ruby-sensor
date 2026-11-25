@@ -22,16 +22,16 @@ config_or_options = if sidekiq_version >= Gem::Version.new('6.5.0')
                       cli.send :options
                     end
 
-sidekiq_thread = Thread.new do
+launcher = nil
+Thread.new do
   launcher = ::Sidekiq::Launcher.new(
     config_or_options
   )
   launcher.run
-  Thread.current[:worker] = launcher
 end
 
 Minitest.after_run do
   ::Instana.logger.info "Killing Sidekiq worker"
-  sidekiq_thread[:worker].stop
+  launcher.stop
   sleep 1
 end
