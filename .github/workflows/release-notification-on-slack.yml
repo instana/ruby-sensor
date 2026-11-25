@@ -24,7 +24,7 @@ jobs:
             export GITHUB_RELEASE_TAG=$(basename ${GITHUB_REF})
           fi
           echo "New release published ${GITHUB_RELEASE_TAG}"
-          pip3 install httpx PyGithub
+          pip3 install --only-binary :all: httpx==0.28.1 PyGithub==2.10.0
           echo $PWD
           ls -lah
           python ./.github/scripts/announce_release_on_slack.py

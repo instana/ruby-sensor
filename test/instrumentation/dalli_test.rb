@@ -300,7 +300,8 @@ class DalliTest < Minitest::Test
       ::Instana.tracer.in_span(:dalli_test) do
         result = broken_dc.get(:instana)
       end
-    rescue
+    rescue StandardError
+      # The error is expected; the resulting spans are asserted below
     end
 
     spans = ::Instana.processor.queued_spans

@@ -11,18 +11,18 @@ Thread.new do
   app = Rack::Builder.new {
     use ::Instana::Rack
     map "/" do
-      run Proc.new { |env|
+      run Proc.new { |_env|
         [200, {"Content-Type" => "application/json"}, ["[\"Stan\",\"is\",\"on\",\"the\",\"scene!\"]"]]
       }
     end
     map "/error" do
-      run Proc.new { |env|
+      run Proc.new { |_env|
         [500, {"Content-Type" => "application/json"}, ["[\"Stan\",\"is\",\"on\",\"the\",\"error!\"]"]]
       }
     end
     # Returns any status code supplied as the last path segment, e.g. /status/401
     map "/status" do
-      run Proc.new { |env|
+      run Proc.new { |_env|
         code = env['PATH_INFO'].split('/').last.to_i
         code = 200 if code < 100 || code > 599
         [code, {"Content-Type" => "application/json"}, ["[\"status\",#{code}]"]]

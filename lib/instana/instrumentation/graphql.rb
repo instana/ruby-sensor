@@ -15,7 +15,7 @@ module Instana
         'execute_query_lazy' => 'execute.graphql',
       }
 
-      def platform_trace(platform_key, key, data)
+      def platform_trace(_platform_key, key, data)
         return yield unless key == 'execute_query'
         operation = data[:query].selected_operation
 

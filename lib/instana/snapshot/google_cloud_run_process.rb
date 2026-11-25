@@ -49,7 +49,7 @@ module Instana
         path = @metadata_uri.path + resource
         response = @client.send_request('GET', path, nil, {'Metadata-Flavor' => 'Google'})
 
-        raise "Unable to get `#{path}`. Got `#{response.code}` `#{response['location']}`." unless response.ok?
+        raise StandardError, "Unable to get `#{path}`. Got `#{response.code}` `#{response['location']}`." unless response.ok?
 
         response.body
       end

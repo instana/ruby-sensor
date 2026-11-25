@@ -8,7 +8,7 @@ class FastJob
   @queue = :critical
 
   def self.perform(*args)
-    raise 'Invalid Args' unless args.empty?
+    raise ArgumentError, 'Invalid Args' unless args.empty?
 
     if ENV.key?('REDIS_URL')
       redis = Redis.new(:url => ENV['REDIS_URL'])

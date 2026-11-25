@@ -50,7 +50,7 @@ module Instana
         path = resource ? @metadata_uri.path + resource : @metadata_uri.path
         response = @client.send_request('GET', path)
 
-        raise "Unable to get `#{path}`. Got `#{response.code}`." unless response.ok?
+        raise StandardError, "Unable to get `#{path}`. Got `#{response.code}`." unless response.ok?
 
         response.json
       end

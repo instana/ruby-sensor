@@ -25,7 +25,7 @@ class GraphqlTest < Minitest::Test
       elsif !object.description?
         JobType
       else
-        raise("Unexpected object: #{object}")
+        raise(StandardError, "Unexpected object: #{object}")
       end
     end
   end

@@ -66,7 +66,7 @@ module Instana
         self
       end
 
-      def self.should_sample?(trace_id:, parent_context:, links:, name:, kind:, attributes:) # rubocop:disable Metrics/ParameterLists, Lint/UnusedMethodArgument:
+      def self.should_sample?(parent_context:, **)
         parent_span_context = OpenTelemetry::Trace.current_span(parent_context).context
         # Parents wrapped in non_recording_span can expose a non-SpanContext
         # #context; the new span's SpanContext needs a Tracestate, never nil.

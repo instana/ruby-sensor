@@ -63,7 +63,7 @@ module Instana
     #
     # Sends all traces in @queue to the host agent
     #
-    # FIXME: Add limits checking here in regards to:
+    # Known gaps: limits checking is missing in regards to:
     #   - Max HTTP Post size
     #   - Out of control/growing queue
     #   - Prevent another run of the timer while this is running

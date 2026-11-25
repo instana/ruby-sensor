@@ -2,7 +2,7 @@
 
 if [[ -z ${CIRCLE_TOKEN} ]]
 then
-    echo "ERROR: The CIRCLE_TOKEN variable is missing"
+    echo "ERROR: The CIRCLE_TOKEN variable is missing" >&2
     exit 255
 fi
 
@@ -27,7 +27,7 @@ fi
 
 if [[ -z ${PIPELINE_ID} ]]
 then
-    echo "ERROR: Could not determine the pipeline ID. Check CIRCLE_TOKEN and CIRCLE_BUILD_NUM (or WORKFLOW_ID)."
+    echo "ERROR: Could not determine the pipeline ID. Check CIRCLE_TOKEN and CIRCLE_BUILD_NUM (or WORKFLOW_ID)." >&2
     exit 253
 fi
 
@@ -47,7 +47,7 @@ WORKFLOW_IDS=$(curl -s \
 
 if [[ -z ${WORKFLOW_IDS} ]]
 then
-    echo "ERROR: No workflows found for pipeline ${PIPELINE_ID}"
+    echo "ERROR: No workflows found for pipeline ${PIPELINE_ID}" >&2
     exit 252
 fi
 
@@ -73,7 +73,7 @@ do
 
     if [[ "${STATUS}" != "success" ]]
     then
-        echo "ERROR: Workflow ${workflow_id} did not succeed! Status is: ${STATUS}"
+        echo "ERROR: Workflow ${workflow_id} did not succeed! Status is: ${STATUS}" >&2
         exit 254
     else
         echo "Workflow ${workflow_id} has finished successfully! Status is: ${STATUS}"
